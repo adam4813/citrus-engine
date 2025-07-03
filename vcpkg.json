@@ -1,0 +1,34 @@
+{
+  "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg/master/scripts/vcpkg.schema.json",
+  "name": "game-engine",
+  "version": "0.0.1",
+  "dependencies": [
+    "flecs",
+    "glad",
+    "glfw3",
+    "glm",
+    "gtest",
+    {
+      "name": "imgui",
+      "features": [
+        "glfw-binding",
+        "opengl3-binding"
+      ]
+    },
+    "nlohmann-json",
+    "spdlog",
+    "stb"
+  ],
+  "supports": "(windows & x86) | (windows & x64) | (linux & x64) | (osx & x64)",
+  "builtin-baseline": "dd3097e305afa53f7b4312371f62058d2e665320",
+  "overrides": [
+    {
+      "name": "spdlog",
+      "version": "1.11.0"
+    },
+    {
+      "name": "fmt",
+      "version": "9.0.0"
+    }
+  ]
+}

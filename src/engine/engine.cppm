@@ -7,6 +7,7 @@ export import engine.ecs.flecs;
 export import engine.scene;
 export import engine.rendering;
 export import engine.os;
+export import engine.input;
 
 // Main engine namespace
 export namespace engine {

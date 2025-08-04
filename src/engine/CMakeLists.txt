@@ -12,6 +12,7 @@ target_sources(engine-core
     platform/platform.cppm
     components/components.cppm
     ecs/flecs_ecs.cppm
+    input/input.cppm
     os/os.cppm
     rendering/types.cppm
     rendering/texture.cppm
@@ -28,6 +29,8 @@ target_sources(engine-core
 target_sources(engine-core PRIVATE
     # Assets module implementation
     assets/asset_manager.cpp
+
+    input/input.cpp
 
     # OS module implementation
     os/os.cpp

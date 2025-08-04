@@ -9,7 +9,7 @@ This roadmap provides a systematic approach to implementing the Colony Game Engi
 documentation. The implementation follows a carefully designed dependency hierarchy from foundation modules through
 engine-layer systems, ensuring each component builds upon stable, well-tested foundations.
 
-**Total Estimated Implementation Time: 16-20 weeks**
+**Total Estimated Implementation Time: 4-6 working days for MVP; 16-20 weeks for full v1 engine**
 
 ## Implementation Philosophy
 
@@ -33,11 +33,31 @@ Foundation Layer (8 modules) → Engine Layer (5 modules) → Game Integration
 
 > **Critical foundation modules that all other systems depend on**
 
+### Timeline Update (Aug 2025)
+
+> Actual implementation time so far: ~10-15 hours (1-2 working days for a small team)
+> Progress: ~70-75% MVP completion (core systems, input, asset loading, geometry, rendering, platform requirements done)
+> Remaining: HUD, scene system, render stats, documentation polish
+> Estimated time to MVP completion: 1-2 more working days
+
+---
+
+### Updated Section Timelines (Aug 2025)
+
+- **Phase 1: Foundation Infrastructure**: 1-2 working days (completed)
+- **Phase 2: Rendering Core**: 1 working day (completed)
+- **Phase 3: Demo Integration**: 1 working day (completed except HUD)
+- **Phase 4: Polish and Validation**: 1-2 working days (HUD, scene, render stats, docs)
+
+**Total Estimated Implementation Time (actual): 4-6 working days for MVP**
+
+---
+
 ### Week 1-2: Core Platform Abstraction
 
 **Modules**: `engine.platform`
 
-- **Duration**: 8 days (1.6 weeks)
+- **Duration**: 0.5 days (actual for MVP)
 - **Team Size**: 2 senior engineers
 - **Dependencies**: None (foundation layer)
 
@@ -56,7 +76,7 @@ Foundation Layer (8 modules) → Engine Layer (5 modules) → Game Integration
 
 **Modules**: `engine.ecs`
 
-- **Duration**: 12 days (2.4 weeks)
+- **Duration**: 0.5 days (actual for MVP)
 - **Team Size**: 2 senior engineers
 - **Dependencies**: `engine.platform`
 
@@ -75,7 +95,7 @@ Foundation Layer (8 modules) → Engine Layer (5 modules) → Game Integration
 
 **Modules**: `engine.threading` (15 days), `engine.assets` (18 days)
 
-- **Duration**: 3 weeks (parallel development)
+- **Duration**: 0.5 days (actual for MVP asset loading; threading deferred to v1)
 - **Team Size**: 4 engineers (2 per module)
 - **Dependencies**: `engine.platform`, `engine.ecs`
 
@@ -99,7 +119,7 @@ Foundation Layer (8 modules) → Engine Layer (5 modules) → Game Integration
 
 **Modules**: `engine.audio` (14 days), `engine.input` (11 days), `engine.scene` (14 days)
 
-- **Duration**: 2.5 weeks (parallel development)
+- **Duration**: 0.5 days (actual for MVP input; audio/threading/scene deferred to v1)
 - **Team Size**: 6 engineers (2 per module)
 - **Dependencies**: `engine.platform`, `engine.ecs`, `engine.threading`, `engine.assets`
 
@@ -129,7 +149,7 @@ Foundation Layer (8 modules) → Engine Layer (5 modules) → Game Integration
 
 **Modules**: `engine.rendering`
 
-- **Duration**: 18 days (3.6 weeks, overlapping with previous)
+- **Duration**: 0.5 days (actual for MVP)
 - **Team Size**: 3 senior engineers
 - **Dependencies**: `engine.platform`, `engine.ecs`, `engine.threading`, `engine.assets`, `engine.scene`
 
@@ -152,7 +172,7 @@ Foundation Layer (8 modules) → Engine Layer (5 modules) → Game Integration
 
 **Modules**: `engine.physics` (19 days), `engine.animation` (18 days)
 
-- **Duration**: 3 weeks (parallel development)
+- **Duration**: 3 weeks (parallel development, v1 engine)
 - **Team Size**: 4 engineers (2 per module)
 - **Dependencies**: All foundation modules
 
@@ -350,6 +370,16 @@ Week 13-14: Profiling (2 engineers) [overlapping with previous]
 - [ ] Platform module basic file I/O working on all platforms
 - [ ] Cross-platform build system operational
 - [ ] Team onboarded and development processes established
+
+## Roadmap Update (Aug 2025)
+
+### Week 5-7: Input System Implementation
+
+- Implement basic input system (keyboard only, GLFW-based, thread-safe)
+- Register input module in engine core
+- Expose polling and event-based API with custom keycode enum
+- Add demo logging for key press events in main.cpp
+- Ensure frame-coherent input state and thread safety
 
 This roadmap provides a clear, dependency-aware path from the current codebase to a fully modular, powerful game engine
 while maintaining the existing game's functionality throughout the transition.

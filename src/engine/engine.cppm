@@ -81,7 +81,7 @@ export namespace engine {
             return false;
         }
         // ECSWorld is constructed automatically
-        // ...initialize other subsystems as needed...
+        scene::InitializeSceneSystem(ecs);
         return true;
     }
 

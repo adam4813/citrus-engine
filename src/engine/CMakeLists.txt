@@ -30,6 +30,8 @@ target_sources(engine-core PRIVATE
     # Assets module implementation
     assets/asset_manager.cpp
 
+    ecs/transform_system.cpp
+
     input/input.cpp
 
     # OS module implementation

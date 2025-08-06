@@ -6,6 +6,10 @@ module;
 #include <glm/gtx/norm.hpp>
 #include <flecs.h>
 
+namespace engine::ecs {
+    void RegisterTransformSystem(const flecs::world &ecs);
+}
+
 export module engine.ecs.flecs;
 
 import engine.components;
@@ -51,6 +55,10 @@ export namespace engine::ecs {
             scale = glm::vec3(uniform_scale);
             dirty = true;
         }
+    };
+
+    struct WorldTransform {
+        glm::mat4 matrix{1.0F};
     };
 
     // Velocity component for movement
@@ -226,6 +234,7 @@ export namespace engine::ecs {
         ECSWorld() {
             // Register core components with flecs
             world_.component<Transform>();
+            world_.component<WorldTransform>();
             world_.component<Velocity>();
             // Register rendering components
             world_.component<Renderable>();
@@ -246,6 +255,9 @@ export namespace engine::ecs {
             world_.component<SceneRoot>();
             world_.component<ActiveCamera>();
 
+            // Register WorldTransform and propagation system
+            RegisterTransformSystem(world_);
+
             // Set up built-in systems
             SetupMovementSystem();
             SetupRotationSystem();
@@ -263,13 +275,18 @@ export namespace engine::ecs {
 
         // Create an entity
         [[nodiscard]] flecs::entity CreateEntity() const {
-            return world_.entity();
+            const auto entity = world_.entity();
+            entity.set<Transform>({});
+            entity.set<WorldTransform>({});
+            return entity;
         }
 
         // Create an entity with a name
         flecs::entity CreateEntity(const char *name) const {
             const auto entity = world_.entity(name);
             entity.set<SceneEntity>({.name = name});
+            entity.set<Transform>({});
+            entity.set<WorldTransform>({});
             return entity;
         }
 
@@ -432,27 +449,28 @@ export namespace engine::ecs {
             const flecs::entity camera_entity = GetActiveCamera();
             const auto camera_comp = camera_entity.get<Camera>();
 
-            const auto renderable_query = world_.query<const Transform, const Renderable>();
-            renderable_query.each([&](flecs::iter, size_t, const Transform &transform, const Renderable &renderable) {
-                if (!renderable.visible) {
-                    return;
-                }
-                rendering::RenderCommand cmd{.mesh = renderable.mesh, .material = renderable.material};
+            const auto renderable_query = world_.query<const WorldTransform, const Renderable>();
+            renderable_query.each(
+                [&](flecs::iter, size_t, const WorldTransform &transform, const Renderable &renderable) {
+                    if (!renderable.visible) {
+                        return;
+                    }
+                    rendering::RenderCommand cmd{.mesh = renderable.mesh, .material = renderable.material};
 
-                // Create model matrix from transform
-                auto model = glm::mat4(1.0F);
-                model = glm::gtc::translate(model, transform.position);
-                model = glm::gtc::rotate(model, transform.rotation.x, glm::vec3(1, 0, 0));
-                model = glm::gtc::rotate(model, transform.rotation.y, glm::vec3(0, 1, 0));
-                model = glm::gtc::rotate(model, transform.rotation.z, glm::vec3(0, 0, 1));
-                model = glm::gtc::scale(model, transform.scale);
+                    // Create model matrix from transform
+                    /*auto model = glm::mat4(1.0F);
+                    model = glm::gtc::translate(model, transform.position);
+                    model = glm::gtc::rotate(model, transform.rotation.x, glm::vec3(1, 0, 0));
+                    model = glm::gtc::rotate(model, transform.rotation.y, glm::vec3(0, 1, 0));
+                    model = glm::gtc::rotate(model, transform.rotation.z, glm::vec3(0, 0, 1));
+                    model = glm::gtc::scale(model, transform.scale);*/
 
-                model = camera_comp.projection_matrix * camera_comp.view_matrix * model;
+                    const auto model = camera_comp.projection_matrix * camera_comp.view_matrix * transform.matrix;
 
-                cmd.transform = model;
+                    cmd.transform = model;
 
-                renderer.SubmitRenderCommand(cmd);
-            });
+                    renderer.SubmitRenderCommand(cmd);
+                });
         }
 
     private:

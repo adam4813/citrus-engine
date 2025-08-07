@@ -8,7 +8,7 @@
 export module engine.scene;
 
 import glm;
-import engine.ecs.flecs;
+import engine.ecs;
 import engine.platform;
 import engine.rendering;
 

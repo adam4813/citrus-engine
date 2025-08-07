@@ -60,4 +60,56 @@ export namespace engine::rendering {
         Vec2 texture_scale{1.0f, 1.0f};
         int layer = 0;
     };
+
+    struct Renderable {
+        MeshId mesh{0};
+        MaterialId material{0};
+        bool visible{true};
+        uint32_t render_layer{0};
+        float alpha{1.0F};
+    };
+
+    // Light component for lighting calculations
+    struct Light {
+        enum class Type : int {
+            Directional = 0,
+            Point = 1,
+            Spot = 2
+        };
+
+        Type type{Type::Directional};
+        Color color{1.0F, 1.0F, 1.0F, 1.0F};
+        float intensity{1.0F};
+        // Point/Spot light parameters
+        float range{10.0F};
+        float attenuation{1.0F};
+        // Spot light parameters
+        float spot_angle{45.0F};
+        float spot_falloff{1.0F};
+        // Directional light direction
+        glm::vec3 direction{0.0F, -1.0F, 0.0F};
+    };
+
+    // Animation component for animated meshes/sprites
+    struct Animation {
+        char current_animation[64] = ""; // Fixed-size string for POD compatibility
+        float animation_time{0.0F};
+        float animation_speed{1.0F};
+        bool looping{true};
+        bool playing{false};
+    };
+
+    // Particle system component
+    struct ParticleSystem {
+        uint32_t max_particles{100};
+        uint32_t active_particles{0};
+        float emission_rate{10.0F};
+        float particle_lifetime{1.0F};
+        glm::vec3 velocity{0.0F};
+        glm::vec3 gravity{0.0F, -9.81F, 0.0F};
+        Color start_color{1.0F, 1.0F, 1.0F, 1.0F};
+        Color end_color{1.0F, 1.0F, 1.0F, 1.0F};
+        float start_size{1.0F};
+        float end_size{0.0F};
+    };
 }

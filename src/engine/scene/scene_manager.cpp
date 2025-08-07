@@ -15,7 +15,7 @@ module engine.scene;
 
 import glm;
 import engine.platform;
-import engine.ecs.flecs;
+import engine.ecs;
 import engine.assets;
 
 namespace engine::scene {

@@ -8,7 +8,7 @@ project(game-engine
 )
 
 # Set default install location to demo/lib for easy testing
-set(CMAKE_INSTALL_PREFIX "${CMAKE_CURRENT_SOURCE_DIR}/demo/lib" CACHE PATH "Install prefix" FORCE)
+set(CMAKE_INSTALL_PREFIX "${CMAKE_CURRENT_SOURCE_DIR}/../game-engine-demo/lib" CACHE PATH "Install prefix" FORCE)
 
 # Include cmake modules
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)

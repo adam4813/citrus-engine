@@ -22,6 +22,9 @@ target_sources(engine-core
     rendering/renderer.cppm
     rendering/rendering.cppm
     scene/scene.cppm
+    ui/ui.cppm
+    ui/renderer.cppm
+    ui/types.cppm
     engine.cppm  # Main module last - depends on others
 )
 
@@ -30,7 +33,7 @@ target_sources(engine-core PRIVATE
     # Assets module implementation
     assets/asset_manager.cpp
 
-    ecs/transform_system.cpp
+    ecs/ecs_world.cpp
 
     input/input.cpp
 
@@ -52,6 +55,10 @@ target_sources(engine-core PRIVATE
 
     # Scene module implementation
     scene/scene_manager.cpp
+
+    ui/renderer.cpp
+
+    engine.cpp
 )
 
 # Engine include directories

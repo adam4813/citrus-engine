@@ -15,6 +15,7 @@ module;
 module engine.rendering;
 
 import engine.assets;
+import engine.platform;
 import glm;
 
 namespace engine::rendering {

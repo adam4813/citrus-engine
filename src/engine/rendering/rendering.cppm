@@ -7,6 +7,3 @@ export import :texture;
 export import :shader;
 export import :mesh;
 export import :material;
-
-// Import dependencies
-import engine.platform;

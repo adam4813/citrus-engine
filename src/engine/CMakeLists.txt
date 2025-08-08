@@ -60,6 +60,15 @@ target_sources(engine-core
     engine.cppm  # Main module last - depends on others
 )
 
+# Add the GLM module interface. The default GLM package does not correctly export the C++20 module interface,
+target_sources(engine-core
+    PUBLIC
+    FILE_SET CXX_MODULES
+    BASE_DIRS ${glm_DIR}../../../include/glm
+    FILES ${glm_DIR}/../../include/glm/glm.cppm
+)
+target_compile_definitions(engine-core PUBLIC GLM_ENABLE_EXPERIMENTAL)
+
 # Engine implementation source files
 target_sources(engine-core PRIVATE
     # Assets module implementation
@@ -108,8 +117,7 @@ target_link_libraries(engine-core
     PUBLIC
     $<IF:$<TARGET_EXISTS:flecs::flecs>,flecs::flecs,flecs::flecs_static>
     glfw
-    #glm::glm-header-only
-    glm-module # Use the C++20 module version of GLM created in Dependencies.cmake
+    glm::glm-header-only
     spdlog::spdlog
     nlohmann_json::nlohmann_json
     imgui::imgui

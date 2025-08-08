@@ -11,16 +11,6 @@ find_package(nlohmann_json CONFIG REQUIRED)
 find_package(Stb REQUIRED)
 find_package(GTest CONFIG REQUIRED)
 
-# Hack to convert glm to a C++20 module target
-add_library(glm-module)
-target_sources(glm-module PUBLIC
-    FILE_SET CXX_MODULES
-    FILES ${glm_DIR}/../../include/glm/glm.cppm # glm_DIR is where the glmConfig.cmake is located
-)
-target_link_libraries(glm-module PUBLIC glm::glm)
-target_compile_features(glm-module PUBLIC cxx_std_20)
-target_compile_definitions(glm-module PUBLIC GLM_ENABLE_EXPERIMENTAL)
-
 # Log found packages
 message(STATUS "Found dependencies:")
 message(STATUS "  Flecs: ${flecs_VERSION}")

@@ -7,8 +7,8 @@ else ()
     set(PLATFORM_SUFFIX "-native")
 endif ()
 
-# Install targets and export them (including glm-module dependency)
-install(TARGETS engine-core glm-module
+# Install targets and export them
+install(TARGETS engine-core
     EXPORT game-engine-targets${PLATFORM_SUFFIX}
     RUNTIME DESTINATION bin
     LIBRARY DESTINATION lib

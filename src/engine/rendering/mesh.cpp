@@ -66,7 +66,7 @@ namespace engine::rendering {
         // TexCoords
         glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void *) offsetof(Vertex, tex_coords));
         glEnableVertexAttribArray(2);
-        // TexCoords
+        // color
         glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void *) offsetof(Vertex, color));
         glEnableVertexAttribArray(3);
 

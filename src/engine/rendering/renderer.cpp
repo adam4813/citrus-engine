@@ -61,8 +61,7 @@ namespace engine::rendering {
         glViewport(0, 0, window_width, window_height);
 
         // Create built-in sprite shader
-        const std::string vertex_shader_source = R"(
-#version 300 es
+        const std::string vertex_shader_source = R"(#version 300 es
 
 layout(location = 0) in vec3 position;
 layout(location = 1) in vec3 normal;
@@ -80,8 +79,7 @@ void main() {
 }
 )";
 
-        const std::string fragment_shader_source = R"(
-#version 300 es
+        const std::string fragment_shader_source = R"(#version 300 es
 precision mediump float;
 
 in vec2 v_TexCoord;
@@ -191,7 +189,7 @@ void main() {
         }
 
         // Apply scale
-        transform = glm::gtc::scale(transform, Vec3(command.size.x, command.size.y, -1.0f));
+        transform = glm::gtc::scale(transform, Vec3(command.size.x, command.size.y, 1.0f));
 
         // Set up orthographic projection for 2D rendering (screen coordinates)
         const float left = 0.0f;
@@ -214,7 +212,7 @@ void main() {
 
         // Bind texture
         glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, command.texture);
+        glBindTexture(GL_TEXTURE_2D, GetGLTexture(command.texture)->handle);
 
         // Enable alpha blending for sprites
         glEnable(GL_BLEND);

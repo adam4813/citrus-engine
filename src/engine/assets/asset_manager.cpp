@@ -34,6 +34,7 @@ namespace engine::assets {
             return nullptr;
         }
         int width = 0, height = 0, channels = 0;
+        stbi_set_flip_vertically_on_load(true);
         stbi_uc *pixels = stbi_load_from_memory(file_data.data(), static_cast<int>(file_data.size()), &width, &height,
                                                 &channels, 4);
         if (!pixels) {

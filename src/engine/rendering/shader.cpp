@@ -116,19 +116,39 @@ namespace engine::rendering {
     }
 
     void Shader::SetUniform(const std::string &name, float value) const {
-        // TODO: Implement uniform setting
+        GLint location = -1;
+        if (!pimpl_->uniform_locations.contains(name)) {
+            location = glGetUniformLocation(pimpl_->program, name.c_str());
+            pimpl_->uniform_locations[name] = location;
+        }
+        glUniform1f(location, value);
     }
 
     void Shader::SetUniform(const std::string &name, const Vec2 &value) const {
-        // TODO: Implement uniform setting
+        GLint location = -1;
+        if (!pimpl_->uniform_locations.contains(name)) {
+            location = glGetUniformLocation(pimpl_->program, name.c_str());
+            pimpl_->uniform_locations[name] = location;
+        }
+        glUniform2fv(location, 1, &value[0]);
     }
 
     void Shader::SetUniform(const std::string &name, const Vec3 &value) const {
-        // TODO: Implement uniform setting
+        GLint location = -1;
+        if (!pimpl_->uniform_locations.contains(name)) {
+            location = glGetUniformLocation(pimpl_->program, name.c_str());
+            pimpl_->uniform_locations[name] = location;
+        }
+        glUniform3fv(location, 1, &value[0]);
     }
 
     void Shader::SetUniform(const std::string &name, const Vec4 &value) const {
-        // TODO: Implement uniform setting
+        GLint location = -1;
+        if (!pimpl_->uniform_locations.contains(name)) {
+            location = glGetUniformLocation(pimpl_->program, name.c_str());
+            pimpl_->uniform_locations[name] = location;
+        }
+        glUniform4fv(location, 1, &value[0]);
     }
 
     void Shader::SetUniform(const std::string &name, const Mat3 &value) const {

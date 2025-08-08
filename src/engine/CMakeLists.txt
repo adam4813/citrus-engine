@@ -3,6 +3,38 @@
 # Engine library configuration - set up as C++20 module
 add_library(engine-core)
 
+# Ensure debug information is available for library consumers
+set_target_properties(engine-core PROPERTIES
+    # Generate debug info for all configurations
+    DEBUG_POSTFIX "d"
+    # Ensure symbols are exported
+    WINDOWS_EXPORT_ALL_SYMBOLS ON
+    # Keep debug info in separate files for MSVC
+    COMPILE_PDB_NAME "engine-core"
+    COMPILE_PDB_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
+)
+
+# Platform-specific debug info settings
+if (CMAKE_BUILD_TYPE STREQUAL "Debug" OR CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
+    if (MSVC)
+        # Only generate PDB files for debug builds
+        target_compile_options(engine-core PRIVATE /Zi)
+        target_link_options(engine-core PRIVATE /DEBUG /OPT:REF /OPT:ICF)
+
+        # For static libraries, we need to handle PDB files differently
+        set(ENGINE_PDB_FILE "${CMAKE_CURRENT_BINARY_DIR}/engine-core.pdb")
+
+        # Install PDB files alongside the library (only if it exists)
+        install(FILES "${ENGINE_PDB_FILE}"
+            DESTINATION lib
+            OPTIONAL)
+    elseif (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+        # Ensure debug symbols are preserved for debug builds
+        target_compile_options(engine-core PRIVATE -g)
+        target_link_options(engine-core PRIVATE -g)
+    endif ()
+endif ()
+
 # C++20 module interface files
 target_sources(engine-core
     PUBLIC

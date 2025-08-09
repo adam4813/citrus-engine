@@ -61,13 +61,15 @@ target_sources(engine-core
 )
 
 # Add the GLM module interface. The default GLM package does not correctly export the C++20 module interface,
-target_sources(engine-core
-    PUBLIC
-    FILE_SET CXX_MODULES
-    BASE_DIRS ${glm_DIR}../../../include/glm
-    FILES ${glm_DIR}/../../include/glm/glm.cppm
-)
-target_compile_definitions(engine-core PUBLIC GLM_ENABLE_EXPERIMENTAL)
+if (EXISTS "${SHARED_MODULES_DIR}/glm.cppm")
+    target_sources(engine-core
+        PUBLIC
+        FILE_SET CXX_MODULES
+        BASE_DIRS ${SHARED_MODULES_DIR}
+        FILES ${SHARED_MODULES_DIR}/glm.cppm
+    )
+    target_compile_definitions(engine-core PUBLIC GLM_ENABLE_EXPERIMENTAL)
+endif ()
 
 # Engine implementation source files
 target_sources(engine-core PRIVATE

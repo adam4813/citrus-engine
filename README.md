@@ -1,10 +1,12 @@
 ﻿# Modern C++20 Game Engine
 
-> A high-performance, cross-platform game engine built with modern C++20 features, targeting Windows native and WebAssembly platforms.
+> A high-performance, cross-platform game engine built with modern C++20 features, targeting Windows native and
+> WebAssembly platforms.
 
 ## Overview
 
-This project implements a modular game engine designed for colony simulation games and general-purpose game development. The engine features:
+This project implements a modular game engine designed for colony simulation games and general-purpose game development.
+The engine features:
 
 - **Modern C++20** with modules, concepts, and coroutines
 - **Entity Component System (ECS)** architecture for high performance
@@ -17,12 +19,14 @@ This project implements a modular game engine designed for colony simulation gam
 ### Prerequisites
 
 #### Windows Development
+
 - **Visual Studio 2022** (17.0 or later) with C++20 support
-- **CMake 3.20+** 
+- **CMake 3.20+**
 - **vcpkg** package manager
 - **Git** for version control
 
 #### Additional for WebAssembly
+
 - **Emscripten SDK (emsdk)** for WASM compilation
 - **Node.js** (optional, for local web server)
 
@@ -68,7 +72,12 @@ This project implements a modular game engine designed for colony simulation gam
    cmake --build build/native --config Release
    ```
 
-3. **Run the MVP demo**:
+3. **Install the engine** (for use in other projects):
+   ```bash
+   cmake --install build/native --config [Debug|Release]
+   ```
+
+4. **Run the MVP demo**:
    ```bash
    ./build/native/Release/game-engine-demo.exe
    ```
@@ -85,7 +94,12 @@ This project implements a modular game engine designed for colony simulation gam
    cmake --build build/wasm --config Release
    ```
 
-3. **Run locally** (using Python web server):
+3. **Install the engine** (for use in other projects):
+   ```bash
+   cmake --install build/wasm --config Release
+   ```
+
+4. **Run locally** (using Python web server):
    ```bash
    cd build/wasm
    python -m http.server 8080
@@ -95,11 +109,210 @@ This project implements a modular game engine designed for colony simulation gam
 ### Quick Build Commands
 
 ```bash
-# Full clean build (Windows)
-cmake --preset default && cmake --build build/native --config Release
+# Full clean build and install (Windows)
+cmake --preset default && cmake --build build/native --config Release && cmake --install build/native --config Release
 
-# WASM build
-cmake --preset wasm-emscripten && cmake --build build/wasm --config Release
+# WASM build and install
+cmake --preset wasm-emscripten && cmake --build build/wasm --config Release && cmake --install build/wasm --config Release
+```
+
+## Using the Engine in Your Project
+
+The game engine is designed to be consumed as a CMake package in other projects. Here's how to integrate it:
+
+### Project Setup
+
+#### 1. Dependencies Configuration
+
+Add the engine's dependencies to your project's `vcpkg.json`:
+
+```json
+{
+  "name": "your-game-project",
+  "version": "1.0.0",
+  "dependencies": [
+    "flecs",
+    "glad",
+    "glfw3",
+    "glm",
+    "gtest",
+    {
+      "name": "imgui",
+      "features": [
+        "glfw-binding",
+        "opengl3-binding"
+      ]
+    },
+    "nlohmann-json",
+    "spdlog",
+    "stb"
+  ],
+  "builtin-baseline": "dd3097e305afa53f7b4312371f62058d2e665320",
+  "overrides": [
+    {
+      "name": "spdlog",
+      "version": "1.11.0"
+    },
+    {
+      "name": "fmt",
+      "version": "9.0.0"
+    }
+  ]
+}
+```
+
+#### 2. CMake Integration
+
+In your project's `CMakeLists.txt`:
+
+```cmake
+cmake_minimum_required(VERSION 3.20)
+project(your-game-project)
+
+# Find the engine library (provides dependencies, platform detection, and compiler settings)
+find_package(game-engine CONFIG REQUIRED)
+
+# Create your executable
+add_executable(your-game-demo
+    src/main.cpp
+    # ... your source files
+)
+
+# Link to the engine (provides all dependencies transitively)
+target_link_libraries(your-game-demo PRIVATE
+    game-engine::engine-core
+)
+```
+
+#### 3. CMake Presets Configuration
+
+Create `CMakePresets.json` in your project root:
+
+```json
+{
+  "version": 8,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 20,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "base",
+      "hidden": true,
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "installDir": "${sourceDir}/install/${presetName}",
+      "toolchainFile": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake"
+    },
+    {
+      "name": "native",
+      "displayName": "Native Build",
+      "inherits": "base"
+    },
+    {
+      "name": "wasm",
+      "displayName": "WASM Build",
+      "inherits": "base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "VCPKG_CHAINLOAD_TOOLCHAIN_FILE": "$env{EMSDK}/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake",
+        "VCPKG_TARGET_TRIPLET": "wasm32-emscripten",
+        "CMAKE_CXX_STANDARD": "20",
+        "EMSCRIPTEN_ROOT_PATH": "$env{EMSDK}/upstream/emscripten",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "native",
+      "configurePreset": "native"
+    },
+    {
+      "name": "wasm",
+      "configurePreset": "wasm"
+    }
+  ]
+}
+```
+
+### Building Your Project
+
+#### Native Build
+
+```bash
+# Configure and build
+cmake --preset native
+cmake --build build/native --config Release
+
+# Run your game
+./build/native/your-game-demo
+```
+
+#### WebAssembly Build
+
+```bash
+# Configure and build
+cmake --preset wasm
+cmake --build build/wasm --config Release
+
+# Serve locally
+cd build/wasm
+python -m http.server 8080
+```
+
+### Engine Integration Example
+
+```cpp
+import engine.platform;
+import engine.rendering;
+import engine.ecs;
+
+int main() {
+    // Initialize the engine platform
+    auto platform = engine::Platform::Create();
+    
+    // Create rendering context
+    auto renderer = engine::Renderer::Create();
+    
+    // Set up ECS world
+    auto world = engine::ECS::CreateWorld();
+    
+    // Your game logic here...
+    
+    return 0;
+}
+```
+
+### Prerequisites for Consumer Projects
+
+- **Same as engine development**: Visual Studio 2022, CMake 3.20+, vcpkg, Git
+- **For WASM**: Emscripten SDK installed and configured
+- **Engine Installation**: The game engine must be built and installed first
+
+### Troubleshooting Consumer Projects
+
+**Issue**: `find_package(game-engine CONFIG REQUIRED)` fails
+
+```bash
+# Solution: Ensure the engine is installed to a location CMake can find
+# Either install to system location or set CMAKE_PREFIX_PATH
+cmake --preset native -DCMAKE_PREFIX_PATH=/path/to/engine/install
+```
+
+**Issue**: WASM build fails with missing dependencies
+
+```bash
+# Solution: Ensure all engine dependencies are in your vcpkg.json
+# and use the exact same triplet (wasm32-emscripten)
+```
+
+**Issue**: Module import errors in consumer project
+
+```bash
+# Solution: Ensure your project uses C++20 standard and proper module support
+# Check that CMAKE_CXX_STANDARD is set to 20 in your CMakeLists.txt
 ```
 
 ## Assets Management
@@ -120,11 +333,13 @@ assets/
 ### Platform-Specific Asset Loading
 
 #### Native Builds
+
 - Assets are loaded directly from the filesystem using relative paths from the executable
 - Supports hot-reloading during development
 - No build-time asset processing required
 
 #### WebAssembly Builds
+
 - Assets are preloaded into the WASM virtual filesystem at build time
 - **Automatic Detection**: Build system automatically includes all files in `assets/` directory
 - **Empty Directory Handling**: If no assets are present, preloading is skipped (no build errors)
@@ -148,11 +363,13 @@ auto shader_id = shader_manager.LoadShader(
     "assets/shaders/basic.frag"
 );
 ```
+
 3. For WASM builds, assets will be automatically included in the next build
 
 ### Important Notes
 
-- **Documentation**: Do not place README.md or other documentation files in the `assets/` directory as they will be preloaded in WASM builds
+- **Documentation**: Do not place README.md or other documentation files in the `assets/` directory as they will be
+  preloaded in WASM builds
 - **File Size**: Be mindful of asset sizes for WASM builds as they affect download time
 - **Supported Formats**: Use web-compatible formats (PNG, WEBP, OGG) for better WASM compatibility
 
@@ -174,11 +391,42 @@ game-engine/
 ├── plan/                  # Design documentation
 ├── build/                 # Build outputs (generated)
 │   ├── native/            # Windows/Linux builds
-│   └── wasm/              # WebAssembly builds
+│   ├── wasm/              # WebAssembly builds
+│   └── shared-modules/    # Shared C++20 module files for IntelliSense
 ├── CMakePresets.json      # CMake build configurations
 ├── vcpkg.json            # Package dependencies
 └── README.md             # This file
 ```
+
+### C++20 Module Support
+
+The engine uses C++20 modules for improved compilation performance and better dependency management. To support
+IntelliSense across multiple build presets, the build system automatically copies module definition files to a shared
+location:
+
+#### Shared Modules Directory
+
+- **Location**: `build/shared-modules/`
+- **Purpose**: Provides a single source of truth for C++20 module files to prevent IntelliSense conflicts
+- **Auto-Generated**: Created automatically during CMake configuration
+- **Contents**: Module definition files (`.cppm`) from dependencies like GLM
+
+#### How It Works
+
+1. **CMake Configuration**: During the configure step, `cmake/Dependencies.cmake` identifies module files from vcpkg
+   packages
+2. **Module Detection**: Automatically locates module definition files (e.g., `glm.cppm`) in package directories
+3. **Shared Copy**: Copies module files to `build/shared-modules/` to avoid duplicate module declarations
+4. **IntelliSense Support**: IDE can reference a single copy of each module, eliminating confusion between
+   preset-specific copies
+
+#### Supported Modules
+
+Current auto-copied modules include:
+
+- **GLM**: Mathematical operations (`glm.cppm`)
+
+This process is transparent to developers - no manual intervention required for module management.
 
 ## Adding Assets
 
@@ -213,9 +461,9 @@ game-engine/
    └── hud_2d.frag
    ```
 
-2. **Shader compatibility**: 
-   - **Windows**: OpenGL 3.3+ GLSL 330
-   - **WebAssembly**: WebGL 2.0 GLSL ES 300
+2. **Shader compatibility**:
+    - **Windows**: OpenGL 3.3+ GLSL 330
+    - **WebAssembly**: WebGL 2.0 GLSL ES 300
 
 3. **Cross-platform shader example**:
    ```glsl
@@ -236,12 +484,14 @@ game-engine/
 ### MVP Demo Features
 
 The current MVP demonstrates:
+
 - **10 textured cubes** with independent rotation
 - **Real-time input** via WASD/arrow keys
 - **2D HUD overlay** with sprite rendering
 - **Cross-platform compatibility** (Windows + WASM)
 
 ### Controls (MVP Demo)
+
 - **WASD**: Move camera/world position
 - **Arrow Keys**: Rotate selected objects
 - **ESC**: Exit application
@@ -249,7 +499,7 @@ The current MVP demonstrates:
 ### Hot Development Tips
 
 1. **Asset Changes**: Rebuild required for asset updates in MVP
-2. **Shader Changes**: Rebuild required for shader updates in MVP  
+2. **Shader Changes**: Rebuild required for shader updates in MVP
 3. **Code Changes**: Standard CMake incremental build
 4. **Cross-platform Testing**: Test both native and WASM builds regularly
 
@@ -272,12 +522,14 @@ cmake --build build/native --config RelWithDebInfo
 The engine is built with a modular, dependency-driven architecture:
 
 #### Foundation Layer
+
 - **engine.platform** - Cross-platform abstractions (timing, file I/O, memory)
 - **engine.ecs** - High-performance Entity Component System
 - **engine.rendering** - OpenGL ES 2.0/WebGL rendering pipeline
 - **engine.scene** - Transform hierarchies and spatial management
 
 #### Future Engine Layer
+
 - **engine.physics** - 2D/3D physics simulation
 - **engine.scripting** - Multi-language scripting support
 - **engine.animation** - Keyframe and procedural animation
@@ -297,12 +549,14 @@ The engine is built with a modular, dependency-driven architecture:
 ### Common Build Issues
 
 **Issue**: CMake can't find vcpkg
+
 ```bash
 # Solution: Ensure VCPKG_ROOT environment variable is set
 echo %VCPKG_ROOT%  # Should show C:\vcpkg or your installation path
 ```
 
 **Issue**: Emscripten build fails
+
 ```bash
 # Solution: Verify EMSDK environment variable
 echo %EMSDK%       # Should show your emsdk installation path
@@ -310,12 +564,14 @@ emsdk list         # Verify installation
 ```
 
 **Issue**: Missing OpenGL context
+
 ```bash
 # Solution: Update graphics drivers and ensure OpenGL 3.3+ support
 # For WASM: Ensure WebGL 2.0 support in browser
 ```
 
 **Issue**: Asset loading failures
+
 ```bash
 # Solution: Verify asset paths are relative to executable location
 # Check that assets/ directory exists in build output
@@ -324,11 +580,13 @@ emsdk list         # Verify installation
 ### Performance Issues
 
 **Symptom**: Low FPS on Windows
+
 - Check Debug vs Release build configuration
 - Verify V-Sync settings
 - Profile with Visual Studio Diagnostic Tools
 
-**Symptom**: Slow WASM performance  
+**Symptom**: Slow WASM performance
+
 - Verify Release build with optimizations enabled
 - Check browser WebGL implementation
 - Monitor browser console for warnings
@@ -349,12 +607,14 @@ cmake --build build/native --config RelWithDebInfo
 ## Contributing
 
 ### Code Style
+
 - **C++20 standard** with modern features preferred
 - **snake_case** for variables and functions
 - **PascalCase** for types and classes
 - **UPPER_CASE** for constants and macros
 
 ### Adding New Systems
+
 1. Create system documentation in `plan/systems/`
 2. Define module interface in `plan/modules/`
 3. Implement in appropriate `src/engine/` subdirectory
@@ -362,6 +622,7 @@ cmake --build build/native --config RelWithDebInfo
 5. Update this README with new dependencies or build steps
 
 ### Testing
+
 ```bash
 # Run unit tests (when implemented)
 ctest --build-dir build/native --config Release

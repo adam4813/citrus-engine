@@ -11,6 +11,21 @@ find_package(nlohmann_json CONFIG REQUIRED)
 find_package(Stb REQUIRED)
 find_package(GTest CONFIG REQUIRED)
 
+# Create a shared modules directory in your project
+set(SHARED_MODULES_DIR "${CMAKE_SOURCE_DIR}/build/shared-modules")
+
+# Copy modules to shared directory, since each preset creates its own copy, intellisense fails to resolve them correctly
+if (NOT EXISTS "${SHARED_MODULES_DIR}/glm.cppm")
+    find_package(glm CONFIG REQUIRED)
+    find_file(GLM_MODULE_FILE "glm.cppm"
+        PATHS ${glm_DIR}/../../include/glm
+        NO_DEFAULT_PATH)
+
+    if (GLM_MODULE_FILE)
+        file(COPY ${GLM_MODULE_FILE} DESTINATION ${SHARED_MODULES_DIR})
+    endif ()
+endif ()
+
 # Log found packages
 message(STATUS "Found dependencies:")
 message(STATUS "  Flecs: ${flecs_VERSION}")

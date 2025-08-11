@@ -5,10 +5,10 @@ include(CMakeFindDependencyMacro)
 # Include the engine's cmake modules for platform detection and settings
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}")
 
-include(Platform)
-include(CompilerSettings)
+# Disable C++ extensions to ensure portability for GNU and Clang
+set(CMAKE_CXX_EXTENSIONS OFF)
 
-if (PLATFORM_WASM)
+if (EMSCRIPTEN)
     include(Emscripten)
 endif ()
 
@@ -20,12 +20,12 @@ find_dependency(spdlog)
 find_dependency(nlohmann_json)
 find_dependency(imgui)
 
-if(PLATFORM_NATIVE)
+if(NOT EMSCRIPTEN)
     find_dependency(glad)
 endif()
 
 # Include the appropriate exported targets based on platform
-if(PLATFORM_WASM)
+if(EMSCRIPTEN)
     # Look for WASM-specific targets
     if(EXISTS "${CMAKE_CURRENT_LIST_DIR}/game-engine-targets-wasm.cmake")
         include("${CMAKE_CURRENT_LIST_DIR}/game-engine-targets-wasm.cmake")
@@ -44,8 +44,8 @@ else()
 endif()
 
 # Helper function to setup asset copying (the only custom functionality needed)
-function(game_engine_setup_assets target_name assets_dir)
-    if(PLATFORM_WASM)
+function(setup_asset_preload target_name assets_dir)
+    if(EMSCRIPTEN)
         # Preload assets for WASM
         target_link_options(${target_name} PRIVATE
             --preload-file ${assets_dir}@/assets
@@ -59,19 +59,7 @@ function(game_engine_setup_assets target_name assets_dir)
             COMMENT "Copying assets for WASM build"
             VERBATIM
         )
-
-        # Add serve target
-        add_custom_target(serve-${target_name}
-            COMMAND ${CMAKE_COMMAND} -E echo "Serving on http://localhost:8080/"
-            COMMAND python -m http.server 8080
-            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-            DEPENDS ${target_name}
-            USES_TERMINAL
-            COMMENT "Start a local HTTP server for WASM output"
-        )
-    endif()
-
-    if(PLATFORM_NATIVE)
+    else()
         # Copy assets to build directory for native builds
         add_custom_command(TARGET ${target_name} POST_BUILD
             COMMAND ${CMAKE_COMMAND} -E copy_directory

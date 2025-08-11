@@ -126,13 +126,9 @@ target_link_libraries(engine-core
 )
 
 target_compile_features(engine-core PUBLIC cxx_std_20)
-target_compile_definitions(engine-core PUBLIC
-    PLATFORM_WASM=0
-    PLATFORM_NATIVE=1
-    NOMINMAX
-)
+target_compile_definitions(engine-core PUBLIC NOMINMAX)
 
-if (PLATFORM_NATIVE)
+if (NOT EMSCRIPTEN)
     # Native builds need glad for OpenGL function loading
     target_link_libraries(engine-core PUBLIC glad::glad)
 

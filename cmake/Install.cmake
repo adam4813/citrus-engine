@@ -1,7 +1,7 @@
 ﻿# Installation and packaging configuration
 
 # Determine platform suffix for target files
-if (PLATFORM_WASM)
+if (EMSCRIPTEN)
     set(PLATFORM_SUFFIX "-wasm")
 else ()
     set(PLATFORM_SUFFIX "-native")
@@ -27,14 +27,10 @@ install(DIRECTORY src/engine/
 )
 
 # Install cmake modules that the package config depends on (only once, not per platform)
-#if (NOT EXISTS "${CMAKE_INSTALL_PREFIX}/lib/cmake/game-engine/Platform.cmake")
 install(FILES
-    cmake/Platform.cmake
-    cmake/CompilerSettings.cmake
     cmake/Emscripten.cmake
     DESTINATION lib/cmake/game-engine
 )
-#endif ()
 
 # Install assets
 install(DIRECTORY assets/

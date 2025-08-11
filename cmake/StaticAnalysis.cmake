@@ -1,8 +1,8 @@
 ﻿# Static analysis tools configuration (native builds only)
 
-if(NOT PLATFORM_NATIVE)
+if (EMSCRIPTEN)
     return()
-endif()
+endif ()
 
 # clang-tidy configuration
 find_program(CLANG_TIDY_EXE NAMES clang-tidy)
@@ -10,9 +10,9 @@ if (CLANG_TIDY_EXE)
     message(STATUS "Found clang-tidy: ${CLANG_TIDY_EXE}")
     # Currently commented out - uncomment to enable
     #set(CMAKE_CXX_CLANG_TIDY "${CLANG_TIDY_EXE}")
-else()
+else ()
     message(STATUS "clang-tidy not found")
-endif()
+endif ()
 
 # Future: Add other static analysis tools here
 # find_program(CPPCHECK_EXE NAMES cppcheck)

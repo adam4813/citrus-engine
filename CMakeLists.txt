@@ -13,15 +13,12 @@ set(CMAKE_INSTALL_PREFIX "${CMAKE_CURRENT_SOURCE_DIR}/../game-engine-demo/lib" C
 # Include cmake modules
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
-include(Platform)
 include(CompilerSettings)
 include(Dependencies)
 
-if (PLATFORM_WASM)
+if (EMSCRIPTEN)
     include(Emscripten)
-endif ()
-
-if (PLATFORM_NATIVE)
+else ()
     include(StaticAnalysis)
 endif ()
 

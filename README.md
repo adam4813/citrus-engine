@@ -99,12 +99,47 @@ The engine features:
    cmake --install build/wasm --config Release
    ```
 
-4. **Run locally** (using Python web server):
+4. **Run locally** (using built-in server helper):
+   ```bash
+   # Use the engine's built-in serve target
+   cmake --build build/wasm --target serve-game-engine-demo
+   # Navigate to http://localhost:8080/game-engine-demo.html in your browser
+   ```
+
+   **Alternative** (manual Python server):
    ```bash
    cd build/wasm
    python -m http.server 8080
    # Navigate to http://localhost:8080 in your browser
    ```
+
+### Emscripten Integration Features
+
+The game engine provides comprehensive Emscripten integration when building for WebAssembly:
+
+#### Automatic Configuration
+
+- **Executable Suffix**: Automatically sets `CMAKE_EXECUTABLE_SUFFIX` to `.html` for WASM builds
+- **Link Options**: Applies optimized Emscripten link options including:
+    - WebGL 2.0 support (`-sMIN_WEBGL_VERSION=2`, `-sMAX_WEBGL_VERSION=2`)
+    - GLFW3 integration (`-sUSE_GLFW=3`)
+    - Memory management (`-sALLOW_MEMORY_GROWTH=1`, 64MB initial, 128MB maximum)
+    - Filesystem support (`-sFORCE_FILESYSTEM=1`)
+    - Debug vs Release optimizations
+
+#### Built-in Helper Functions
+
+- **`add_wasm_serve_target(target_name)`**: Creates a serve target for any WASM executable
+    - Starts a Python HTTP server on `localhost:8080`
+    - Serves the build directory with proper WASM/HTML files
+    - Example: `cmake --build build/wasm --target serve-your-game`
+
+#### Asset Management Helpers
+
+- **`setup_asset_preload(target_name)`**: Automatically configures asset preloading for WASM builds
+    - Embeds assets from `assets/` directory into the WASM virtual filesystem
+    - Handles empty asset directories gracefully
+    - Ensures assets are available at runtime via `/assets/` path
 
 ### Quick Build Commands
 
@@ -170,6 +205,7 @@ cmake_minimum_required(VERSION 3.20)
 project(your-game-project)
 
 # Find the engine library (provides dependencies, platform detection, and compiler settings)
+# This includes an Emscripten-specific CMake module to ensure depdendencies are correctly set up, only if EMPSCRIPTEN is defined.
 find_package(game-engine CONFIG REQUIRED)
 
 # Create your executable
@@ -182,6 +218,13 @@ add_executable(your-game-demo
 target_link_libraries(your-game-demo PRIVATE
     game-engine::engine-core
 )
+
+setup_asset_preload(your-game-demo ${CMAKE_CURRENT_SOURCE_DIR}/assets)
+
+# For WebAssembly builds, optionally add a serve target
+if (EMSCRIPTEN)
+    add_wasm_serve_target(your-game-demo)
+endif ()
 ```
 
 #### 3. CMake Presets Configuration

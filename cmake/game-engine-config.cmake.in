@@ -12,10 +12,7 @@ find_dependency(flecs)
 find_dependency(spdlog)
 find_dependency(nlohmann_json)
 find_dependency(imgui)
-
-if(NOT EMSCRIPTEN)
-    find_dependency(glad)
-endif()
+find_dependency(glad)
 
 # Include the appropriate exported targets based on platform
 if(EMSCRIPTEN)

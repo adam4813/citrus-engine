@@ -205,7 +205,6 @@ cmake_minimum_required(VERSION 3.20)
 project(your-game-project)
 
 # Find the engine library (provides dependencies, platform detection, and compiler settings)
-# This includes an Emscripten-specific CMake module to ensure depdendencies are correctly set up, only if EMPSCRIPTEN is defined.
 find_package(game-engine CONFIG REQUIRED)
 
 # Create your executable
@@ -219,12 +218,38 @@ target_link_libraries(your-game-demo PRIVATE
     game-engine::engine-core
 )
 
-setup_asset_preload(your-game-demo ${CMAKE_CURRENT_SOURCE_DIR}/assets)
-
-# For WebAssembly builds, optionally add a serve target
 if (EMSCRIPTEN)
-    add_wasm_serve_target(your-game-demo)
+    # Set the target extension, used with the built-in Emscripten template
+    set(CMAKE_EXECUTABLE_SUFFIX ".html")
+
+    # Set memory limits
+    set(INITIAL_MEMORY_BYTES 67108864)  # 64MB initial memory
+    set(MAXIMUM_MEMORY_BYTES 134217728) # 128MB maximum memory
+
+    # Set Emscripten-specific compile options. Configure these 
+    target_link_options(${target_name} PRIVATE
+        # The engine is configured with these flags
+        #-sMIN_WEBGL_VERSION=2
+        #-sMAX_WEBGL_VERSION=2
+        #-sUSE_GLFW=3
+        #-sSTACK_SIZE=1mb # Ensure it is at least 1mb, otherwise you may get stack overflow errors.
+
+        # Emscripten-specific flags that the engine is also configured with
+        #-sALLOW_MEMORY_GROWTH=1
+        #-sEXPORTED_RUNTIME_METHODS=cwrap
+
+        # The following flags are configurable and are based on your project needs
+        -sWASM=1
+        -sFORCE_FILESYSTEM=1
+        -sINITIAL_MEMORY=${INITIAL_MEMORY_BYTES}
+        -sMAXIMUM_MEMORY=${MAXIMUM_MEMORY_BYTES}
+        # Debug vs Release specific flags
+        "$<$<CONFIG:Debug>:-sASSERTIONS=1;-sGL_DEBUG=1>"
+        "$<$<NOT:$<CONFIG:Debug>>:-O3;--closure 1>"
+    )
 endif ()
+
+setup_asset_preload(your-game-demo ${CMAKE_CURRENT_SOURCE_DIR}/assets)
 ```
 
 #### 3. CMake Presets Configuration
@@ -246,12 +271,19 @@ Create `CMakePresets.json` in your project root:
       "generator": "Ninja",
       "binaryDir": "${sourceDir}/build/${presetName}",
       "installDir": "${sourceDir}/install/${presetName}",
-      "toolchainFile": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake"
+      "toolchainFile": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
+      "cacheVariables": {
+        "CMAKE_CXX_STANDARD": "20",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+      }
     },
     {
       "name": "native",
       "displayName": "Native Build",
-      "inherits": "base"
+      "inherits": "base",
+      "cacheVariables": {
+        "VCPKG_TARGET_TRIPLET": "x64-windows"
+      }
     },
     {
       "name": "wasm",
@@ -261,9 +293,7 @@ Create `CMakePresets.json` in your project root:
         "CMAKE_BUILD_TYPE": "Release",
         "VCPKG_CHAINLOAD_TOOLCHAIN_FILE": "$env{EMSDK}/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake",
         "VCPKG_TARGET_TRIPLET": "wasm32-emscripten",
-        "CMAKE_CXX_STANDARD": "20",
-        "EMSCRIPTEN_ROOT_PATH": "$env{EMSDK}/upstream/emscripten",
-        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+        "EMSCRIPTEN_ROOT_PATH": "$env{EMSDK}/upstream/emscripten"
       }
     }
   ],

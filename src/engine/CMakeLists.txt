@@ -125,6 +125,18 @@ target_link_libraries(engine-core
     imgui::imgui
 )
 
+if (EMSCRIPTEN)
+    target_link_options(engine-core
+        PUBLIC
+        -sMIN_WEBGL_VERSION=2
+        -sMAX_WEBGL_VERSION=2
+        -sUSE_GLFW=3
+        -sSTACK_SIZE=1mb
+        -EXPORTED_RUNTIME_METHODS=cwrap
+        -sALLOW_MEMORY_GROWTH=1
+    )
+endif ()
+
 target_compile_features(engine-core PUBLIC cxx_std_20)
 target_compile_definitions(engine-core PUBLIC NOMINMAX)
 

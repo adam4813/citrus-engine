@@ -23,10 +23,10 @@
 - [x] Perspective projection matrix
 - [x] Basic texture mapping
 - [x] Z-buffer depth testing
-- [ ] 2D HUD overlay (sprites, normalized coordinates)  <!-- TODO: Not implemented -->
-- [ ] Separate shader pipeline for HUD  <!-- TODO: Not implemented -->
-- [ ] Orthographic projection for HUD  <!-- TODO: Not implemented -->
-- [ ] Alpha blending for HUD  <!-- TODO: Not implemented -->
+- [x] 2D HUD overlay (sprites, normalized coordinates)
+- [x] Separate shader pipeline for HUD
+- [x] Orthographic projection for HUD
+- [x] Alpha blending for HUD
 
 ## Input System
 
@@ -48,7 +48,7 @@
 ## Success Criteria
 
 - [x] 10 cubes visible and rotating
-- [ ] HUD overlays correctly  <!-- TODO: Not implemented -->
+- [x] HUD overlays correctly
 - [x] Identical output on Windows/WASM
 - [x] Smooth real-time input
 - [ ] 60 FPS performance  <!-- TODO: Render stats/FPS measurement -->
@@ -57,7 +57,7 @@
 
 ## Development Workflow
 
-- [ ] Simple build process (CMake)  <!-- TODO: Documentation could be improved -->
-- [ ] WASM build  <!-- TODO: Documentation could be improved -->
+- [x] Simple build process (CMake)
+- [x] WASM build
 - [x] Asset changes reflected after rebuild
 - [x] Clear error messages

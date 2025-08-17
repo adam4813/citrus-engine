@@ -16,9 +16,7 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 include(CompilerSettings)
 include(Dependencies)
 
-if (EMSCRIPTEN)
-    include(Emscripten)
-else ()
+if (NOT EMSCRIPTEN)
     include(StaticAnalysis)
 endif ()
 

@@ -26,12 +26,6 @@ install(DIRECTORY src/engine/
     PATTERN "*.hpp"
 )
 
-# Install cmake modules that the package config depends on (only once, not per platform)
-install(FILES
-    cmake/Emscripten.cmake
-    DESTINATION lib/cmake/game-engine
-)
-
 # Install assets
 install(DIRECTORY assets/
     DESTINATION bin/assets

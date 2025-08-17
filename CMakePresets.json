@@ -28,6 +28,7 @@
     },
     {
       "name": "wasm",
+      "displayName": "WASM",
       "description": "Emscripten WASM build (browser)",
       "inherits": "base",
       "toolchainFile": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
@@ -41,21 +42,25 @@
   "buildPresets": [
     {
       "name": "native-debug",
+      "displayName": "Native Debug",
       "configurePreset": "native",
       "configuration": "Debug"
     },
     {
       "name": "native-release",
+      "displayName": "Native Release",
       "configurePreset": "native",
       "configuration": "Release"
     },
     {
       "name": "wasm-debug",
+      "displayName": "WASM Debug",
       "configurePreset": "wasm",
       "configuration": "Debug"
     },
     {
       "name": "wasm-release",
+      "displayName": "WASM Release",
       "configurePreset": "wasm",
       "configuration": "Release"
     }

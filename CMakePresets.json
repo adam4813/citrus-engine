@@ -7,36 +7,57 @@
   },
   "configurePresets": [
     {
-      "name": "default",
-      "description": "Default configuration using vcpkg toolchain",
+      "name": "base",
+      "hidden": true,
       "generator": "Ninja Multi-Config",
-      "binaryDir": "${sourceDir}/build/native",
-      "toolchainFile": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake"
-    },
-    {
-      "name": "wasm-emscripten",
-      "description": "Emscripten WASM build (browser)",
-      "generator": "Ninja",
-      "binaryDir": "${sourceDir}/build/wasm",
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "description": "Default configuration using vcpkg toolchain",
       "toolchainFile": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
       "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Release",
-        "VCPKG_CHAINLOAD_TOOLCHAIN_FILE": "$env{EMSDK}/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake",
         "CMAKE_CXX_STANDARD": "20",
-        "VCPKG_TARGET_TRIPLET": "wasm32-emscripten",
-        "EMSCRIPTEN_ROOT_PATH": "$env{EMSDK}/upstream/emscripten",
         "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+      }
+    },
+    {
+      "name": "native",
+      "displayName": "Native",
+      "inherits": "base",
+      "cacheVariables": {
+        "VCPKG_TARGET_TRIPLET": "x64-windows"
+      }
+    },
+    {
+      "name": "wasm",
+      "description": "Emscripten WASM build (browser)",
+      "inherits": "base",
+      "toolchainFile": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
+      "cacheVariables": {
+        "VCPKG_CHAINLOAD_TOOLCHAIN_FILE": "$env{EMSDK}/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake",
+        "VCPKG_TARGET_TRIPLET": "wasm32-emscripten",
+        "EMSCRIPTEN_ROOT_PATH": "$env{EMSDK}/upstream/emscripten"
       }
     }
   ],
   "buildPresets": [
     {
-      "name": "default",
-      "configurePreset": "default"
+      "name": "native-debug",
+      "configurePreset": "native",
+      "configuration": "Debug"
     },
     {
-      "name": "wasm-emscripten",
-      "configurePreset": "wasm-emscripten"
+      "name": "native-release",
+      "configurePreset": "native",
+      "configuration": "Release"
+    },
+    {
+      "name": "wasm-debug",
+      "configurePreset": "wasm",
+      "configuration": "Debug"
+    },
+    {
+      "name": "wasm-release",
+      "configurePreset": "wasm",
+      "configuration": "Release"
     }
   ]
 }

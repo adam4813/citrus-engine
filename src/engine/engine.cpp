@@ -1,7 +1,5 @@
 module;
 
-#include <cstdint>
-#include <flecs.h>
 #ifndef __EMSCRIPTEN__
 #include <glad/glad.h>
 #define GLFW_INCLUDE_NONE

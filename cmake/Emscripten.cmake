@@ -18,21 +18,15 @@ add_link_options(
     -sMAXIMUM_MEMORY=134217728 # 128MB maximum
     -sEXPORTED_RUNTIME_METHODS=cwrap
     -sSTACK_SIZE=1mb
+    # Debug vs Release specific flags
+    "$<$<CONFIG:Debug>:-sASSERTIONS=1;-sGL_DEBUG=1>"
+    "$<$<NOT:$<CONFIG:Debug>>:-O3;--closure 1>"
 )
-
-# Debug vs Release specific settings
-if (CMAKE_BUILD_TYPE STREQUAL "Debug")
-    add_link_options(-s ASSERTIONS=1 -s GL_DEBUG=1)
-    message(STATUS "WASM Debug build: Assertions and GL debugging enabled")
-else ()
-    add_link_options(-O3 --closure 1)
-    message(STATUS "WASM Release build: Optimizations and closure compiler enabled")
-endif ()
 
 # WASM-specific helper target for local serving
 function(add_wasm_serve_target target_name)
     add_custom_target(serve-${target_name}
-        COMMAND ${CMAKE_COMMAND} -E echo "Serving on http://localhost:8080/${target_name}.html"
+        COMMAND ${CMAKE_COMMAND} -E echo "Serving on http://localhost:8080/"
         COMMAND python -m http.server 8080
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
         DEPENDS ${target_name}

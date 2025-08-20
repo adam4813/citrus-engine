@@ -7,6 +7,9 @@ else ()
     set(PLATFORM_SUFFIX "-native")
 endif ()
 
+# Allow callers (like vcpkg) to control where assets are installed; default to bin/assets
+set(GAME_ENGINE_ASSETS_INSTALL_DIR "bin/assets" CACHE PATH "Install dir for engine assets")
+
 # Install targets and export them
 install(TARGETS engine-core
     EXPORT game-engine-targets${PLATFORM_SUFFIX}
@@ -26,16 +29,19 @@ install(DIRECTORY src/engine/
     PATTERN "*.hpp"
 )
 
-# Install assets
-install(DIRECTORY assets/
-    DESTINATION bin/assets
-    FILES_MATCHING
-    PATTERN "*.png"
-    PATTERN "*.jpg"
-    PATTERN "*.jpeg"
-    PATTERN "*.vert"
-    PATTERN "*.frag"
-)
+# Install assets (configurable location) only if the assets directory exists
+if (EXISTS "${CMAKE_SOURCE_DIR}/assets")
+    install(DIRECTORY assets/
+        DESTINATION ${GAME_ENGINE_ASSETS_INSTALL_DIR}
+        FILES_MATCHING
+        PATTERN "*.png"
+        PATTERN "*.jpg"
+        PATTERN "*.jpeg"
+        PATTERN "*.vert"
+        PATTERN "*.frag"
+        PATTERN "*.glsl"
+    )
+endif()
 
 # Export targets for build tree with platform suffix
 export(EXPORT game-engine-targets${PLATFORM_SUFFIX}

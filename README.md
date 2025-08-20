@@ -3,6 +3,28 @@
 > A high-performance, cross-platform game engine built with modern C++20 features, targeting Windows native and
 > WebAssembly platforms.
 
+## Install via vcpkg (overlay)
+
+The engine can be installed as a vcpkg port (static-only), including dependencies.
+
+- Install on Windows (static):
+  ```bash
+  vcpkg install game-engine:x64-windows-static --overlay-ports=ports
+  ```
+- Install for WebAssembly:
+  ```bash
+  vcpkg install game-engine:wasm32-emscripten --overlay-ports=ports
+  ```
+- Use in your CMake project:
+  ```cmake
+  find_package(game-engine CONFIG REQUIRED)
+  target_link_libraries(your-target PRIVATE game-engine::engine-core)
+  ```
+- Assets are installed to: <vcpkg-root>/packages/game-engine_<triplet>/share/game-engine/assets
+    - The installed config exposes GAME_ENGINE_ASSETS_DIR for convenience.
+
+---
+
 ## Overview
 
 This project implements a modular game engine designed for colony simulation games and general-purpose game development.
@@ -159,30 +181,18 @@ The game engine is designed to be consumed as a CMake package in other projects.
 
 #### 1. Dependencies Configuration
 
-Add the engine's dependencies to your project's `vcpkg.json`:
+> **Note:** You do **not** need to specify dependencies already included as part of the engine library in your
+`vcpkg.json`.  
+> However, due to [vcpkg behavior](https://github.com/microsoft/vcpkg/discussions/30328), you **must** include the
+> following `overrides` block to ensure compatible versions of `spdlog` and `fmt` are used:
 
 ```json
 {
   "name": "your-game-project",
   "version": "1.0.0",
   "dependencies": [
-    "flecs",
-    "glad",
-    "glfw3",
-    "glm",
-    "gtest",
-    {
-      "name": "imgui",
-      "features": [
-        "glfw-binding",
-        "opengl3-binding"
-      ]
-    },
-    "nlohmann-json",
-    "spdlog",
-    "stb"
+    "game-engine"
   ],
-  "builtin-baseline": "dd3097e305afa53f7b4312371f62058d2e665320",
   "overrides": [
     {
       "name": "spdlog",

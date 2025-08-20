@@ -2,17 +2,23 @@
 
 include(CMakeFindDependencyMacro)
 
+# Expose installed assets directory for consumers
+set(GAME_ENGINE_ASSETS_DIR "${PACKAGE_PREFIX_DIR}/share/game-engine/assets")
+
 # Disable C++ extensions to ensure portability for GNU and Clang
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 # Find required dependencies that the engine needs
-find_dependency(glfw3)
-find_dependency(glm)
-find_dependency(flecs)
-find_dependency(spdlog)
-find_dependency(nlohmann_json)
-find_dependency(imgui)
-find_dependency(glad)
+find_dependency(glfw3 CONFIG)
+find_dependency(glm CONFIG)
+find_dependency(flecs CONFIG)
+find_dependency(spdlog CONFIG)
+find_dependency(nlohmann_json CONFIG)
+find_dependency(imgui CONFIG)
+
+if(NOT EMSCRIPTEN)
+    find_dependency(glad CONFIG)
+endif()
 
 # Include the appropriate exported targets based on platform
 if(EMSCRIPTEN)

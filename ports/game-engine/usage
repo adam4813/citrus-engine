@@ -1,0 +1,12 @@
+Game Engine CMake usage:
+
+Find and link:
+  find_package(game-engine CONFIG REQUIRED)
+  target_link_libraries(your-target PRIVATE game-engine::engine-core)
+
+Notes:
+- Assets installed to: ${VCPKG_ROOT}/packages/game-engine_${TRIPLET}/share/game-engine/assets
+  Copy or reference at runtime as needed. For WASM, call setup_asset_preload(your-target <assets_dir>).
+- Requires CMake >= 3.28 and C++20 modules support.
+- On WASM (wasm32-emscripten triplet), glad is not required; on native, glad is required and transitive.
+

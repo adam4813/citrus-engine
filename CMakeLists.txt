@@ -7,8 +7,10 @@ project(game-engine
     LANGUAGES CXX
 )
 
-# Set default install location to demo/lib for easy testing
-set(CMAKE_INSTALL_PREFIX "${CMAKE_CURRENT_SOURCE_DIR}/../game-engine-demo/lib" CACHE PATH "Install prefix" FORCE)
+# Set default install location to demo/lib for easy testing when not using vcpkg
+if (NOT DEFINED VCPKG_TARGET_TRIPLET AND CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+    set(CMAKE_INSTALL_PREFIX "${CMAKE_CURRENT_SOURCE_DIR}/../game-engine-demo/lib" CACHE PATH "Install prefix" FORCE)
+endif ()
 
 # Include cmake modules
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)

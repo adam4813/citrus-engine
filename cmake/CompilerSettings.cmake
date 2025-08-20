@@ -14,17 +14,12 @@ if (NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
 endif ()
 
 # Compiler-specific settings
-if (MSVC)
+if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
     add_compile_options(/W4 /permissive- /bigobj /Zc:__cplusplus /experimental:external /external:W0)
     add_compile_definitions(_CRT_SECURE_NO_WARNINGS)
-    if (CMAKE_BUILD_TYPE STREQUAL "Release")
-        add_compile_options(/O2)
-    endif ()
 elseif (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     add_compile_options(-Wall -Wextra -Wpedantic)
-    if (CMAKE_BUILD_TYPE STREQUAL "Release")
-        add_compile_options(-O3)
-    endif ()
+    add_compile_options($<$<CONFIG:Release>:-O3>)
 endif ()
 
 # C++20 modules support

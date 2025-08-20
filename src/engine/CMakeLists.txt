@@ -1,7 +1,7 @@
 ﻿# Engine Core Library Configuration
 
 # Engine library configuration - set up as C++20 module
-add_library(engine-core)
+add_library(engine-core STATIC)
 
 # Ensure debug information is available for library consumers
 set_target_properties(engine-core PROPERTIES

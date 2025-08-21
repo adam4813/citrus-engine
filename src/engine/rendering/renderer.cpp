@@ -181,15 +181,15 @@ void main() {
         Mat4 transform = glm::mat4(1.0f);
 
         // Apply translation
-        transform = glm::gtc::translate(transform, Vec3(command.position.x, command.position.y, 0.0f));
+        transform = glm::translate(transform, Vec3(command.position.x, command.position.y, 0.0f));
 
         // Apply rotation around Z-axis
         if (command.rotation != 0.0f) {
-            transform = glm::gtc::rotate(transform, command.rotation, Vec3(0, 0, 1));
+            transform = glm::rotate(transform, command.rotation, Vec3(0, 0, 1));
         }
 
         // Apply scale
-        transform = glm::gtc::scale(transform, Vec3(command.size.x, command.size.y, 1.0f));
+        transform = glm::scale(transform, Vec3(command.size.x, command.size.y, 1.0f));
 
         // Set up orthographic projection for 2D rendering (screen coordinates)
         const float left = 0.0f;
@@ -199,7 +199,7 @@ void main() {
         const float near = -1.0f;
         const float far = 1.0f;
 
-        Mat4 projection = glm::gtc::ortho(left, right, bottom, top, near, far);
+        Mat4 projection = glm::ortho(left, right, bottom, top, near, far);
         Mat4 mvp = projection * transform;
 
         // Use sprite shader and set uniforms

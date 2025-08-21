@@ -74,23 +74,23 @@ export namespace engine::ecs {
         inline void UpdateTransformMatrix(components::Transform &transform) {
             if (!transform.dirty) return;
             // Create transformation matrix: T * R * S
-            glm::mat4 translation = glm::gtc::translate(glm::mat4(1.0F), transform.position);
-            glm::mat4 rotation_x = glm::gtc::rotate(glm::mat4(1.0F), transform.rotation.x, glm::vec3(1, 0, 0));
-            glm::mat4 rotation_y = glm::gtc::rotate(glm::mat4(1.0F), transform.rotation.y, glm::vec3(0, 1, 0));
-            glm::mat4 rotation_z = glm::gtc::rotate(glm::mat4(1.0F), transform.rotation.z, glm::vec3(0, 0, 1));
-            glm::mat4 scale_mat = glm::gtc::scale(glm::mat4(1.0F), transform.scale);
+            glm::mat4 translation = glm::translate(glm::mat4(1.0F), transform.position);
+            glm::mat4 rotation_x = glm::rotate(glm::mat4(1.0F), transform.rotation.x, glm::vec3(1, 0, 0));
+            glm::mat4 rotation_y = glm::rotate(glm::mat4(1.0F), transform.rotation.y, glm::vec3(0, 1, 0));
+            glm::mat4 rotation_z = glm::rotate(glm::mat4(1.0F), transform.rotation.z, glm::vec3(0, 0, 1));
+            glm::mat4 scale_mat = glm::scale(glm::mat4(1.0F), transform.scale);
             transform.world_matrix = translation * rotation_z * rotation_y * rotation_x * scale_mat;
             transform.dirty = false;
         }
 
         // Update camera view matrix
         inline void UpdateCameraViewMatrix(components::Camera &camera, const glm::vec3 &position) {
-            camera.view_matrix = glm::gtc::lookAt(position, camera.target, camera.up);
+            camera.view_matrix = glm::lookAt(position, camera.target, camera.up);
         }
 
         // Update camera projection matrix
         inline void UpdateCameraProjectionMatrix(components::Camera &camera) {
-            camera.projection_matrix = glm::gtc::perspective(glm::radians(camera.fov), camera.aspect_ratio,
+            camera.projection_matrix = glm::perspective(glm::radians(camera.fov), camera.aspect_ratio,
                                                              camera.near_plane, camera.far_plane);
         }
 

@@ -68,7 +68,7 @@ if (EXISTS "${SHARED_MODULES_DIR}/glm.cppm")
         BASE_DIRS ${SHARED_MODULES_DIR}
         FILES ${SHARED_MODULES_DIR}/glm.cppm
     )
-    target_compile_definitions(engine-core PUBLIC GLM_ENABLE_EXPERIMENTAL)
+    target_compile_definitions(engine-core PUBLIC GLM_ENABLE_EXPERIMENTAL GLM_GTC_INLINE_NAMESPACE GLM_EXT_INLINE_NAMESPACE GLM_GTX_INLINE_NAMESPACE)
 endif ()
 
 # Engine implementation source files

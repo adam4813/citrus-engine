@@ -163,7 +163,7 @@ namespace engine::rendering {
         location = pimpl_->uniform_locations[name];
 
         if (location != -1) {
-            glUniformMatrix4fv(location, 1, GL_FALSE, glm::gtc::value_ptr(value));
+            glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(value));
         }
     }
 

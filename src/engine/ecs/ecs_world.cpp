@@ -275,10 +275,10 @@ namespace engine::ecs {
                         return;
                     }
                     // Update view matrix
-                    camera.view_matrix = glm::gtc::lookAt(transform.position, camera.target, camera.up);
+                    camera.view_matrix = glm::lookAt(transform.position, camera.target, camera.up);
 
                     // Update projection matrix
-                    camera.projection_matrix = glm::gtc::perspective(
+                    camera.projection_matrix = glm::perspective(
                         glm::radians(camera.fov),
                         camera.aspect_ratio,
                         camera.near_plane,

@@ -7,3 +7,4 @@ export import :texture;
 export import :shader;
 export import :mesh;
 export import :material;
+export import :tilemap_renderer;

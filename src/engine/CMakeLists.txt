@@ -41,6 +41,7 @@ target_sources(engine-core
     FILE_SET CXX_MODULES FILES
     assets/asset_manager.cppm
     assets/assets.cppm
+    assets/tileset.cppm
     platform/platform.cppm
     components/components.cppm
     ecs/flecs_ecs.cppm
@@ -52,6 +53,7 @@ target_sources(engine-core
     rendering/mesh.cppm
     rendering/material.cppm
     rendering/renderer.cppm
+    rendering/tilemap_renderer.cppm
     rendering/rendering.cppm
     scene/scene.cppm
     ui/ui.cppm
@@ -75,6 +77,7 @@ endif ()
 target_sources(engine-core PRIVATE
     # Assets module implementation
     assets/asset_manager.cpp
+    assets/tileset.cpp
 
     ecs/ecs_world.cpp
 
@@ -95,6 +98,7 @@ target_sources(engine-core PRIVATE
     rendering/texture.cpp
     rendering/mesh.cpp
     rendering/material.cpp
+    rendering/tilemap_renderer.cpp
 
     # Scene module implementation
     scene/scene_manager.cpp

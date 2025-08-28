@@ -31,6 +31,7 @@ namespace engine::rendering {
     // TextureManager implementation
     struct TextureManager::Impl {
         std::unordered_map<TextureId, TextureCreateInfo> textures;
+        std::unordered_map<std::string, TextureId> texture_cache; // Cache textures by file path
         TextureId next_id = 1;
         TextureId white_texture = INVALID_TEXTURE;
         TextureId black_texture = INVALID_TEXTURE;
@@ -75,10 +76,32 @@ namespace engine::rendering {
         return id;
     }
 
-    TextureId TextureManager::LoadTexture([[maybe_unused]] const platform::fs::Path &path) const {
-        const auto image = assets::AssetManager::Instance().LoadImage(path.string());
-        return CreateTexture(image);
-        return INVALID_TEXTURE;
+    TextureId TextureManager::LoadTexture(const platform::fs::Path &path) const {
+        const std::string path_str = path.string();
+
+        // Check cache first
+        if (const auto cache_it = pimpl_->texture_cache.find(path_str); cache_it != pimpl_->texture_cache.end()) {
+            // Return cached texture if it's still valid
+            if (IsValid(cache_it->second)) {
+                return cache_it->second;
+            }
+            pimpl_->texture_cache.erase(cache_it);
+        }
+
+        // Load image and create texture
+        const auto image = assets::AssetManager::Instance().LoadImage(path_str);
+        if (!image || !image->IsValid()) {
+            return INVALID_TEXTURE;
+        }
+
+        const TextureId texture_id = CreateTexture(image);
+
+        // Cache the texture
+        if (texture_id != INVALID_TEXTURE) {
+            pimpl_->texture_cache[path_str] = texture_id;
+        }
+
+        return texture_id;
     }
 
     TextureId TextureManager::LoadTexture([[maybe_unused]] const std::string &name, [[maybe_unused]] const void *data,
@@ -114,7 +137,14 @@ namespace engine::rendering {
     }
 
     void TextureManager::DestroyTexture(const TextureId id) const {
+        for (auto it = pimpl_->texture_cache.begin(); it != pimpl_->texture_cache.end(); ++it) {
+            if (it->second == id) {
+                pimpl_->texture_cache.erase(it);
+                break;
+            }
+        }
         pimpl_->textures.erase(id);
+
         if (const auto it = g_texture_gl.find(id); it != g_texture_gl.end()) {
             glDeleteTextures(1, &it->second.handle);
             g_texture_gl.erase(it);
@@ -127,6 +157,7 @@ namespace engine::rendering {
 
     void TextureManager::Clear() const {
         pimpl_->textures.clear();
+        pimpl_->texture_cache.clear();
         for (auto &gl_tex: g_texture_gl | std::views::values) {
             glDeleteTextures(1, &gl_tex.handle);
         }

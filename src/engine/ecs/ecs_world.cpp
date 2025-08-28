@@ -7,13 +7,12 @@ module;
 #include <flecs.h>
 
 module engine.ecs;
-import engine.components;
-import engine.rendering;
-import engine.ui;
+import engine;
 import glm;
 
 using namespace engine::components;
 using namespace engine::rendering;
+using namespace engine::ui;
 
 namespace engine::ecs {
     ECSWorld::ECSWorld() {
@@ -22,12 +21,12 @@ namespace engine::ecs {
         world_.component<WorldTransform>();
         world_.component<Velocity>();
         // Register rendering components
-        world_.component<engine::rendering::Renderable>();
+        world_.component<Renderable>();
         world_.component<Camera>();
-        world_.component<ui::Sprite>();
-        world_.component<engine::rendering::Light>();
-        world_.component<engine::rendering::Animation>();
-        world_.component<engine::rendering::ParticleSystem>();
+        world_.component<Sprite>();
+        world_.component<Light>();
+        world_.component<Animation>();
+        world_.component<ParticleSystem>();
 
         // Register scene components
         world_.component<SceneEntity>();
@@ -39,6 +38,8 @@ namespace engine::ecs {
         // Register relationship tags
         world_.component<SceneRoot>();
         world_.component<ActiveCamera>();
+
+        world_.component<Tilemap>();
 
         // Register WorldTransform and propagation system
         RegisterTransformSystem();

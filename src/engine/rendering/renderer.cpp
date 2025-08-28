@@ -199,8 +199,8 @@ void main() {
         const float near = -1.0f;
         const float far = 1.0f;
 
-        Mat4 projection = glm::ortho(left, right, bottom, top, near, far);
-        Mat4 mvp = projection * transform;
+        const Mat4 projection = glm::ortho(left, right, bottom, top, near, far);
+        const Mat4 mvp = projection * transform;
 
         // Use sprite shader and set uniforms
         sprite_shader.Use();

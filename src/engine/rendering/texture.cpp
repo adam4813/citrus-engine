@@ -21,6 +21,60 @@ import engine.assets;
 namespace engine::rendering {
     namespace {
         std::unordered_map<TextureId, GLTexture> g_texture_gl;
+
+        GLint GetGLFilterMode(const TextureFilter filter) {
+            switch (filter) {
+                case TextureFilter::Nearest: return GL_NEAREST;
+                case TextureFilter::NearestMipmapNearest: return GL_NEAREST_MIPMAP_NEAREST;
+                case TextureFilter::LinearMipmapNearest: return GL_LINEAR_MIPMAP_NEAREST;
+                case TextureFilter::NearestMipmapLinear: return GL_NEAREST_MIPMAP_LINEAR;
+                case TextureFilter::LinearMipmapLinear: return GL_LINEAR_MIPMAP_LINEAR;
+                case TextureFilter::Linear:
+                default: return GL_LINEAR;
+            }
+        }
+
+        GLint GetGLWrapMode(const TextureWrap wrap) {
+            switch (wrap) {
+                case TextureWrap::MirroredRepeat: return GL_MIRRORED_REPEAT;
+                case TextureWrap::ClampToEdge: return GL_CLAMP_TO_EDGE;
+                case TextureWrap::Repeat:
+                default: return GL_REPEAT;
+            }
+        }
+
+        // https://registry.khronos.org/OpenGL-Refpages/gl4/html/glTexImage2D.xhtml
+        GLint GetGLInternalFormat(const TextureFormat format) {
+            switch (format) {
+                case TextureFormat::R8: return GL_R8;
+                case TextureFormat::RG8: return GL_RG8;
+                case TextureFormat::RGB8: return GL_RGB8;
+                case TextureFormat::R16F: return GL_R16F;
+                case TextureFormat::RG16F: return GL_RG16F;
+                case TextureFormat::RGB16F: return GL_RGB16F;
+                case TextureFormat::RGBA16F: return GL_RGBA16F;
+                case TextureFormat::RGBA8:
+                default: return GL_RGBA8;
+            }
+        }
+
+        // https://registry.khronos.org/OpenGL-Refpages/gl4/html/glTexImage2D.xhtml
+        GLenum GetGLFormat(const TextureFormat format) {
+            switch (format) {
+                case TextureFormat::R16F:
+                case TextureFormat::R8:
+                    return GL_RED;
+                case TextureFormat::RG16F:
+                case TextureFormat::RG8:
+                    return GL_RG;
+                case TextureFormat::RGB16F:
+                case TextureFormat::RGB8:
+                    return GL_RGB;
+                case TextureFormat::RGBA16F:
+                case TextureFormat::RGBA8:
+                default: return GL_RGBA;
+            }
+        }
     }
 
     GLTexture *rendering::GetGLTexture(const TextureId id) {
@@ -43,40 +97,34 @@ namespace engine::rendering {
 
     TextureManager::~TextureManager() = default;
 
-    TextureId TextureManager::CreateTexture(const TextureCreateInfo &info) const {
+    TextureId TextureManager::CreateTexture(const std::string &name, const TextureCreateInfo &info) const {
         const TextureId id = pimpl_->next_id++;
-        pimpl_->textures[id] = info;
+        if (id != INVALID_TEXTURE) {
+            pimpl_->textures[id] = info;
+            pimpl_->texture_cache[name] = id;
+        }
 
-        // OpenGL texture creation
         GLTexture gl_tex;
-        glGenTextures(1, &gl_tex.handle);
-        glBindTexture(GL_TEXTURE_2D, gl_tex.handle);
         gl_tex.width = info.width;
         gl_tex.height = info.height;
         gl_tex.format = info.format;
 
-        constexpr GLenum gl_type = GL_UNSIGNED_BYTE;
-        GLenum gl_format = GL_RGBA;
-        switch (info.format) {
-            case TextureFormat::RGB8: gl_format = GL_RGB;
-                break;
-            case TextureFormat::RGBA8: gl_format = GL_RGBA;
-                break;
-            default: break;
-        }
+        const GLint gl_internal_format = GetGLInternalFormat(gl_tex.format);
+        const GLenum gl_format = GetGLFormat(gl_tex.format);
 
-        glTexImage2D(GL_TEXTURE_2D, 0, gl_format, info.width, info.height, 0, gl_format, gl_type, info.data);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        glGenTextures(1, &gl_tex.handle);
+        glBindTexture(GL_TEXTURE_2D, gl_tex.handle);
+        glTexImage2D(GL_TEXTURE_2D, 0, gl_internal_format, gl_tex.width, gl_tex.height, 0, gl_format, GL_UNSIGNED_BYTE,
+                     info.data);
         glBindTexture(GL_TEXTURE_2D, 0);
 
         g_texture_gl[id] = gl_tex;
+        SetTextureParameters(id, info.parameters);
+
         return id;
     }
 
-    TextureId TextureManager::LoadTexture(const platform::fs::Path &path) const {
+    TextureId TextureManager::LoadTexture(const platform::fs::Path &path, const TextureParameters &parameter) const {
         const std::string path_str = path.string();
 
         // Check cache first
@@ -94,31 +142,42 @@ namespace engine::rendering {
             return INVALID_TEXTURE;
         }
 
-        const TextureId texture_id = CreateTexture(image);
+        return CreateTexture(image, parameter);
+    }
 
-        // Cache the texture
-        if (texture_id != INVALID_TEXTURE) {
-            pimpl_->texture_cache[path_str] = texture_id;
+    void TextureManager::UpdateTexture(const TextureId id, const void *data,
+                                       const uint32_t x, const uint32_t y,
+                                       const uint32_t width,
+                                       const uint32_t height) {
+        const auto *gl_tex = GetGLTexture(id);
+        if (!gl_tex) { return; }
+
+        if (x + width > gl_tex->width || y + height > gl_tex->height || x + width == 0 || y + height == 0) {
+            // Out of bounds or no area to update
+            return;
         }
 
-        return texture_id;
+        const GLenum gl_format = GetGLFormat(gl_tex->format);
+
+        glBindTexture(GL_TEXTURE_2D, gl_tex->handle);
+        glTexSubImage2D(GL_TEXTURE_2D, 0, x, y, width, height, gl_format, GL_UNSIGNED_BYTE, data);
+        glBindTexture(GL_TEXTURE_2D, 0);
     }
 
-    TextureId TextureManager::LoadTexture([[maybe_unused]] const std::string &name, [[maybe_unused]] const void *data,
-                                          [[maybe_unused]] size_t size) {
-        // TODO: Load texture from memory
-        return INVALID_TEXTURE;
-    }
+    void TextureManager::SetTextureParameters(const TextureId id, const TextureParameters &parameters) const {
+        const auto *gl_tex = GetGLTexture(id);
+        if (!gl_tex) { return; }
 
-    void TextureManager::UpdateTexture([[maybe_unused]] TextureId id, [[maybe_unused]] const void *data,
-                                       [[maybe_unused]] uint32_t x, [[maybe_unused]] uint32_t y,
-                                       [[maybe_unused]] uint32_t width,
-                                       [[maybe_unused]] uint32_t height) {
-        // TODO: Update texture data
-    }
-
-    void TextureManager::GenerateMipmaps([[maybe_unused]] TextureId id) {
-        // TODO: Generate mipmaps
+        pimpl_->textures[id].parameters = parameters;
+        glBindTexture(GL_TEXTURE_2D, gl_tex->handle);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GetGLFilterMode(parameters.min_filter));
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GetGLFilterMode(parameters.mag_filter));
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GetGLWrapMode(parameters.wrap_s));
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GetGLWrapMode(parameters.wrap_t));
+        if (parameters.generate_mipmaps) {
+            glGenerateMipmap(GL_TEXTURE_2D);
+        }
+        glBindTexture(GL_TEXTURE_2D, 0);
     }
 
     uint32_t TextureManager::GetWidth(const TextureId id) const {
@@ -176,15 +235,16 @@ namespace engine::rendering {
         return pimpl_->default_normal_texture;
     }
 
-    TextureId TextureManager::CreateTexture(const std::shared_ptr<assets::Image> &image) const {
+    TextureId TextureManager::CreateTexture(const std::shared_ptr<assets::Image> &image,
+                                            const TextureParameters &parameters) const {
         if (!image || !image->IsValid()) {
             return INVALID_TEXTURE;
         }
         TextureCreateInfo info;
         info.width = static_cast<uint32_t>(image->width);
         info.height = static_cast<uint32_t>(image->height);
-        info.format = TextureFormat::RGBA8;
         info.data = image->pixel_data.data();
-        return CreateTexture(info);
+        info.parameters = parameters;
+        return CreateTexture(image->name, info);
     }
 } // namespace engine::rendering

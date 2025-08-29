@@ -1,6 +1,5 @@
 module;
 
-#include <cstdint>
 #include <vector>
 #include <string>
 #include <memory>
@@ -13,6 +12,7 @@ export namespace engine::assets {
         int width = 0;
         int height = 0;
         int channels = 0;
+        std::string name;
         std::vector<uint8_t> pixel_data;
         bool IsValid() const { return width > 0 && height > 0 && !pixel_data.empty(); }
     };
@@ -21,8 +21,8 @@ export namespace engine::assets {
     public:
         static AssetManager &Instance();
 
-        std::shared_ptr<Image> LoadImage(const std::string &path);
+        static std::shared_ptr<Image> LoadImage(const std::string &path);
 
-        std::optional<std::string> LoadTextFile(const std::string &path);
+        static std::optional<std::string> LoadTextFile(const std::string &path);
     };
 }

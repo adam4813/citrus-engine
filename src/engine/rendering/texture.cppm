@@ -39,19 +39,22 @@ export namespace engine::rendering {
     enum class TextureWrap {
         Repeat,
         MirroredRepeat,
-        ClampToEdge,
-        ClampToBorder
+        ClampToEdge
+    };
+
+    struct TextureParameters {
+        TextureFilter min_filter = TextureFilter::Linear;
+        TextureFilter mag_filter = TextureFilter::Linear;
+        TextureWrap wrap_s = TextureWrap::Repeat;
+        TextureWrap wrap_t = TextureWrap::Repeat;
+        bool generate_mipmaps = false;
     };
 
     struct TextureCreateInfo {
         uint32_t width;
         uint32_t height;
         TextureFormat format = TextureFormat::RGBA8;
-        TextureFilter min_filter = TextureFilter::Linear;
-        TextureFilter mag_filter = TextureFilter::Linear;
-        TextureWrap wrap_s = TextureWrap::Repeat;
-        TextureWrap wrap_t = TextureWrap::Repeat;
-        bool generate_mipmaps = false;
+        TextureParameters parameters = {};
         const void *data = nullptr; // Optional initial data
     };
 
@@ -62,17 +65,20 @@ export namespace engine::rendering {
         ~TextureManager();
 
         // Create textures
-        TextureId CreateTexture(const TextureCreateInfo &info) const;
+        TextureId CreateTexture(const std::string &name, const TextureCreateInfo &info) const;
 
-        TextureId CreateTexture(const std::shared_ptr<assets::Image> &image) const; // New overload
-        TextureId LoadTexture(const platform::fs::Path &path) const;
+        // Create a texture from an image
+        TextureId CreateTexture(const std::shared_ptr<assets::Image> &image,
+                                const TextureParameters &parameters = {}) const;
 
-        TextureId LoadTexture(const std::string &name, const void *data, size_t size);
+        // Load texture from file
+        TextureId LoadTexture(const platform::fs::Path &path, const TextureParameters &parameter = {}) const;
 
         // Texture operations
-        void UpdateTexture(TextureId id, const void *data, uint32_t x, uint32_t y, uint32_t width, uint32_t height);
+        static void UpdateTexture(TextureId id, const void *data, uint32_t x, uint32_t y, uint32_t width,
+                                  uint32_t height);
 
-        void GenerateMipmaps(TextureId id);
+        void SetTextureParameters(TextureId id, const TextureParameters &parameters = {}) const;
 
         // Texture info
         uint32_t GetWidth(TextureId id) const;

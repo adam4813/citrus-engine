@@ -33,7 +33,9 @@ namespace engine::assets {
             // File is empty or failed to read
             return nullptr;
         }
-        int width = 0, height = 0, channels = 0;
+        int width = 0;
+        int height = 0;
+        int channels = 0;
         stbi_set_flip_vertically_on_load(true);
         stbi_uc *pixels = stbi_load_from_memory(file_data.data(), static_cast<int>(file_data.size()), &width, &height,
                                                 &channels, 4);
@@ -46,6 +48,7 @@ namespace engine::assets {
         image->height = height;
         image->channels = 4; // Force RGBA
         image->pixel_data.assign(pixels, pixels + (width * height * 4));
+        image->name = path;
         stbi_image_free(pixels);
         return image;
     }

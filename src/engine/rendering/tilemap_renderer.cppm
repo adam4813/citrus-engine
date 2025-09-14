@@ -77,13 +77,16 @@ export namespace engine::rendering {
                              const glm::ivec2 &tile_size,
                              const glm::vec2 &grid_offset,
                              TileBatch &batch,
-                             const TextureManager &texture_manager);
+                             const TextureManager &texture_manager,
+                             const int layer_index,
+                             const float z_step);
 
         void AddTileToBatch(const glm::vec2 &world_pos,
                             const glm::ivec2 &tile_size,
                             const glm::vec4 &tex_coords,
                             float opacity,
-                            TileBatch &batch);
+                            TileBatch &batch,
+                            const float z);
 
         // Render a single batch
         void RenderBatch(const TileBatch &batch,

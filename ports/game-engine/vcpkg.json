@@ -1,7 +1,7 @@
 {
   "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg.schema.json",
   "name": "game-engine",
-  "version": "0.0.1",
+  "version": "0.0.14",
   "description": "Modern C++20 game engine core library (modules-enabled) with native and WebAssembly support.",
   "homepage": "https://example.com/game-engine",
   "license": "MIT",

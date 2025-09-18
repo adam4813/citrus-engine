@@ -35,6 +35,22 @@
       }
     },
     {
+      "name": "native-test",
+      "displayName": "Native Test",
+      "inherits": "native",
+      "cacheVariables": {
+        "BUILD_TESTING": "ON"
+      }
+    },
+    {
+      "name": "native-static-test",
+      "displayName": "Native Static ",
+      "inherits": "native-static",
+      "cacheVariables": {
+        "BUILD_TESTING": "ON"
+      }
+    },
+    {
       "name": "wasm",
       "displayName": "WASM",
       "description": "Emscripten WASM build (browser)",
@@ -83,6 +99,49 @@
       "displayName": "WASM Release",
       "configurePreset": "wasm",
       "configuration": "Release"
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "native-test",
+      "displayName": "Native Tests",
+      "configurePreset": "native-test",
+      "configuration": "Debug",
+      "output": {
+        "outputOnFailure": true,
+        "verbosity": "verbose"
+      },
+      "execution": {
+        "noTestsAction": "error",
+        "stopOnFailure": false
+      }
+    },
+    {
+      "name": "native-static-test",
+      "displayName": "Native Static Tests",
+      "configurePreset": "native-static-test",
+      "configuration": "Debug",
+      "output": {
+        "outputOnFailure": true,
+        "verbosity": "verbose"
+      },
+      "execution": {
+        "noTestsAction": "error",
+        "stopOnFailure": false
+      }
+    },
+    {
+      "name": "native-test-release",
+      "displayName": "Native Tests (Release)",
+      "configurePreset": "native-test",
+      "configuration": "Release",
+      "output": {
+        "outputOnFailure": true
+      },
+      "execution": {
+        "noTestsAction": "error",
+        "stopOnFailure": false
+      }
     }
   ]
 }

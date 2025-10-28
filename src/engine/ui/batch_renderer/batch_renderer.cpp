@@ -166,9 +166,11 @@ namespace engine::ui::batch_renderer {
 
         // Get current screen dimensions from renderer
         auto& renderer = rendering::GetRenderer();
-        // For now, use a default screen size - this should be passed in or queried
-        state_->screen_width = 1920;  // TODO: Get from window/renderer
-        state_->screen_height = 1080; // TODO: Get from window/renderer
+        // Query the current framebuffer size from the renderer
+        uint32_t width = 0, height = 0;
+        renderer.GetFramebufferSize(width, height);
+        state_->screen_width = width;
+        state_->screen_height = height;
         
         // Setup orthographic projection for screen-space rendering
         state_->projection = glm::ortho(

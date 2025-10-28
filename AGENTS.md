@@ -1,6 +1,6 @@
-# AI Agent Instructions for Modern C++ Game Engine
+# AI Agent Instructions for Citrus Engine
 
-**Purpose**: Internal process guidelines for AI agents working on a modern C++ game engine  
+**Purpose**: Internal process guidelines for AI agents working on citrus-engine  
 **Audience**: AI assistants only (not user documentation)  
 **Status**: Active
 
@@ -15,10 +15,10 @@
 ```bash
 sudo apt-get update && sudo apt-get install -y build-essential cmake pkg-config \
   libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev \
-  libgl1-mesa-dev libglu1-mesa-dev xvfb
+  libgl1-mesa-dev libglu1-mesa-dev
 ```
 
-**Critical**: Without these X11 libraries, vcpkg CANNOT build raylib and the project WILL FAIL.
+**Critical**: These libraries are required for GLFW3 and OpenGL support.
 
 **On Windows/macOS**: Skip this step.
 
@@ -43,6 +43,8 @@ set VCPKG_ROOT=D:\path\to\vcpkg     # Windows
 cmake --preset cli-native
 ```
 
+**Note**: citrus-engine uses `cli-native` presets to avoid conflicts with IDE builds.
+
 **These steps are NOT optional. Complete them before proceeding with any task.**
 
 ---
@@ -53,7 +55,7 @@ cmake --preset cli-native
 
 **Read these pattern/API guides immediately when working in their domains**:
 
-- **UI work**: Read `UI_DEVELOPMENT_BIBLE.md` - declarative, reactive, event-driven patterns
+- **UI work**: Read `UI_DEVELOPMENT_BIBLE.md` - ImGui-based UI patterns and architecture
 - **Testing work**: Read `TESTING.md` - test structure, priorities, and best practices
 - **Future**: API documentation describing engine usage patterns (not yet created)
 
@@ -132,14 +134,15 @@ documented patterns.
 Before completing any work:
 
 1. Configure (first time): `cmake --preset cli-native`
-2. Build: `cmake --build --preset cli-native-debug --parallel $(nproc)`
-    - Windows: Use `%NUMBER_OF_PROCESSORS%` instead of `$(nproc)`
+2. Build: `cmake --build --preset cli-native-debug`
+    - Add `--parallel $(nproc)` for parallel builds on Linux/macOS
+    - Add `--parallel %NUMBER_OF_PROCESSORS%` for parallel builds on Windows
 3. Verify: No errors or warnings
 4. If errors: Fix and rebuild
 5. Do not mark complete until build succeeds
 
 **Note**: Use `cli-native` presets (not `native`) to avoid conflicts with IDE builds.
-Build directory: `build-cli/cli-native/` (isolated from IDE's `build/native/`)
+Build directory: `build/cli-native/` (isolated from IDE's `build/native/`)
 
 ### Test Verification (REQUIRED)
 
@@ -147,24 +150,25 @@ After successful build, run tests before completing work:
 
 1. **Configure tests (first time)**:
    ```bash
-   cmake --preset cli-test
+   cmake --preset cli-native-test
    ```
 
 2. **Build tests**:
    ```bash
-   cmake --build --preset cli-test-debug --parallel $(nproc)
+   cmake --build --preset cli-native-test-debug
    ```
-    - Windows: Use `%NUMBER_OF_PROCESSORS%` instead of `$(nproc)`
+    - Add `--parallel $(nproc)` for parallel builds on Linux/macOS
+    - Add `--parallel %NUMBER_OF_PROCESSORS%` for parallel builds on Windows
 
 3. **Run all tests**:
    ```bash
-   cd build-cli/cli-test/tests
-   ctest -C Debug --output-on-failure
+   ctest --preset cli-native-test-debug
    ```
 
-   Or use the preset:
+   Or run directly from test directory:
    ```bash
-   ctest --preset cli-test-debug
+   cd build/cli-native-test
+   ctest -C Debug --output-on-failure
    ```
 
 4. **Verify**: All tests pass (100% success rate)
@@ -173,20 +177,6 @@ After successful build, run tests before completing work:
     - Ignore pre-existing test failures unrelated to your work
     - Document any known issues
 6. **Do not mark complete until tests pass**
-
-**Quick test commands**:
-
-```bash
-# Run only integration tests (highest priority)
-cd build-cli/cli-test/tests
-ctest -C Debug -R ".*_integration" --output-on-failure
-
-# Run only E2E tests
-ctest -C Debug -R ".*_e2e" --output-on-failure
-
-# Run only unit tests
-ctest -C Debug -R ".*_unit" --output-on-failure
-```
 
 **Note**: See `TESTING.md` for detailed test documentation and advanced usage.
 
@@ -197,9 +187,11 @@ ctest -C Debug -R ".*_unit" --output-on-failure
 ### Technical Requirements
 
 - **C++20**: Strict requirement
-- **CMake 3.20+**: Required
+- **CMake 3.28+**: Required
 - **vcpkg**: Use for dependencies
-- **Raylib**: UI rendering
+- **ImGui**: UI framework (with GLFW + OpenGL3 bindings)
+- **GLFW3**: Windowing and input
+- **OpenGL**: Rendering backend
 - **flecs**: ECS framework
 
 ### Platform Support
@@ -210,9 +202,9 @@ ctest -C Debug -R ".*_unit" --output-on-failure
 
 ### Code Standards
 
-#### Modern C++23 Requirements
+#### Modern C++20 Requirements
 
-- **C++23 features**: Use ranges, concepts, modules (when stable), coroutines (when appropriate)
+- **C++20 features**: Use ranges, concepts, modules (when stable), coroutines (when appropriate)
 - **RAII**: All resource management (files, memory, locks) via RAII types
 - **Smart pointers**:
     - `std::unique_ptr` for exclusive ownership
@@ -231,8 +223,8 @@ auto filtered = data
     | std::views::transform([](const auto& item) { return item.value; });
 
 // CORRECT: Smart pointers for ownership
-auto component = std::make_unique<Component>();
-panel->AddChild(std::move(component));  // Transfer ownership
+auto entity = std::make_unique<Entity>();
+scene->AddEntity(std::move(entity));  // Transfer ownership
 
 // CORRECT: RAII for resources
 class ResourceManager {
@@ -255,34 +247,34 @@ auto FindEntity(int id) const -> std::optional<Entity> {
 
 ```cpp
 // CORRECT: Composition for building features
-class BuildingManager {
-    TowerGrid grid_;                    // Has-a
-    FacilityManager facility_mgr_;      // Has-a
-    EconomySystem economy_;             // Has-a
+class GameWorld {
+    SceneManager scene_manager_;        // Has-a
+    EntityRegistry entity_registry_;    // Has-a
+    SystemManager system_manager_;      // Has-a
 };
 
-// CORRECT: Inheritance for polymorphism (Composite pattern)
-class UIElement {
+// CORRECT: Inheritance for polymorphism (Strategy pattern)
+class System {
 public:
+    virtual void Update(float delta_time) = 0;
     virtual void Render() const = 0;
-    virtual bool ProcessEvent(const Event& e) = 0;
 };
 
-class Button : public UIElement { /* ... */ };
-class Panel : public UIElement { /* ... */ };
+class PhysicsSystem : public System { /* ... */ };
+class RenderSystem : public System { /* ... */ };
 
 // WRONG: Inheritance for code reuse
-class StorageFacility : public Facility {  // Avoid - use composition instead
+class PlayerEntity : public Entity {  // Avoid - use composition/ECS instead
 };
 ```
 
 #### Gang of Four Patterns (Use When Appropriate)
 
-- **Composite**: UI element trees (see `UI_DEVELOPMENT_BIBLE.md`)
 - **Observer**: Event callbacks, reactive updates
-- **Strategy**: Interchangeable algorithms
-- **Factory**: Entity/component creation
-- **Singleton**: Use sparingly, only for true single instances (settings, managers)
+- **Strategy**: Interchangeable algorithms (rendering backends, input handlers)
+- **Factory**: Entity/component creation in ECS
+- **Command**: Action history, undo/redo systems
+- **Singleton**: Use sparingly, only for true single instances (engine core, resource managers)
 
 #### Code Organization
 
@@ -297,7 +289,7 @@ class StorageFacility : public Facility {  // Avoid - use composition instead
 
 ### Pattern/API Documentation
 
-- `UI_DEVELOPMENT_BIBLE.md` - UI component patterns and Gang of Four design patterns
+- `UI_DEVELOPMENT_BIBLE.md` - ImGui-based UI patterns and immediate mode GUI architecture
 - `TESTING.md` - Test structure, priorities, best practices
 - Future: Additional API guides for engine subsystems
 

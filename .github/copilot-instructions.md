@@ -1,9 +1,9 @@
-# Copilot Instructions for Modern C++ Game Engine
+# Copilot Instructions for Citrus Engine
 
 ## 🚨 CRITICAL: Read AGENTS.md First 🚨
 
 **Before doing ANY work, read `AGENTS.md` completely.** It contains:
-- Mandatory environment setup steps (Linux dependencies, vcpkg, CMake)
+- Mandatory environment setup steps (vcpkg, CMake)
 - Execution protocol and workflow
 - Documentation policy (what NOT to create)
 - Build verification requirements
@@ -15,7 +15,7 @@
 ## 📚 Pattern/API Documentation - Read Before Working
 
 When working in specific domains, read the relevant pattern guide:
-- **UI work** → Read `UI_DEVELOPMENT_BIBLE.md` (declarative, reactive, event-driven patterns)
+- **UI work** → Read `UI_DEVELOPMENT_BIBLE.md` (ImGui-based UI patterns)
 - **Testing work** → Read `TESTING.md` (test structure, priorities, best practices)
 - **Future**: Additional API guides for engine subsystems will be added
 
@@ -26,10 +26,10 @@ When working in specific domains, read the relevant pattern guide:
 **Build Commands**:
 - Configure: `cmake --preset cli-native`
 - Build: `cmake --build --preset cli-native-debug`
-- Tests: `cmake --preset cli-test` then `ctest --preset cli-test-debug`
+- Tests: `cmake --preset cli-native-test` then `ctest --preset cli-native-test-debug`
 
 **Presets**: Use `cli-*` presets (NOT `native` or `test` - those are for IDEs)
 
-**Tech Stack**: C++20, CMake 3.20+, vcpkg, flecs (ECS), Raylib
+**Tech Stack**: C++20, CMake 3.28+, vcpkg, flecs (ECS), ImGui (UI), GLFW3 (windowing), OpenGL (rendering)
 
 **Rule of Thumb**: If you're unsure about anything, check AGENTS.md or the relevant pattern guide.

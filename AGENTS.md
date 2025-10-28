@@ -45,6 +45,11 @@ cmake --preset cli-native
 
 **Note**: citrus-engine uses `cli-native` presets to avoid conflicts with IDE builds.
 
+**Platform-specific triplets**: The presets default to `x64-windows`. On Linux or macOS, you may need to:
+- Use `x64-linux` triplet on Linux
+- Use `x64-osx` triplet on macOS
+- Or let vcpkg auto-detect by not specifying a triplet
+
 **These steps are NOT optional. Complete them before proceeding with any task.**
 
 ---

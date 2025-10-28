@@ -23,12 +23,14 @@ When working in specific domains, read the relevant pattern guide:
 
 ## Quick Reference (Full details in AGENTS.md)
 
-**Build Commands**:
+**Build Commands** (Windows):
 - Configure: `cmake --preset cli-native`
 - Build: `cmake --build --preset cli-native-debug`
 - Tests: `cmake --preset cli-native-test` then `ctest --preset cli-native-test-debug`
 
 **Presets**: Use `cli-*` presets (NOT `native` or `test` - those are for IDEs)
+
+**Note**: Presets default to Windows. On Linux/macOS, adjust vcpkg triplet as needed.
 
 **Tech Stack**: C++20, CMake 3.28+, vcpkg, flecs (ECS), ImGui (UI), GLFW3 (windowing), OpenGL (rendering)
 

@@ -1,6 +1,9 @@
+module;
+
 #include <cmath>
 #include <algorithm>
-#include "batch_renderer.h"
+
+module engine.ui.batch_renderer;
 
 namespace engine::ui::batch_renderer {
     struct BatchRenderer::BatchState {

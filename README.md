@@ -1,194 +1,215 @@
-﻿# Modern C++20 Game Engine
+```
+    ██████╗██╗████████╗██████╗ ██╗   ██╗███████╗
+   ██╔════╝██║╚══██╔══╝██╔══██╗██║   ██║██╔════╝
+   ██║     ██║   ██║   ██████╔╝██║   ██║███████╗
+   ██║     ██║   ██║   ██╔══██╗██║   ██║╚════██║
+   ╚██████╗██║   ██║   ██║  ██║╚██████╔╝███████║
+    ╚═════╝╚═╝   ╚═╝   ╚═╝  ╚═╝ ╚═════╝ ╚══════╝
+                                                  
+   ███████╗███╗   ██╗ ██████╗ ██╗███╗   ██╗███████╗
+   ██╔════╝████╗  ██║██╔════╝ ██║████╗  ██║██╔════╝
+   █████╗  ██╔██╗ ██║██║  ███╗██║██╔██╗ ██║█████╗  
+   ██╔══╝  ██║╚██╗██║██║   ██║██║██║╚██╗██║██╔══╝  
+   ███████╗██║ ╚████║╚██████╔╝██║██║ ╚████║███████╗
+   ╚══════╝╚═╝  ╚═══╝ ╚═════╝ ╚═╝╚═╝  ╚═══╝╚══════╝
+```
 
-> A high-performance, cross-platform game engine built with modern C++20 features, targeting Windows native and
-> WebAssembly platforms.
+<div align="center">
 
-## Install via vcpkg (overlay)
+<img src="assets/branding/citrus-engine-logo.svg" alt="Citrus Engine Logo" width="300"/>
 
-The engine can be installed as a vcpkg port (static-only), including dependencies.
+**-or-**
 
-- Install on Windows (static):
-  ```bash
-  vcpkg install game-engine:x64-windows-static --overlay-ports=ports
-  ```
-- Install for WebAssembly:
-  ```bash
-  vcpkg install game-engine:wasm32-emscripten --overlay-ports=ports
-  ```
-- Use in your CMake project:
-  ```cmake
-  find_package(game-engine CONFIG REQUIRED)
-  target_link_libraries(your-target PRIVATE game-engine::engine-core)
-  ```
-- Assets are installed to: <vcpkg-root>/packages/game-engine_<triplet>/share/game-engine/assets
-    - The installed config exposes GAME_ENGINE_ASSETS_DIR for convenience.
+```
+              .≈≈≈≈≈.
+          ,≈≈≈  [C] ≈≈≈,        🍊 CITRUS ENGINE 🍊
+        ≈≈   ╔═══╗    ≈≈≈      
+      ≈≈    ║ ⚙ ║   🖱️  ≈≈     Mechanical Orange:  
+     ≈≈     ╚═══╝    ╱▔╲ ≈     Where code meets citrus!
+    ≈≈   ─────●─────  ╲_╱≈     
+    ≈≈      ╱│╲         ≈≈     Modern C++20 Engine
+    ≈≈    🕹️ │          ≈≈     with fresh performance
+     ≈≈      │   ═══   ≈≈      
+      ≈≈≈    └──○══   ≈≈       
+        ≈≈≈          ≈≈
+          '≈≈≈≈≈≈≈≈≈'
+```
+
+### 🍋 **Fresh, Zesty Game Engine for Modern C++** 🍊
+
+_Get more juice from your code with C++20, ECS architecture, and cross-platform awesomeness!_
+
+[![License](https://img.shields.io/badge/license-MIT-orange.svg)](LICENSE)
+[![C++20](https://img.shields.io/badge/C++-20-yellow.svg)](https://en.cppreference.com/w/cpp/20)
+[![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20WebAssembly-brightgreen.svg)](#platforms)
+
+[Features](#-core-features) • [Quick Start](#-quick-start) • [Documentation](#-documentation) • [Contributing](#-contributing) • [Community](#-community)
+
+</div>
 
 ---
 
-## Overview
+## 🍊 What is Citrus Engine?
 
-This project implements a modular game engine designed for colony simulation games and general-purpose game development.
-The engine features:
+**Citrus Engine** is a high-performance, cross-platform game engine that brings the zest back to C++20 game development! Like a perfectly ripe orange, it's:
 
-- **Modern C++20** with modules, concepts, and coroutines
-- **Entity Component System (ECS)** architecture for high performance
-- **Cross-platform rendering** via OpenGL ES 2.0/WebGL abstraction
-- **Multi-threading support** with job system and frame pipelining
-- **WebAssembly support** for browser deployment
+- 🍋 **Fresh & Modern** - Built from scratch with C++20 modules, concepts, and coroutines (no legacy baggage!)
+- 🍊 **Perfectly Balanced** - Entity Component System architecture for juicy performance gains
+- 🎨 **Packed with Vitamins** - Rich rendering pipeline, multi-threading, and data-oriented design
+- 🌐 **Cross-Platform Goodness** - Native Windows/Linux and WebAssembly with identical features
+- 💚 **Open & Sweet** - Zero license fees, no vendor lock-in, clean architecture with zero technical debt
 
-## Quick Start
+Whether you're crafting a colony simulation, real-time strategy game, or any performance-critical application, Citrus Engine gives your project that fresh C++20 boost it needs!
 
-### Prerequisites
+---
 
-#### Windows Development
+## 🌟 Core Features
 
+<div align="center">
+
+```
+    🍋 MODERN C++20           🍊 ECS ARCHITECTURE        🍈 CROSS-PLATFORM
+   ╔══════════════╗         ╔══════════════╗          ╔══════════════╗
+   ║   Modules    ║         ║   Flecs ECS  ║          ║   Windows    ║
+   ║   Concepts   ║  ━━━━━  ║ Data-Oriented║  ━━━━━   ║    Linux     ║
+   ║ Coroutines   ║         ║ Cache-Friendly║         ║ WebAssembly  ║
+   ╚══════════════╝         ╚══════════════╝          ╚══════════════╝
+```
+
+</div>
+
+### ⚡ Key Features
+
+| Feature | Description |
+|---------|-------------|
+| 🎯 **Modern C++20** | Leverage modules, concepts, coroutines, and ranges for clean, expressive code |
+| ⚡ **ECS Architecture** | Data-oriented Entity Component System using [Flecs](https://github.com/SanderMertens/flecs) for maximum performance |
+| 🎨 **Cross-Platform Rendering** | OpenGL ES 2.0 / WebGL abstraction for consistent visuals everywhere |
+| 🚀 **Multi-Threading** | Job system with frame pipelining for parallel execution |
+| 🌐 **WebAssembly First** | Deploy to browsers with full feature parity to native builds |
+| 📦 **vcpkg Integration** | Easy dependency management with vcpkg overlay ports |
+| 🎮 **ImGui Integration** | Built-in immediate mode GUI for development tools |
+| 🗺️ **Tilemap System** | Efficient 2D tile-based rendering for strategy and simulation games |
+| 🎯 **Zero License Fees** | Open source with no royalties or subscriptions |
+
+---
+
+## 🚀 Quick Start
+
+### 📋 Prerequisites
+
+Before you begin, ensure you have these tools installed:
+
+#### 🪟 Windows Development
 - **Visual Studio 2022** (17.0 or later) with C++20 support
 - **CMake 3.20+**
 - **vcpkg** package manager
 - **Git** for version control
 
-#### Additional for WebAssembly
-
+#### 🌐 WebAssembly (Additional)
 - **Emscripten SDK (emsdk)** for WASM compilation
 - **Node.js** (optional, for local web server)
 
-### Environment Setup
+### ⚙️ Environment Setup
 
-1. **Install vcpkg** (if not already installed):
-   ```bash
-   git clone https://github.com/Microsoft/vcpkg.git C:\vcpkg
-   cd C:\vcpkg
-   .\bootstrap-vcpkg.bat
-   ```
+<details>
+<summary><b>🔧 Click to expand setup instructions</b></summary>
 
-2. **Set environment variables**:
-   ```bash
-   # Add to your system environment variables
-   VCPKG_ROOT=C:\vcpkg
-   ```
-
-3. **Install Emscripten** (for WASM builds):
-   ```bash
-   git clone https://github.com/emscripten-core/emsdk.git C:\emsdk
-   cd C:\emsdk
-   emsdk install latest
-   emsdk activate latest
-   ```
-
-4. **Set Emscripten environment variable**:
-   ```bash
-   EMSDK=C:\emsdk
-   ```
-
-### Building the Engine
-
-#### Native Windows Build
-
-1. **Configure the build**:
-   ```bash
-   cmake --preset default
-   ```
-
-2. **Build the project**:
-   ```bash
-   cmake --build build/native --config Release
-   ```
-
-3. **Install the engine** (for use in other projects):
-   ```bash
-   cmake --install build/native --config [Debug|Release]
-   ```
-
-4. **Run the MVP demo**:
-   ```bash
-   ./build/native/Release/game-engine-demo.exe
-   ```
-
-#### WebAssembly Build
-
-1. **Configure for WASM**:
-   ```bash
-   cmake --preset wasm-emscripten
-   ```
-
-2. **Build WASM version**:
-   ```bash
-   cmake --build build/wasm --config Release
-   ```
-
-3. **Install the engine** (for use in other projects):
-   ```bash
-   cmake --install build/wasm --config Release
-   ```
-
-4. **Run locally** (using built-in server helper):
-   ```bash
-   # Use the engine's built-in serve target
-   cmake --build build/wasm --target serve-game-engine-demo
-   # Navigate to http://localhost:8080/game-engine-demo.html in your browser
-   ```
-
-   **Alternative** (manual Python server):
-   ```bash
-   cd build/wasm
-   python -m http.server 8080
-   # Navigate to http://localhost:8080 in your browser
-   ```
-
-### Emscripten Integration Features
-
-The game engine provides comprehensive Emscripten integration when building for WebAssembly:
-
-#### Automatic Configuration
-
-- **Executable Suffix**: Automatically sets `CMAKE_EXECUTABLE_SUFFIX` to `.html` for WASM builds
-- **Link Options**: Applies optimized Emscripten link options including:
-    - WebGL 2.0 support (`-sMIN_WEBGL_VERSION=2`, `-sMAX_WEBGL_VERSION=2`)
-    - GLFW3 integration (`-sUSE_GLFW=3`)
-    - Memory management (`-sALLOW_MEMORY_GROWTH=1`, 64MB initial, 128MB maximum)
-    - Filesystem support (`-sFORCE_FILESYSTEM=1`)
-    - Debug vs Release optimizations
-
-#### Built-in Helper Functions
-
-- **`add_wasm_serve_target(target_name)`**: Creates a serve target for any WASM executable
-    - Starts a Python HTTP server on `localhost:8080`
-    - Serves the build directory with proper WASM/HTML files
-    - Example: `cmake --build build/wasm --target serve-your-game`
-
-#### Asset Management Helpers
-
-- **`setup_asset_preload(target_name)`**: Automatically configures asset preloading for WASM builds
-    - Embeds assets from `assets/` directory into the WASM virtual filesystem
-    - Handles empty asset directories gracefully
-    - Ensures assets are available at runtime via `/assets/` path
-
-### Quick Build Commands
+#### 1. Install vcpkg
 
 ```bash
-# Full clean build and install (Windows)
-cmake --preset default && cmake --build build/native --config Release && cmake --install build/native --config Release
-
-# WASM build and install
-cmake --preset wasm-emscripten && cmake --build build/wasm --config Release && cmake --install build/wasm --config Release
+git clone https://github.com/Microsoft/vcpkg.git C:\vcpkg
+cd C:\vcpkg
+.\bootstrap-vcpkg.bat
 ```
 
-## Using the Engine in Your Project
+Set environment variable:
+```bash
+VCPKG_ROOT=C:\vcpkg
+```
 
-The game engine is designed to be consumed as a CMake package in other projects. Here's how to integrate it:
+#### 2. Install Emscripten (for WASM builds)
 
-### Project Setup
+```bash
+git clone https://github.com/emscripten-core/emsdk.git C:\emsdk
+cd C:\emsdk
+emsdk install latest
+emsdk activate latest
+```
 
-#### 1. Dependencies Configuration
+Set environment variable:
+```bash
+EMSDK=C:\emsdk
+```
 
-> **Note:** You do **not** need to specify dependencies already included as part of the engine library in your
-`vcpkg.json`.  
-> However, due to [vcpkg behavior](https://github.com/microsoft/vcpkg/discussions/30328), you **must** include the
-> following `overrides` block to ensure compatible versions of `spdlog` and `fmt` are used:
+</details>
+
+### 🏗️ Building Citrus Engine
+
+#### 🪟 Native Windows Build
+
+```bash
+# Configure the build
+cmake --preset default
+
+# Build the project
+cmake --build build/native --config Release
+
+# Install the engine (optional, for use in other projects)
+cmake --install build/native --config Release
+
+# Run the demo 🎮
+./build/native/Release/game-engine-demo.exe
+```
+
+#### 🌐 WebAssembly Build
+
+```bash
+# Configure for WASM
+cmake --preset wasm-emscripten
+
+# Build WASM version
+cmake --build build/wasm --config Release
+
+# Install (optional)
+cmake --install build/wasm --config Release
+
+# Run locally with built-in server 🌐
+cmake --build build/wasm --target serve-game-engine-demo
+# Navigate to http://localhost:8080/game-engine-demo.html
+```
+
+### 📦 Installing via vcpkg
+
+Citrus Engine can be installed as a vcpkg port with all dependencies included:
+
+```bash
+# Windows (static)
+vcpkg install game-engine:x64-windows-static --overlay-ports=ports
+
+# WebAssembly
+vcpkg install game-engine:wasm32-emscripten --overlay-ports=ports
+```
+
+Use in your CMake project:
+```cmake
+find_package(game-engine CONFIG REQUIRED)
+target_link_libraries(your-target PRIVATE game-engine::engine-core)
+```
+
+---
+
+## 🎮 Using Citrus Engine in Your Project
+
+Transform your game development with the power of citrus! Here's how to integrate Citrus Engine into your project.
+
+### 📋 Project Setup
+
+#### 1. Create Your vcpkg.json
 
 ```json
 {
-  "name": "your-game-project",
+  "name": "your-awesome-game",
   "version": "1.0.0",
   "dependencies": [
     "game-engine"
@@ -206,65 +227,44 @@ The game engine is designed to be consumed as a CMake package in other projects.
 }
 ```
 
-#### 2. CMake Integration
+> 💡 **Note**: The `overrides` block ensures compatible versions of logging libraries are used.
 
-In your project's `CMakeLists.txt`:
+#### 2. Setup Your CMakeLists.txt
 
 ```cmake
 cmake_minimum_required(VERSION 3.20)
-project(your-game-project)
+project(your-awesome-game)
 
-# Find the engine library (provides dependencies, platform detection, and compiler settings)
+# Find Citrus Engine 🍊
 find_package(game-engine CONFIG REQUIRED)
 
 # Create your executable
-add_executable(your-game-demo
+add_executable(your-game
     src/main.cpp
     # ... your source files
 )
 
-# Link to the engine (provides all dependencies transitively)
-target_link_libraries(your-game-demo PRIVATE
+# Link to the engine 🔗
+target_link_libraries(your-game PRIVATE
     game-engine::engine-core
 )
 
+# WebAssembly configuration (optional)
 if (EMSCRIPTEN)
-    # Set the target extension, used with the built-in Emscripten template
     set(CMAKE_EXECUTABLE_SUFFIX ".html")
-
-    # Set memory limits
-    set(INITIAL_MEMORY_BYTES 67108864)  # 64MB initial memory
-    set(MAXIMUM_MEMORY_BYTES 134217728) # 128MB maximum memory
-
-    # Set Emscripten-specific compile options. Configure these 
-    target_link_options(${target_name} PRIVATE
-        # The engine is configured with these flags
-        #-sMIN_WEBGL_VERSION=2
-        #-sMAX_WEBGL_VERSION=2
-        #-sUSE_GLFW=3
-        #-sSTACK_SIZE=1mb # Ensure it is at least 1mb, otherwise you may get stack overflow errors.
-
-        # Emscripten-specific flags that the engine is also configured with
-        #-sALLOW_MEMORY_GROWTH=1
-        #-sEXPORTED_RUNTIME_METHODS=cwrap
-
-        # The following flags are configurable and are based on your project needs
+    target_link_options(your-game PRIVATE
         -sWASM=1
         -sFORCE_FILESYSTEM=1
-        -sINITIAL_MEMORY=${INITIAL_MEMORY_BYTES}
-        -sMAXIMUM_MEMORY=${MAXIMUM_MEMORY_BYTES}
-        # Debug vs Release specific flags
-        "$<$<CONFIG:Debug>:-sASSERTIONS=1;-sGL_DEBUG=1>"
-        "$<$<NOT:$<CONFIG:Debug>>:-O3;--closure 1>"
+        -sINITIAL_MEMORY=67108864    # 64MB
+        -sMAXIMUM_MEMORY=134217728   # 128MB
     )
-endif ()
-
-setup_asset_preload(your-game-demo ${CMAKE_CURRENT_SOURCE_DIR}/assets)
+    setup_asset_preload(your-game ${CMAKE_CURRENT_SOURCE_DIR}/assets)
+endif()
 ```
 
-#### 3. CMake Presets Configuration
+#### 3. Configure CMake Presets
 
-Create `CMakePresets.json` in your project root:
+Create `CMakePresets.json`:
 
 ```json
 {
@@ -280,11 +280,9 @@ Create `CMakePresets.json` in your project root:
       "hidden": true,
       "generator": "Ninja",
       "binaryDir": "${sourceDir}/build/${presetName}",
-      "installDir": "${sourceDir}/install/${presetName}",
       "toolchainFile": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
       "cacheVariables": {
-        "CMAKE_CXX_STANDARD": "20",
-        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+        "CMAKE_CXX_STANDARD": "20"
       }
     },
     {
@@ -302,50 +300,14 @@ Create `CMakePresets.json` in your project root:
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
         "VCPKG_CHAINLOAD_TOOLCHAIN_FILE": "$env{EMSDK}/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake",
-        "VCPKG_TARGET_TRIPLET": "wasm32-emscripten",
-        "EMSCRIPTEN_ROOT_PATH": "$env{EMSDK}/upstream/emscripten"
+        "VCPKG_TARGET_TRIPLET": "wasm32-emscripten"
       }
-    }
-  ],
-  "buildPresets": [
-    {
-      "name": "native",
-      "configurePreset": "native"
-    },
-    {
-      "name": "wasm",
-      "configurePreset": "wasm"
     }
   ]
 }
 ```
 
-### Building Your Project
-
-#### Native Build
-
-```bash
-# Configure and build
-cmake --preset native
-cmake --build build/native --config Release
-
-# Run your game
-./build/native/your-game-demo
-```
-
-#### WebAssembly Build
-
-```bash
-# Configure and build
-cmake --preset wasm
-cmake --build build/wasm --config Release
-
-# Serve locally
-cd build/wasm
-python -m http.server 8080
-```
-
-### Engine Integration Example
+### 💻 Your First Game with Citrus Engine
 
 ```cpp
 import engine.platform;
@@ -368,369 +330,357 @@ int main() {
 }
 ```
 
-### Prerequisites for Consumer Projects
-
-- **Same as engine development**: Visual Studio 2022, CMake 3.20+, vcpkg, Git
-- **For WASM**: Emscripten SDK installed and configured
-- **Engine Installation**: The game engine must be built and installed first
-
-### Troubleshooting Consumer Projects
-
-**Issue**: `find_package(game-engine CONFIG REQUIRED)` fails
+### 🏗️ Building Your Project
 
 ```bash
-# Solution: Ensure the engine is installed to a location CMake can find
-# Either install to system location or set CMAKE_PREFIX_PATH
-cmake --preset native -DCMAKE_PREFIX_PATH=/path/to/engine/install
+# Native build
+cmake --preset native
+cmake --build build/native --config Release
+./build/native/your-game
+
+# WebAssembly build
+cmake --preset wasm
+cmake --build build/wasm --config Release
+cd build/wasm && python -m http.server 8080
 ```
 
-**Issue**: WASM build fails with missing dependencies
+---
 
-```bash
-# Solution: Ensure all engine dependencies are in your vcpkg.json
-# and use the exact same triplet (wasm32-emscripten)
-```
+## 🎨 Assets & Resources
 
-**Issue**: Module import errors in consumer project
+Citrus Engine supports a rich variety of asset types for building beautiful games.
 
-```bash
-# Solution: Ensure your project uses C++20 standard and proper module support
-# Check that CMAKE_CXX_STANDARD is set to 20 in your CMakeLists.txt
-```
-
-## Assets Management
-
-The engine supports loading various asset types for both native and WebAssembly builds.
-
-### Asset Directory Structure
+### 📁 Asset Directory Structure
 
 ```
 assets/
-├── shaders/          # GLSL shader files (.vert, .frag)
-├── textures/         # Image files (.png, .jpg, .webp)
-├── models/           # 3D model files (.obj, .gltf)
-├── audio/            # Audio files (.wav, .ogg)
-└── fonts/            # Font files (.ttf, .otf)
+├── shaders/          # 🎨 GLSL shader files (.vert, .frag)
+├── textures/         # 🖼️ Image files (.png, .jpg, .webp)
+├── models/           # 🗿 3D model files (.obj, .gltf)
+├── audio/            # 🔊 Audio files (.wav, .ogg)
+└── fonts/            # 📝 Font files (.ttf, .otf)
 ```
 
-### Platform-Specific Asset Loading
+### 🌐 Platform-Specific Asset Loading
 
 #### Native Builds
-
-- Assets are loaded directly from the filesystem using relative paths from the executable
+- Assets loaded directly from filesystem
 - Supports hot-reloading during development
-- No build-time asset processing required
+- No build-time processing required
 
 #### WebAssembly Builds
+- Assets preloaded into WASM virtual filesystem
+- Automatic detection from `assets/` directory
+- Available at `/assets/` path in runtime
 
-- Assets are preloaded into the WASM virtual filesystem at build time
-- **Automatic Detection**: Build system automatically includes all files in `assets/` directory
-- **Empty Directory Handling**: If no assets are present, preloading is skipped (no build errors)
-- **Virtual Path**: Assets are available at `/assets/` path in the WASM filesystem
-- **Build Size Impact**: All assets increase the WASM download size
-
-### Adding Assets
-
-1. Place asset files in the appropriate `assets/` subdirectory
-2. Reference them in code using engine asset loading functions:
+### 📦 Loading Assets in Code
 
 ```cpp
 import engine.rendering;
 
-// Load texture (works in both native and WASM builds)
-auto texture_id = texture_manager.LoadTexture("assets/textures/player.png");
+// Load texture 🖼️
+auto texture_id = texture_manager.LoadTexture("assets/textures/citrus_sprite.png");
 
-// Load shader pair
+// Load shader pair 🎨
 auto shader_id = shader_manager.LoadShader(
-    "assets/shaders/basic.vert", 
-    "assets/shaders/basic.frag"
+    "assets/shaders/juicy.vert", 
+    "assets/shaders/juicy.frag"
 );
 ```
 
-3. For WASM builds, assets will be automatically included in the next build
+---
 
-### Important Notes
+## 🏗️ Architecture & Design
 
-- **Documentation**: Do not place README.md or other documentation files in the `assets/` directory as they will be
-  preloaded in WASM builds
-- **File Size**: Be mindful of asset sizes for WASM builds as they affect download time
-- **Supported Formats**: Use web-compatible formats (PNG, WEBP, OGG) for better WASM compatibility
+### 🎯 Engine Modules
 
-## Project Structure
+Citrus Engine follows a clean, modular architecture:
 
 ```
-game-engine/
-├── src/                    # Source code
-│   ├── engine/            # Core engine modules
-│   │   ├── platform/      # Cross-platform abstraction
-│   │   ├── ecs/           # Entity Component System
-│   │   ├── rendering/     # OpenGL rendering pipeline
-│   │   └── scene/         # Transform and spatial systems
-│   ├── editor/            # Future: Development tools
-│   └── game/              # Future: Game-specific code
-├── assets/                # Game assets
-│   ├── textures/          # PNG/JPEG texture files
-│   └── shaders/           # GLSL shader source files
-├── plan/                  # Design documentation
-├── build/                 # Build outputs (generated)
-│   ├── native/            # Windows/Linux builds
-│   ├── wasm/              # WebAssembly builds
-│   └── shared-modules/    # Shared C++20 module files for IntelliSense
-├── CMakePresets.json      # CMake build configurations
-├── vcpkg.json            # Package dependencies
-└── README.md             # This file
+🍊 Foundation Layer
+├── engine.platform      # Cross-platform abstractions
+├── engine.ecs           # Entity Component System
+├── engine.rendering     # OpenGL/WebGL pipeline
+└── engine.scene         # Transform hierarchies
+
+🍋 Future Modules (Planned)
+├── engine.physics       # 2D/3D physics simulation
+├── engine.scripting     # Multi-language scripting
+├── engine.animation     # Animation systems
+├── engine.networking    # Multiplayer support
+└── engine.profiling     # Performance tools
 ```
 
-### C++20 Module Support
+### 💡 Design Principles
 
-The engine uses C++20 modules for improved compilation performance and better dependency management. To support
-IntelliSense across multiple build presets, the build system automatically copies module definition files to a shared
-location:
+| Principle | Description |
+|-----------|-------------|
+| 🎯 **Data-Oriented** | Cache-friendly memory layouts for maximum performance |
+| 🌐 **Cross-Platform First** | Identical behavior on all target platforms |
+| 🔒 **Thread-Safe** | Lock-free architecture where possible |
+| 🚀 **Modern C++20** | Concepts, modules, and coroutines throughout |
+| 🍊 **Zero-Cost Abstractions** | Performance without compromise |
 
-#### Shared Modules Directory
+### 📊 Project Structure
 
-- **Location**: `build/shared-modules/`
-- **Purpose**: Provides a single source of truth for C++20 module files to prevent IntelliSense conflicts
-- **Auto-Generated**: Created automatically during CMake configuration
-- **Contents**: Module definition files (`.cppm`) from dependencies like GLM
+```
+citrus-engine/
+├── src/                    # 🍊 Source code
+│   └── engine/            # Core engine modules
+│       ├── platform/      # Platform abstraction
+│       ├── ecs/           # Entity Component System
+│       ├── rendering/     # Rendering pipeline
+│       └── scene/         # Scene management
+├── assets/                # 🎨 Game assets
+├── plan/                  # 📋 Design documentation
+├── docs/                  # 📚 Additional documentation
+├── tests/                 # 🧪 Unit tests
+├── cmake/                 # 🔧 CMake modules
+└── ports/                 # 📦 vcpkg port definitions
+```
 
-#### How It Works
+---
 
-1. **CMake Configuration**: During the configure step, `cmake/Dependencies.cmake` identifies module files from vcpkg
-   packages
-2. **Module Detection**: Automatically locates module definition files (e.g., `glm.cppm`) in package directories
-3. **Shared Copy**: Copies module files to `build/shared-modules/` to avoid duplicate module declarations
-4. **IntelliSense Support**: IDE can reference a single copy of each module, eliminating confusion between
-   preset-specific copies
+## 🧪 Development & Testing
 
-#### Supported Modules
+### 🎮 MVP Demo Features
 
-Current auto-copied modules include:
+Our current MVP demonstrates the power of Citrus Engine:
 
-- **GLM**: Mathematical operations (`glm.cppm`)
+- ✅ **10 textured cubes** with independent rotation
+- ✅ **Real-time input** via WASD/arrow keys
+- ✅ **2D HUD overlay** with sprite rendering
+- ✅ **Cross-platform** (Windows + WebAssembly)
 
-This process is transparent to developers - no manual intervention required for module management.
+### 🎹 Demo Controls
 
-## Adding Assets
+| Key | Action |
+|-----|--------|
+| **WASD** | Move camera/world position |
+| **Arrow Keys** | Rotate selected objects |
+| **ESC** | Exit application |
 
-### Textures
-
-1. **Add texture files** to `assets/textures/`:
-   ```
-   assets/textures/
-   ├── cube_texture.png
-   ├── ui_sprite.png
-   └── default.png
-   ```
-
-2. **Supported formats**: PNG, JPEG (via stb_image)
-
-3. **Recommended texture sizes**: Power of 2 (256x256, 512x512, 1024x1024)
-
-4. **Asset loading** in code:
-   ```cpp
-   // Texture loading example (implementation-specific)
-   auto texture = engine::LoadTexture("assets/textures/cube_texture.png");
-   ```
-
-### Shaders
-
-1. **Add shader files** to `assets/shaders/`:
-   ```
-   assets/shaders/
-   ├── basic_3d.vert
-   ├── basic_3d.frag
-   ├── hud_2d.vert
-   └── hud_2d.frag
-   ```
-
-2. **Shader compatibility**:
-    - **Windows**: OpenGL 3.3+ GLSL 330
-    - **WebAssembly**: WebGL 2.0 GLSL ES 300
-
-3. **Cross-platform shader example**:
-   ```glsl
-   #version 300 es
-   precision mediump float;
-   
-   in vec2 texCoord;
-   out vec4 fragColor;
-   uniform sampler2D u_texture;
-   
-   void main() {
-       fragColor = texture(u_texture, texCoord);
-   }
-   ```
-
-## Development Workflow
-
-### MVP Demo Features
-
-The current MVP demonstrates:
-
-- **10 textured cubes** with independent rotation
-- **Real-time input** via WASD/arrow keys
-- **2D HUD overlay** with sprite rendering
-- **Cross-platform compatibility** (Windows + WASM)
-
-### Controls (MVP Demo)
-
-- **WASD**: Move camera/world position
-- **Arrow Keys**: Rotate selected objects
-- **ESC**: Exit application
-
-### Hot Development Tips
-
-1. **Asset Changes**: Rebuild required for asset updates in MVP
-2. **Shader Changes**: Rebuild required for shader updates in MVP
-3. **Code Changes**: Standard CMake incremental build
-4. **Cross-platform Testing**: Test both native and WASM builds regularly
-
-### Performance Profiling
+### 🔧 Development Workflow
 
 ```bash
-# Build with profiling enabled
-cmake --build build/native --config RelWithDebInfo
+# Quick rebuild and test
+cmake --build build/native --config Release && ./build/native/Release/game-engine-demo.exe
 
-# Profile with your preferred tool
-# - Visual Studio Diagnostic Tools
-# - Intel VTune
-# - Browser DevTools (for WASM)
+# Test WASM build locally
+cmake --build build/wasm --target serve-game-engine-demo
 ```
 
-## Architecture Overview
-
-### Engine Modules
-
-The engine is built with a modular, dependency-driven architecture:
-
-#### Foundation Layer
-
-- **engine.platform** - Cross-platform abstractions (timing, file I/O, memory)
-- **engine.ecs** - High-performance Entity Component System
-- **engine.rendering** - OpenGL ES 2.0/WebGL rendering pipeline
-- **engine.scene** - Transform hierarchies and spatial management
-
-#### Future Engine Layer
-
-- **engine.physics** - 2D/3D physics simulation
-- **engine.scripting** - Multi-language scripting support
-- **engine.animation** - Keyframe and procedural animation
-- **engine.networking** - Multiplayer networking
-- **engine.profiling** - Performance analysis tools
-
-### Key Design Principles
-
-1. **Data-Oriented Design**: Cache-friendly memory layouts
-2. **Cross-Platform First**: Identical behavior on all targets
-3. **Thread-Safe Architecture**: Lock-free where possible
-4. **Modern C++20**: Concepts, modules, coroutines
-5. **Zero-Cost Abstractions**: Performance without compromise
-
-## Troubleshooting
-
-### Common Build Issues
-
-**Issue**: CMake can't find vcpkg
-
-```bash
-# Solution: Ensure VCPKG_ROOT environment variable is set
-echo %VCPKG_ROOT%  # Should show C:\vcpkg or your installation path
-```
-
-**Issue**: Emscripten build fails
-
-```bash
-# Solution: Verify EMSDK environment variable
-echo %EMSDK%       # Should show your emsdk installation path
-emsdk list         # Verify installation
-```
-
-**Issue**: Missing OpenGL context
-
-```bash
-# Solution: Update graphics drivers and ensure OpenGL 3.3+ support
-# For WASM: Ensure WebGL 2.0 support in browser
-```
-
-**Issue**: Asset loading failures
-
-```bash
-# Solution: Verify asset paths are relative to executable location
-# Check that assets/ directory exists in build output
-```
-
-### Performance Issues
-
-**Symptom**: Low FPS on Windows
-
-- Check Debug vs Release build configuration
-- Verify V-Sync settings
-- Profile with Visual Studio Diagnostic Tools
-
-**Symptom**: Slow WASM performance
-
-- Verify Release build with optimizations enabled
-- Check browser WebGL implementation
-- Monitor browser console for warnings
-
-### Debug Build vs Release Build
-
-```bash
-# Debug: Slower, full debugging symbols
-cmake --build build/native --config Debug
-
-# Release: Optimized, minimal debug info
-cmake --build build/native --config Release
-
-# RelWithDebInfo: Optimized + debugging (best for profiling)
-cmake --build build/native --config RelWithDebInfo
-```
-
-## Contributing
-
-### Code Style
-
-- **C++20 standard** with modern features preferred
-- **snake_case** for variables and functions
-- **PascalCase** for types and classes
-- **UPPER_CASE** for constants and macros
-
-### Adding New Systems
-
-1. Create system documentation in `plan/systems/`
-2. Define module interface in `plan/modules/`
-3. Implement in appropriate `src/engine/` subdirectory
-4. Add comprehensive unit tests
-5. Update this README with new dependencies or build steps
-
-### Testing
+### 🧪 Running Tests
 
 ```bash
 # Run unit tests (when implemented)
 ctest --build-dir build/native --config Release
 
-# Manual testing
-# 1. Build both native and WASM versions
-# 2. Verify identical visual output
-# 3. Test all input controls
-# 4. Check error handling edge cases
+# Performance profiling
+cmake --build build/native --config RelWithDebInfo
 ```
-
-## License
-
-[Specify your license here]
-
-## Resources
-
-- **C++20 Reference**: https://en.cppreference.com/w/cpp/20
-- **OpenGL ES 2.0 Specification**: https://www.khronos.org/opengles/
-- **WebGL 2.0 Specification**: https://www.khronos.org/webgl/
-- **Emscripten Documentation**: https://emscripten.org/docs/
-- **vcpkg Package Manager**: https://vcpkg.io/
 
 ---
 
-**Engine Version**: MVP v1.0  
-**Last Updated**: July 2, 2025  
-**Target Platforms**: Windows x64, Linux x64, WebAssembly
+## 🔧 Troubleshooting
+
+Common issues and solutions:
+
+### 🛠️ Common Build Issues
+
+<details>
+<summary><b>❌ CMake can't find vcpkg</b></summary>
+
+```bash
+# Solution: Ensure VCPKG_ROOT environment variable is set
+echo %VCPKG_ROOT%  # Should show C:\vcpkg or your installation path
+
+# Set it if missing:
+set VCPKG_ROOT=C:\vcpkg
+```
+</details>
+
+<details>
+<summary><b>❌ Emscripten build fails</b></summary>
+
+```bash
+# Solution: Verify EMSDK environment variable
+echo %EMSDK%       # Should show your emsdk installation path
+emsdk list         # Verify installation
+
+# Ensure latest version is activated
+emsdk activate latest
+```
+</details>
+
+<details>
+<summary><b>❌ Missing OpenGL context</b></summary>
+
+```bash
+# Native: Update graphics drivers and ensure OpenGL 3.3+ support
+# WASM: Ensure WebGL 2.0 support in browser (use Chrome/Firefox/Edge)
+```
+</details>
+
+<details>
+<summary><b>❌ Asset loading failures</b></summary>
+
+```bash
+# Verify asset paths are relative to executable location
+# Check that assets/ directory exists in build output
+# For WASM: Ensure setup_asset_preload() is called in CMakeLists.txt
+```
+</details>
+
+### ⚡ Performance Issues
+
+**🐌 Low FPS on Windows**
+- ✅ Check Debug vs Release build configuration
+- ✅ Verify V-Sync settings
+- ✅ Profile with Visual Studio Diagnostic Tools
+
+**🐌 Slow WASM Performance**
+- ✅ Verify Release build with optimizations enabled
+- ✅ Check browser WebGL implementation (prefer Chrome/Firefox)
+- ✅ Monitor browser console for warnings
+- ✅ Reduce asset sizes for faster download
+
+### 🎯 Build Configuration Guide
+
+```bash
+# 🐛 Debug: Slower, full debugging symbols
+cmake --build build/native --config Debug
+
+# 🚀 Release: Optimized, minimal debug info
+cmake --build build/native --config Release
+
+# 🔍 RelWithDebInfo: Optimized + debugging (best for profiling)
+cmake --build build/native --config RelWithDebInfo
+```
+
+---
+
+## 🤝 Contributing
+
+We'd love your help making Citrus Engine even more refreshing! 🍊
+
+### 💻 Code Style
+
+Follow the **Citrus Code Style** guidelines:
+
+- **C++20 standard** with modern features preferred
+- **snake_case** for variables and functions
+- **PascalCase** for types and classes
+- **UPPER_CASE** for constants and macros
+- See [CODE_STYLE_GUIDE.md](CODE_STYLE_GUIDE.md) for detailed guidelines
+
+### 🌱 Adding New Systems
+
+1. **📋 Plan**: Create system documentation in `plan/systems/`
+2. **🎯 Design**: Define module interface in `plan/modules/`
+3. **💻 Implement**: Add code in appropriate `src/engine/` subdirectory
+4. **🧪 Test**: Add comprehensive unit tests
+5. **📝 Document**: Update README and relevant docs
+
+### 🧪 Testing Guidelines
+
+```bash
+# Run unit tests
+ctest --build-dir build/native --config Release
+
+# Manual testing checklist
+# ✅ Build both native and WASM versions
+# ✅ Verify identical visual output
+# ✅ Test all input controls
+# ✅ Check error handling edge cases
+```
+
+### 📝 Contribution Process
+
+1. 🍴 Fork the repository
+2. 🌿 Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. 💻 Make your changes following the code style
+4. ✅ Test thoroughly (native + WASM)
+5. 📝 Commit with clear messages (`git commit -m 'Add amazing feature'`)
+6. 🚀 Push to your branch (`git push origin feature/amazing-feature`)
+7. 🎉 Open a Pull Request
+
+---
+
+## 🌟 Community & Support
+
+### 💬 Getting Help
+
+- 📚 **Documentation**: Check our comprehensive docs in the `/docs` folder
+- 💡 **Issues**: Open an issue on GitHub for bugs or feature requests
+- 🤝 **Discussions**: Join conversations in GitHub Discussions
+
+### 🙏 Acknowledgments
+
+Citrus Engine is powered by amazing open-source libraries:
+
+- 🎯 **[Flecs](https://github.com/SanderMertens/flecs)** - High-performance ECS
+- 🎨 **[ImGui](https://github.com/ocornut/imgui)** - Immediate mode GUI
+- 🌐 **[GLFW](https://www.glfw.org/)** - Cross-platform windowing
+- 📐 **[GLM](https://github.com/g-truc/glm)** - Mathematics library
+- 📦 **[vcpkg](https://vcpkg.io/)** - Package management
+
+### 🎖️ Contributors
+
+Thank you to all our contributors who help make Citrus Engine better!
+
+---
+
+## 📚 Resources & Documentation
+
+### 🔗 Essential Links
+
+| Resource | Description |
+|----------|-------------|
+| 📖 **[C++20 Reference](https://en.cppreference.com/w/cpp/20)** | Modern C++ language features |
+| 🎨 **[OpenGL ES 2.0](https://www.khronos.org/opengles/)** | Graphics API specification |
+| 🌐 **[WebGL 2.0](https://www.khronos.org/webgl/)** | Web graphics API |
+| ⚙️ **[Emscripten Docs](https://emscripten.org/docs/)** | WebAssembly compilation |
+| 📦 **[vcpkg](https://vcpkg.io/)** | C++ package manager |
+| 🎯 **[Flecs Documentation](https://www.flecs.dev/flecs/)** | ECS framework guide |
+
+### 📁 Additional Documentation
+
+- 📋 **[Code Style Guide](CODE_STYLE_GUIDE.md)** - Coding standards and conventions
+- 🗺️ **[Tilemap System](docs/tilemap-system.md)** - 2D tile rendering documentation
+- 🏗️ **[Architecture](plan/ARCH_ENGINE_CORE_v1.md)** - Engine architecture overview
+- 📊 **[System Status](plan/ENGINE_SYSTEM_STATUS_TREE.md)** - Current implementation status
+
+---
+
+## 📜 License
+
+[Specify your license here]
+
+---
+
+---
+
+<div align="center">
+
+```
+        🍊 Citrus Engine 🍋
+        
+     Built with Modern C++20
+     
+   ════════════════════════════════════════
+```
+
+**Citrus Engine** - _High-Performance Game Development with Modern C++20_
+
+---
+
+**Engine Version**: 🍊 Citrus MVP v1.0  
+**Last Updated**: October 28, 2024  
+**Target Platforms**: 🪟 Windows x64 | 🐧 Linux x64 | 🌐 WebAssembly
+
+**Made with 🍋 by the Citrus Engine Team**
+
+[⭐ Star us on GitHub](https://github.com/adam4813/citrus-engine) • [🍴 Fork](https://github.com/adam4813/citrus-engine/fork) • [🐛 Report Bug](https://github.com/adam4813/citrus-engine/issues) • [💡 Request Feature](https://github.com/adam4813/citrus-engine/issues)
+
+</div>

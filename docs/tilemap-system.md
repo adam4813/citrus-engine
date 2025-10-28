@@ -1,6 +1,6 @@
-# Tilemap System Documentation
+# Citrus Engine - Tilemap System Documentation
 
-The tilemap system provides efficient 2D tile-based rendering capabilities for your game engine. It consists of three
+The tilemap system provides efficient 2D tile-based rendering capabilities for Citrus Engine. It consists of three
 main components: Tileset assets, Tilemap components, and the TilemapRenderer.
 
 ## Table of Contents

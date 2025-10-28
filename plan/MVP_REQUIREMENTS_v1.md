@@ -1,10 +1,10 @@
-﻿# MVP_REQUIREMENTS_v1
+# MVP_REQUIREMENTS_v1
 
-> **Minimum Viable Product Requirements for Modern C++20 Game Engine**
+> **Minimum Viable Product Requirements for Citrus Engine**
 
 ## Executive Summary
 
-This document defines the specific requirements for the MVP (Minimum Viable Product) version of the C++20 game engine.
+This document defines the specific requirements for the MVP (Minimum Viable Product) version of Citrus Engine.
 The MVP focuses on demonstrating core engine capabilities through a simple 3D demo featuring textured, rotating cubes
 with a 2D HUD overlay, running on both Windows native and WebAssembly platforms.
 

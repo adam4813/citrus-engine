@@ -1,10 +1,10 @@
-﻿# C++20 Game Engine Code Style Guide
+# Citrus Engine - C++20 Code Style Guide
 
-> **Consistent coding standards for the Modern C++20 Game Engine project**
+> **Consistent coding standards for the Citrus Engine project**
 
 ## Overview
 
-This document defines the coding standards and style guidelines for the game engine project. Consistency in code style
+This document defines the coding standards and style guidelines for Citrus Engine. Consistency in code style
 improves readability, maintainability, and collaboration.
 
 ## Naming Conventions

@@ -8,76 +8,201 @@
 
 ## ⚠️ MANDATORY FIRST STEPS - READ THIS BEFORE ANY ACTION ⚠️
 
+**CRITICAL**: Follow these steps IN ORDER before attempting ANY build or code work. Skipping steps will cause build failures.
+
+### Complete Setup Checklist
+
+**For Linux Native Builds:**
+1. ✅ Install system dependencies (X11, OpenGL, Clang-18, ninja-build)
+2. ✅ Clone and bootstrap vcpkg
+3. ✅ Set VCPKG_ROOT environment variable
+4. ✅ Set CC=clang-18 and CXX=clang++-18
+5. ✅ Run CMake configure with x64-linux triplet
+6. ✅ Build
+
+**For Web/Emscripten Builds:**
+1. ✅ Install Emscripten SDK (emsdk)
+2. ✅ Activate emsdk environment
+3. ✅ Clone and bootstrap vcpkg
+4. ✅ Set VCPKG_ROOT environment variable
+5. ✅ Run CMake configure with wasm32-emscripten triplet
+6. ✅ Build
+
+---
+
 ### Step 1: Install System Dependencies
 
 **Linux (Native Build)**:
 ```bash
-sudo apt-get update && sudo apt-get install -y build-essential cmake pkg-config \
-  libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev \
-  libgl1-mesa-dev libglu1-mesa-dev clang-18
+# Install ALL dependencies in one command
+sudo apt-get update && sudo apt-get install -y \
+  build-essential \
+  cmake \
+  ninja-build \
+  pkg-config \
+  clang-18 \
+  libx11-dev \
+  libxrandr-dev \
+  libxinerama-dev \
+  libxcursor-dev \
+  libxi-dev \
+  libgl1-mesa-dev \
+  libglu1-mesa-dev
 ```
 
-**Critical**: These libraries are required for GLFW3, OpenGL support, and C++20 modules.
+**What these are for**:
+- `build-essential` - GCC and build tools
+- `cmake` - Build system generator (3.28+ required)
+- `ninja-build` - Fast build tool (required by CMake presets)
+- `pkg-config` - Library detection
+- `clang-18` - C++20 compiler with module support (GCC doesn't work)
+- `libx11-dev` through `libxi-dev` - X11 libraries for GLFW3
+- `libgl1-mesa-dev`, `libglu1-mesa-dev` - OpenGL libraries
 
 **Linux (Web/Emscripten Build)**:
 ```bash
 # Install Emscripten SDK
-cd /opt  # or any location
+cd /opt  # or /tmp for temporary install
 git clone https://github.com/emscripten-core/emsdk.git
 cd emsdk
 ./emsdk install latest
 ./emsdk activate latest
-source ./emsdk_env.sh  # Sets up PATH and environment variables
+source ./emsdk_env.sh  # REQUIRED: Sets CC/CXX to emcc/em++
+
+# Verify installation
+emcc --version  # Should show version 4.0.x or later
 ```
 
-**Windows/macOS**: Install appropriate compilers (MSVC 2022+ or Clang-18+).
+**Windows/macOS**: 
+- Windows: Install Visual Studio 2022 with C++ tools OR Clang-18+
+- macOS: Install Xcode Command Line Tools and Clang-18+ (via Homebrew)
 
-### Step 2: Bootstrap vcpkg
+---
+
+### Step 2: Clone and Bootstrap vcpkg
+
+**CRITICAL**: vcpkg MUST be cloned in the parent directory of citrus-engine, not inside it.
 
 ```bash
-# Clone vcpkg if not present
+# If citrus-engine is in /home/user/citrus-engine
+cd /home/user  # Go to parent directory
+
+# Clone vcpkg (if not present)
 git clone https://github.com/microsoft/vcpkg.git
 
-# Bootstrap
+# Bootstrap vcpkg
+cd vcpkg
 ./vcpkg/bootstrap-vcpkg.sh      # Linux/macOS
 vcpkg\bootstrap-vcpkg.bat       # Windows
 
-# Set environment
-export VCPKG_ROOT=/path/to/vcpkg    # Linux/macOS
-set VCPKG_ROOT=D:\path\to\vcpkg     # Windows
+# Verify bootstrap
+./vcpkg --version  # Should show vcpkg version
 ```
 
-### Step 3: Configure CMake
+---
 
-**Native Build**:
+### Step 3: Set Environment Variables
+
+**Linux/macOS Native**:
 ```bash
-# Linux (use Clang-18)
+# Set these EVERY TIME in your shell session
+export VCPKG_ROOT=/home/user/vcpkg  # Adjust path
 export CC=clang-18
 export CXX=clang++-18
-cmake --preset cli-native -DVCPKG_TARGET_TRIPLET=x64-linux
 
-# Windows
+# Verify
+echo $VCPKG_ROOT    # Should show path
+$CC --version       # Should show clang-18.x
+```
+
+**Linux/macOS Web**:
+```bash
+# Activate Emscripten (sets CC/CXX automatically)
+source /opt/emsdk/emsdk_env.sh  # Adjust path
+
+# Set vcpkg root
+export VCPKG_ROOT=/home/user/vcpkg  # Adjust path
+
+# Verify
+emcc --version      # Should show Emscripten version
+echo $VCPKG_ROOT    # Should show path
+```
+
+**Windows**:
+```cmd
+set VCPKG_ROOT=C:\path\to\vcpkg
+```
+
+---
+
+### Step 4: Configure CMake
+
+**IMPORTANT**: Only run configure once unless you need to reconfigure.
+
+**Native Build (Linux)**:
+```bash
+cd citrus-engine
+cmake --preset cli-native -DVCPKG_TARGET_TRIPLET=x64-linux
+```
+
+**Native Build (Windows)**:
+```cmd
+cd citrus-engine
 cmake --preset cli-native
 ```
 
 **Web Build (Emscripten)**:
 ```bash
-# Ensure emsdk is activated
-source /opt/emsdk/emsdk_env.sh  # Adjust path as needed
-
-# Configure (Emscripten toolchain from vcpkg)
+cd citrus-engine
 cmake --preset cli-native -DVCPKG_TARGET_TRIPLET=wasm32-emscripten
 ```
 
-**Note**: citrus-engine uses `cli-native` presets to avoid conflicts with IDE builds.
+This will take 5-15 minutes the first time as vcpkg builds all dependencies.
 
-**Platform-specific triplets**:
-- `x64-windows` - Windows (default)
-- `x64-linux` - Linux native
+---
+
+### Step 5: Build
+
+```bash
+# Debug build
+cmake --build --preset cli-native-debug --parallel 4
+
+# Release build
+cmake --build --preset cli-native-release --parallel 4
+```
+
+---
+
+### Platform Triplets Reference
+
+- `x64-windows` - Windows native (default in presets)
+- `x64-linux` - Linux native (Clang-18+)
 - `x64-osx` - macOS native
-- `wasm32-emscripten` - Web/Emscripten
+- `wasm32-emscripten` - Web/Emscripten builds
 
-**These steps are NOT optional. Complete them before proceeding with any task.**
+---
+
+### Using setup-cpp for Automated Setup (Web Coding Environments)
+
+If you're in a web-based coding environment like GitHub Codespaces, use the `aminya/setup-cpp` action to automate tool installation:
+
+```yaml
+# In GitHub Actions or Codespaces
+- name: Setup C++ environment
+  uses: aminya/setup-cpp@v1
+  with:
+    compiler: clang
+    clang: 18
+    cmake: true
+    ninja: true
+    vcpkg: true
+```
+
+This automatically installs Clang-18, CMake, Ninja, and vcpkg without manual steps.
+
+---
+
+**These steps are NOT optional. Complete ALL steps IN ORDER before proceeding with any task.**
 
 ---
 

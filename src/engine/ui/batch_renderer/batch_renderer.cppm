@@ -4,6 +4,7 @@ module;
 #include <unordered_map>
 #include <memory>
 #include <string>
+#include <optional>
 
 export module engine.ui.batch_renderer:batch_renderer;
 

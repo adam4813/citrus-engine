@@ -23,18 +23,26 @@ When working in specific domains, read the relevant pattern guide:
 
 ## Quick Reference (Full details in AGENTS.md)
 
+**⚠️ PREREQUIS ITES FIRST**: Before building, you MUST install:
+1. **System deps** (Linux): `sudo apt-get install -y build-essential cmake ninja-build clang-18 libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libgl1-mesa-dev libglu1-mesa-dev`
+2. **vcpkg**: Clone to parent directory, bootstrap, set `VCPKG_ROOT`
+3. **Emscripten** (for web): Clone emsdk, `./emsdk install latest && ./emsdk activate latest && source ./emsdk_env.sh`
+
 **Build Commands**:
 - **Native (Windows)**: `cmake --preset cli-native` → `cmake --build --preset cli-native-debug`
-- **Native (Linux)**: Use Clang-18: `export CC=clang-18 CXX=clang++-18` → `cmake --preset cli-native -DVCPKG_TARGET_TRIPLET=x64-linux` → `cmake --build --preset cli-native-debug`
-- **Web (Emscripten)**: `source /path/to/emsdk/emsdk_env.sh` → `cmake --preset cli-native -DVCPKG_TARGET_TRIPLET=wasm32-emscripten` → `cmake --build --preset cli-native-debug`
+- **Native (Linux)**: `export CC=clang-18 CXX=clang++-18 VCPKG_ROOT=/path/to/vcpkg` → `cmake --preset cli-native -DVCPKG_TARGET_TRIPLET=x64-linux` → `cmake --build --preset cli-native-debug`
+- **Web (Emscripten)**: `source /path/to/emsdk/emsdk_env.sh && export VCPKG_ROOT=/path/to/vcpkg` → `cmake --preset cli-native -DVCPKG_TARGET_TRIPLET=wasm32-emscripten` → `cmake --build --preset cli-native-debug`
 - **Tests**: `cmake --preset cli-native-test` → `ctest --preset cli-native-test-debug`
 
 **Presets**: Use `cli-*` presets (NOT `native` or `test` - those are for IDEs)
+
+**Automation**: Use `aminya/setup-cpp` GitHub Action for automated tool setup in web environments
 
 **Note**: 
 - Presets default to Windows. On Linux/macOS, adjust vcpkg triplet as needed.
 - Linux requires Clang-18+ for C++20 modules (GCC has incomplete support)
 - Web builds require Emscripten SDK: https://emscripten.org/docs/getting_started/downloads.html
+- vcpkg MUST be in parent directory of citrus-engine, not inside it
 
 **Tech Stack**: C++20, CMake 3.28+, vcpkg, flecs (ECS), ImGui (debug UI), GLFW3 (windowing), OpenGL (rendering)
 

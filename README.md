@@ -16,29 +16,28 @@
 
 <div align="center">
 
+<img src="assets/branding/citrus-engine-logo.svg" alt="Citrus Engine Logo" width="300"/>
+
+**-or-**
+
 ```
-           ___
-        ,o88888
-     ,o8888888'
-   ,88888888'
-  ,8888888'
- ,8888888'
-,8888888'        🍊 Citrus Power! 🍋
-88888888.        Squeeze every drop of
-`888888888b.     performance from your
- `88888888888b.  game with C++20
-  `888888888888b
-   `8888888888888b
-    `888888888888888b___
-     `88888888888888888888o,
-      `888888888888888888888b
-        `8888888888888888888'
-           `""""""""""""'
+              .≈≈≈≈≈.
+          ,≈≈≈  [C] ≈≈≈,        🍊 CITRUS ENGINE 🍊
+        ≈≈   ╔═══╗    ≈≈≈      
+      ≈≈    ║ ⚙ ║   🖱️  ≈≈     Mechanical Orange:  
+     ≈≈     ╚═══╝    ╱▔╲ ≈     Where code meets citrus!
+    ≈≈   ─────●─────  ╲_╱≈     
+    ≈≈      ╱│╲         ≈≈     Modern C++20 Engine
+    ≈≈    🕹️ │          ≈≈     with fresh performance
+     ≈≈      │   ═══   ≈≈      
+      ≈≈≈    └──○══   ≈≈       
+        ≈≈≈          ≈≈
+          '≈≈≈≈≈≈≈≈≈'
 ```
 
-### 🍋 **A Fresh, Zesty Game Engine for Modern C++** 🍊
+### 🍋 **Fresh, Zesty Game Engine for Modern C++** 🍊
 
-_Squeeze maximum performance from modern C++20 with ECS architecture, cross-platform support, and WebAssembly first-class citizenship._
+_Get more juice from your code with C++20, ECS architecture, and cross-platform awesomeness!_
 
 [![License](https://img.shields.io/badge/license-MIT-orange.svg)](LICENSE)
 [![C++20](https://img.shields.io/badge/C++-20-yellow.svg)](https://en.cppreference.com/w/cpp/20)
@@ -52,15 +51,15 @@ _Squeeze maximum performance from modern C++20 with ECS architecture, cross-plat
 
 ## 🍊 What is Citrus Engine?
 
-**Citrus Engine** is a high-performance, cross-platform game engine built with modern C++20 features. It provides:
+**Citrus Engine** is a high-performance, cross-platform game engine that brings the zest back to C++20 game development! Like a perfectly ripe orange, it's:
 
-- 🍋 **Modern C++20** - Built with modules, concepts, and coroutines from the ground up
-- 🍊 **ECS Architecture** - Entity Component System design for optimal performance
-- 🎨 **Rich Features** - Advanced rendering pipeline, multi-threading, and data-oriented design
-- 🌐 **Cross-Platform** - Native Windows/Linux and WebAssembly with feature parity
-- 💚 **Open Source** - Zero license fees, no vendor lock-in, clean architecture with no technical debt
+- 🍋 **Fresh & Modern** - Built from scratch with C++20 modules, concepts, and coroutines (no legacy baggage!)
+- 🍊 **Perfectly Balanced** - Entity Component System architecture for juicy performance gains
+- 🎨 **Packed with Vitamins** - Rich rendering pipeline, multi-threading, and data-oriented design
+- 🌐 **Cross-Platform Goodness** - Native Windows/Linux and WebAssembly with identical features
+- 💚 **Open & Sweet** - Zero license fees, no vendor lock-in, clean architecture with zero technical debt
 
-Whether you're building a colony simulation, real-time strategy game, or any performance-critical application, Citrus Engine delivers modern C++20 power for your project.
+Whether you're crafting a colony simulation, real-time strategy game, or any performance-critical application, Citrus Engine gives your project that fresh C++20 boost it needs!
 
 ---
 

@@ -1,0 +1,81 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+  <!-- Background gradient -->
+  <defs>
+    <radialGradient id="orangeGradient" cx="50%" cy="40%">
+      <stop offset="0%" style="stop-color:#ff9933;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#ff7700;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#cc5500;stop-opacity:1" />
+    </radialGradient>
+    <linearGradient id="leafGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#66cc33;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#44aa22;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="metalGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#b8b8b8;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#888888;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#666666;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Main orange body -->
+  <circle cx="200" cy="200" r="140" fill="url(#orangeGradient)"/>
+  
+  <!-- Orange texture segments -->
+  <path d="M 200 60 Q 220 120 200 200 Q 180 120 200 60" fill="#ff8822" opacity="0.3"/>
+  <path d="M 200 200 Q 260 180 280 200 Q 260 220 200 200" fill="#ff8822" opacity="0.3"/>
+  <path d="M 200 200 Q 220 260 200 320 Q 180 260 200 200" fill="#ff8822" opacity="0.3"/>
+  <path d="M 200 200 Q 140 220 120 200 Q 140 180 200 200" fill="#ff8822" opacity="0.3"/>
+  
+  <!-- Mechanical keyboard key integrated into orange -->
+  <g transform="translate(130, 150)">
+    <rect x="0" y="0" width="35" height="35" rx="4" fill="url(#metalGradient)" stroke="#444" stroke-width="2"/>
+    <rect x="3" y="3" width="29" height="29" rx="2" fill="#222" opacity="0.6"/>
+    <text x="17.5" y="24" font-family="monospace" font-size="18" font-weight="bold" fill="#ffaa44" text-anchor="middle">C</text>
+  </g>
+  
+  <!-- Mouse/pointer integrated into orange -->
+  <g transform="translate(235, 170)">
+    <path d="M 0 0 L 15 25 L 8 25 L 5 35 L 0 33 L 3 23 L -5 20 Z" fill="url(#metalGradient)" stroke="#333" stroke-width="1.5"/>
+    <circle cx="6" cy="10" r="2" fill="#ff3333" opacity="0.8"/>
+  </g>
+  
+  <!-- Circuit board traces -->
+  <path d="M 160 240 L 180 240 L 180 260 M 180 240 L 200 240" stroke="#44aa44" stroke-width="2" fill="none" opacity="0.7"/>
+  <circle cx="160" cy="240" r="3" fill="#44aa44"/>
+  <circle cx="200" cy="240" r="3" fill="#44aa44"/>
+  <circle cx="180" cy="260" r="3" fill="#44aa44"/>
+  
+  <!-- Joystick element -->
+  <g transform="translate(210, 230)">
+    <circle cx="0" cy="12" r="18" fill="url(#metalGradient)" stroke="#333" stroke-width="2"/>
+    <circle cx="0" cy="12" r="12" fill="#333"/>
+    <line x1="-5" y1="2" x2="5" y2="22" stroke="#ff6600" stroke-width="3" stroke-linecap="round"/>
+    <circle cx="5" cy="22" r="5" fill="#ff3333"/>
+  </g>
+  
+  <!-- Leaf/stem with circuit pattern -->
+  <g transform="translate(200, 50)">
+    <ellipse cx="0" cy="0" rx="25" ry="15" fill="url(#leafGradient)" transform="rotate(-25)"/>
+    <path d="M 0 0 Q -8 -5 -10 -10" stroke="#338822" stroke-width="2" fill="none"/>
+    <!-- Circuit lines in leaf -->
+    <path d="M -5 -2 L 5 -2 M 0 -2 L 0 2" stroke="#66ff66" stroke-width="1" opacity="0.5"/>
+  </g>
+  
+  <!-- Gear element embedded -->
+  <g transform="translate(165, 200)">
+    <circle cx="0" cy="0" r="15" fill="#555" stroke="#333" stroke-width="2"/>
+    <circle cx="0" cy="0" r="5" fill="#888"/>
+    <path d="M -3 -15 L 3 -15 L 3 -12 L -3 -12 Z" fill="#333"/>
+    <path d="M -3 12 L 3 12 L 3 15 L -3 15 Z" fill="#333"/>
+    <path d="M -15 -3 L -15 3 L -12 3 L -12 -3 Z" fill="#333"/>
+    <path d="M 12 -3 L 12 3 L 15 3 L 15 -3 Z" fill="#333"/>
+  </g>
+  
+  <!-- Highlights on orange -->
+  <ellipse cx="170" cy="140" rx="40" ry="30" fill="white" opacity="0.2" transform="rotate(-30 170 140)"/>
+  <ellipse cx="230" cy="160" rx="20" ry="15" fill="white" opacity="0.15" transform="rotate(20 230 160)"/>
+  
+  <!-- Bottom text -->
+  <text x="200" y="370" font-family="Arial, sans-serif" font-size="24" font-weight="bold" fill="#ff7700" text-anchor="middle">CITRUS ENGINE</text>
+  <text x="200" y="390" font-family="Arial, sans-serif" font-size="12" fill="#666" text-anchor="middle">Modern C++20 Game Engine</text>
+</svg>

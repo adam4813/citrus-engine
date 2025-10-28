@@ -1,12 +1,12 @@
-﻿# Next-Generation C++20 Game Engine: Built for the Future
+# Citrus Engine: Next-Generation C++20 Game Engine
 
 ## Executive Summary
 
-We are developing a **modern, modular, and incredibly powerful game engine** that leverages the cutting-edge features of
+**Citrus Engine** is a modern, modular, and powerful game engine that leverages the cutting-edge features of
 C++20 to deliver unparalleled performance, maintainability, and developer experience. This isn't just another game
 engine—it's a **systems-first, process-driven development platform** designed to revolutionize how games are built.
 
-## Why This Engine Changes Everything
+## Why Citrus Engine Changes Everything
 
 ### 🚀 **Performance That Matters**
 
@@ -79,7 +79,7 @@ public:
 
 ### ✅ **What Sets Us Apart**
 
-| Feature               | Our Engine    | Unity          | Unreal        | Godot             |
+| Feature               | Citrus Engine | Unity          | Unreal        | Godot             |
 |-----------------------|---------------|----------------|---------------|-------------------|
 | **Modern C++20**      | ✅ Full        | ❌ C#           | ⚠️ Limited    | ❌ GDScript        |
 | **ECS Architecture**  | ✅ Native      | ⚠️ DOTS        | ❌ Actor-based | ⚠️ Node-based     |
@@ -100,7 +100,7 @@ public:
 
 ### Colony Game Case Study
 
-Our engine is being battle-tested on a complex colony simulation game featuring:
+Citrus Engine is being battle-tested on a complex colony simulation game featuring:
 
 - **Thousands of entities** with dynamic pathfinding and resource management
 - **Real-time terrain modification** with seamless rendering updates
@@ -187,18 +187,17 @@ Every aspect of engine development follows documented, repeatable processes:
 - **Proven Team**: Battle-tested in complex, performance-critical projects
 - **Open Source Advantage**: Community-driven development reduces costs
 
-## The Future of Game Development Starts Here
+## The Future of Game Development
 
-This engine represents a **fundamental shift** in how games are built. By combining modern C++20 features with
+Citrus Engine represents a **fundamental shift** in how games are built. By combining modern C++20 features with
 battle-tested architectural patterns, we're creating a platform that will define the next decade of game development.
 
 **Join us in building the future.**
 
 ---
 
-*Ready to see the engine in action? Check out our colony simulation demo running at full 60 FPS with thousands of
+*Ready to see Citrus Engine in action? Check out our colony simulation demo running at full 60 FPS with thousands of
 entities in both native and WebAssembly builds.*
 
-**Contact**: [Your Contact Information]  
-**Repository**: [Engine Repository URL]  
-**Demo**: [Live WebAssembly Demo URL]
+**Repository**: https://github.com/adam4813/citrus-engine  
+**Documentation**: See README.md for getting started

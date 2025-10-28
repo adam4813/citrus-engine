@@ -1,10 +1,10 @@
-﻿# ARCH_ENGINE_CORE_v1
+# ARCH_ENGINE_CORE_v1
 
-> **High-Level Architecture Document for Modern C++20 Game Engine**
+> **High-Level Architecture Document for Citrus Engine**
 
 ## Executive Summary
 
-This document defines the foundational architecture for a modern, general-purpose 2D/3D game engine built with C++20,
+This document defines the foundational architecture for Citrus Engine, a modern, general-purpose 2D/3D game engine built with C++20,
 designed for maximum flexibility while being developed primarily for colony simulation games. The engine emphasizes
 clean ECS architecture, advanced multi-threading with frame pipelining, cross-platform compatibility (
 Windows/Linux/WebAssembly), and a modular design that enables selective feature inclusion. The architecture prioritizes

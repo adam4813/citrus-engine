@@ -3,7 +3,7 @@
 # Project configuration
 project(game-engine
     VERSION 0.0.1
-    DESCRIPTION "Modern C++20 Game Engine"
+    DESCRIPTION "Citrus Engine - Modern C++20 Game Engine"
     LANGUAGES CXX
 )
 

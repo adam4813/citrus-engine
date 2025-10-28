@@ -136,15 +136,48 @@ documented patterns.
 
 ### Build Verification (REQUIRED)
 
+**Build/test MUST succeed before completing any task.**
+
+**Compiler Requirements**:
+- **Linux**: Clang-18 or later (required for C++20 modules)
+- **Windows**: MSVC 2022 or Clang-18+
+- **Note**: GCC has incomplete C++20 module support and may not work
+
+**System Dependencies (Linux only)**:
+```bash
+sudo apt-get install -y libx11-dev libxrandr-dev libxinerama-dev \
+  libxcursor-dev libxi-dev libgl1-mesa-dev clang-18
+```
+
 Before completing any work:
 
-1. Configure (first time): `cmake --preset cli-native`
-2. Build: `cmake --build --preset cli-native-debug`
+1. **Set compiler environment** (Linux only):
+   ```bash
+   export CC=clang-18
+   export CXX=clang++-18
+   ```
+
+2. **Configure** (first time):
+   ```bash
+   # Linux
+   cmake --preset cli-native -DVCPKG_TARGET_TRIPLET=x64-linux
+   
+   # Windows
+   cmake --preset cli-native
+   ```
+
+3. **Build**: `cmake --build --preset cli-native-debug`
     - Add `--parallel $(nproc)` for parallel builds on Linux/macOS
     - Add `--parallel %NUMBER_OF_PROCESSORS%` for parallel builds on Windows
-3. Verify: No errors or warnings
-4. If errors: Fix and rebuild
-5. Do not mark complete until build succeeds
+
+4. **Verify**: No errors or warnings
+5. **If errors**: Fix and rebuild
+6. **Do not mark complete until build succeeds**
+
+**Known Issues**:
+- CMake 3.31+ requires `CMAKE_CXX_SCAN_FOR_MODULES=OFF` for C++20 modules
+- Some source files may be missing `#include <cstdint>` - add in module preambles
+- GCC support is limited due to incomplete C++20 module implementation
 
 **Note**: Use `cli-native` presets (not `native`) to avoid conflicts with IDE builds.
 Build directory: `build/cli-native/` (isolated from IDE's `build/native/`)

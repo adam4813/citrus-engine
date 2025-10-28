@@ -1,8 +1,10 @@
-export module engine.ui.batch_renderer:batch_types;
+module;
 
-import <cstdint>;
-import <optional>;
-import <algorithm>;
+#include <cstdint>
+#include <optional>
+#include <algorithm>
+
+export module engine.ui.batch_renderer:batch_types;
 
 export namespace engine::ui::batch_renderer {
     /**

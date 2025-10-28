@@ -1,5 +1,12 @@
 ﻿cmake_minimum_required(VERSION 3.28)
 
+# Disable C++20 module scanning for compatibility with GCC/Clang (CMake 3.31+)
+# CMP0155: C++ module dependencies are supported by Ninja Generators
+if(POLICY CMP0155)
+  cmake_policy(SET CMP0155 OLD)
+endif()
+set(CMAKE_CXX_SCAN_FOR_MODULES OFF CACHE BOOL "Disable C++20 module scanning" FORCE)
+
 # Project configuration
 project(game-engine
     VERSION 0.0.1

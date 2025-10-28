@@ -6,7 +6,7 @@
 **Audience**: AI assistants only (not user documentation)  
 **Status**: Active
 
-**Note**: ImGui is included as a dependency for debugging/development tools only. The production UI system is a custom retained-mode architecture built on the engine's sprite rendering system.
+**Note**: The citrus-engine UI system is built on a vertex-based batch renderer for high-performance rendering. ImGui is included as a dependency for debugging/development tools only.
 
 ---
 
@@ -35,30 +35,25 @@ UI structure is **declared once** in constructors, not rebuilt every frame.
 // CORRECT: Declarative - build once, render many
 Constructor() {
     for (const auto& item : items) {
-        auto sprite = engine::ui::Sprite{};
-        sprite.texture = item.texture_id;
-        sprite.position = glm::vec2{x, y};
-        sprite.size = glm::vec2{width, height};
-        sprite.color = item.normal_color;
-        sprite.layer = item.layer;
-        
-        ui_elements_.push_back(sprite);
-        callbacks_[sprite_index] = [this, action = item.action]() {
+        auto button = std::make_unique<Button>(x, y, width, height, item.label);
+        button->SetClickCallback([this, action = item.action]() {
             ExecuteAction(action);
-        };
+        });
+        panel_->AddChild(std::move(button));
     }
 }
 
-void Render() {
-    auto& ui_renderer = engine::ui::UIRenderer::GetInstance();
-    for (const auto& sprite : ui_elements_) {
-        ui_renderer.AddSprite(sprite);
-    }
-    ui_renderer.Render();
+void Render() const {
+    // UI components submit vertices to batch renderer
+    using namespace engine::ui::batch_renderer;
+    
+    BatchRenderer::BeginFrame();
+    panel_->Render();  // Simple tree traversal, submits vertices
+    BatchRenderer::EndFrame();  // Flushes all batches to GPU
 }
 ```
 
-**Benefits**: Easier to reason about, test, and optimize. State changes are explicit, not implicit.
+**Benefits**: Easier to reason about, test, and optimize. State changes are explicit, not implicit. Batch renderer minimizes GPU draw calls.
 
 ---
 
@@ -69,21 +64,25 @@ Visual state changes **only** in response to events, never continuously.
 ```cpp
 // CORRECT: Update on events only
 void OnSelectionChanged(int new_index) {
-    ui_elements_[old_index_].color = GRAY_COLOR;
-    ui_elements_[new_index].color = GOLD_COLOR;
+    buttons_[old_index_]->SetColor({0.5f, 0.5f, 0.5f, 1.0f});  // GRAY
+    buttons_[new_index]->SetColor({1.0f, 0.84f, 0.0f, 1.0f});   // GOLD
     old_index_ = new_index;
 }
 
-void Render() {
-    // Sprites already have updated properties
-    auto& ui_renderer = engine::ui::UIRenderer::GetInstance();
-    for (const auto& sprite : ui_elements_) {
-        ui_renderer.AddSprite(sprite);
+void Render() const {
+    // Button properties already set - just submit vertices
+    using namespace engine::ui::batch_renderer;
+    
+    for (const auto& button : buttons_) {
+        BatchRenderer::SubmitQuad(
+            button->GetRect(),
+            button->GetColor()
+        );
     }
 }
 ```
 
-**Benefits**: 60x performance improvement over per-frame updates. UI updates when it needs to, not "just in case."
+**Benefits**: 60x performance improvement over per-frame updates. UI updates when it needs to, not "just in case." Batch renderer efficiently handles the actual vertex submissions.
 
 ---
 
@@ -94,17 +93,13 @@ Components notify observers via callbacks, never return magic values.
 ```cpp
 // CORRECT: Observer pattern with callbacks
 Constructor() {
-    for (size_t i = 0; i < button_sprites_.size(); ++i) {
-        button_callbacks_[i] = [this, action = actions_[i]]() {
-            if (on_action_callback_) {
-                on_action_callback_(action);
-            }
-        };
-    }
+    button->SetClickCallback([this, action]() {
+        if (callback_) callback_(action);
+    });
 }
 
 void SetActionCallback(std::function<void(Action)> callback) {
-    on_action_callback_ = callback;
+    callback_ = callback;
 }
 
 // Game code responds directly:
@@ -122,296 +117,364 @@ menu.SetActionCallback([this](Action action) {
 
 ### Composition Over Inheritance
 
-Build complex UIs from simple sprite-based components using composition and ECS patterns.
+Build complex UIs from small, reusable components using the Composite pattern.
 
 ```cpp
-// CORRECT: Compose complex UI from sprites and data
-class GameMenu {
-    std::vector<engine::ui::Sprite> background_sprites_;
-    std::vector<engine::ui::Sprite> button_sprites_;
-    std::vector<engine::ui::Sprite> icon_sprites_;
-    std::unordered_map<size_t, std::function<void()>> button_callbacks_;
+// CORRECT: Compose complex UI from primitives
+class SettingsMenu {
+    std::unique_ptr<Panel> root_panel_;
+    std::unique_ptr<Panel> audio_section_;
+    std::unique_ptr<Panel> video_section_;
     
-    // Input state
-    glm::vec2 mouse_position_;
-    bool mouse_clicked_;
+    Slider* master_volume_;
+    Slider* music_volume_;
+    Checkbox* fullscreen_;
+    Button* apply_button_;
 };
 
 Constructor() {
-    // Build sprite hierarchy
-    background_sprites_.push_back(CreateBackgroundSprite());
+    // Build tree structure
+    root_panel_ = std::make_unique<Panel>(...);
     
-    for (const auto& button_def : button_definitions_) {
-        auto sprite = engine::ui::Sprite{};
-        sprite.texture = button_def.texture;
-        sprite.position = button_def.position;
-        sprite.size = button_def.size;
-        sprite.layer = 1; // Above background
-        button_sprites_.push_back(sprite);
-    }
+    audio_section_ = std::make_unique<Panel>(...);
+    auto slider = std::make_unique<Slider>(...);
+    master_volume_ = slider.get();
+    audio_section_->AddChild(std::move(slider));
+    
+    root_panel_->AddChild(std::move(audio_section_));
 }
 ```
 
-**Benefits**: Small, focused components are easier to test, debug, and reuse. Leverages the engine's sprite system and ECS architecture.
+**Benefits**: Small, focused components are easier to test, debug, and reuse.
 
 ---
 
-## Citrus Engine UI Architecture
+## Citrus Engine Batch Renderer Architecture
 
-### Sprite-Based Rendering System
+### Vertex-Based Rendering
 
-The citrus-engine UI is built on a sprite-based rendering system that leverages the engine's core rendering pipeline:
-
-```cpp
-// UI Sprite structure (from engine.ui:uitypes)
-struct Sprite {
-    rendering::TextureId texture{0};
-    glm::vec2 position{0.0F};     // Screen coordinates
-    glm::vec2 size{1.0F};
-    float rotation{0.0F};
-    rendering::Color color{1.0F, 1.0F, 1.0F, 1.0F};
-    glm::vec2 texture_offset{0.0F, 0.0F};
-    glm::vec2 texture_scale{1.0F, 1.0F};
-    int layer{0};                  // Z-order for layering
-    glm::vec2 pivot{0.5F};        // 0,0 = bottom-left, 1,1 = top-right
-    bool flip_x{false};
-    bool flip_y{false};
-};
-```
-
-### UIRenderer
-
-The `UIRenderer` manages UI sprites and submits them to the main rendering system:
+The citrus-engine UI is built on a high-performance vertex-based batch renderer that minimizes GPU draw calls:
 
 ```cpp
-// Initialize once
-auto& ui_renderer = engine::ui::UIRenderer::GetInstance();
-ui_renderer.Initialize();
+using namespace engine::ui::batch_renderer;
 
-// Each frame
-ui_renderer.ClearSprites();
-
-// Add UI sprites
-engine::ui::Sprite button_sprite;
-button_sprite.texture = button_texture_id;
-button_sprite.position = glm::vec2{100.0f, 200.0f};
-button_sprite.size = glm::vec2{150.0f, 50.0f};
-button_sprite.layer = 10;
-ui_renderer.AddSprite(button_sprite);
-
-// Render all UI sprites
-ui_renderer.Render();
-```
-
-### Batch Renderer (Advanced)
-
-For high-performance UI rendering with many elements, use the `BatchRenderer`:
-
-```cpp
-// One-time initialization
-engine::ui::batch_renderer::BatchRenderer::Initialize();
+// Initialize once at startup
+BatchRenderer::Initialize();
 
 // Each frame
 BatchRenderer::BeginFrame();
 
-// Submit quads directly (no sprite objects needed)
+// Submit UI primitives (converted to vertices internally)
 BatchRenderer::SubmitQuad(
-    position, size, color, 
-    texture_id, uv_min, uv_max
+    Rectangle{x, y, width, height},  // Screen-space rectangle
+    Color{r, g, b, a},                // Fill color
+    std::nullopt,                     // UV coords (optional)
+    texture_id                        // Texture ID (0 = solid color)
 );
 
-// Scissor clipping for scrollable regions
-BatchRenderer::PushScissor(scissor_rect);
-// ... render clipped content ...
-BatchRenderer::PopScissor();
+BatchRenderer::SubmitLine(x0, y0, x1, y1, thickness, color);
+BatchRenderer::SubmitText(text, x, y, font_size, color);
 
-BatchRenderer::EndFrame(); // Flushes batches to GPU
+// Flush all batches to GPU
+BatchRenderer::EndFrame();
+
+// Cleanup at shutdown
+BatchRenderer::Shutdown();
 ```
 
-**Key Features**:
-- Batches draw calls to minimize GPU submissions
-- Supports up to 8 simultaneous texture units
-- Scissor rectangle clipping for panels and scroll regions
-- Automatic vertex buffer management
+### Key Features
+
+- **Batching**: Automatically batches draw calls to minimize GPU submissions
+- **Texture Management**: Supports up to 8 simultaneous texture units
+- **Scissor Clipping**: Hierarchical scissor rectangles for panels and scroll regions
+- **Vertex Pooling**: Pre-allocated vertex/index buffers to avoid allocations
+
+### Scissor Clipping for Panels
+
+```cpp
+// Render a panel with content clipped to bounds
+void Panel::Render() const {
+    using namespace engine::ui::batch_renderer;
+    
+    // Push scissor for this panel
+    BatchRenderer::PushScissor(ScissorRect{x, y, width, height});
+    
+    // Render panel background
+    BatchRenderer::SubmitQuad(GetRect(), background_color_);
+    
+    // Render children (clipped to panel bounds)
+    for (const auto& child : children_) {
+        child->Render();
+    }
+    
+    // Restore previous scissor
+    BatchRenderer::PopScissor();
+}
+```
+
+### Component Rendering Pattern
+
+UI components should **submit vertices** via BatchRenderer, not manage their own vertex buffers:
+
+```cpp
+class Button : public UIElement {
+public:
+    void Render() const override {
+        using namespace engine::ui::batch_renderer;
+        
+        // Submit button background quad
+        BatchRenderer::SubmitQuad(GetRect(), GetBackgroundColor());
+        
+        // Submit button text
+        if (!label_.empty()) {
+            BatchRenderer::SubmitText(
+                label_,
+                GetTextPosition(),
+                font_size_,
+                GetTextColor()
+            );
+        }
+        
+        // Render children
+        UIElement::Render();
+    }
+    
+private:
+    std::string label_;
+    float font_size_;
+    // Colors updated reactively, not every frame
+};
+```
 
 ---
 
 ## Gang of Four Design Patterns
 
-### 1. Observer Pattern ⭐⭐⭐
+### 1. Composite Pattern ⭐⭐⭐
+
+**Purpose**: Treat individual UI elements and compositions uniformly.
+
+**When to Use**: Always. Every UI element inherits from `UIElement`.
+
+**Implementation**:
+```cpp
+class UIElement {
+public:
+    void AddChild(std::unique_ptr<UIElement> child);
+    void RemoveChild(UIElement* child);
+    virtual void Render() const;
+    
+protected:
+    std::vector<std::unique_ptr<UIElement>> children_;
+};
+
+// Panel, Button, Slider all extend UIElement
+// Can be nested arbitrarily deep
+Panel -> Panel -> Button
+      -> Slider
+      -> Checkbox
+```
+
+**Benefits**:
+- Uniform interface for all UI elements
+- Tree traversal for rendering, input, layout
+- Easy to add new component types
+
+---
+
+### 2. Observer Pattern ⭐⭐⭐
 
 **Purpose**: Decouple UI events from business logic.
 
-**When to Use**: Any time a UI component needs to notify external code of user interactions.
+**When to Use**: Any time a component needs to notify external code.
 
 **Implementation**:
 ```cpp
-class Button {
+// Component provides callback registration
+class Button : public UIElement {
 public:
     using ClickCallback = std::function<void()>;
+    void SetClickCallback(ClickCallback callback) { click_callback_ = callback; }
     
-    void SetClickCallback(ClickCallback callback) { 
-        click_callback_ = callback; 
-    }
-    
-    void HandleMouseClick(const glm::vec2& mouse_pos) {
-        if (IsPointInside(mouse_pos)) {
-            if (click_callback_) {
-                click_callback_();
-            }
-        }
+    bool OnClick(const MouseEvent& event) override {
+        if (click_callback_) click_callback_();
+        return true;
     }
     
 private:
-    engine::ui::Sprite sprite_;
     ClickCallback click_callback_;
-    
-    bool IsPointInside(const glm::vec2& point) const {
-        // AABB collision detection
-        return point.x >= sprite_.position.x && 
-               point.x <= sprite_.position.x + sprite_.size.x &&
-               point.y >= sprite_.position.y && 
-               point.y <= sprite_.position.y + sprite_.size.y;
-    }
 };
 
-// Usage
-Button start_button;
-start_button.SetClickCallback([this]() {
-    StartGame();
+// Subscriber registers interest
+button->SetClickCallback([this]() {
+    ExecuteAction();
 });
 ```
 
+**Event Types to Support**:
+- **Click**: `std::function<void()>`
+- **Value Changed**: `std::function<void(T value)>`
+- **Selection Changed**: `std::function<void(int index)>`
+- **Toggle**: `std::function<void(bool checked)>`
+- **Focus**: `std::function<void(bool focused)>`
+- **Hover**: `std::function<void(bool hovered)>`
+- **Validation**: `std::function<bool(T value)>` (return false to reject)
+
 ---
 
-### 2. State Pattern ⭐⭐
+### 3. Template Method Pattern ⭐⭐
 
-**Purpose**: Change sprite appearance based on UI element state.
+**Purpose**: Define skeleton of rendering algorithm, let subclasses customize steps.
 
-**When to Use**: Buttons, toggles, or any interactive element with multiple visual states.
+**When to Use**: Base rendering logic shared across components.
 
 **Implementation**:
 ```cpp
-class Button {
+class UIElement {
 public:
-    enum class State {
-        Normal,
-        Hovered,
-        Pressed,
-        Disabled
-    };
-    
-    void SetState(State new_state) {
-        if (state_ == new_state) return;
+    // Template method
+    void Render() const {
+        if (!IsVisible()) return;
         
-        state_ = new_state;
-        UpdateSpriteAppearance();
-    }
-    
-    void Update(const glm::vec2& mouse_pos, bool mouse_down) {
-        bool is_hovered = IsPointInside(mouse_pos);
+        RenderBackground();  // Virtual
+        RenderContent();     // Virtual
+        RenderBorder();      // Virtual
         
-        if (state_ == State::Disabled) return;
-        
-        if (mouse_down && is_hovered) {
-            SetState(State::Pressed);
-        } else if (is_hovered) {
-            SetState(State::Hovered);
-        } else {
-            SetState(State::Normal);
+        for (const auto& child : children_) {
+            child->Render();  // Recurse
         }
+        
+        RenderForeground();  // Virtual (tooltips, etc)
     }
     
-private:
-    void UpdateSpriteAppearance() {
-        switch (state_) {
-            case State::Normal:
-                sprite_.color = normal_color_;
-                break;
-            case State::Hovered:
-                sprite_.color = hover_color_;
-                break;
-            case State::Pressed:
-                sprite_.color = pressed_color_;
-                break;
-            case State::Disabled:
-                sprite_.color = disabled_color_;
-                break;
-        }
+protected:
+    virtual void RenderBackground() const {}
+    virtual void RenderContent() const {}
+    virtual void RenderBorder() const {}
+    virtual void RenderForeground() const {}
+};
+
+// Subclass overrides only what it needs
+class Button : public UIElement {
+protected:
+    void RenderBackground() const override {
+        using namespace engine::ui::batch_renderer;
+        BatchRenderer::SubmitQuad(bounds_, background_color_);
     }
     
-    engine::ui::Sprite sprite_;
-    State state_{State::Normal};
-    rendering::Color normal_color_;
-    rendering::Color hover_color_;
-    rendering::Color pressed_color_;
-    rendering::Color disabled_color_;
+    void RenderContent() const override {
+        using namespace engine::ui::batch_renderer;
+        auto text_pos = bounds_.center();
+        BatchRenderer::SubmitText(label_, text_pos.x, text_pos.y, font_size_, text_color_);
+    }
+    
+    void RenderBorder() const override {
+        using namespace engine::ui::batch_renderer;
+        // Submit 4 lines for border
+        float x = bounds_.x, y = bounds_.y, w = bounds_.width, h = bounds_.height;
+        BatchRenderer::SubmitLine(x, y, x+w, y, 1.0f, border_color_);       // Top
+        BatchRenderer::SubmitLine(x+w, y, x+w, y+h, 1.0f, border_color_);   // Right
+        BatchRenderer::SubmitLine(x+w, y+h, x, y+h, 1.0f, border_color_);   // Bottom
+        BatchRenderer::SubmitLine(x, y+h, x, y, 1.0f, border_color_);       // Left
+    }
 };
 ```
 
 ---
 
-### 3. Strategy Pattern ⭐
+### 4. Strategy Pattern ⭐
 
-**Purpose**: Encapsulate interchangeable layout algorithms.
+**Purpose**: Encapsulate interchangeable algorithms.
 
-**When to Use**: Multiple ways to position/arrange UI elements (horizontal, vertical, grid layouts).
+**When to Use**: Multiple ways to do the same thing (layout, validation, formatting).
 
 **Implementation**:
 ```cpp
+// Layout strategies
 class ILayoutStrategy {
 public:
-    virtual ~ILayoutStrategy() = default;
-    virtual void Layout(std::vector<engine::ui::Sprite>& sprites, 
-                       const glm::vec2& container_pos,
-                       const glm::vec2& container_size) = 0;
+    virtual void Layout(std::vector<UIElement*>& children, Rectangle bounds) = 0;
+};
+
+class VerticalLayout : public ILayoutStrategy {
+    void Layout(std::vector<UIElement*>& children, Rectangle bounds) override {
+        float y = bounds.y;
+        for (auto* child : children) {
+            child->SetPosition(bounds.x, y);
+            y += child->GetHeight() + spacing_;
+        }
+    }
 };
 
 class HorizontalLayout : public ILayoutStrategy {
-    void Layout(std::vector<engine::ui::Sprite>& sprites,
-               const glm::vec2& container_pos,
-               const glm::vec2& container_size) override {
-        float x_offset = container_pos.x;
-        for (auto& sprite : sprites) {
-            sprite.position = glm::vec2{x_offset, container_pos.y};
-            x_offset += sprite.size.x + spacing_;
+    void Layout(std::vector<UIElement*>& children, Rectangle bounds) override {
+        float x = bounds.x;
+        for (auto* child : children) {
+            child->SetPosition(x, bounds.y);
+            x += child->GetWidth() + spacing_;
         }
     }
-private:
-    float spacing_{10.0f};
 };
 
-class GridLayout : public ILayoutStrategy {
-    void Layout(std::vector<engine::ui::Sprite>& sprites,
-               const glm::vec2& container_pos,
-               const glm::vec2& container_size) override {
-        int col = 0;
-        int row = 0;
-        for (auto& sprite : sprites) {
-            sprite.position = glm::vec2{
-                container_pos.x + col * (cell_width_ + spacing_),
-                container_pos.y + row * (cell_height_ + spacing_)
-            };
-            
-            if (++col >= columns_) {
-                col = 0;
-                ++row;
-            }
+// Panel uses strategy
+class Panel {
+    void SetLayoutStrategy(std::unique_ptr<ILayoutStrategy> strategy) {
+        layout_strategy_ = std::move(strategy);
+    }
+    
+    void UpdateLayout() {
+        if (layout_strategy_) {
+            layout_strategy_->Layout(children_, GetBounds());
         }
     }
+};
+```
+
+**Common Strategies**:
+- Layout: Vertical, Horizontal, Grid, Flow, Absolute
+- Validation: Range, Pattern, Custom
+- Formatting: Currency, Percentage, Date/Time
+- Animation: Linear, EaseIn, EaseOut, Bounce
+
+### 5. Facade Pattern ⭐⭐
+
+**Purpose**: Simplify complex subsystem interfaces.
+
+**When to Use**: High-level menus that hide UI element complexity.
+
+**Implementation**:
+```cpp
+// Facade hides complex tree structure
+class AudioSettingsMenu {
+public:
+    AudioSettingsMenu() {
+        // Complex construction
+        root_ = std::make_unique<Panel>(...);
+        auto slider1 = std::make_unique<Slider>(...);
+        auto slider2 = std::make_unique<Slider>(...);
+        // ... 50 lines of component creation
+    }
+    
+    // Simple interface for game code
+    void Show() { root_->Show(); }
+    void Hide() { root_->Hide(); }
+    void Render() const { root_->Render(); }
+    
+    // High-level API
+    void SetMasterVolume(float volume) { master_volume_->SetValue(volume); }
+    float GetMasterVolume() const { return master_volume_->GetValue(); }
+    
 private:
-    int columns_{3};
-    float cell_width_{100.0f};
-    float cell_height_{100.0f};
-    float spacing_{5.0f};
+    std::unique_ptr<Panel> root_;
+    Slider* master_volume_;  // Raw pointer for access
 };
 ```
 
 ---
 
-### 4. Command Pattern ⭐
+### 6. Command Pattern ⭐
 
-**Purpose**: Encapsulate UI actions as objects for undo/redo functionality.
+**Purpose**: Encapsulate requests as objects (for undo/redo, macro recording).
 
 **When to Use**: Actions that need to be undoable or recorded.
 
@@ -419,60 +482,38 @@ private:
 ```cpp
 class ICommand {
 public:
-    virtual ~ICommand() = default;
     virtual void Execute() = 0;
     virtual void Undo() = 0;
+    virtual std::string GetDescription() const = 0;
 };
 
-class ToggleSettingCommand : public ICommand {
+class DeleteFacilityCommand : public ICommand {
 public:
-    ToggleSettingCommand(bool& setting) : setting_(setting) {}
+    DeleteFacilityCommand(FacilityID id) : id_(id) {}
     
     void Execute() override {
-        setting_ = !setting_;
+        facility_data_ = game_->GetFacility(id_);
+        game_->DeleteFacility(id_);
     }
     
     void Undo() override {
-        setting_ = !setting_;
+        game_->RestoreFacility(facility_data_);
+    }
+    
+    std::string GetDescription() const override {
+        return "Delete " + facility_data_.name;
     }
     
 private:
-    bool& setting_;
+    FacilityID id_;
+    FacilityData facility_data_;
 };
 
-class CommandHistory {
-public:
-    void ExecuteCommand(std::unique_ptr<ICommand> command) {
-        command->Execute();
-        undo_stack_.push(std::move(command));
-        // Clear redo stack when new command is executed
-        while (!redo_stack_.empty()) {
-            redo_stack_.pop();
-        }
-    }
-    
-    void Undo() {
-        if (!undo_stack_.empty()) {
-            auto command = std::move(undo_stack_.top());
-            undo_stack_.pop();
-            command->Undo();
-            redo_stack_.push(std::move(command));
-        }
-    }
-    
-    void Redo() {
-        if (!redo_stack_.empty()) {
-            auto command = std::move(redo_stack_.top());
-            redo_stack_.pop();
-            command->Execute();
-            undo_stack_.push(std::move(command));
-        }
-    }
-    
-private:
-    std::stack<std::unique_ptr<ICommand>> undo_stack_;
-    std::stack<std::unique_ptr<ICommand>> redo_stack_;
-};
+// Button executes command
+button->SetClickCallback([this]() {
+    auto cmd = std::make_unique<DeleteFacilityCommand>(selected_id_);
+    command_history_.Execute(std::move(cmd));
+});
 ```
 
 ---
@@ -507,215 +548,47 @@ Ask yourself these questions:
 
 ### Common UI Patterns to Recognize
 
-#### Button
-**Visual**: Rectangular sprite with text/icon, responds to hover and click.  
-**Use Cases**: Primary actions, navigation, confirmations.
+#### Card
+**Visual**: Rectangular container with shadow/border, padding, optional header/footer.  
+**Use Cases**: Item display, info panels, product listings.
 
 ```cpp
-class Button {
+class Card : public Panel {
 public:
-    Button(const glm::vec2& pos, const glm::vec2& size, 
-           rendering::TextureId texture_id) {
-        sprite_.texture = texture_id;
-        sprite_.position = pos;
-        sprite_.size = size;
-        sprite_.layer = 10;
-        state_ = State::Normal;
-    }
-    
-    void Update(const glm::vec2& mouse_pos, bool mouse_clicked) {
-        bool hovered = IsPointInside(mouse_pos);
-        
-        if (mouse_clicked && hovered && click_callback_) {
-            click_callback_();
-        }
-        
-        SetState(hovered ? State::Hovered : State::Normal);
-    }
-    
-    void Render(engine::ui::UIRenderer& renderer) {
-        renderer.AddSprite(sprite_);
-    }
-    
-    void SetClickCallback(std::function<void()> callback) {
-        click_callback_ = callback;
-    }
-    
-private:
-    engine::ui::Sprite sprite_;
-    State state_;
-    std::function<void()> click_callback_;
+    Card(const std::string& title, const std::string& content);
+    void SetHeader(std::unique_ptr<UIElement> header);
+    void SetFooter(std::unique_ptr<UIElement> footer);
+    void SetElevation(int level);  // Shadow depth
 };
 ```
 
 ---
 
-#### Panel/Container
-**Visual**: Rectangular background that groups related elements.  
-**Use Cases**: Organizing UI sections, modal dialogs, scroll regions.
+#### Badge
+**Visual**: Small colored indicator (number or icon).  
+**Use Cases**: Notification counts, status indicators.
 
 ```cpp
-class Panel {
+class Badge : public UIElement {
 public:
-    Panel(const glm::vec2& pos, const glm::vec2& size) {
-        background_.texture = 0; // Solid color
-        background_.position = pos;
-        background_.size = size;
-        background_.color = rendering::Color{0.2f, 0.2f, 0.2f, 0.9f};
-        background_.layer = 0; // Behind child elements
-    }
-    
-    void AddChild(std::unique_ptr<Button> child) {
-        children_.push_back(std::move(child));
-    }
-    
-    void Render(engine::ui::UIRenderer& renderer) {
-        renderer.AddSprite(background_);
-        for (const auto& child : children_) {
-            child->Render(renderer);
-        }
-    }
-    
-private:
-    engine::ui::Sprite background_;
-    std::vector<std::unique_ptr<Button>> children_;
+    Badge(int count, Color color = RED);
+    void SetCount(int count);
+    void SetStyle(BadgeStyle style);  // Dot, Number, Icon
 };
 ```
 
 ---
 
-#### Slider
-**Visual**: Track with movable handle for value selection.  
-**Use Cases**: Volume controls, settings adjustments.
+#### Toggle
+**Visual**: Switch with on/off states.  
+**Use Cases**: Settings, feature flags.
 
 ```cpp
-class Slider {
+class Toggle : public UIElement {
 public:
-    Slider(const glm::vec2& pos, float width, 
-           float min_val, float max_val) 
-        : position_(pos), width_(width),
-          min_value_(min_val), max_value_(max_val) {
-        
-        // Track sprite
-        track_.position = pos;
-        track_.size = glm::vec2{width, 4.0f};
-        track_.color = rendering::Color{0.5f, 0.5f, 0.5f, 1.0f};
-        track_.layer = 5;
-        
-        // Handle sprite
-        handle_.position = pos;
-        handle_.size = glm::vec2{16.0f, 16.0f};
-        handle_.color = rendering::Color{1.0f, 1.0f, 1.0f, 1.0f};
-        handle_.layer = 6;
-        
-        SetValue((min_val + max_val) / 2.0f);
-    }
-    
-    void SetValue(float value) {
-        value_ = std::clamp(value, min_value_, max_value_);
-        float t = (value_ - min_value_) / (max_value_ - min_value_);
-        handle_.position.x = position_.x + t * width_ - handle_.size.x / 2.0f;
-    }
-    
-    float GetValue() const { return value_; }
-    
-    void Update(const glm::vec2& mouse_pos, bool mouse_down) {
-        if (mouse_down && IsDragging(mouse_pos)) {
-            float t = (mouse_pos.x - position_.x) / width_;
-            SetValue(min_value_ + t * (max_value_ - min_value_));
-            
-            if (on_value_changed_) {
-                on_value_changed_(value_);
-            }
-        }
-    }
-    
-    void Render(engine::ui::UIRenderer& renderer) {
-        renderer.AddSprite(track_);
-        renderer.AddSprite(handle_);
-    }
-    
-private:
-    engine::ui::Sprite track_;
-    engine::ui::Sprite handle_;
-    glm::vec2 position_;
-    float width_;
-    float value_;
-    float min_value_;
-    float max_value_;
-    std::function<void(float)> on_value_changed_;
-    
-    bool IsDragging(const glm::vec2& mouse_pos) const {
-        // Check if mouse is near the handle or track
-        return mouse_pos.x >= position_.x &&
-               mouse_pos.x <= position_.x + width_ &&
-               mouse_pos.y >= position_.y - 10.0f &&
-               mouse_pos.y <= position_.y + 14.0f;
-    }
-};
-```
-
----
-
-#### Toggle/Checkbox
-**Visual**: Switch with on/off states or checkbox sprite.  
-**Use Cases**: Boolean settings, feature flags.
-
-```cpp
-class Toggle {
-public:
-    Toggle(const glm::vec2& pos, 
-           rendering::TextureId off_tex,
-           rendering::TextureId on_tex) {
-        sprite_.position = pos;
-        sprite_.size = glm::vec2{32.0f, 32.0f};
-        sprite_.layer = 10;
-        off_texture_ = off_tex;
-        on_texture_ = on_tex;
-        SetEnabled(false);
-    }
-    
-    void SetEnabled(bool enabled) {
-        enabled_ = enabled;
-        sprite_.texture = enabled_ ? on_texture_ : off_texture_;
-    }
-    
-    bool IsEnabled() const { return enabled_; }
-    
-    void Update(const glm::vec2& mouse_pos, bool mouse_clicked) {
-        if (mouse_clicked && IsPointInside(mouse_pos)) {
-            SetEnabled(!enabled_);
-            if (on_toggle_) {
-                on_toggle_(enabled_);
-            }
-        }
-    }
-    
-    void Render(engine::ui::UIRenderer& renderer) {
-        renderer.AddSprite(sprite_);
-    }
-    
-    void SetToggleCallback(std::function<void(bool)> callback) {
-        on_toggle_ = callback;
-    }
-    
-private:
-    engine::ui::Sprite sprite_;
-    bool enabled_{false};
-    rendering::TextureId off_texture_;
-    rendering::TextureId on_texture_;
-    std::function<void(bool)> on_toggle_;
-    
-    bool IsPointInside(const glm::vec2& point) const {
-        return point.x >= sprite_.position.x &&
-               point.x <= sprite_.position.x + sprite_.size.x &&
-               point.y >= sprite_.position.y &&
-               point.y <= sprite_.position.y + sprite_.size.y;
-    }
-};
-```
-
----
+    using ToggleCallback = std::function<void(bool)>;
+    Toggle(const std::string& label);
+    void SetEnabled(bool enabled);
     bool IsEnabled() const;
     void SetToggleCallback(ToggleCallback callback);
 };
@@ -723,242 +596,1193 @@ private:
 
 ---
 
-## Input Handling
-
-### Mouse Input
-
-UI components should handle mouse input by checking if the mouse position is within their bounds:
+#### Tab Bar
+**Visual**: Horizontal buttons for switching views.  
+**Use Cases**: Multi-section menus.
 
 ```cpp
-bool IsPointInside(const glm::vec2& point, const engine::ui::Sprite& sprite) {
-    return point.x >= sprite.position.x &&
-           point.x <= sprite.position.x + sprite.size.x &&
-           point.y >= sprite.position.y &&
-           point.y <= sprite.position.y + sprite.size.y;
-}
+class TabBar : public Panel {
+public:
+    using TabCallback = std::function<void(int index)>;
+    void AddTab(const std::string& label);
+    void SetActiveTab(int index);
+    void SetTabCallback(TabCallback callback);
+};
+```
 
-// In your UI component's Update method
-void Update(const glm::vec2& mouse_pos, bool mouse_clicked) {
-    bool hovered = IsPointInside(mouse_pos, sprite_);
+---
+
+#### Grid
+**Visual**: Scrollable grid of items.  
+**Use Cases**: Inventories, build menus, galleries.
+
+```cpp
+class GridPanel : public Panel {
+public:
+    GridPanel(int columns, int rows);
+    void AddItem(std::unique_ptr<UIElement> item);
+    void SetItemClickCallback(std::function<void(int index)> callback);
+    void SetScrollPosition(float position);
+};
+```
+
+---
+
+#### Modal
+**Visual**: Overlay that blocks interaction with lower layers.  
+**Use Cases**: Dialogs, confirmations, alerts.
+
+```cpp
+class Modal : public Panel {
+public:
+    Modal(std::unique_ptr<UIElement> content);
+    void Show();
+    void Hide();
+    bool IsVisible() const;
     
-    if (hovered) {
-        // Update visual state for hover
-        sprite_.color = hover_color_;
+    // CRITICAL: Block events to lower layers
+    bool ProcessMouseEvent(const MouseEvent& event) override {
+        if (!IsVisible()) return false;
         
-        if (mouse_clicked && on_click_) {
-            on_click_();
-        }
-    } else {
-        sprite_.color = normal_color_;
+        // Consume ALL events when visible
+        Panel::ProcessMouseEvent(event);
+        return true;  // Always block propagation
     }
+};
+```
+
+**Key Lesson**: Modals must explicitly block event propagation to prevent lower layers from receiving input.
+
+---
+
+#### Tooltip
+**Visual**: Small popup near cursor with hint text.  
+**Use Cases**: Contextual help.
+
+```cpp
+class Tooltip : public Panel {
+public:
+    Tooltip(const std::string& text);
+    void ShowAt(float x, float y);
+    void Hide();
+    void SetDelay(float seconds);  // Hover delay
+};
+```
+
+---
+
+#### Dropdown
+**Visual**: Button that expands to show options.  
+**Use Cases**: Selection from list.
+
+```cpp
+class Dropdown : public Panel {
+public:
+    using SelectionCallback = std::function<void(int index, const std::string& value)>;
+    void AddOption(const std::string& label);
+    void SetSelection(int index);
+    void SetSelectionCallback(SelectionCallback callback);
+};
+```
+
+---
+
+#### Progress Bar
+**Visual**: Horizontal bar showing completion percentage.  
+**Use Cases**: Loading, construction progress.
+
+```cpp
+class ProgressBar : public UIElement {
+public:
+    ProgressBar(float width, float height);
+    void SetProgress(float percentage);  // 0.0 - 1.0
+    void SetLabel(const std::string& label);
+    void SetColor(Color color);
+};
+```
+
+---
+
+#### Accordion
+**Visual**: Collapsible sections with headers.  
+**Use Cases**: Settings groups, FAQs.
+
+```cpp
+class Accordion : public Panel {
+public:
+    void AddSection(const std::string& title, std::unique_ptr<Panel> content);
+    void ExpandSection(int index);
+    void CollapseSection(int index);
+    void SetAllowMultiple(bool allow);  // Multiple sections expanded?
+};
+```
+
+---
+
+## Event System Architecture
+
+### Event Types
+
+#### 1. Mouse Events
+```cpp
+struct MouseEvent {
+    float x, y;                   // Screen coordinates
+    bool left_button_down;
+    bool right_button_down;
+    bool left_button_clicked;     // Just pressed this frame
+    bool right_button_clicked;
+    float scroll_delta;
+};
+
+class UIElement : public IMouseInteractive {
+public:
+    // Override to handle events
+    virtual bool OnHover(const MouseEvent& event) { return false; }
+    virtual bool OnClick(const MouseEvent& event) { return false; }
+    virtual bool OnDrag(const MouseEvent& event) { return false; }
+    virtual bool OnScroll(const MouseEvent& event) { return false; }
+    
+    // Propagate to children (bubble-down)
+    bool ProcessMouseEvent(const MouseEvent& event);
+};
+```
+
+**Event Propagation**: Bubble-down (parent → child). First child to return `true` consumes the event.
+
+---
+
+#### 2. Keyboard Events
+```cpp
+struct KeyboardEvent {
+    int key;                      // Engine key code (see engine::input)
+    bool is_pressed;              // Just pressed this frame
+    bool is_released;             // Just released this frame
+    bool is_down;                 // Currently held
+    bool ctrl, shift, alt;        // Modifiers
+};
+
+class UIElement {
+public:
+    virtual bool OnKeyPress(const KeyboardEvent& event) { return false; }
+    virtual bool OnKeyRelease(const KeyboardEvent& event) { return false; }
+    
+    bool ProcessKeyboardEvent(const KeyboardEvent& event);
+};
+```
+
+**Focus Management**: Only focused element receives keyboard input.
+
+---
+
+#### 3. Focus Events
+```cpp
+class UIElement {
+public:
+    virtual void OnFocus() {}     // Called when element gains focus
+    virtual void OnBlur() {}      // Called when element loses focus
+    
+    void SetFocused(bool focused) {
+        if (focused == is_focused_) return;
+        is_focused_ = focused;
+        focused ? OnFocus() : OnBlur();
+    }
+};
+```
+
+---
+
+#### 4. Lifecycle Events
+```cpp
+class UIElement {
+public:
+    virtual void OnAdded() {}     // Called when added to parent
+    virtual void OnRemoved() {}   // Called when removed from parent
+    virtual void OnShow() {}      // Called when made visible
+    virtual void OnHide() {}      // Called when hidden
+};
+```
+
+---
+
+### Event Source Integration
+
+#### Window Events
+```cpp
+class UIWindow {
+public:
+    void OnResize(int new_width, int new_height) {
+        // Notify all root UI elements
+        for (auto& element : root_elements_) {
+            element->UpdateLayout();
+        }
+    }
+    
+    void OnMinimize() {
+        // Pause animations
+    }
+    
+    void OnMaximize() {
+        // Resume animations
+    }
+};
+```
+
+---
+
+#### Game Events
+```cpp
+class Game {
+public:
+    void OnFacilityBuilt(FacilityID id) {
+        // Update build menu
+        build_menu_->NotifyFacilityBuilt(id);
+        
+        // Update research tree
+        research_tree_->UpdateAvailableResearch();
+        
+        // Show notification
+        notification_center_->ShowNotification("Facility built!");
+    }
+};
+```
+
+---
+
+#### Timer Events
+```cpp
+class UIElement {
+protected:
+    void ScheduleCallback(float delay_seconds, std::function<void()> callback) {
+        timer_manager_->Schedule(delay_seconds, callback);
+    }
+};
+
+// Usage: Auto-hide tooltip after 5 seconds
+tooltip_->ScheduleCallback(5.0f, [this]() {
+    tooltip_->Hide();
+});
+```
+
+---
+
+#### Animation Events
+```cpp
+class Panel {
+public:
+    void Show(bool animate = true) {
+        if (animate) {
+            StartShowAnimation();
+            OnAnimationComplete([this]() {
+                OnShow();  // Lifecycle event
+            });
+        } else {
+            is_visible_ = true;
+            OnShow();
+        }
+    }
+};
+```
+
+---
+
+### Callback Wiring Best Practices
+
+#### 1. Wire Callbacks in Constructor
+```cpp
+// CORRECT: Callbacks set up immediately
+Constructor() {
+    auto button = std::make_unique<Button>(...);
+    button->SetClickCallback([this]() {
+        HandleButtonClick();
+    });
+    panel_->AddChild(std::move(button));
 }
 ```
 
-### Keyboard Input
-
-For keyboard navigation and shortcuts, use the engine's input system:
-
+#### 2. Store Raw Pointers for Access
 ```cpp
-#include "engine/input/input.hpp"
+// CORRECT: Ownership in parent, access via raw pointer
+Constructor() {
+    auto slider = std::make_unique<Slider>(...);
+    master_volume_slider_ = slider.get();  // Store raw pointer
+    panel_->AddChild(std::move(slider));   // Transfer ownership
+}
 
-void HandleInput() {
-    auto& input = engine::input::Input::GetInstance();
+void SetMasterVolume(float volume) {
+    master_volume_slider_->SetValue(volume);  // Access via raw pointer
+}
+```
+
+#### 3. Capture by Value for Immutable Data
+```cpp
+// CORRECT: Capture by value for primitives/copies
+for (const auto& item : items) {
+    auto button = std::make_unique<Button>(...);
+    button->SetClickCallback([this, action = item.action]() {
+        ExecuteAction(action);  // 'action' is a copy
+    });
+    panel_->AddChild(std::move(button));
+}
+```
+
+#### 4. Use std::weak_ptr for Long-Lived Callbacks
+```cpp
+// CORRECT: Avoid dangling pointers
+auto self = shared_from_this();
+timer_->Schedule(5.0f, [self_weak = std::weak_ptr(self)]() {
+    if (auto self = self_weak.lock()) {
+        self->DoSomething();
+    }
+});
+```
+
+#### 5. Complete Callback Wiring
+```cpp
+// CORRECT: Components wired up immediately
+Constructor() {
+    action_bar_ = std::make_unique<ActionBar>(...);
+    build_menu_ = std::make_unique<BuildMenu>(...);
     
-    if (input.IsKeyPressed(engine::input::Key::Escape)) {
-        CloseMenu();
+    // Wire up: ActionBar "Build" button shows BuildMenu
+    action_bar_->SetActionCallback([this](ActionBar::Action action) {
+        if (action == ActionBar::Action::Build) {
+            build_menu_->Show();
+        }
+    });
+}
+```
+
+**Key Lesson**: Integration requires connecting callbacks between components. Create and wire immediately.
+
+---
+
+## Ownership & Memory Management
+
+### The Golden Rule
+
+> **One owner, many observers.**  
+> **`std::unique_ptr` for ownership, raw pointers for access.**
+
+---
+
+### Ownership Patterns
+
+#### Pattern 1: Parent Owns Children
+```cpp
+class Panel {
+private:
+    std::vector<std::unique_ptr<UIElement>> children_;  // OWNS
+    
+public:
+    void AddChild(std::unique_ptr<UIElement> child) {
+        child->SetParent(this);
+        children_.push_back(std::move(child));  // Transfer ownership
+    }
+};
+```
+
+---
+
+#### Pattern 2: Store Raw Pointers for Access
+```cpp
+class Menu {
+private:
+    std::unique_ptr<Panel> root_panel_;      // OWNS
+    Button* ok_button_;                      // ACCESSES (non-owning)
+    
+public:
+    Constructor() {
+        root_panel_ = std::make_unique<Panel>(...);
+        
+        auto button = std::make_unique<Button>(...);
+        ok_button_ = button.get();           // Store raw pointer
+        root_panel_->AddChild(std::move(button));  // Transfer ownership
     }
     
-    if (input.IsKeyPressed(engine::input::Key::Enter)) {
-        if (focused_button_) {
-            focused_button_->Click();
+    void EnableOkButton() {
+        ok_button_->SetEnabled(true);        // Access via raw pointer
+    }
+};
+```
+
+**Rationale**: Parent owns the `unique_ptr`, children never outlive parent. Raw pointer is safe for access.
+
+---
+
+#### Pattern 3: Shared Ownership (Rare)
+```cpp
+// Use std::shared_ptr only when multiple owners needed
+class ResourceCache {
+    std::unordered_map<std::string, std::shared_ptr<Texture>> textures_;
+    
+public:
+    std::shared_ptr<Texture> GetTexture(const std::string& name) {
+        return textures_[name];  // Multiple UI elements can share
+    }
+};
+```
+
+**When to use `shared_ptr`:**
+- Resources (textures, fonts) shared across many components
+- Async operations that outlive the caller
+- **Not for parent-child relationships!**
+
+---
+
+### Common Ownership Mistakes & Solutions
+
+#### Issue 1: Moving Between Containers
+**Problem**: Moving `unique_ptr` between containers invalidates iterators.
+
+```cpp
+// Solution: Swap in place instead of moving
+void Reorder() {
+    std::swap(children_[0], children_[1]);
+}
+```
+
+---
+
+#### Issue 2: Dangling Raw Pointers
+**Problem**: Raw pointer outlives the owned object.
+
+```cpp
+// Solution: Return unique_ptr or store in member
+std::unique_ptr<Button> CreateButton() {
+    return std::make_unique<Button>(...);  // Caller takes ownership
+}
+```
+
+#### Issue 3: Circular References
+**Problem**: Parent and child both use `shared_ptr` to each other.
+
+```cpp
+// Solution: Parent owns child, child stores weak_ptr to parent
+class Child {
+    std::weak_ptr<Parent> parent_;  // Breaks cycle
+};
+```
+
+**Key Lesson**: Mixing `unique_ptr` moves between containers breaks ownership. Use swap/indices instead.
+
+---
+
+### RAII for UI Resources
+
+```cpp
+class Panel {
+public:
+    Panel() {
+        // Acquire resources in constructor
+        texture_ = LoadTexture("panel_bg.png");
+    }
+    
+    ~Panel() {
+        // Release in destructor (RAII)
+        UnloadTexture(texture_);
+    }
+    
+    // Delete copy (prevent double-free)
+    Panel(const Panel&) = delete;
+    Panel& operator=(const Panel&) = delete;
+    
+    // Allow move (transfer ownership)
+    Panel(Panel&& other) noexcept
+        : texture_(other.texture_) {
+        other.texture_ = {};  // Nullify moved-from object
+    }
+    
+private:
+    Texture2D texture_;
+};
+```
+
+---
+
+## Layout & Positioning
+
+### Coordinate Systems
+
+#### Relative Coordinates
+Each element stores position relative to parent.
+
+```cpp
+// Child at (10, 20) relative to parent
+auto child = std::make_unique<Button>(10, 20, 100, 50);
+parent->AddChild(std::move(child));
+```
+
+#### Absolute Coordinates
+Computed on-demand by walking up the tree.
+
+```cpp
+Rectangle UIElement::GetAbsoluteBounds() const {
+    Rectangle bounds = GetRelativeBounds();
+    if (parent_) {
+        Rectangle parent_bounds = parent_->GetAbsoluteBounds();
+        bounds.x += parent_bounds.x;
+        bounds.y += parent_bounds.y;
+    }
+    return bounds;
+}
+```
+
+---
+
+### Layout Invalidation
+
+Only recalculate layout when necessary:
+- Window resize
+- Content change (add/remove children)
+- Explicit `UpdateLayout()` call
+
+```cpp
+class Panel {
+public:
+    void UpdateLayout() {
+        if (!layout_dirty_) return;
+        
+        // Recalculate child positions
+        float y = padding_;
+        for (auto& child : children_) {
+            child->SetRelativePosition(padding_, y);
+            y += child->GetHeight() + spacing_;
+        }
+        
+        layout_dirty_ = false;
+    }
+    
+    void AddChild(std::unique_ptr<UIElement> child) {
+        children_.push_back(std::move(child));
+        layout_dirty_ = true;  // Mark for recalculation
+    }
+    
+    void Render() const {
+        const_cast<Panel*>(this)->UpdateLayout();  // Lazy update
+        // ...
+    }
+};
+```
+
+---
+
+### Dynamic Positioning Requirements
+
+**Challenge**: Setting position once isn't enough for dynamic UIs (window resize, animations).
+
+**Solution**: Call `Update()` or `UpdateLayout()` each frame or on resize events.
+
+```cpp
+// CORRECT: Position updated on events
+void OnWindowResize() {
+    UpdateLayout();
+}
+
+void UpdateLayout() {
+    int screen_width = GetScreenWidth();
+    panel_->SetRelativePosition(screen_width / 2 - panel_->GetWidth() / 2, 100);
+}
+
+void Update(float delta_time) {
+    UpdateLayout();  // Or call only when needed
+    panel_->Update(delta_time);
+}
+```
+
+**Key Lesson**: Dynamic UI positioning requires `Update()` calls, not one-time setup.
+
+---
+
+### Window Resize Pattern
+
+**Problem**: UI elements positioned relative to screen edges don't reposition when window resizes.
+
+**Solution**: Track screen dimensions and reposition on change.
+
+```cpp
+class UIWindowManager {
+private:
+    int last_screen_width_;
+    int last_screen_height_;
+    bool is_info_window_;  // Flag for windows that need recentering
+    
+public:
+    UIWindowManager() 
+        : last_screen_width_(0)
+        , last_screen_height_(0)
+        , is_info_window_(false) {}
+    
+    void Update(float delta_time) {
+        const int current_width = GetScreenWidth();
+        const int current_height = GetScreenHeight();
+        
+        // Detect resize
+        if (current_width != last_screen_width_ || 
+            current_height != last_screen_height_) {
+            
+            last_screen_width_ = current_width;
+            last_screen_height_ = current_height;
+            
+            // Reposition windows that need it
+            if (is_info_window_ && !windows_.empty()) {
+                for (const auto& window : windows_) {
+                    RepositionWindow(window.get());
+                }
+            }
+        }
+        
+        // Update all windows
+        for (const auto& window : windows_) {
+            window->Update(delta_time);
         }
     }
     
-    // Tab navigation
-    if (input.IsKeyPressed(engine::input::Key::Tab)) {
-        FocusNextElement();
+    void RepositionWindow(UIWindow* window) {
+        // Recenter at bottom with margin
+        const int x = (last_screen_width_ - window->GetWidth()) / 2;
+        const int y = last_screen_height_ - window->GetHeight() - BOTTOM_MARGIN;
+        window->SetPosition(x, y);
+    }
+};
+```
+
+**When to Use**:
+- Modals/dialogs centered on screen
+- HUD elements anchored to edges (minimap, health bar)
+- Info windows positioned relative to screen dimensions
+- Action bars at bottom of screen
+
+**Benefits**:
+- Windows stay positioned correctly on resize
+- Only repositions when needed (not every frame)
+- Works with fullscreen toggles and window dragging
+
+**Key Lesson**: For screen-relative positioning, track screen dimensions and reposition on change.
+
+---
+
+### Common Layout Patterns
+
+#### Centering
+```cpp
+void CenterInParent(UIElement* element) {
+    Rectangle parent_bounds = element->GetParent()->GetRelativeBounds();
+    float x = (parent_bounds.width - element->GetWidth()) / 2;
+    float y = (parent_bounds.height - element->GetHeight()) / 2;
+    element->SetRelativePosition(x, y);
+}
+```
+
+#### Anchoring
+```cpp
+void AnchorToBottom(UIElement* element) {
+    Rectangle parent_bounds = element->GetParent()->GetRelativeBounds();
+    float y = parent_bounds.height - element->GetHeight() - padding_;
+    element->SetRelativePosition(element->GetRelativeX(), y);
+}
+```
+
+#### Stacking (Vertical)
+```cpp
+void StackVertically(std::vector<UIElement*>& elements, float spacing) {
+    float y = 0;
+    for (auto* element : elements) {
+        element->SetRelativePosition(0, y);
+        y += element->GetHeight() + spacing;
     }
 }
 ```
 
 ---
 
-## Performance Optimization
+## Creating New Components
 
-### Use Batch Rendering for Many Elements
+### Step-by-Step Implementation
 
-When rendering many UI elements (>100), use `BatchRenderer` instead of individual sprite submissions:
-
+#### 1. Extend UIElement
 ```cpp
-// GOOD: Batch renderer for many elements
-BatchRenderer::BeginFrame();
-for (const auto& item : inventory_items) {  // 1000s of items
-    BatchRenderer::SubmitQuad(
-        item.position, item.size, item.color,
-        item.texture_id, item.uv_min, item.uv_max
-    );
-}
-BatchRenderer::EndFrame();  // Single GPU submission
-
-// AVOID: Individual sprites for many elements
-for (const auto& item : inventory_items) {
-    ui_renderer.AddSprite(item.sprite);  // Many individual submissions
-}
+class MyComponent : public UIElement {
+public:
+    MyComponent(float x, float y, float width, float height)
+        : UIElement(x, y, width, height) {}
+};
 ```
 
-### Layer-Based Culling
-
-Only render UI elements that are visible (not occluded by higher layers):
-
+#### 2. Define Events
 ```cpp
-// Sort sprites by layer before rendering
-std::sort(sprites_.begin(), sprites_.end(),
-    [](const auto& a, const auto& b) { return a.layer < b.layer; });
+class MyComponent : public UIElement {
+public:
+    using EventCallback = std::function<void(EventData)>;
+    void SetEventCallback(EventCallback callback) { callback_ = callback; }
+    
+private:
+    EventCallback callback_;
+};
+```
 
-// Only render what's visible
-for (const auto& sprite : sprites_) {
-    if (IsVisible(sprite)) {
-        renderer.AddSprite(sprite);
+#### 3. Implement Rendering
+```cpp
+void Render() const override {
+    using namespace engine::ui::batch_renderer;
+    
+    // Submit background quad
+    BatchRenderer::SubmitQuad(GetAbsoluteBounds(), background_color_);
+    
+    // Submit content (text, icons, etc)
+    // ...
+    
+    // Render children (if composite)
+    for (const auto& child : children_) {
+        child->Render();
     }
 }
 ```
 
-### Cache Sprite Data
-
-Don't recreate sprites every frame - update only what changes:
-
+#### 4. Handle Input
 ```cpp
-// GOOD: Update only changed properties
-void OnHoverStateChanged(bool hovered) {
-    sprite_.color = hovered ? hover_color_ : normal_color_;
+bool OnClick(const MouseEvent& event) override {
+    if (!Contains(event.x, event.y)) return false;
+    
+    // Update state
+    is_selected_ = !is_selected_;
+    
+    // Notify observers
+    if (callback_) callback_(is_selected_);
+    
+    return true;  // Event consumed
+}
+```
+
+#### 5. Support Keyboard Navigation
+```cpp
+void OnFocus() override {
+    // Visual feedback
+    border_color_ = GOLD;
 }
 
-// AVOID: Recreating sprite every frame
-void Render() {
-    auto sprite = engine::ui::Sprite{};  // Don't do this
-    sprite.texture = texture_;
-    sprite.position = position_;
+void OnBlur() override {
+    border_color_ = GRAY;
+}
+
+bool OnKeyPress(const KeyboardEvent& event) override {
+    if (event.key == KEY_ENTER || event.key == KEY_SPACE) {
+        // Trigger action
+        if (callback_) callback_(GetData());
+        return true;
+    }
+    return false;
+}
+```
+
+#### 6. Accessibility Support
+```cpp
+void Render() const override {
+    using namespace engine::ui::batch_renderer;
+    
+    // Respect accessibility settings
+    const auto& settings = AccessibilitySettings::Get();
+    
+    float font_scale = settings.GetFontScale();
+    int font_size = base_font_size_ * font_scale;
+    
+    Color text_color = settings.IsHighContrast() 
+        ? Color{1.0f, 1.0f, 1.0f, 1.0f}  // WHITE
+        : text_color_;
+    
+    BatchRenderer::SubmitText(label_, position.x, position.y, font_size, text_color);
+}
+```
+
+#### 7. Animation Support (Optional)
+```cpp
+void Update(float delta_time) {
+    if (is_animating_) {
+        animation_time_ += delta_time;
+        float progress = std::min(animation_time_ / duration_, 1.0f);
+        
+        // Apply easing
+        float eased = EaseOutCubic(progress);
+        current_value_ = Lerp(start_value_, end_value_, eased);
+        
+        if (progress >= 1.0f) {
+            is_animating_ = false;
+        }
+    }
+}
+```
+
+#### 8. Testing
+```cpp
+// Unit test component in isolation
+TEST(MyComponentTest, ClickTriggersCallback) {
+    bool callback_fired = false;
+    MyComponent component(0, 0, 100, 50);
+    component.SetEventCallback([&](EventData data) {
+        callback_fired = true;
+    });
+    
+    MouseEvent click_event{50, 25, true, false, true, false, 0};
+    component.OnClick(click_event);
+    
+    EXPECT_TRUE(callback_fired);
+}
+```
+
+---
+
+## Testing & Validation
+
+### Unit Testing Components
+
+```cpp
+// Test component in isolation
+TEST(ButtonTest, ClickTriggersCallback) {
+    bool clicked = false;
+    Button button(0, 0, 100, 50, "Test");
+    button.SetClickCallback([&]() { clicked = true; });
+    
+    MouseEvent event{50, 25, false, false, true, false, 0};
+    button.OnClick(event);
+    
+    EXPECT_TRUE(clicked);
+}
+
+TEST(ButtonTest, ClickOutsideBoundsDoesNotTrigger) {
+    bool clicked = false;
+    Button button(0, 0, 100, 50, "Test");
+    button.SetClickCallback([&]() { clicked = true; });
+    
+    MouseEvent event{200, 200, false, false, true, false, 0};
+    button.OnClick(event);
+    
+    EXPECT_FALSE(clicked);
+}
+
+TEST(SliderTest, DragUpdatesValue) {
+    Slider slider(0, 0, 200, 50, 0.0f, 1.0f);
+    
+    MouseEvent drag{100, 25, true, false, false, false, 0};
+    slider.OnClick(drag);
+    
+    EXPECT_FLOAT_EQ(slider.GetValue(), 0.5f);
+}
+```
+
+---
+
+### Integration Testing
+
+```cpp
+// Test component interactions
+TEST(MenuTest, ButtonClickShowsPanel) {
+    TestMenu menu;
+    Panel* panel = menu.GetPanel();
+    EXPECT_FALSE(panel->IsVisible());
+    
+    Button* button = menu.GetButton();
+    MouseEvent click{50, 25, false, false, true, false, 0};
+    button->OnClick(click);
+    
+    EXPECT_TRUE(panel->IsVisible());
+}
+```
+
+---
+
+### Visual Regression Testing
+
+```cpp
+// Capture screenshot, compare to baseline
+TEST(VisualTest, MainMenuAppearance) {
+    MainMenu menu;
+    menu.Render();
+    
+    Image screenshot = CaptureScreen();
+    Image baseline = LoadImage("baseline_main_menu.png");
+    
+    EXPECT_TRUE(ImagesEqual(screenshot, baseline));
+}
+```
+
+---
+
+### Accessibility Testing
+
+```cpp
+TEST(AccessibilityTest, AllButtonsKeyboardNavigable) {
+    Menu menu;
+    std::vector<Button*> buttons = menu.GetAllButtons();
+    
+    for (auto* button : buttons) {
+        button->SetFocused(true);
+        KeyboardEvent enter_key{KEY_ENTER, true, false, true};
+        
+        bool handled = button->OnKeyPress(enter_key);
+        EXPECT_TRUE(handled) << "Button '" << button->GetLabel() << "' not keyboard accessible";
+    }
+}
+
+TEST(AccessibilityTest, ContrastRatioSufficient) {
+    Button button(0, 0, 100, 50, "Test");
+    Color bg = button.GetBackgroundColor();
+    Color fg = button.GetTextColor();
+    
+    float contrast = CalculateContrastRatio(bg, fg);
+    EXPECT_GE(contrast, 4.5f) << "WCAG AA requires 4.5:1 contrast";
+}
+```
+
+---
+
+## Performance Considerations
+
+### Batch Rendering
+
+```cpp
+// ✅ GOOD: BatchRenderer automatically batches similar draw calls
+void Panel::Render() const {
+    using namespace engine::ui::batch_renderer;
+    
+    // BatchRenderer automatically batches these submissions
+    for (const auto& child : children_) {
+        child->Render();  // Each child submits vertices
+    }
+    // All vertices are automatically batched and submitted efficiently
+}
+
+// Note: The BatchRenderer handles batching internally - you don't need to
+// manually collect and batch primitives. Just submit them and let the
+// renderer optimize the GPU submissions.
+```
+
+---
+
+### Culling Off-Screen Elements
+
+```cpp
+void Render() const override {
+    Rectangle screen_bounds{0, 0, GetScreenWidth(), GetScreenHeight()};
+    Rectangle my_bounds = GetAbsoluteBounds();
+    
+    // Skip rendering if completely off-screen
+    if (!CheckCollisionRecs(screen_bounds, my_bounds)) {
+        return;
+    }
+    
+    // Render normally
     // ...
 }
 ```
 
 ---
 
-## Best Practices Summary
+### Lazy Updates
 
-1. **Sprite-based**: Build UI from `engine::ui::Sprite` objects, not custom widget hierarchies
-2. **Retained mode**: Declare UI structure once, update properties reactively
-3. **Layering**: Use `layer` property to control render order (higher = on top)
-4. **Batch rendering**: Use `BatchRenderer` for high element counts
-5. **Event-driven**: Update sprites only when state changes, not every frame
-6. **Observer pattern**: Use callbacks for loose coupling between UI and game logic
-7. **Input handling**: Check mouse bounds manually, integrate with engine's input system
-8. **Performance**: Cache sprites, sort by layer, use scissor clipping for scroll regions
-9. **ImGui for tools only**: Production UI uses sprite system, ImGui for debug/dev tools
+```cpp
+void Panel::Render() const {
+    // Only update layout when dirty
+    if (layout_dirty_) {
+        const_cast<Panel*>(this)->UpdateLayout();
+    }
+    
+    // Render
+    // ...
+}
+```
 
 ---
 
-## Key Lessons for Citrus Engine UI
+### Object Pooling
 
-1. **Sprite-based architecture** - UI elements are built from `engine::ui::Sprite` objects submitted to the renderer
-2. **Retained mode** - UI structure is declared once and updated reactively, not rebuilt every frame
-3. **Batch rendering** - Use `BatchRenderer` for high-performance rendering of many UI elements
-4. **Layer management** - Use sprite `layer` property to control render order (Z-order)
-5. **Event-driven updates** - Update sprite properties only when state changes, not continuously
-6. **Callback patterns** - Use Observer pattern for loose coupling between UI and game logic
-7. **ImGui for debugging only** - ImGui is a dependency for development tools, not production UI
+```cpp
+// Reuse notification objects instead of allocating new ones
+class NotificationCenter {
+private:
+    std::vector<std::unique_ptr<Notification>> pool_;
+    std::vector<Notification*> active_;
+    
+public:
+    void ShowNotification(const std::string& text) {
+        Notification* notif = nullptr;
+        
+        // Try to reuse from pool
+        if (!pool_.empty()) {
+            notif = pool_.back().get();
+            pool_.pop_back();
+        } else {
+            pool_.push_back(std::make_unique<Notification>());
+            notif = pool_.back().get();
+        }
+        
+        notif->SetText(text);
+        notif->Show();
+        active_.push_back(notif);
+    }
+    
+    void Update(float delta_time) {
+        // Return finished notifications to pool
+        active_.erase(
+            std::remove_if(active_.begin(), active_.end(),
+                [this](Notification* n) {
+                    if (n->IsFinished()) {
+                        pool_.push_back(std::unique_ptr<Notification>(n));
+                        return true;
+                    }
+                    return false;
+                }),
+            active_.end()
+        );
+    }
+};
+```
+
+---
+
+## Summary: The UI Commandments
+
+1. **Declare once, render many** - Build UI in constructors, not every frame
+2. **React to events** - Update state only when things change
+3. **Observe, don't poll** - Use callbacks, not return values
+4. **Compose components** - Build complex UIs from simple parts
+5. **Own clearly** - `unique_ptr` for ownership, raw pointers for access
+6. **Layout lazily** - Recalculate only on resize or content change
+7. **Block modals** - Overlays must consume ALL events when visible
+8. **Wire immediately** - Connect callbacks right after component creation
+9. **Test in isolation** - Components should work without full game
+10. **Respect accessibility** - High contrast, font scaling, keyboard nav
 
 ---
 
 ## Quick Reference
 
 ### Creating a Button
-
 ```cpp
-class Button {
-    engine::ui::Sprite sprite_;
-    std::function<void()> on_click_;
-    State state_{State::Normal};
-    
+auto button = std::make_unique<Button>(x, y, width, height, "Label");
+button->SetClickCallback([this]() { HandleClick(); });
+panel_->AddChild(std::move(button));
+```
+
+### Creating a Modal
+```cpp
+class MyModal : public Panel {
 public:
-    Button(glm::vec2 pos, glm::vec2 size, rendering::TextureId texture) {
-        sprite_.texture = texture;
-        sprite_.position = pos;
-        sprite_.size = size;
-        sprite_.layer = 10;
-    }
-    
-    void SetClickCallback(std::function<void()> callback) {
-        on_click_ = callback;
-    }
-    
-    void Update(const glm::vec2& mouse_pos, bool mouse_clicked) {
-        if (mouse_clicked && IsPointInside(mouse_pos) && on_click_) {
-            on_click_();
-        }
-    }
-    
-    void Render(engine::ui::UIRenderer& renderer) {
-        renderer.AddSprite(sprite_);
+    bool ProcessMouseEvent(const MouseEvent& event) override {
+        if (!IsVisible()) return false;
+        Panel::ProcessMouseEvent(event);
+        return true;  // Block all events when visible
     }
 };
 ```
 
-### Using UIRenderer
-
+### Centering an Element
 ```cpp
-// Initialize (once)
-auto& ui_renderer = engine::ui::UIRenderer::GetInstance();
-ui_renderer.Initialize();
-
-// Each frame
-ui_renderer.ClearSprites();
-
-// Add sprites
-engine::ui::Sprite my_sprite;
-my_sprite.texture = texture_id;
-my_sprite.position = glm::vec2{100.0f, 200.0f};
-my_sprite.size = glm::vec2{50.0f, 50.0f};
-my_sprite.layer = 5;
-ui_renderer.AddSprite(my_sprite);
-
-// Render all
-ui_renderer.Render();
+void UpdateLayout() {
+    int screen_width = GetScreenWidth();
+    int screen_height = GetScreenHeight();
+    float x = (screen_width - width_) / 2;
+    float y = (screen_height - height_) / 2;
+    panel_->SetRelativePosition(x, y);
+}
 ```
 
-### Using BatchRenderer
-
+### Keyboard Navigation
 ```cpp
-// Initialize (once)
-engine::ui::batch_renderer::BatchRenderer::Initialize();
+void OnKeyPress(const KeyboardEvent& event) {
+    if (event.key == KEY_TAB) {
+        FocusNextElement();
+    } else if (event.key == KEY_ENTER) {
+        ActivateFocusedElement();
+    }
+}
+```
 
-// Each frame
-BatchRenderer::BeginFrame();
+### Complete Component Example
+```cpp
+class CustomButton : public UIElement {
+public:
+    using ClickCallback = std::function<void()>;
+    
+    CustomButton(float x, float y, float width, float height, const std::string& label)
+        : UIElement(x, y, width, height)
+        , label_(label)
+        , callback_(nullptr) {}
+    
+    void Render() const override {
+        using namespace engine::ui::batch_renderer;
+        
+        Rectangle bounds = GetAbsoluteBounds();
+        Color bg_color = is_focused_ 
+            ? Color{1.0f, 0.84f, 0.0f, 1.0f}   // GOLD
+            : Color{0.5f, 0.5f, 0.5f, 1.0f};   // GRAY
+        
+        BatchRenderer::SubmitQuad(bounds, bg_color);
+        BatchRenderer::SubmitText(
+            label_.c_str(), 
+            bounds.x + 10, 
+            bounds.y + 10, 
+            20, 
+            Color{1.0f, 1.0f, 1.0f, 1.0f}  // WHITE
+        );
+    }
+    
+    bool OnClick(const MouseEvent& event) override {
+        if (!Contains(event.x, event.y)) return false;
+        if (callback_) callback_();
+        return true;
+    }
+    
+    void SetClickCallback(ClickCallback callback) { callback_ = callback; }
+    
+private:
+    std::string label_;
+    ClickCallback callback_;
+};
+```
 
-// Submit quads
-BatchRenderer::SubmitQuad(
-    position,        // glm::vec2
-    size,           // glm::vec2
-    color,          // rendering::Color
-    texture_id,     // uint32_t
-    uv_min,         // glm::vec2
-    uv_max          // glm::vec2
-);
+---
 
-// Scissor clipping (optional)
-BatchRenderer::PushScissor(scissor_rect);
-// ... render clipped content ...
-BatchRenderer::PopScissor();
+## Key Lessons from Production
 
-// End frame (flushes all batches)
-BatchRenderer::EndFrame();
+1. **Panel child management** requires careful ownership - use `unique_ptr` for storage, raw pointers for access
+2. **Modal overlays** must explicitly block events to lower layers via `return true` in `ProcessMouseEvent()`
+3. **Dynamic UI positioning** requires `Update()` calls for window resize and animations
+4. **Window resize handling** requires tracking screen dimensions and repositioning on change - screen-relative elements won't update automatically
+5. **Integration** isn't complete until callbacks are wired - connect components immediately after creation
+6. **Vertex-based rendering** - Components submit vertices via BatchRenderer, not manage their own buffers
+7. **Automatic batching** - BatchRenderer handles optimization; just submit primitives in render order
 
-// Shutdown (on exit)
-BatchRenderer::Shutdown();
+---
+
+## Architecture Summary
+
+**Citrus Engine UI System**:
+- **Declarative, reactive, event-driven** retained-mode architecture
+- **Vertex-based rendering** via `BatchRenderer` for high performance
+- **Automatic batching** minimizes GPU draw calls
+- **Scissor clipping** for panels and scroll regions
+- **ImGui for debugging only** - production UI uses custom batch renderer
+
+**Key APIs**:
+- `BatchRenderer::SubmitQuad()` - Submit filled rectangles
+- `BatchRenderer::SubmitLine()` - Submit lines with thickness
+- `BatchRenderer::SubmitText()` - Submit text rendering
+- `BatchRenderer::PushScissor()` / `PopScissor()` - Hierarchical clipping
+- `BatchRenderer::BeginFrame()` / `EndFrame()` - Frame lifecycle
+
+**Component Pattern**:
+```cpp
+class MyComponent : public UIElement {
+    void Render() const override {
+        using namespace engine::ui::batch_renderer;
+        BatchRenderer::SubmitQuad(GetBounds(), background_color_);
+        // Render children
+        UIElement::Render();
+    }
+};
 ```
 
 ---
 
 **End of Citrus Engine UI Development Bible**
 
-*Reference for AI agents implementing retained-mode UI components in citrus-engine*
+*Reference for AI agents implementing declarative, reactive, event-driven UI components using vertex-based batch rendering*

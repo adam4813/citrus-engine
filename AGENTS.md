@@ -8,19 +8,29 @@
 
 ## ⚠️ MANDATORY FIRST STEPS - READ THIS BEFORE ANY ACTION ⚠️
 
-### Step 1: Install System Dependencies (Linux ONLY)
+### Step 1: Install System Dependencies
 
-**IF YOU ARE ON LINUX**, you MUST run this command FIRST before vcpkg, CMake, or any build steps:
-
+**Linux (Native Build)**:
 ```bash
 sudo apt-get update && sudo apt-get install -y build-essential cmake pkg-config \
   libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev \
-  libgl1-mesa-dev libglu1-mesa-dev
+  libgl1-mesa-dev libglu1-mesa-dev clang-18
 ```
 
-**Critical**: These libraries are required for GLFW3 and OpenGL support.
+**Critical**: These libraries are required for GLFW3, OpenGL support, and C++20 modules.
 
-**On Windows/macOS**: Skip this step.
+**Linux (Web/Emscripten Build)**:
+```bash
+# Install Emscripten SDK
+cd /opt  # or any location
+git clone https://github.com/emscripten-core/emsdk.git
+cd emsdk
+./emsdk install latest
+./emsdk activate latest
+source ./emsdk_env.sh  # Sets up PATH and environment variables
+```
+
+**Windows/macOS**: Install appropriate compilers (MSVC 2022+ or Clang-18+).
 
 ### Step 2: Bootstrap vcpkg
 
@@ -39,16 +49,33 @@ set VCPKG_ROOT=D:\path\to\vcpkg     # Windows
 
 ### Step 3: Configure CMake
 
+**Native Build**:
 ```bash
+# Linux (use Clang-18)
+export CC=clang-18
+export CXX=clang++-18
+cmake --preset cli-native -DVCPKG_TARGET_TRIPLET=x64-linux
+
+# Windows
 cmake --preset cli-native
+```
+
+**Web Build (Emscripten)**:
+```bash
+# Ensure emsdk is activated
+source /opt/emsdk/emsdk_env.sh  # Adjust path as needed
+
+# Configure (Emscripten toolchain from vcpkg)
+cmake --preset cli-native -DVCPKG_TARGET_TRIPLET=wasm32-emscripten
 ```
 
 **Note**: citrus-engine uses `cli-native` presets to avoid conflicts with IDE builds.
 
-**Platform-specific triplets**: The presets default to `x64-windows`. On Linux or macOS, you may need to:
-- Use `x64-linux` triplet on Linux
-- Use `x64-osx` triplet on macOS
-- Or let vcpkg auto-detect by not specifying a triplet
+**Platform-specific triplets**:
+- `x64-windows` - Windows (default)
+- `x64-linux` - Linux native
+- `x64-osx` - macOS native
+- `wasm32-emscripten` - Web/Emscripten
 
 **These steps are NOT optional. Complete them before proceeding with any task.**
 
@@ -139,31 +166,52 @@ documented patterns.
 **Build/test MUST succeed before completing any task.**
 
 **Compiler Requirements**:
-- **Linux**: Clang-18 or later (required for C++20 modules)
-- **Windows**: MSVC 2022 or Clang-18+
+- **Linux Native**: Clang-18 or later (required for C++20 modules)
+- **Windows Native**: MSVC 2022 or Clang-18+
+- **Web (Emscripten)**: Latest Emscripten SDK (3.1.40+)
 - **Note**: GCC has incomplete C++20 module support and may not work
 
-**System Dependencies (Linux only)**:
+**System Dependencies (Linux Native only)**:
 ```bash
 sudo apt-get install -y libx11-dev libxrandr-dev libxinerama-dev \
   libxcursor-dev libxi-dev libgl1-mesa-dev clang-18
 ```
 
+**Emscripten Setup (Web builds)**:
+```bash
+# Install Emscripten SDK (one time)
+cd /opt && git clone https://github.com/emscripten-core/emsdk.git
+cd emsdk && ./emsdk install latest && ./emsdk activate latest
+
+# Activate Emscripten environment (each shell session)
+source /opt/emsdk/emsdk_env.sh
+```
+
 Before completing any work:
 
-1. **Set compiler environment** (Linux only):
+1. **Set compiler environment**:
+   
+   **Linux Native**:
    ```bash
    export CC=clang-18
    export CXX=clang++-18
    ```
+   
+   **Web/Emscripten**:
+   ```bash
+   source /opt/emsdk/emsdk_env.sh  # Sets CC/CXX to emcc/em++
+   ```
 
 2. **Configure** (first time):
    ```bash
-   # Linux
+   # Linux Native
    cmake --preset cli-native -DVCPKG_TARGET_TRIPLET=x64-linux
    
-   # Windows
+   # Windows Native
    cmake --preset cli-native
+   
+   # Web/Emscripten
+   cmake --preset cli-native -DVCPKG_TARGET_TRIPLET=wasm32-emscripten
    ```
 
 3. **Build**: `cmake --build --preset cli-native-debug`
@@ -178,6 +226,7 @@ Before completing any work:
 - CMake 3.31+ requires `CMAKE_CXX_SCAN_FOR_MODULES=OFF` for C++20 modules
 - Some source files may be missing `#include <cstdint>` - add in module preambles
 - GCC support is limited due to incomplete C++20 module implementation
+- Emscripten builds do not use C++20 modules (uses traditional headers)
 
 **Note**: Use `cli-native` presets (not `native`) to avoid conflicts with IDE builds.
 Build directory: `build/cli-native/` (isolated from IDE's `build/native/`)

@@ -1,10 +1,12 @@
-# Modern C++ Game Engine UI Development Bible
+# Citrus Engine UI Development Bible
 
 **AI Agent Reference: Building declarative, reactive, event-driven user interfaces**
 
-**Purpose**: Technical reference for AI agents implementing UI components  
+**Purpose**: Technical reference for AI agents implementing UI components for citrus-engine  
 **Audience**: AI assistants only (not user documentation)  
 **Status**: Active
+
+**Note**: The citrus-engine UI system is built on a vertex-based batch renderer for high-performance rendering. ImGui is included as a dependency for debugging/development tools only.
 
 ---
 
@@ -42,11 +44,16 @@ Constructor() {
 }
 
 void Render() const {
-    panel_->Render();  // Simple tree traversal
+    // UI components submit vertices to batch renderer
+    using namespace engine::ui::batch_renderer;
+    
+    BatchRenderer::BeginFrame();
+    panel_->Render();  // Simple tree traversal, submits vertices
+    BatchRenderer::EndFrame();  // Flushes all batches to GPU
 }
 ```
 
-**Benefits**: Easier to reason about, test, and optimize. State changes are explicit, not implicit.
+**Benefits**: Easier to reason about, test, and optimize. State changes are explicit, not implicit. Batch renderer minimizes GPU draw calls.
 
 ---
 
@@ -57,17 +64,25 @@ Visual state changes **only** in response to events, never continuously.
 ```cpp
 // CORRECT: Update on events only
 void OnSelectionChanged(int new_index) {
-    buttons_[old_index_]->SetColor(GRAY);
-    buttons_[new_index]->SetColor(GOLD);
+    buttons_[old_index_]->SetColor({0.5f, 0.5f, 0.5f, 1.0f});  // GRAY
+    buttons_[new_index]->SetColor({1.0f, 0.84f, 0.0f, 1.0f});   // GOLD
     old_index_ = new_index;
 }
 
 void Render() const {
-    button_->Render();  // Properties already set
+    // Button properties already set - just submit vertices
+    using namespace engine::ui::batch_renderer;
+    
+    for (const auto& button : buttons_) {
+        BatchRenderer::SubmitQuad(
+            button->GetRect(),
+            button->GetColor()
+        );
+    }
 }
 ```
 
-**Benefits**: 60x performance improvement over per-frame updates. UI updates when it needs to, not "just in case."
+**Benefits**: 60x performance improvement over per-frame updates. UI updates when it needs to, not "just in case." Batch renderer efficiently handles the actual vertex submissions.
 
 ---
 
@@ -131,6 +146,105 @@ Constructor() {
 ```
 
 **Benefits**: Small, focused components are easier to test, debug, and reuse.
+
+---
+
+## Citrus Engine Batch Renderer Architecture
+
+### Vertex-Based Rendering
+
+The citrus-engine UI is built on a high-performance vertex-based batch renderer that minimizes GPU draw calls:
+
+```cpp
+using namespace engine::ui::batch_renderer;
+
+// Initialize once at startup
+BatchRenderer::Initialize();
+
+// Each frame
+BatchRenderer::BeginFrame();
+
+// Submit UI primitives (converted to vertices internally)
+BatchRenderer::SubmitQuad(
+    Rectangle{x, y, width, height},  // Screen-space rectangle
+    Color{r, g, b, a},                // Fill color
+    std::nullopt,                     // UV coords (optional)
+    texture_id                        // Texture ID (0 = solid color)
+);
+
+BatchRenderer::SubmitLine(x0, y0, x1, y1, thickness, color);
+BatchRenderer::SubmitText(text, x, y, font_size, color);
+
+// Flush all batches to GPU
+BatchRenderer::EndFrame();
+
+// Cleanup at shutdown
+BatchRenderer::Shutdown();
+```
+
+### Key Features
+
+- **Batching**: Automatically batches draw calls to minimize GPU submissions
+- **Texture Management**: Supports up to 8 simultaneous texture units
+- **Scissor Clipping**: Hierarchical scissor rectangles for panels and scroll regions
+- **Vertex Pooling**: Pre-allocated vertex/index buffers to avoid allocations
+
+### Scissor Clipping for Panels
+
+```cpp
+// Render a panel with content clipped to bounds
+void Panel::Render() const {
+    using namespace engine::ui::batch_renderer;
+    
+    // Push scissor for this panel
+    BatchRenderer::PushScissor(ScissorRect{x, y, width, height});
+    
+    // Render panel background
+    BatchRenderer::SubmitQuad(GetRect(), background_color_);
+    
+    // Render children (clipped to panel bounds)
+    for (const auto& child : children_) {
+        child->Render();
+    }
+    
+    // Restore previous scissor
+    BatchRenderer::PopScissor();
+}
+```
+
+### Component Rendering Pattern
+
+UI components should **submit vertices** via BatchRenderer, not manage their own vertex buffers:
+
+```cpp
+class Button : public UIElement {
+public:
+    void Render() const override {
+        using namespace engine::ui::batch_renderer;
+        
+        // Submit button background quad
+        BatchRenderer::SubmitQuad(GetRect(), GetBackgroundColor());
+        
+        // Submit button text
+        if (!label_.empty()) {
+            BatchRenderer::SubmitText(
+                label_,
+                GetTextPosition(),
+                font_size_,
+                GetTextColor()
+            );
+        }
+        
+        // Render children
+        UIElement::Render();
+    }
+    
+private:
+    std::string label_;
+    float font_size_;
+    // Colors updated reactively, not every frame
+};
+```
 
 ---
 
@@ -244,15 +358,24 @@ protected:
 class Button : public UIElement {
 protected:
     void RenderBackground() const override {
-        DrawRectangle(bounds_, background_color_);
+        using namespace engine::ui::batch_renderer;
+        BatchRenderer::SubmitQuad(bounds_, background_color_);
     }
     
     void RenderContent() const override {
-        DrawText(label_, bounds_.center(), font_size_, text_color_);
+        using namespace engine::ui::batch_renderer;
+        auto text_pos = bounds_.center();
+        BatchRenderer::SubmitText(label_, text_pos.x, text_pos.y, font_size_, text_color_);
     }
     
     void RenderBorder() const override {
-        DrawRectangleLines(bounds_, border_color_);
+        using namespace engine::ui::batch_renderer;
+        // Submit 4 lines for border
+        float x = bounds_.x, y = bounds_.y, w = bounds_.width, h = bounds_.height;
+        BatchRenderer::SubmitLine(x, y, x+w, y, 1.0f, border_color_);       // Top
+        BatchRenderer::SubmitLine(x+w, y, x+w, y+h, 1.0f, border_color_);   // Right
+        BatchRenderer::SubmitLine(x+w, y+h, x, y+h, 1.0f, border_color_);   // Bottom
+        BatchRenderer::SubmitLine(x, y+h, x, y, 1.0f, border_color_);       // Left
     }
 };
 ```
@@ -631,7 +754,7 @@ public:
 #### 2. Keyboard Events
 ```cpp
 struct KeyboardEvent {
-    int key;                      // Raylib key code
+    int key;                      // Engine key code (see engine::input)
     bool is_pressed;              // Just pressed this frame
     bool is_released;             // Just released this frame
     bool is_down;                 // Currently held
@@ -1200,13 +1323,15 @@ private:
 #### 3. Implement Rendering
 ```cpp
 void Render() const override {
-    // Draw background
-    DrawRectangle(GetAbsoluteBounds(), background_color_);
+    using namespace engine::ui::batch_renderer;
     
-    // Draw content
+    // Submit background quad
+    BatchRenderer::SubmitQuad(GetAbsoluteBounds(), background_color_);
+    
+    // Submit content (text, icons, etc)
     // ...
     
-    // Draw children (if composite)
+    // Render children (if composite)
     for (const auto& child : children_) {
         child->Render();
     }
@@ -1252,15 +1377,19 @@ bool OnKeyPress(const KeyboardEvent& event) override {
 #### 6. Accessibility Support
 ```cpp
 void Render() const override {
+    using namespace engine::ui::batch_renderer;
+    
     // Respect accessibility settings
     const auto& settings = AccessibilitySettings::Get();
     
     float font_scale = settings.GetFontScale();
     int font_size = base_font_size_ * font_scale;
     
-    Color text_color = settings.IsHighContrast() ? WHITE : text_color_;
+    Color text_color = settings.IsHighContrast() 
+        ? Color{1.0f, 1.0f, 1.0f, 1.0f}  // WHITE
+        : text_color_;
     
-    DrawText(label_, position, font_size, text_color);
+    BatchRenderer::SubmitText(label_, position.x, position.y, font_size, text_color);
 }
 ```
 
@@ -1410,22 +1539,20 @@ TEST(AccessibilityTest, ContrastRatioSufficient) {
 ### Batch Rendering
 
 ```cpp
-// ✅ GOOD: Batch similar draw calls
+// ✅ GOOD: BatchRenderer automatically batches similar draw calls
 void Panel::Render() const {
-    // Collect all rectangles first
-    std::vector<Rectangle> rects;
-    std::vector<Color> colors;
+    using namespace engine::ui::batch_renderer;
     
+    // BatchRenderer automatically batches these submissions
     for (const auto& child : children_) {
-        if (auto* button = dynamic_cast<Button*>(child.get())) {
-            rects.push_back(button->GetBounds());
-            colors.push_back(button->GetBackgroundColor());
-        }
+        child->Render();  // Each child submits vertices
     }
-    
-    // Draw all at once
-    DrawRectanglesBatch(rects, colors);
+    // All vertices are automatically batched and submitted efficiently
 }
+
+// Note: The BatchRenderer handles batching internally - you don't need to
+// manually collect and batch primitives. Just submit them and let the
+// renderer optimize the GPU submissions.
 ```
 
 ---
@@ -1581,9 +1708,21 @@ public:
         , callback_(nullptr) {}
     
     void Render() const override {
+        using namespace engine::ui::batch_renderer;
+        
         Rectangle bounds = GetAbsoluteBounds();
-        DrawRectangle(bounds, is_focused_ ? GOLD : GRAY);
-        DrawText(label_.c_str(), bounds.x + 10, bounds.y + 10, 20, WHITE);
+        Color bg_color = is_focused_ 
+            ? Color{1.0f, 0.84f, 0.0f, 1.0f}   // GOLD
+            : Color{0.5f, 0.5f, 0.5f, 1.0f};   // GRAY
+        
+        BatchRenderer::SubmitQuad(bounds, bg_color);
+        BatchRenderer::SubmitText(
+            label_.c_str(), 
+            bounds.x + 10, 
+            bounds.y + 10, 
+            20, 
+            Color{1.0f, 1.0f, 1.0f, 1.0f}  // WHITE
+        );
     }
     
     bool OnClick(const MouseEvent& event) override {
@@ -1609,9 +1748,41 @@ private:
 3. **Dynamic UI positioning** requires `Update()` calls for window resize and animations
 4. **Window resize handling** requires tracking screen dimensions and repositioning on change - screen-relative elements won't update automatically
 5. **Integration** isn't complete until callbacks are wired - connect components immediately after creation
+6. **Vertex-based rendering** - Components submit vertices via BatchRenderer, not manage their own buffers
+7. **Automatic batching** - BatchRenderer handles optimization; just submit primitives in render order
 
 ---
 
-**End of UI Development Bible**
+## Architecture Summary
 
-*Reference for AI agents implementing UI components*
+**Citrus Engine UI System**:
+- **Declarative, reactive, event-driven** retained-mode architecture
+- **Vertex-based rendering** via `BatchRenderer` for high performance
+- **Automatic batching** minimizes GPU draw calls
+- **Scissor clipping** for panels and scroll regions
+- **ImGui for debugging only** - production UI uses custom batch renderer
+
+**Key APIs**:
+- `BatchRenderer::SubmitQuad()` - Submit filled rectangles
+- `BatchRenderer::SubmitLine()` - Submit lines with thickness
+- `BatchRenderer::SubmitText()` - Submit text rendering
+- `BatchRenderer::PushScissor()` / `PopScissor()` - Hierarchical clipping
+- `BatchRenderer::BeginFrame()` / `EndFrame()` - Frame lifecycle
+
+**Component Pattern**:
+```cpp
+class MyComponent : public UIElement {
+    void Render() const override {
+        using namespace engine::ui::batch_renderer;
+        BatchRenderer::SubmitQuad(GetBounds(), background_color_);
+        // Render children
+        UIElement::Render();
+    }
+};
+```
+
+---
+
+**End of Citrus Engine UI Development Bible**
+
+*Reference for AI agents implementing declarative, reactive, event-driven UI components using vertex-based batch rendering*

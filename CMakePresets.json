@@ -15,7 +15,8 @@
       "toolchainFile": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
       "cacheVariables": {
         "CMAKE_CXX_STANDARD": "20",
-        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "CMAKE_CXX_SCAN_FOR_MODULES": "OFF"
       }
     },
     {
@@ -44,8 +45,48 @@
     },
     {
       "name": "native-static-test",
-      "displayName": "Native Static ",
+      "displayName": "Native Static Test",
       "inherits": "native-static",
+      "cacheVariables": {
+        "BUILD_TESTING": "ON"
+      }
+    },
+    {
+      "name": "cli-native",
+      "displayName": "CLI Native Build",
+      "description": "CLI/Agent native build preset (isolated from IDE builds)",
+      "inherits": "base",
+      "binaryDir": "${sourceDir}/build/cli-native",
+      "cacheVariables": {
+        "VCPKG_TARGET_TRIPLET": "x64-windows"
+      }
+    },
+    {
+      "name": "cli-native-static",
+      "displayName": "CLI Native Static Build",
+      "description": "CLI/Agent native static build preset (isolated from IDE builds)",
+      "inherits": "base",
+      "binaryDir": "${sourceDir}/build/cli-native-static",
+      "cacheVariables": {
+        "VCPKG_TARGET_TRIPLET": "x64-windows-static"
+      }
+    },
+    {
+      "name": "cli-native-test",
+      "displayName": "CLI Native Test",
+      "description": "CLI/Agent test build preset (isolated from IDE builds)",
+      "inherits": "cli-native",
+      "binaryDir": "${sourceDir}/build/cli-native-test",
+      "cacheVariables": {
+        "BUILD_TESTING": "ON"
+      }
+    },
+    {
+      "name": "cli-native-static-test",
+      "displayName": "CLI Native Static Test",
+      "description": "CLI/Agent static test build preset (isolated from IDE builds)",
+      "inherits": "cli-native-static",
+      "binaryDir": "${sourceDir}/build/cli-native-static-test",
       "cacheVariables": {
         "BUILD_TESTING": "ON"
       }
@@ -89,6 +130,54 @@
       "configuration": "Release"
     },
     {
+      "name": "cli-native-debug",
+      "displayName": "CLI Native Debug",
+      "configurePreset": "cli-native",
+      "configuration": "Debug"
+    },
+    {
+      "name": "cli-native-release",
+      "displayName": "CLI Native Release",
+      "configurePreset": "cli-native",
+      "configuration": "Release"
+    },
+    {
+      "name": "cli-native-static-debug",
+      "displayName": "CLI Native Static Debug",
+      "configurePreset": "cli-native-static",
+      "configuration": "Debug"
+    },
+    {
+      "name": "cli-native-static-release",
+      "displayName": "CLI Native Static Release",
+      "configurePreset": "cli-native-static",
+      "configuration": "Release"
+    },
+    {
+      "name": "cli-native-test-debug",
+      "displayName": "CLI Native Test Debug",
+      "configurePreset": "cli-native-test",
+      "configuration": "Debug"
+    },
+    {
+      "name": "cli-native-test-release",
+      "displayName": "CLI Native Test Release",
+      "configurePreset": "cli-native-test",
+      "configuration": "Release"
+    },
+    {
+      "name": "cli-native-static-test-debug",
+      "displayName": "CLI Native Static Test Debug",
+      "configurePreset": "cli-native-static-test",
+      "configuration": "Debug"
+    },
+    {
+      "name": "cli-native-static-test-release",
+      "displayName": "CLI Native Static Test Release",
+      "configurePreset": "cli-native-static-test",
+      "configuration": "Release"
+    },
+    {
       "name": "wasm-debug",
       "displayName": "WASM Debug",
       "configurePreset": "wasm",
@@ -103,8 +192,8 @@
   ],
   "testPresets": [
     {
-      "name": "native-test",
-      "displayName": "Native Tests",
+      "name": "native-test-debug",
+      "displayName": "Native Tests (Debug)",
       "configurePreset": "native-test",
       "configuration": "Debug",
       "output": {
@@ -117,8 +206,8 @@
       }
     },
     {
-      "name": "native-static-test",
-      "displayName": "Native Static Tests",
+      "name": "native-static-test-debug",
+      "displayName": "Native Static Tests (Debug)",
       "configurePreset": "native-static-test",
       "configuration": "Debug",
       "output": {
@@ -134,6 +223,60 @@
       "name": "native-test-release",
       "displayName": "Native Tests (Release)",
       "configurePreset": "native-test",
+      "configuration": "Release",
+      "output": {
+        "outputOnFailure": true
+      },
+      "execution": {
+        "noTestsAction": "error",
+        "stopOnFailure": false
+      }
+    },
+    {
+      "name": "cli-native-test-debug",
+      "displayName": "CLI Native Tests (Debug)",
+      "configurePreset": "cli-native-test",
+      "configuration": "Debug",
+      "output": {
+        "outputOnFailure": true,
+        "verbosity": "verbose"
+      },
+      "execution": {
+        "noTestsAction": "error",
+        "stopOnFailure": false
+      }
+    },
+    {
+      "name": "cli-native-test-release",
+      "displayName": "CLI Native Tests (Release)",
+      "configurePreset": "cli-native-test",
+      "configuration": "Release",
+      "output": {
+        "outputOnFailure": true
+      },
+      "execution": {
+        "noTestsAction": "error",
+        "stopOnFailure": false
+      }
+    },
+    {
+      "name": "cli-native-static-test-debug",
+      "displayName": "CLI Native Static Tests (Debug)",
+      "configurePreset": "cli-native-static-test",
+      "configuration": "Debug",
+      "output": {
+        "outputOnFailure": true,
+        "verbosity": "verbose"
+      },
+      "execution": {
+        "noTestsAction": "error",
+        "stopOnFailure": false
+      }
+    },
+    {
+      "name": "cli-native-static-test-release",
+      "displayName": "CLI Native Static Tests (Release)",
+      "configurePreset": "cli-native-static-test",
       "configuration": "Release",
       "output": {
         "outputOnFailure": true

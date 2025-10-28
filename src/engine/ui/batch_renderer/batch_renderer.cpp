@@ -2,10 +2,21 @@ module;
 
 #include <cmath>
 #include <algorithm>
+#ifdef __EMSCRIPTEN__
+#include <GLES3/gl3.h>
+#else
+#include <glad/glad.h>
+#endif
 
 module engine.ui.batch_renderer;
 
+import engine.rendering;
+import engine.platform;
+import glm;
+
 namespace engine::ui::batch_renderer {
+    constexpr float PI = 3.14159265358979323846f;
+    
     struct BatchRenderer::BatchState {
         // Current batch buffers
         std::vector<Vertex> vertices;
@@ -22,7 +33,18 @@ namespace engine::ui::batch_renderer {
         bool in_frame = false;
 
         // White pixel texture for untextured draws
-        uint32_t white_texture_id = 0;
+        rendering::TextureId white_texture_id = 0;
+        
+        // Rendering resources
+        rendering::ShaderId ui_shader = 0;
+        GLuint vao = 0;
+        GLuint vbo = 0;
+        GLuint ebo = 0;
+        glm::mat4 projection;
+        
+        // Screen dimensions
+        uint32_t screen_width = 0;
+        uint32_t screen_height = 0;
 
         BatchState() {
             vertices.reserve(INITIAL_VERTEX_CAPACITY);
@@ -35,22 +57,97 @@ namespace engine::ui::batch_renderer {
     void BatchRenderer::Initialize() {
         if (!state_) {
             state_ = std::make_unique<BatchState>();
-
+            
+            auto& renderer = rendering::GetRenderer();
+            auto& shader_mgr = renderer.GetShaderManager();
+            auto& texture_mgr = renderer.GetTextureManager();
+            
+            // Load UI batch shader
+            platform::fs::Path shader_dir = "assets/shaders";
+            state_->ui_shader = shader_mgr.LoadShader(
+                "ui_batch",
+                shader_dir / "ui_batch.vert",
+                shader_dir / "ui_batch.frag"
+            );
+            
             // Create 1x1 white texture for untextured draws
-            Image white_img = GenImageColor(1, 1, WHITE);
-            Texture2D white_tex = LoadTextureFromImage(white_img);
-            UnloadImage(white_img);
-
-            state_->white_texture_id = white_tex.id;
+            std::vector<uint8_t> white_pixel = {255, 255, 255, 255};
+            rendering::TextureCreateInfo tex_info{};
+            tex_info.width = 1;
+            tex_info.height = 1;
+            tex_info.format = rendering::TextureFormat::RGBA8;
+            tex_info.data = white_pixel.data();
+            tex_info.generate_mipmaps = false;
+            
+            state_->white_texture_id = texture_mgr.CreateTexture("ui_white_pixel", tex_info);
+            
+            // Create OpenGL vertex array and buffers
+            glGenVertexArrays(1, &state_->vao);
+            glGenBuffers(1, &state_->vbo);
+            glGenBuffers(1, &state_->ebo);
+            
+            glBindVertexArray(state_->vao);
+            
+            // Allocate buffers
+            glBindBuffer(GL_ARRAY_BUFFER, state_->vbo);
+            glBufferData(GL_ARRAY_BUFFER, 
+                        INITIAL_VERTEX_CAPACITY * sizeof(Vertex), 
+                        nullptr, 
+                        GL_DYNAMIC_DRAW);
+            
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, state_->ebo);
+            glBufferData(GL_ELEMENT_ARRAY_BUFFER,
+                        INITIAL_INDEX_CAPACITY * sizeof(uint32_t),
+                        nullptr,
+                        GL_DYNAMIC_DRAW);
+            
+            // Setup vertex attributes
+            // Position (x, y)
+            glEnableVertexAttribArray(0);
+            glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex),
+                                 (void*)offsetof(Vertex, x));
+            
+            // TexCoord (u, v)
+            glEnableVertexAttribArray(1);
+            glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex),
+                                 (void*)offsetof(Vertex, u));
+            
+            // Color (packed uint32 -> vec4)
+            glEnableVertexAttribArray(2);
+            glVertexAttribPointer(2, 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(Vertex),
+                                 (void*)offsetof(Vertex, color));
+            
+            // TexIndex (float)
+            glEnableVertexAttribArray(3);
+            glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, sizeof(Vertex),
+                                 (void*)offsetof(Vertex, tex_index));
+            
+            glBindVertexArray(0);
+            
             state_->initialized = true;
         }
     }
 
     void BatchRenderer::Shutdown() {
         if (state_ && state_->initialized) {
-            if (state_->white_texture_id != 0) {
-                UnloadTexture(Texture2D{state_->white_texture_id});
+            // Clean up OpenGL resources
+            if (state_->vao != 0) {
+                glDeleteVertexArrays(1, &state_->vao);
             }
+            if (state_->vbo != 0) {
+                glDeleteBuffers(1, &state_->vbo);
+            }
+            if (state_->ebo != 0) {
+                glDeleteBuffers(1, &state_->ebo);
+            }
+            
+            // Clean up texture
+            if (state_->white_texture_id != 0) {
+                auto& renderer = rendering::GetRenderer();
+                auto& texture_mgr = renderer.GetTextureManager();
+                texture_mgr.DestroyTexture(state_->white_texture_id);
+            }
+            
             state_.reset();
         }
     }
@@ -67,12 +164,25 @@ namespace engine::ui::batch_renderer {
         state_->draw_call_count = 0;
         state_->in_frame = true;
 
+        // Get current screen dimensions from renderer
+        auto& renderer = rendering::GetRenderer();
+        // For now, use a default screen size - this should be passed in or queried
+        state_->screen_width = 1920;  // TODO: Get from window/renderer
+        state_->screen_height = 1080; // TODO: Get from window/renderer
+        
+        // Setup orthographic projection for screen-space rendering
+        state_->projection = glm::ortho(
+            0.0f, static_cast<float>(state_->screen_width),
+            static_cast<float>(state_->screen_height), 0.0f,
+            -1.0f, 1.0f
+        );
+        
         // Initialize scissor to full screen
-        const int screen_width = GetScreenWidth();
-        const int screen_height = GetScreenHeight();
-        state_->current_scissor = ScissorRect(0, 0,
-                                              static_cast<float>(screen_width),
-                                              static_cast<float>(screen_height));
+        state_->current_scissor = ScissorRect(
+            0, 0,
+            static_cast<float>(state_->screen_width),
+            static_cast<float>(state_->screen_height)
+        );
     }
 
     void BatchRenderer::EndFrame() {
@@ -352,14 +462,15 @@ namespace engine::ui::batch_renderer {
     ) {
         if (!state_ || text.empty()) return;
 
-        // Flush current batch before native text draw
+        // Flush current batch before text rendering
         if (!state_->vertices.empty()) {
             FlushBatch();
         }
 
-        // Use native Raylib text rendering (already optimized)
-        DrawText(text.c_str(), static_cast<int>(x), static_cast<int>(y), font_size, color);
-
+        // TODO: Implement text rendering using a font atlas texture
+        // For now, this is a stub - text rendering will be added later
+        // Text should be rendered as textured quads from a font atlas
+        
         // Count as 1 draw call
         state_->draw_call_count++;
     }
@@ -372,23 +483,14 @@ namespace engine::ui::batch_renderer {
     ) {
         if (!state_ || text.empty()) return;
 
-        // Flush and set scissor for text clipping
+        // Flush current batch
         if (!state_->vertices.empty()) {
             FlushBatch();
         }
 
-        // Apply scissor
-        BeginScissorMode(
-            static_cast<int>(rect.x),
-            static_cast<int>(rect.y),
-            static_cast<int>(rect.width),
-            static_cast<int>(rect.height)
-        );
-
-        DrawText(text.c_str(), static_cast<int>(rect.x), static_cast<int>(rect.y), font_size, color);
-
-        EndScissorMode();
-
+        // TODO: Implement clipped text rendering
+        // This should use scissor test and font atlas rendering
+        
         state_->draw_call_count++;
     }
 
@@ -469,45 +571,72 @@ namespace engine::ui::batch_renderer {
     void BatchRenderer::FlushBatch() {
         if (!state_ || state_->vertices.empty()) return;
 
+        // Get renderer and shader
+        auto& renderer = rendering::GetRenderer();
+        auto& shader_mgr = renderer.GetShaderManager();
+        auto& shader = shader_mgr.GetShader(state_->ui_shader);
+        
+        // Use the UI batch shader
+        shader.Use();
+        
+        // Set projection matrix
+        shader.SetUniform("u_Projection", state_->projection);
+        
+        // Bind textures to their slots
+        int tex_samplers[MAX_TEXTURE_SLOTS] = {0, 1, 2, 3, 4, 5, 6, 7};
+        for (const auto& [texture_id, slot] : state_->texture_slots) {
+            glActiveTexture(GL_TEXTURE0 + slot);
+            glBindTexture(GL_TEXTURE_2D, texture_id);
+        }
+        
+        // Set texture sampler array uniform
+        shader.SetUniform("u_Textures", tex_samplers[0]); // This needs to be an array uniform
+        // Note: The shader system may need enhancement to support array uniforms properly
+        
         // Apply scissor if active
         const bool use_scissor = state_->current_scissor.IsValid();
         if (use_scissor) {
-            BeginScissorMode(
-                static_cast<int>(state_->current_scissor.x),
-                static_cast<int>(state_->current_scissor.y),
-                static_cast<int>(state_->current_scissor.width),
-                static_cast<int>(state_->current_scissor.height)
+            glEnable(GL_SCISSOR_TEST);
+            glScissor(
+                static_cast<GLint>(state_->current_scissor.x),
+                static_cast<GLint>(state_->current_scissor.y),
+                static_cast<GLsizei>(state_->current_scissor.width),
+                static_cast<GLsizei>(state_->current_scissor.height)
             );
         }
-
-        // Use Raylib's internal mesh rendering
-        // For simplicity, we'll use DrawTriangleStrip or manual vertex submission
-        // In a real implementation, you'd upload to VBO/IBO and use glDrawElements
-
-        // Draw triangles using indices
-        for (size_t i = 0; i < state_->indices.size(); i += 3) {
-            if (i + 2 >= state_->indices.size()) break;
-
-            const Vertex &v0 = state_->vertices[state_->indices[i + 0]];
-            const Vertex &v1 = state_->vertices[state_->indices[i + 1]];
-            const Vertex &v2 = state_->vertices[state_->indices[i + 2]];
-
-            const Color c0 = RGBAToColor(v0.color);
-            const Color c1 = RGBAToColor(v1.color);
-            const Color c2 = RGBAToColor(v2.color);
-
-            // Use Raylib's immediate mode (simplified)
-            DrawTriangle(
-                Vector2{v0.x, v0.y},
-                Vector2{v1.x, v1.y},
-                Vector2{v2.x, v2.y},
-                c0 // Simplified: use first vertex color
-            );
-        }
-
+        
+        // Upload vertex and index data
+        glBindVertexArray(state_->vao);
+        
+        glBindBuffer(GL_ARRAY_BUFFER, state_->vbo);
+        glBufferSubData(GL_ARRAY_BUFFER, 0, 
+                       state_->vertices.size() * sizeof(Vertex),
+                       state_->vertices.data());
+        
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, state_->ebo);
+        glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0,
+                       state_->indices.size() * sizeof(uint32_t),
+                       state_->indices.data());
+        
+        // Enable blending for transparency
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        
+        // Draw the batch
+        glDrawElements(GL_TRIANGLES, 
+                      static_cast<GLsizei>(state_->indices.size()),
+                      GL_UNSIGNED_INT, 
+                      nullptr);
+        
+        // Disable blending
+        glDisable(GL_BLEND);
+        
+        // Disable scissor
         if (use_scissor) {
-            EndScissorMode();
+            glDisable(GL_SCISSOR_TEST);
         }
+        
+        glBindVertexArray(0);
 
         state_->draw_call_count++;
 

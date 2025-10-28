@@ -15,7 +15,7 @@
 ## 📚 Pattern/API Documentation - Read Before Working
 
 When working in specific domains, read the relevant pattern guide:
-- **UI work** → Read `UI_DEVELOPMENT_BIBLE.md` (ImGui-based UI patterns)
+- **UI work** → Read `UI_DEVELOPMENT_BIBLE.md` (declarative, reactive, event-driven patterns)
 - **Testing work** → Read `TESTING.md` (test structure, priorities, best practices)
 - **Future**: Additional API guides for engine subsystems will be added
 

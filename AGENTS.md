@@ -60,7 +60,7 @@ cmake --preset cli-native
 
 **Read these pattern/API guides immediately when working in their domains**:
 
-- **UI work**: Read `UI_DEVELOPMENT_BIBLE.md` - ImGui-based UI patterns and architecture
+- **UI work**: Read `UI_DEVELOPMENT_BIBLE.md` - declarative, reactive, event-driven patterns
 - **Testing work**: Read `TESTING.md` - test structure, priorities, and best practices
 - **Future**: API documentation describing engine usage patterns (not yet created)
 

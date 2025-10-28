@@ -1,10 +1,36 @@
 # Testing Guide for Citrus Engine
 
-This document provides information about the test suite for citrus-engine.
+This document provides information about the comprehensive test suite for citrus-engine.
 
 ## Test Overview
 
-The project uses Google Test (gtest) for unit and integration testing.
+The project includes three types of tests prioritized as follows:
+
+1. **Integration Tests** (Highest Priority) - Test interactions between major components
+2. **End-to-End (E2E) Tests** (Second Priority) - Test complete workflows
+3. **Unit Tests** (Lowest Priority) - Test unique or complex logic only
+
+### Why This Priority Order?
+
+**Integration tests are highest priority** because they:
+- Verify that multiple components work together correctly
+- Catch interface mismatches and integration bugs early
+- Provide confidence that major subsystems interact properly
+- Are more valuable than testing components in isolation
+
+**E2E tests are second priority** because they:
+- Verify complete user workflows from start to finish
+- Ensure the system works as a whole
+- Catch issues that only appear in real-world usage scenarios
+- Validate that features actually deliver value to users
+
+**Unit tests are lowest priority** because they:
+- Should only test complex or unique logic
+- Are often redundant when integration/E2E tests exist
+- Can be brittle and require maintenance when implementation details change
+- Are most useful for algorithmic code, edge cases, and tricky business logic
+
+**Rule of thumb**: Write integration tests first, add E2E tests for key workflows, and only write unit tests for complex logic that's hard to cover otherwise.
 
 ## Test Structure
 

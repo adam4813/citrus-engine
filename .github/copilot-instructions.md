@@ -29,17 +29,17 @@ When working in specific domains, read the relevant pattern guide:
 3. **Emscripten** (for web): Clone emsdk, `./emsdk install latest && ./emsdk activate latest && source ./emsdk_env.sh`
 
 **Build Commands**:
-- **Native (Windows)**: `cmake --preset cli-native` → `cmake --build --preset cli-native-debug`
+- **Native (Windows)**: `cmake --preset cli-native -DVCPKG_TARGET_TRIPLET=x64-windows` → `cmake --build --preset cli-native-debug`
 - **Native (Linux)**: `export CC=clang-18 CXX=clang++-18 VCPKG_ROOT=/path/to/vcpkg` → `cmake --preset cli-native -DVCPKG_TARGET_TRIPLET=x64-linux` → `cmake --build --preset cli-native-debug`
 - **Web (Emscripten)**: `source /path/to/emsdk/emsdk_env.sh && export VCPKG_ROOT=/path/to/vcpkg` → `cmake --preset cli-native -DVCPKG_TARGET_TRIPLET=wasm32-emscripten` → `cmake --build --preset cli-native-debug`
-- **Tests**: `cmake --preset cli-native-test` → `ctest --preset cli-native-test-debug`
+- **Tests**: `cmake --preset cli-native-test -DVCPKG_TARGET_TRIPLET=<triplet>` → `ctest --preset cli-native-test-debug`
 
-**Presets**: Use `cli-*` presets (NOT `native` or `test` - those are for IDEs)
+**Presets**: Use `cli-*` presets (NOT `native` or `test` - those are for IDEs). You must specify `-DVCPKG_TARGET_TRIPLET` for your platform (x64-windows, x64-linux, etc.).
 
 **Automation**: Use `aminya/setup-cpp` GitHub Action for automated tool setup in web environments
 
 **Note**: 
-- Presets default to Windows. On Linux/macOS, adjust vcpkg triplet as needed.
+- Presets no longer have hard-coded triplets. Specify `-DVCPKG_TARGET_TRIPLET` on the command line.
 - Linux requires Clang-18+ for C++20 modules (GCC has incomplete support)
 - Web builds require Emscripten SDK: https://emscripten.org/docs/getting_started/downloads.html
 - vcpkg MUST be in parent directory of citrus-engine, not inside it

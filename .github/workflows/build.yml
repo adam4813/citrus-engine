@@ -83,26 +83,28 @@ jobs:
       - name: Run CMake with Presets (Build)
         uses: lukka/run-cmake@v10
         with:
-          configurePreset: native
-          buildPreset: native-release
+          configurePreset: cli-native
+          buildPreset: cli-native-release
+          configurePresetAdditionalArgs: "['-DVCPKG_TARGET_TRIPLET=${{ matrix.vcpkg_triplet }}']"
 
       - name: Run CMake with Presets (Tests)
         uses: lukka/run-cmake@v10
         with:
-          configurePreset: test
-          buildPreset: test-release
+          configurePreset: cli-native-test
+          buildPreset: cli-native-test-release
+          configurePresetAdditionalArgs: "['-DVCPKG_TARGET_TRIPLET=${{ matrix.vcpkg_triplet }}']"
 
       - name: Run Tests
         shell: bash
         run: |
-          cd build/test/tests
+          cd build/cli-native-test
           ctest -C Release --output-on-failure || echo "Some tests may fail - test infrastructure is functional"
 
       - name: List build outputs
         shell: bash
         run: |
           echo "=== Build directory structure ==="
-          ls -R build/native/bin/Release || true
+          ls -R build/cli-native/bin/Release || true
 
       - name: Prepare artifacts (Windows)
         if: runner.os == 'Windows'

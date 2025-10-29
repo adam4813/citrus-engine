@@ -27,6 +27,16 @@ export namespace engine::ui::batch_renderer {
         }
     };
 
+    struct Vector2 {
+        float x, y;
+
+        Vector2() : x(0), y(0) {
+        }
+
+        Vector2(float x, float y) : x(x), y(y) {
+        }
+    };
+
     /**
      * @brief Scissor rectangle for clipping (screen-space, top-left origin)
      */
@@ -83,8 +93,11 @@ export namespace engine::ui::batch_renderer {
     struct Rectangle {
         float x, y, width, height;
 
-        Rectangle() : x(0), y(0), width(0), height(0) {}
-        Rectangle(float x, float y, float w, float h) : x(x), y(y), width(w), height(h) {}
+        Rectangle() : x(0), y(0), width(0), height(0) {
+        }
+
+        Rectangle(float x, float y, float w, float h) : x(x), y(y), width(w), height(h) {
+        }
     };
 
     /**
@@ -93,8 +106,11 @@ export namespace engine::ui::batch_renderer {
     struct Color {
         float r, g, b, a;
 
-        Color() : r(1.0f), g(1.0f), b(1.0f), a(1.0f) {}
-        Color(float r, float g, float b, float a = 1.0f) : r(r), g(g), b(b), a(a) {}
+        Color() : r(1.0f), g(1.0f), b(1.0f), a(1.0f) {
+        }
+
+        Color(float r, float g, float b, float a = 1.0f) : r(r), g(g), b(b), a(a) {
+        }
     };
 
     /**

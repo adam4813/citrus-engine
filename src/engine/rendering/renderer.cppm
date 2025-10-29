@@ -76,6 +76,8 @@ export namespace engine::rendering {
 
         void SetViewport(int x, int y, uint32_t width, uint32_t height);
 
+        void GetFramebufferSize(uint32_t &width, uint32_t &height) const;
+
         // Statistics
         uint32_t GetDrawCallCount() const;
 

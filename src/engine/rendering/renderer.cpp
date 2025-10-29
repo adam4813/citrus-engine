@@ -263,6 +263,11 @@ void main() {
         // TODO: Implement viewport setting
     }
 
+    void Renderer::GetFramebufferSize(uint32_t &width, uint32_t &height) const {
+        width = pimpl_->window_width;
+        height = pimpl_->window_height;
+    }
+
     uint32_t Renderer::GetDrawCallCount() const {
         return pimpl_->draw_call_count;
     }

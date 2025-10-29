@@ -148,7 +148,7 @@ cmake --preset cli-native -DVCPKG_TARGET_TRIPLET=x64-linux
 **Native Build (Windows)**:
 ```cmd
 cd citrus-engine
-cmake --preset cli-native
+cmake --preset cli-native -DVCPKG_TARGET_TRIPLET=x64-windows
 ```
 
 **Web Build (Emscripten)**:
@@ -175,7 +175,7 @@ cmake --build --preset cli-native-release --parallel 4
 
 ### Platform Triplets Reference
 
-- `x64-windows` - Windows native (default in presets)
+- `x64-windows` - Windows native (must specify on command line)
 - `x64-linux` - Linux native (Clang-18+)
 - `x64-osx` - macOS native
 - `wasm32-emscripten` - Web/Emscripten builds

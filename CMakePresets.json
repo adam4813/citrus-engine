@@ -22,18 +22,12 @@
     {
       "name": "native",
       "displayName": "Native",
-      "inherits": "base",
-      "cacheVariables": {
-        "VCPKG_TARGET_TRIPLET": "x64-windows"
-      }
+      "inherits": "base"
     },
     {
       "name": "native-static",
       "displayName": "Native Static",
-      "inherits": "base",
-      "cacheVariables": {
-        "VCPKG_TARGET_TRIPLET": "x64-windows-static"
-      }
+      "inherits": "base"
     },
     {
       "name": "native-test",
@@ -56,20 +50,14 @@
       "displayName": "CLI Native Build",
       "description": "CLI/Agent native build preset (isolated from IDE builds)",
       "inherits": "base",
-      "binaryDir": "${sourceDir}/build/cli-native",
-      "cacheVariables": {
-        "VCPKG_TARGET_TRIPLET": "x64-windows"
-      }
+      "binaryDir": "${sourceDir}/build/cli-native"
     },
     {
       "name": "cli-native-static",
       "displayName": "CLI Native Static Build",
       "description": "CLI/Agent native static build preset (isolated from IDE builds)",
       "inherits": "base",
-      "binaryDir": "${sourceDir}/build/cli-native-static",
-      "cacheVariables": {
-        "VCPKG_TARGET_TRIPLET": "x64-windows-static"
-      }
+      "binaryDir": "${sourceDir}/build/cli-native-static"
     },
     {
       "name": "cli-native-test",

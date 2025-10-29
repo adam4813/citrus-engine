@@ -176,7 +176,7 @@ jobs:
           7z a ../engine-${{ matrix.os }}-${{ matrix.compiler }}.zip *
 
       - name: Create archive (Linux/macOS/Emscripten)
-        if: runner.os != 'Windows' || matrix.compiler == 'emscripten'
+        if: runner.os != 'Windows'
         run: |
           cd artifacts
           tar -czf ../engine-${{ matrix.os }}-${{ matrix.compiler }}.tar.gz *
@@ -190,7 +190,7 @@ jobs:
           retention-days: 30
 
       - name: Upload artifact (Linux/macOS/Emscripten)
-        if: runner.os != 'Windows' || matrix.compiler == 'emscripten'
+        if: runner.os != 'Windows'
         uses: actions/upload-artifact@v4
         with:
           name: engine-${{ matrix.os }}-${{ matrix.compiler }}

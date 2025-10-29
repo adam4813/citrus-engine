@@ -1,6 +1,7 @@
 ﻿module;
 
 // Standard library includes for scene management
+#include <cstdint>
 #include <memory>
 #include <string>
 #include <functional>

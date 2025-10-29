@@ -1,6 +1,8 @@
 module;
 
+#include <cstdint>
 #include <cmath>
+#include <optional>
 #include <vector>
 #include <string>
 #include <unordered_map>

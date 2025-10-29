@@ -1,6 +1,7 @@
 ﻿// File system implementation stub
 module;
 
+#include <cstdint>
 #include <string>
 #include <vector>
 #include <fstream>

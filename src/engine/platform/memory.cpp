@@ -1,6 +1,7 @@
 ﻿// Memory management implementation stub
 module;
 
+#include <cstdint>
 #include <cstdlib>
 #include <cstring>
 #include <algorithm>

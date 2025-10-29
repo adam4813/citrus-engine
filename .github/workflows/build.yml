@@ -69,12 +69,19 @@ jobs:
             libglu1-mesa-dev \
             xvfb
 
-      - name: Setup Cpp
-        if: matrix.compiler != 'msvc' && matrix.compiler != 'emscripten'
+      - name: Setup Cpp (with Clang version)
+        if: matrix.compiler != 'msvc' && matrix.compiler != 'emscripten' && matrix.clang_version
         uses: aminya/setup-cpp@v1
         with:
           compiler: ${{ matrix.compiler }}
-          clang: ${{ matrix.clang_version || '' }}
+          clang: ${{ matrix.clang_version }}
+          vcvarsall: ${{ runner.os == 'Windows' }}
+
+      - name: Setup Cpp (default)
+        if: matrix.compiler != 'msvc' && matrix.compiler != 'emscripten' && !matrix.clang_version
+        uses: aminya/setup-cpp@v1
+        with:
+          compiler: ${{ matrix.compiler }}
           vcvarsall: ${{ runner.os == 'Windows' }}
 
       - name: Setup Emscripten
@@ -132,69 +139,3 @@ jobs:
         run: |
           echo "=== Build directory structure ==="
           ls -R build/wasm/bin/Release || true
-
-      - name: Prepare artifacts (Windows)
-        if: runner.os == 'Windows' && matrix.compiler != 'emscripten'
-        shell: bash
-        run: |
-          mkdir -p artifacts
-          # Copy executables and DLLs from Release folder
-          
-          # Copy lua mods
-          mkdir -p artifacts/mods
-          cp mods/*.lua artifacts/mods || true
-          
-          ls -laR artifacts/
-
-      - name: Prepare artifacts (Linux/macOS Native)
-        if: runner.os != 'Windows' && matrix.compiler != 'emscripten'
-        run: |
-          mkdir -p artifacts
-          # Copy executables from Release folder
-          
-          # Copy lua mods
-          mkdir -p artifacts/mods
-          cp mods/*.lua artifacts/mods || true
-          
-          chmod +x artifacts/* || true
-          ls -laR artifacts/
-
-      - name: Prepare artifacts (Emscripten)
-        if: matrix.compiler == 'emscripten'
-        run: |
-          mkdir -p artifacts
-          # Copy WebAssembly files (.wasm, .js, .html)
-          find build/wasm -name "*.wasm" -o -name "*.js" -o -name "*.html" | xargs -I {} cp {} artifacts/ || true
-          
-          ls -laR artifacts/
-
-      - name: Create archive (Windows)
-        if: runner.os == 'Windows' && matrix.compiler != 'emscripten'
-        shell: bash
-        run: |
-          cd artifacts
-          7z a ../engine-${{ matrix.os }}-${{ matrix.compiler }}.zip *
-
-      - name: Create archive (Linux/macOS/Emscripten)
-        # Note: Emscripten builds run on ubuntu-latest, so they use tar.gz format
-        if: runner.os != 'Windows'
-        run: |
-          cd artifacts
-          tar -czf ../engine-${{ matrix.os }}-${{ matrix.compiler }}.tar.gz *
-
-      - name: Upload artifact (Windows)
-        if: runner.os == 'Windows' && matrix.compiler != 'emscripten'
-        uses: actions/upload-artifact@v4
-        with:
-          name: engine-${{ matrix.os }}-${{ matrix.compiler }}
-          path: engine-${{ matrix.os }}-${{ matrix.compiler }}.zip
-          retention-days: 30
-
-      - name: Upload artifact (Linux/macOS/Emscripten)
-        # Note: Emscripten builds run on ubuntu-latest, so they use tar.gz format
-        if: runner.os != 'Windows'
-        uses: actions/upload-artifact@v4
-        with:
-          name: engine-${{ matrix.os }}-${{ matrix.compiler }}
-          path: engine-${{ matrix.os }}-${{ matrix.compiler }}.tar.gz
-          retention-days: 30

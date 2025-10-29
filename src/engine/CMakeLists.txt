@@ -59,6 +59,9 @@ target_sources(engine-core
     ui/ui.cppm
     ui/renderer.cppm
     ui/types.cppm
+    ui/batch_renderer.cppm
+    ui/batch_renderer/batch_types.cppm
+    ui/batch_renderer/batch_renderer.cppm
     engine.cppm  # Main module last - depends on others
 )
 
@@ -104,6 +107,7 @@ target_sources(engine-core PRIVATE
     scene/scene_manager.cpp
 
     ui/renderer.cpp
+    ui/batch_renderer/batch_renderer.cpp
 
     engine.cpp
 )

@@ -276,7 +276,7 @@ Documentation integrates with:
 
 ## References
 
-- **Do NOT read AGENTS.md** - That's for AI agents, not users
+- **Read AGENTS.md** - Follow the documentation policy and workflow guidelines (sections 2-4), but ignore build/coding instructions (those are for engine developers, not your documentation audience)
 - Read existing docs in `docs/` directory
 - Doxygen manual: https://www.doxygen.nl/manual/
 - ReadTheDocs: https://docs.readthedocs.io/
@@ -293,6 +293,18 @@ Documentation integrates with:
 - Set up ReadTheDocs if needed
 - Ensure docs stay in sync with code
 - Review PRs for documentation quality
+
+## Working Guidelines from AGENTS.md
+
+Follow these process guidelines from AGENTS.md when creating documentation:
+
+1. **Documentation Policy** - Only create new documentation files when explicitly requested or when documenting user workflows. Don't create summary documents or reports.
+
+2. **Planning is Internal** - Don't create planning documents. Work directly on documentation files.
+
+3. **Temporary Files** - Clean up any temporary files (drafts, notes) before completing work.
+
+4. **Justification Required** - When creating NEW documentation files, explain why it needs to be a persistent file vs. a chat response.
 
 **Remember**: You're writing for engine USERS (game developers), not engine DEVELOPERS (contributors). Focus on HOW to use the engine, not HOW it works internally.
 

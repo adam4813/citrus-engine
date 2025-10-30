@@ -8,14 +8,14 @@ build:
   apt_packages:
     - doxygen
     - graphviz
+  jobs:
+    pre_build:
+      # Generate Doxygen XML documentation
+      - doxygen Doxyfile
 
-sphinx:
-  configuration: docs/conf.py
+mkdocs:
+  configuration: mkdocs.yml
   fail_on_warning: false
-
-formats:
-  - pdf
-  - epub
 
 python:
   install:

@@ -65,3 +65,4 @@ builds/
 # Documentation build artifacts
 docs/_build/
 docs/_doxygen/
+site/

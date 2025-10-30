@@ -19,14 +19,14 @@ Compiler Support
 
 **MSVC 2022** (Recommended):
 
-.. code-block:: cmd
+.. code-block:: bat
 
    cmake --preset cli-native -DVCPKG_TARGET_TRIPLET=x64-windows
    cmake --build --preset cli-native-debug
 
 **Clang for Windows**:
 
-.. code-block:: cmd
+.. code-block:: bat
 
    set CC=clang
    set CXX=clang++

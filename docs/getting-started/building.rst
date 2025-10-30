@@ -33,7 +33,7 @@ Linux Native
 Windows Native
 ~~~~~~~~~~~~~~
 
-.. code-block:: cmd
+.. code-block:: bat
 
    set VCPKG_ROOT=C:\path\to\vcpkg
    cmake --preset cli-native -DVCPKG_TARGET_TRIPLET=x64-windows

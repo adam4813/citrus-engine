@@ -401,4 +401,3 @@ See Also
 
 * `ImGui Documentation <https://github.com/ocornut/imgui/wiki>`_
 * `ImGui Demo <https://github.com/ocornut/imgui/blob/master/imgui_demo.cpp>`_
-* :doc:`../api/ui` - UI API reference

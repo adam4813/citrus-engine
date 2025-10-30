@@ -31,7 +31,6 @@ html_favicon = '../assets/branding/citrus-engine-logo.svg'
 
 html_theme_options = {
     'logo_only': False,
-    'display_version': True,
     'prev_next_buttons_location': 'bottom',
     'style_external_links': False,
     'style_nav_header_background': '#ff8c00',
@@ -54,8 +53,14 @@ def run_doxygen(app):
     doxygen_config = os.path.join(app.srcdir, '..', 'Doxyfile')
     if os.path.exists(doxygen_config):
         print("Running Doxygen...")
-        subprocess.run(['doxygen', doxygen_config], check=True)
-        print("Doxygen completed successfully")
+        # Run Doxygen from the docs directory so paths work correctly
+        result = subprocess.run(['doxygen', doxygen_config], 
+                              cwd=app.srcdir,
+                              capture_output=True,
+                              text=True)
+        if result.returncode != 0:
+            print(f"Doxygen warning/error output:\n{result.stderr}")
+        print("Doxygen completed")
     else:
         print(f"Warning: Doxyfile not found at {doxygen_config}")
 

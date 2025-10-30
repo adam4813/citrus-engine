@@ -4,17 +4,17 @@
 PROJECT_NAME           = "Citrus Engine"
 PROJECT_NUMBER         = 0.0.1
 PROJECT_BRIEF          = "Modern C++20 Game Engine"
-PROJECT_LOGO           = assets/branding/citrus-engine-logo.svg
+PROJECT_LOGO           = ../assets/branding/citrus-engine-logo.svg
 
 # Output
-OUTPUT_DIRECTORY       = docs/_doxygen
+OUTPUT_DIRECTORY       = _doxygen
 GENERATE_HTML          = YES
 GENERATE_LATEX         = NO
 GENERATE_XML           = YES
 XML_OUTPUT             = xml
 
 # Input files
-INPUT                  = src/engine
+INPUT                  = ../src/engine
 RECURSIVE              = YES
 FILE_PATTERNS          = *.cppm *.cpp *.h *.hpp
 EXCLUDE_PATTERNS       = */build/* */tests/*
@@ -48,7 +48,6 @@ REFERENCES_RELATION    = YES
 # Graphical output
 HAVE_DOT               = YES
 DOT_NUM_THREADS        = 0
-CLASS_DIAGRAMS         = YES
 COLLABORATION_GRAPH    = YES
 INCLUDE_GRAPH          = YES
 INCLUDED_BY_GRAPH      = YES

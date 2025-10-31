@@ -5,14 +5,18 @@
 #include <iostream>
 #include <string>
 
+import glm;
 import engine;
 
+#include <GLFW/glfw3.h>
 #ifndef __EMSCRIPTEN__
 #include <imgui.h>
 #else
 #include <imgui.h>
 #include <emscripten/emscripten.h>
 #endif
+
+using namespace engine;
 
 // =============================================================================
 // Simple Example Scene - Placeholder for testing
@@ -107,10 +111,10 @@ void main_loop() {
         // Render active scene
         g_app_state->scene_switcher.Render(g_app_state->engine);
         
-        // Render UI
-        g_app_state->engine.ui_renderer.BeginFrame();
+        // Render ImGui UI
+        ImGui::NewFrame();
         g_app_state->scene_switcher.RenderUI(g_app_state->engine);
-        g_app_state->engine.ui_renderer.EndFrame();
+        ImGui::Render();
         
         g_app_state->engine.renderer->EndFrame();
     }

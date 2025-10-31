@@ -1,12 +1,18 @@
 cmake_minimum_required(VERSION 3.28)
 
+# Examples project configuration
 project(citrus-examples
     VERSION 0.0.1
     DESCRIPTION "Citrus Engine Examples - Feature Demonstrations"
     LANGUAGES CXX
 )
 
-# Find the Citrus Engine via vcpkg
+# C++20 Standard (required for modules)
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
+# Find the Citrus Engine via vcpkg (uses overlay port from ../ports)
 find_package(game-engine CONFIG REQUIRED)
 
 # Examples application
@@ -21,12 +27,13 @@ target_include_directories(citrus-examples PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 
+# Link to the engine (provides all dependencies transitively)
 target_link_libraries(citrus-examples PRIVATE
     game-engine::engine-core
 )
 
-# Set C++20 standard
-target_compile_features(citrus-examples PRIVATE cxx_std_20)
+# Setup asset handling
+setup_asset_preload(citrus-examples "${CMAKE_CURRENT_SOURCE_DIR}/assets")
 
 # Platform-specific configuration
 if(EMSCRIPTEN)

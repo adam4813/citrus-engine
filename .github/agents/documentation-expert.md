@@ -75,32 +75,19 @@ Use Doxygen style comments for public APIs:
 export std::unique_ptr<Texture> LoadFromFile(const std::string& file_path);
 ```
 
-### Markdown Documentation Structure
+### Minimal Documentation Structure
 
-Organize documentation logically:
+Keep documentation minimal - source of truth is in code:
 
 ```
 docs/
-├── index.md                    # Landing page
-├── getting-started/
-│   ├── installation.md        # Installing the engine
-│   ├── first-project.md       # Creating your first game
-│   └── building.md            # Building your project
-├── guides/
-│   ├── rendering.md           # Using the rendering system
-│   ├── ecs.md                 # Working with ECS
-│   ├── assets.md              # Asset management
-│   └── ui.md                  # Creating UI
+├── index.md              # Landing page with overview
 ├── api/
-│   ├── modules.md             # Module overview
-│   ├── rendering.md           # Rendering API reference
-│   ├── ecs.md                 # ECS API reference
-│   └── ...
-└── advanced/
-    ├── optimization.md        # Performance optimization
-    ├── platform-specific.md   # Platform-specific features
-    └── extending.md           # Extending the engine
+│   └── index.md          # API reference instructions
+└── _doxygen/html/        # Auto-generated from code (not in repo)
 ```
+
+**Philosophy:** API docs come from Doxygen comments in code. Manual markdown files should be minimal.
 
 ## Key Patterns
 
@@ -129,47 +116,19 @@ docs/
  */
 ```
 
-### Writing User Guides
+### Code Examples in Doxygen
 
-Good user guide structure:
-1. **Introduction**: What feature/module does and why use it
-2. **Quick Start**: Minimal example to get started
-3. **Common Use Cases**: Typical scenarios with examples
-4. **API Reference**: Link to detailed API docs
-5. **Best Practices**: Tips and recommendations
-6. **Troubleshooting**: Common issues and solutions
+Include examples directly in Doxygen comments:
 
-### Code Examples
-
-Always include runnable code examples:
-
-```markdown
-## Creating an Entity with Components
-
-Here's how to create an entity with transform and sprite components:
-
-\`\`\`cpp
-import engine.ecs;
-import engine.components;
-
-// Create entity
-auto entity = world.entity("Player");
-
-// Add components
-entity.set<Transform>({
-    .position = {0.0f, 0.0f, 0.0f},
-    .rotation = {0.0f, 0.0f, 0.0f, 1.0f},
-    .scale = {1.0f, 1.0f, 1.0f}
-});
-
-entity.set<Sprite>({
-    .texture_id = player_texture,
-    .size = {64.0f, 64.0f}
-});
-\`\`\`
-
-The entity now has both transform and sprite components and will be
-rendered by the rendering system.
+```cpp
+/**
+ * @brief Creates a new entity in the world.
+ * 
+ * @code
+ * auto entity = world.entity("Player");
+ * entity.set<Transform>({.position = {0.0f, 0.0f, 0.0f}});
+ * @endcode
+ */
 ```
 
 ## Doxygen Configuration
@@ -251,26 +210,19 @@ Documentation integrates with:
 ## Common Documentation Tasks
 
 ### Adding a New Module
-1. Add Doxygen comments to public module interface
-2. Create module guide in `docs/guides/[module].md`
-3. Add module to API reference in `docs/api/[module].md`
-4. Update `docs/index.md` to link to new module
-5. Generate and review Doxygen output
+1. Add Doxygen comments to public module interface in source code
+2. Ensure Doxygen extracts the module correctly
+3. Review generated HTML output
 
 ### Updating API Documentation
 1. Update Doxygen comments in source code
-2. Regenerate Doxygen documentation
-3. Review changes in HTML output
-4. Update related user guides if needed
-5. Add migration guide if breaking change
+2. Regenerate Doxygen documentation locally to verify
+3. Commit changes (CI will rebuild and deploy)
 
-### Writing a Tutorial
-1. Identify the learning goal
-2. Start with prerequisites
-3. Build up incrementally with examples
-4. Explain each step clearly
-5. End with complete working code
-6. Add troubleshooting section
+### Adding Build Infrastructure
+1. Update CMake targets if needed
+2. Modify build scripts if necessary
+3. Update GitHub Actions workflow for deployment
 
 ## References
 
@@ -284,14 +236,11 @@ Documentation integrates with:
 
 ## Your Responsibilities
 
-- Write Doxygen comments for public APIs
-- Create and update user guides
-- Write tutorials and how-tos
-- Organize documentation structure
-- Generate and review Doxygen output
-- Set up GitHub Pages deployment if needed
-- Ensure docs stay in sync with code
-- Review PRs for documentation quality
+- Write Doxygen comments for public APIs (when explicitly requested)
+- Maintain build infrastructure (scripts, CMake, GitHub Actions)
+- Configure documentation tools (Doxyfile, mkdocs.yml)
+- Ensure documentation builds correctly
+- Keep docs deployment working (GitHub Pages via CI)
 
 ## Working Guidelines from AGENTS.md
 

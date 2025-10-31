@@ -72,22 +72,12 @@ if(BUILD_DOCS)
         VERBATIM
     )
 
-    # Custom target: Check documentation
-    add_custom_target(docs-check
-        COMMAND ${PROJECT_SOURCE_DIR}/scripts/check-docs.sh
-        WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
-        COMMENT "Checking documentation for issues"
-        DEPENDS docs
-        VERBATIM
-    )
-
     message(STATUS "Documentation targets enabled:")
     message(STATUS "  - docs         : Build complete documentation")
     message(STATUS "  - docs-doxygen : Build Doxygen API docs only")
     message(STATUS "  - docs-mkdocs  : Build MkDocs site only")
     message(STATUS "  - docs-serve   : Serve documentation locally")
     message(STATUS "  - docs-clean   : Clean documentation artifacts")
-    message(STATUS "  - docs-check   : Check documentation for issues")
     message(STATUS "")
     message(STATUS "Usage: cmake --build build --target docs")
     message(STATUS "   or: make docs (if using Unix Makefiles)")

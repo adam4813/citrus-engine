@@ -17,10 +17,10 @@ make docs-serve
 # or
 ./scripts/build-docs.sh --serve
 
-# Check documentation for issues
-make docs-check
+# Clean build artifacts
+make docs-clean
 # or
-./scripts/check-docs.sh
+./scripts/build-docs.sh --clean
 ```
 
 ## Building Documentation Manually
@@ -41,31 +41,6 @@ mkdocs build
 mkdocs serve
 ```
 
-## Updating Dependencies
-
-Dependencies are managed using `pip-tools` for reproducible builds:
-
-```bash
-# Update dependencies (preserving versions where possible)
-make update-deps
-# or
-./scripts/update-deps.sh
-
-# Upgrade all dependencies to latest compatible versions
-make update-deps-upgrade
-# or
-./scripts/update-deps.sh --upgrade
-```
-
-The `requirements.in` file contains high-level dependencies, while `requirements.txt` is auto-generated with all transitive dependencies pinned to specific versions for reproducibility.
-
-## Adding New Dependencies
-
-1. Add the dependency to `requirements.in`
-2. Run `make update-deps` or `./scripts/update-deps.sh`
-3. Test the build: `make docs`
-4. Commit both `requirements.in` and `requirements.txt`
-
 ## Build Methods
 
 Choose the method that works best for your workflow:
@@ -75,8 +50,7 @@ Choose the method that works best for your workflow:
 ```bash
 make docs              # Build documentation
 make docs-serve        # Build and serve locally
-make docs-check        # Check for issues
-make update-deps       # Update dependencies
+make docs-clean        # Clean build artifacts
 ```
 
 ### Method 2: CMake Targets (Recommended for C++ developers)
@@ -93,16 +67,14 @@ cmake --build build --target docs-doxygen  # Doxygen only
 cmake --build build --target docs-mkdocs   # MkDocs only
 cmake --build build --target docs-serve    # Serve locally
 cmake --build build --target docs-clean    # Clean artifacts
-cmake --build build --target docs-check    # Check for issues
 ```
 
-### Method 3: Scripts (Recommended for CI/automation)
+### Method 3: Build Script (Recommended for CI/automation)
 
 ```bash
 ./scripts/build-docs.sh         # Build documentation
 ./scripts/build-docs.sh --serve # Build and serve
-./scripts/check-docs.sh         # Check for issues
-./scripts/update-deps.sh        # Update dependencies
+./scripts/build-docs.sh --clean # Clean artifacts
 ```
 
 ### Method 4: Manual Commands
@@ -121,26 +93,12 @@ mkdocs build
 mkdocs serve
 ```
 
-## Available Scripts
+## CI/CD and Deployment
 
-- **`scripts/build-docs.sh`** - Build documentation with Doxygen and MkDocs
-  - `--clean` - Clean build directories first
-  - `--serve` - Serve locally after building
-  
-- **`scripts/update-deps.sh`** - Update Python dependencies
-  - `--upgrade` - Upgrade to latest compatible versions
-  
-- **`scripts/check-docs.sh`** - Check documentation for issues
-  - Validates builds succeed
-  - Checks for broken links
-  - Verifies Doxygen output
-  - Checks dependency freshness
+GitHub Actions automatically:
+- Builds documentation on every PR to validate changes
+- Deploys to GitHub Pages on main branch pushes
 
-## CI/CD
-
-GitHub Actions automatically checks documentation on every PR:
-- Validates documentation builds successfully
-- Checks for broken links and issues
-- Uploads built documentation as artifacts (on main branch)
+Documentation is published at: `https://adam4813.github.io/citrus-engine/`
 
 See `.github/workflows/docs.yml` for details.

@@ -20,9 +20,14 @@ on:
   workflow_dispatch:
 
 jobs:
-  check-docs:
-    name: Check Documentation
+  build-and-deploy:
+    name: Build and Deploy Documentation
     runs-on: ubuntu-latest
+    
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
     
     steps:
       - name: Checkout repository
@@ -44,48 +49,17 @@ jobs:
         run: |
           pip install -r docs/requirements.txt
       
-      - name: Check documentation builds
+      - name: Build documentation
         run: |
           chmod +x scripts/*.sh
           ./scripts/build-docs.sh --clean
       
-      - name: Run documentation checks
-        run: |
-          ./scripts/check-docs.sh
-      
-      - name: Upload documentation artifacts
+      - name: Upload to GitHub Pages
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-pages-artifact@v3
         with:
-          name: documentation
           path: site/
-          retention-days: 30
-  
-  # Optional: Deploy to GitHub Pages
-  # Uncomment if you want to use GitHub Pages in addition to ReadTheDocs
-  #
-  # deploy-pages:
-  #   name: Deploy to GitHub Pages
-  #   runs-on: ubuntu-latest
-  #   needs: check-docs
-  #   if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-  #   
-  #   permissions:
-  #     contents: read
-  #     pages: write
-  #     id-token: write
-  #   
-  #   steps:
-  #     - name: Download documentation artifact
-  #       uses: actions/download-artifact@v4
-  #       with:
-  #         name: documentation
-  #         path: site/
-  #     
-  #     - name: Upload to GitHub Pages
-  #       uses: actions/upload-pages-artifact@v3
-  #       with:
-  #         path: site/
-  #     
-  #     - name: Deploy to GitHub Pages
-  #       uses: actions/deploy-pages@v4
+      
+      - name: Deploy to GitHub Pages
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/deploy-pages@v4

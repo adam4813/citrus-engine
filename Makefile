@@ -1,4 +1,4 @@
-.PHONY: help docs docs-serve docs-clean docs-check update-deps
+.PHONY: help docs docs-serve docs-clean
 
 help: ## Show this help message
 	@echo "Available targets:"
@@ -12,12 +12,3 @@ docs-serve: ## Build and serve documentation locally with auto-reload
 
 docs-clean: ## Clean documentation build artifacts
 	@./scripts/build-docs.sh --clean
-
-docs-check: ## Check documentation for issues
-	@./scripts/check-docs.sh
-
-update-deps: ## Update Python dependencies (use 'make update-deps-upgrade' to upgrade)
-	@./scripts/update-deps.sh
-
-update-deps-upgrade: ## Update and upgrade Python dependencies to latest versions
-	@./scripts/update-deps.sh --upgrade

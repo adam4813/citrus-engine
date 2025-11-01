@@ -235,18 +235,14 @@ namespace engine::ecs {
         // Check if a valid camera entity exists
         if (!camera_entity.is_valid()) {
             // No active camera set - use default camera with sane defaults
+            // Camera struct already has default values: target(0,0,0), up(0,1,0), 
+            // fov(60), aspect(16:9), near(0.1), far(100)
             Camera default_camera;
-            default_camera.target = glm::vec3(0.0f, 0.0f, 0.0f);
-            default_camera.up = glm::vec3(0.0f, 1.0f, 0.0f);
-            default_camera.fov = 60.0f;
-            default_camera.aspect_ratio = 16.0f / 9.0f;
-            default_camera.near_plane = 0.1f;
-            default_camera.far_plane = 100.0f;
             
-            // Default camera position
+            // Default camera position looking at origin from positive Z
             const glm::vec3 default_position(0.0f, 0.0f, 10.0f);
             
-            // Calculate default view and projection matrices
+            // Calculate view and projection matrices
             default_camera.view_matrix = glm::lookAt(default_position, default_camera.target, default_camera.up);
             default_camera.projection_matrix = glm::perspective(
                 glm::radians(default_camera.fov),

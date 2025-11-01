@@ -1,6 +1,7 @@
 ﻿# Find and configure all project dependencies
 
 # Core runtime dependencies (always required to build the library)
+find_package(Angelscript CONFIG REQUIRED)
 find_package(flecs CONFIG REQUIRED)
 find_package(glfw3 CONFIG REQUIRED)
 find_package(glm CONFIG REQUIRED)
@@ -42,4 +43,5 @@ message(STATUS "  spdlog: ${spdlog_VERSION}")
 message(STATUS "  nlohmann_json: ${nlohmann_json_VERSION}")
 message(STATUS "  ImGui: Found")
 message(STATUS "  STB: Found")
+message(STATUS "  AngelScript: Found")
 message(STATUS "  Lua: Found")

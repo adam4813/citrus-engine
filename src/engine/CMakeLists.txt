@@ -110,6 +110,8 @@ target_sources(engine-core PRIVATE
 
     # Scripting module implementation
     scripting/lua_backend.cpp
+    scripting/angelscript_backend.cpp
+    scripting/scripting_factory.cpp
 
     ui/renderer.cpp
     ui/batch_renderer/batch_renderer.cpp
@@ -137,6 +139,7 @@ target_link_libraries(engine-core
     nlohmann_json::nlohmann_json
     imgui::imgui
     PRIVATE
+    Angelscript::angelscript
     lua
 )
 

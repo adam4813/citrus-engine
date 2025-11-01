@@ -257,19 +257,8 @@ namespace engine::scripting {
         }
     };
 
-    // Factory function implementation
-    std::unique_ptr<IScriptingBackend> CreateScriptingBackend(ScriptLanguage language) {
-        switch (language) {
-            case ScriptLanguage::Lua:
-                return std::make_unique<LuaBackend>();
-            case ScriptLanguage::AngelScript:
-                // TODO: Implement AngelScript backend
-                throw std::runtime_error("AngelScript backend not yet implemented");
-            case ScriptLanguage::Python:
-                // TODO: Implement Python backend
-                throw std::runtime_error("Python backend not yet implemented");
-            default:
-                throw std::runtime_error("Unknown scripting language");
-        }
+    // Factory helper function
+    std::unique_ptr<IScriptingBackend> CreateLuaBackend() {
+        return std::make_unique<LuaBackend>();
     }
 }

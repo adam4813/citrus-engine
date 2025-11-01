@@ -3,6 +3,7 @@
   "name": "game-engine",
   "version": "0.0.1",
   "dependencies": [
+    "angelscript",
     "flecs",
     {
       "name": "glad",

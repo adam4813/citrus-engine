@@ -146,3 +146,44 @@ TEST_F(ScriptingSystemTest, can_change_language_at_runtime) {
     bool same = scripting.SetLanguage(ScriptLanguage::Lua);
     EXPECT_TRUE(same);
 }
+
+// Test AngelScript initialization
+TEST_F(ScriptingSystemTest, can_initialize_angelscript_backend) {
+    ScriptingSystem scripting(ScriptLanguage::AngelScript);
+    EXPECT_EQ(scripting.GetLanguage(), ScriptLanguage::AngelScript);
+}
+
+// Test registering function in AngelScript
+TEST_F(ScriptingSystemTest, can_register_function_in_angelscript) {
+    ScriptingSystem scripting(ScriptLanguage::AngelScript);
+    
+    // Register a simple add function
+    auto add_func = [](int a, int b) -> int {
+        return a + b;
+    };
+    scripting.RegisterGlobalFunction("add", std::function<int(int, int)>(add_func));
+    
+    // Execute a script that uses the function
+    bool result = scripting.ExecuteString(
+        "int calculate() {\n"
+        "  return add(5, 3);\n"
+        "}\n"
+    );
+    EXPECT_TRUE(result);
+}
+
+// Test switching between Lua and AngelScript
+TEST_F(ScriptingSystemTest, can_switch_between_lua_and_angelscript) {
+    ScriptingSystem scripting(ScriptLanguage::Lua);
+    EXPECT_EQ(scripting.GetLanguage(), ScriptLanguage::Lua);
+    
+    // Switch to AngelScript
+    bool changed = scripting.SetLanguage(ScriptLanguage::AngelScript);
+    EXPECT_TRUE(changed);
+    EXPECT_EQ(scripting.GetLanguage(), ScriptLanguage::AngelScript);
+    
+    // Switch back to Lua
+    changed = scripting.SetLanguage(ScriptLanguage::Lua);
+    EXPECT_TRUE(changed);
+    EXPECT_EQ(scripting.GetLanguage(), ScriptLanguage::Lua);
+}

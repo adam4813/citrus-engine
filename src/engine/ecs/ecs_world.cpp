@@ -231,6 +231,54 @@ namespace engine::ecs {
     // Submit render commands for all renderable entities
     void ECSWorld::SubmitRenderCommands(const rendering::Renderer &renderer) {
         const flecs::entity camera_entity = GetActiveCamera();
+        
+        // Check if a valid camera entity exists
+        if (!camera_entity.is_valid()) {
+            // No active camera set - use default camera with sane defaults
+            Camera default_camera;
+            default_camera.target = glm::vec3(0.0f, 0.0f, 0.0f);
+            default_camera.up = glm::vec3(0.0f, 1.0f, 0.0f);
+            default_camera.fov = 60.0f;
+            default_camera.aspect_ratio = 16.0f / 9.0f;
+            default_camera.near_plane = 0.1f;
+            default_camera.far_plane = 100.0f;
+            
+            // Default camera position
+            const glm::vec3 default_position(0.0f, 0.0f, 10.0f);
+            
+            // Calculate default view and projection matrices
+            default_camera.view_matrix = glm::lookAt(default_position, default_camera.target, default_camera.up);
+            default_camera.projection_matrix = glm::perspective(
+                glm::radians(default_camera.fov),
+                default_camera.aspect_ratio,
+                default_camera.near_plane,
+                default_camera.far_plane
+            );
+            
+            // Use default camera for rendering
+            const auto renderable_query = world_.query<const WorldTransform, const rendering::Renderable>();
+            renderable_query.each(
+                [&](flecs::iter, size_t, const WorldTransform &transform, const rendering::Renderable &renderable) {
+                    if (!renderable.visible) {
+                        return;
+                    }
+                    rendering::RenderCommand cmd{.mesh = renderable.mesh, .material = renderable.material};
+
+                    const auto model = default_camera.projection_matrix * default_camera.view_matrix * transform.matrix;
+
+                    cmd.transform = model;
+
+                    renderer.SubmitRenderCommand(cmd);
+                });
+            return;
+        }
+        
+        // Valid camera exists - check if it has Camera component
+        if (!camera_entity.has<Camera>()) {
+            // Camera entity exists but doesn't have Camera component - skip rendering
+            return;
+        }
+        
         const auto camera_comp = camera_entity.get<Camera>();
 
         const auto renderable_query = world_.query<const WorldTransform, const rendering::Renderable>();

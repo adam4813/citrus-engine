@@ -56,6 +56,8 @@ target_sources(engine-core
     rendering/tilemap_renderer.cppm
     rendering/rendering.cppm
     scene/scene.cppm
+    scripting/scripting_backend.cppm
+    scripting/scripting_system.cppm
     ui/ui.cppm
     ui/renderer.cppm
     ui/types.cppm

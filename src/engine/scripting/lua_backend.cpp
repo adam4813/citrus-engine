@@ -14,9 +14,7 @@ extern "C" {
 #include <lauxlib.h>
 }
 
-module engine.scripting.backend;
-
-import engine.scripting.backend;
+module engine.scripting;
 
 namespace engine::scripting {
     class LuaBackend : public IScriptingBackend {
@@ -43,9 +41,9 @@ namespace engine::scripting {
         // Helper to pop a value from Lua stack and convert to ScriptValue
         ScriptValue PopValue() {
             ScriptValue result;
-            const int lua_type = lua_type(lua_state_, -1);
+            const int value_type = lua_type(lua_state_, -1);
 
-            switch (lua_type) {
+            switch (value_type) {
                 case LUA_TNUMBER:
                     if (lua_isinteger(lua_state_, -1)) {
                         result.value = static_cast<int>(lua_tointeger(lua_state_, -1));
@@ -61,7 +59,7 @@ namespace engine::scripting {
                     break;
                 case LUA_TNIL:
                 default:
-                    result.value = std::monostate{};
+                    // For nil/unsupported types, leave as empty any
                     break;
             }
 
@@ -84,9 +82,9 @@ namespace engine::scripting {
             args.reserve(argc);
             for (int i = 1; i <= argc; ++i) {
                 ScriptValue arg;
-                const int lua_type = lua_type(L, i);
+                const int value_type = lua_type(L, i);
                 
-                switch (lua_type) {
+                switch (value_type) {
                     case LUA_TNUMBER:
                         if (lua_isinteger(L, i)) {
                             arg.value = static_cast<int>(lua_tointeger(L, i));
@@ -101,7 +99,7 @@ namespace engine::scripting {
                         arg.value = std::string(lua_tostring(L, i));
                         break;
                     default:
-                        arg.value = std::monostate{};
+                        // For nil/unsupported types, leave as empty any
                         break;
                 }
                 args.push_back(arg);

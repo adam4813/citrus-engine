@@ -7,7 +7,7 @@ module;
 #include <string>
 #include <vector>
 
-export module engine.scripting.backend;
+export module engine.scripting:backend;
 
 export namespace engine::scripting {
     // Enum for supported scripting languages

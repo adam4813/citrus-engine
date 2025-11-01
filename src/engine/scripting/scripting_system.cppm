@@ -11,12 +11,9 @@ module;
 
 export module engine.scripting;
 
-import engine.scripting.backend;
+export import :backend;
 
 export namespace engine::scripting {
-    // Re-export commonly used types
-    using ScriptValue;
-    using ScriptLanguage;
 
     // Helper to convert C++ types to ScriptValue
     template<typename T>

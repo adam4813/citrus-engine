@@ -30,11 +30,15 @@ TEST_F(ScriptingSystemTest, can_register_and_call_global_function) {
     scripting.RegisterGlobalFunction("add", std::function<int(int, int)>(add_func));
     
     // Execute a script that uses the function
-    bool result = scripting.ExecuteString("result = add(5, 3)");
+    bool result = scripting.ExecuteString(
+        "function get_result()\n"
+        "  return add(5, 3)\n"
+        "end"
+    );
     EXPECT_TRUE(result);
     
-    // Call the script variable
-    int value = scripting.CallFunction<int>("function() return result end");
+    // Call the script function
+    int value = scripting.CallFunction<int>("get_result");
     EXPECT_EQ(value, 8);
 }
 

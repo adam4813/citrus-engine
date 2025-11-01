@@ -37,3 +37,6 @@ include(Testing)
 
 # Install and packaging
 include(Install)
+
+# Documentation
+include(Documentation)

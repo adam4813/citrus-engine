@@ -1,0 +1,42 @@
+site_name: Citrus Engine
+site_description: Modern C++20 Game Engine
+site_url: https://citrus-engine.readthedocs.io
+repo_url: https://github.com/adam4813/citrus-engine
+repo_name: adam4813/citrus-engine
+
+theme:
+  name: material
+  palette:
+    primary: orange
+    accent: deep orange
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+  logo: assets/branding/citrus-engine-logo.svg
+  favicon: assets/branding/citrus-engine-logo.svg
+
+markdown_extensions:
+  - admonition
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.superfences
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.details
+  - tables
+  - toc:
+      permalink: true
+
+nav:
+  - Home: index.md
+  - Tilemap System: tilemap-system.md
+  - API Reference:
+    - Overview: api/index.md
+
+plugins:
+  - search
+  - autorefs

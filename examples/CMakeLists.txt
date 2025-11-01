@@ -7,11 +7,6 @@ project(citrus-examples
     LANGUAGES CXX
 )
 
-# C++20 Standard (required for modules)
-set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSIONS OFF)
-
 # Find the Citrus Engine via vcpkg (uses overlay port from ../ports)
 find_package(game-engine CONFIG REQUIRED)
 
@@ -36,38 +31,36 @@ target_link_libraries(citrus-examples PRIVATE
 setup_asset_preload(citrus-examples "${CMAKE_CURRENT_SOURCE_DIR}/assets")
 
 # Platform-specific configuration
-if(EMSCRIPTEN)
-    # WASM-specific settings
-    set_target_properties(citrus-examples PROPERTIES
-        SUFFIX ".html"
-    )
-    
+if (EMSCRIPTEN)
+    set(CMAKE_EXECUTABLE_SUFFIX ".html")
+
+    # Set memory limits
+    set(INITIAL_MEMORY_BYTES 67108864)  # 64MB initial memory
+    set(MAXIMUM_MEMORY_BYTES 134217728) # 128MB maximum memory
+
     target_link_options(citrus-examples PRIVATE
         -sWASM=1
         -sFORCE_FILESYSTEM=1
-        -sINITIAL_MEMORY=67108864      # 64MB
-        -sMAXIMUM_MEMORY=134217728     # 128MB
+        -sINITIAL_MEMORY=${INITIAL_MEMORY_BYTES}
+        -sMAXIMUM_MEMORY=${MAXIMUM_MEMORY_BYTES}
         -sALLOW_MEMORY_GROWTH=1
-        --preload-file ${CMAKE_CURRENT_SOURCE_DIR}/assets@/assets
+        # Debug vs Release specific flags
+        "$<$<CONFIG:Debug>:-sASSERTIONS=1;-sGL_DEBUG=1>"
+        "$<$<NOT:$<CONFIG:Debug>>:-O3;--closure 1>"
     )
-else()
-    # Native build - copy assets to output directory
-    add_custom_command(TARGET citrus-examples POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_directory
-            ${CMAKE_CURRENT_SOURCE_DIR}/assets
-            $<TARGET_FILE_DIR:citrus-examples>/assets
-        COMMENT "Copying example assets to build directory"
-    )
-endif()
+
+    message(STATUS "Emscripten configuration applied")
+    message(STATUS "Memory: Initial ${INITIAL_MEMORY_BYTES} bytes, Maximum ${MAXIMUM_MEMORY_BYTES} bytes")
+endif ()
 
 # Install target
 install(TARGETS citrus-examples
     RUNTIME DESTINATION bin
 )
 
-if(NOT EMSCRIPTEN)
+if (NOT EMSCRIPTEN)
     install(DIRECTORY assets/
         DESTINATION bin/assets
         PATTERN "*"
     )
-endif()
+endif ()

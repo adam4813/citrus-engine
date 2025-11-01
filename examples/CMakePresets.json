@@ -36,7 +36,8 @@
       "inherits": "base",
       "cacheVariables": {
         "VCPKG_CHAINLOAD_TOOLCHAIN_FILE": "$env{EMSDK}/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake",
-        "VCPKG_TARGET_TRIPLET": "wasm32-emscripten"
+        "VCPKG_TARGET_TRIPLET": "wasm32-emscripten",
+        "EMSCRIPTEN_ROOT_PATH": "$env{EMSDK}/upstream/emscripten"
       }
     }
   ],

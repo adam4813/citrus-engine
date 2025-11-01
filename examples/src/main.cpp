@@ -5,18 +5,20 @@
 #include <iostream>
 #include <string>
 
-import glm;
-import engine;
-
-#include <GLFW/glfw3.h>
+#include <imgui.h>
 #ifndef __EMSCRIPTEN__
-#include <imgui.h>
+#include <glad/glad.h>
+#define GLFW_INCLUDE_NONE
 #else
-#include <imgui.h>
 #include <emscripten/emscripten.h>
 #endif
+#include <GLFW/glfw3.h>
+#include <flecs.h>
 
-using namespace engine;
+#include "debug-ui.h"
+
+import glm;
+import engine;
 
 // =============================================================================
 // Simple Example Scene - Placeholder for testing
@@ -24,31 +26,31 @@ using namespace engine;
 
 class HelloScene : public examples::ExampleScene {
 public:
-    const char* GetName() const override {
+    const char *GetName() const override {
         return "Hello World";
     }
 
-    const char* GetDescription() const override {
+    const char *GetDescription() const override {
         return "A simple hello world example scene";
     }
 
-    void Initialize(engine::Engine& engine) override {
+    void Initialize(engine::Engine &engine) override {
         std::cout << "HelloScene initialized" << std::endl;
     }
 
-    void Shutdown(engine::Engine& engine) override {
+    void Shutdown(engine::Engine &engine) override {
         std::cout << "HelloScene shutdown" << std::endl;
     }
 
-    void Update(engine::Engine& engine, float delta_time) override {
+    void Update(engine::Engine &engine, float delta_time) override {
         // Simple update logic
     }
 
-    void Render(engine::Engine& engine) override {
+    void Render(engine::Engine &engine) override {
         // Simple rendering
     }
 
-    void RenderUI(engine::Engine& engine) override {
+    void RenderUI(engine::Engine &engine) override {
         ImGui::Begin("Hello Scene");
         ImGui::Text("Welcome to Citrus Engine Examples!");
         ImGui::Text("This is a placeholder scene.");
@@ -66,6 +68,7 @@ REGISTER_EXAMPLE_SCENE(HelloScene, "Hello World", "A simple hello world example"
 // =============================================================================
 
 struct AppState {
+    DebugUi debug_ui;
     engine::Engine engine;
     examples::SceneSwitcher scene_switcher;
     bool running = true;
@@ -73,7 +76,25 @@ struct AppState {
 };
 
 // Global app state for main loop
-static AppState* g_app_state = nullptr;
+static AppState *g_app_state = nullptr;
+
+void CreateMainCamera(engine::ecs::ECSWorld &ecs) {
+    const flecs::entity camera_entity = ecs.CreateEntity("MainCamera");
+
+    // Position camera to look down at the tilemap from above
+    camera_entity.set<engine::components::Transform>({{0.0f, 0.0f, 10.0f}});
+    camera_entity.set<engine::components::Camera>(
+        {
+            .target = {0.0f, 0.0f, 0.0f}, // Look at the center of the tilemap
+            .up = {0.0f, 1.0f, 0.0f},
+            .fov = 60.0f,
+            .aspect_ratio = static_cast<float>(800) / static_cast<float>(600),
+            .near_plane = 0.1f,
+            .far_plane = 100.0f,
+            .dirty = true
+        });
+    ecs.SetActiveCamera(camera_entity);
+}
 
 // =============================================================================
 // Main Loop
@@ -91,6 +112,7 @@ void main_loop() {
 
     // Check if window should close
     if (glfwWindowShouldClose(g_app_state->engine.window)) {
+        std::cout << "Window close requested, exiting main loop." << std::endl;
         g_app_state->running = false;
 #ifdef __EMSCRIPTEN__
         emscripten_cancel_main_loop();
@@ -107,28 +129,27 @@ void main_loop() {
     // Begin rendering
     if (g_app_state->engine.renderer) {
         g_app_state->engine.renderer->BeginFrame();
-        
+
         // Render active scene
         g_app_state->scene_switcher.Render(g_app_state->engine);
-        
+
         // Render ImGui UI
-        ImGui::NewFrame();
+        g_app_state->debug_ui.BeginFrame();
         g_app_state->scene_switcher.RenderUI(g_app_state->engine);
-        ImGui::Render();
-        
+        g_app_state->debug_ui.EndFrame();
+
         g_app_state->engine.renderer->EndFrame();
     }
 
     // Swap buffers and poll events
     glfwSwapBuffers(g_app_state->engine.window);
-    glfwPollEvents();
 }
 
 // =============================================================================
 // Main Entry Point
 // =============================================================================
 
-int main(int argc, char* argv[]) {
+int main(int argc, char *argv[]) {
     std::cout << "Citrus Engine Examples" << std::endl;
     std::cout << "Version: " << engine::GetVersionString() << std::endl;
 
@@ -155,7 +176,7 @@ int main(int argc, char* argv[]) {
     // Initialize engine
     const uint32_t window_width = 1280;
     const uint32_t window_height = 720;
-    
+
     if (!app_state.engine.Init(window_width, window_height)) {
         std::cerr << "Failed to initialize engine" << std::endl;
         return 1;
@@ -166,9 +187,12 @@ int main(int argc, char* argv[]) {
 
     // Initialize scene switcher
     app_state.scene_switcher.Initialize(app_state.engine, default_scene);
+    app_state.debug_ui.Init(app_state.engine.window);
 
     // Initialize timing
     app_state.last_frame_time = static_cast<float>(glfwGetTime());
+
+    CreateMainCamera(app_state.engine.ecs);
 
     std::cout << "Starting main loop..." << std::endl;
 
@@ -185,6 +209,7 @@ int main(int argc, char* argv[]) {
 
     // Cleanup
     std::cout << "Shutting down..." << std::endl;
+    app_state.debug_ui.Shutdown();
     app_state.scene_switcher.Shutdown(app_state.engine);
     app_state.engine.Shutdown();
 

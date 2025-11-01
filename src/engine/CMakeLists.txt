@@ -3,6 +3,8 @@
 # Engine library configuration - set up as C++20 module
 add_library(engine-core STATIC)
 
+set_compiler_options(engine-core)
+
 # Ensure debug information is available for library consumers
 set_target_properties(engine-core PROPERTIES
     # Generate debug info for all configurations

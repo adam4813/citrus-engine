@@ -13,24 +13,19 @@ if (NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
     set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
 endif ()
 
-# Compiler-specific settings
-if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
-    add_compile_options(/W4 /permissive- /bigobj /Zc:__cplusplus /experimental:external /external:W0)
-    add_compile_definitions(_CRT_SECURE_NO_WARNINGS)
-elseif (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-    add_compile_options(-Wall -Wextra -Wpedantic)
-    add_compile_options($<$<CONFIG:Release>:-O3>)
-endif ()
 
-# C++20 modules support
-if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
-    # Enable C++20 modules for MSVC
-    add_compile_options(/experimental:module)
-elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-    add_compile_options(-fmodules-ts)
-elseif (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-    # No special flags needed for Clang, it supports C++20 modules natively
-endif ()
+# Function to apply compiler-specific settings to a target
+function(set_compiler_options target_name)
+    target_compile_options(${target_name} PRIVATE
+        $<$<CXX_COMPILER_ID:MSVC>:/W4 /permissive- /bigobj /Zc:__cplusplus /experimental:external /external:W0 /experimental:module>
+        $<$<CXX_COMPILER_ID:GNU,Clang>:-Wall -Wextra -Wpedantic>
+        $<$<CXX_COMPILER_ID:GNU>:-fmodules-ts>
+        $<$<AND:$<CONFIG:Release>,$<CXX_COMPILER_ID:GNU,Clang>>:-O3>
+    )
+    target_compile_definitions(${target_name} PRIVATE
+        $<$<CXX_COMPILER_ID:MSVC>:_CRT_SECURE_NO_WARNINGS>
+    )
+endfunction()
 
 message(STATUS "Compiler: ${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION}")
 message(STATUS "C++ Standard: ${CMAKE_CXX_STANDARD}")

@@ -106,11 +106,12 @@ jobs:
           vcpkgGitCommitId: dd3097e305afa53f7b4312371f62058d2e665320
 
       # Now build the examples
-      - name: Build Examples
-        working-directory: examples
-        run: |
-          cmake --preset ${{ matrix.preset_configure }} -DVCPKG_TARGET_TRIPLET=${{ matrix.vcpkg_triplet }}
-          cmake --build --preset ${{ matrix.preset_build }} --parallel
+      - name: Run CMake with Presets (Build)
+        uses: lukka/run-cmake@v10
+        with:
+          configurePreset: ${{ matrix.preset_configure }}
+          buildPreset: ${{ matrix.preset_build }}
+          configurePresetAdditionalArgs: "['-DVCPKG_TARGET_TRIPLET=${{ matrix.vcpkg_triplet }}']"
 
       - name: List build outputs (Native)
         if: matrix.compiler != 'emscripten'

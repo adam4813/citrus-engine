@@ -15,7 +15,6 @@ import glm;
 
 namespace {
     constexpr float MOVE_SPEED = 100.0f;
-    constexpr float ROTATE_SPEED = 2.0f;
 }
 
 class Triangle2DScene : public examples::ExampleScene {
@@ -94,21 +93,6 @@ public:
             movement = glm::normalize(movement) * MOVE_SPEED * delta_time;
             position_ += movement;
         }
-
-        // Handle input for rotation
-        // Using Q/E keys instead of Z/X since Z/X aren't in the KeyCode enum yet
-        if (engine::input::Input::IsKeyPressed(engine::input::KeyCode::A)) {
-            // Check if we're already moving left, if not use for rotation
-            if (movement.x == 0.0f) {
-                rotation_ += ROTATE_SPEED * delta_time;
-            }
-        }
-        if (engine::input::Input::IsKeyPressed(engine::input::KeyCode::D)) {
-            // Check if we're already moving right, if not use for rotation
-            if (movement.x == 0.0f) {
-                rotation_ -= ROTATE_SPEED * delta_time;
-            }
-        }
     }
 
     void Render(engine::Engine& engine) override {
@@ -166,11 +150,12 @@ public:
         ImGui::BulletText("S/Down Arrow: Move Down");
         ImGui::BulletText("A/Left Arrow: Move Left");
         ImGui::BulletText("D/Right Arrow: Move Right");
+        ImGui::Text("(Rotation can be adjusted via slider below)");
         ImGui::Separator();
         
         ImGui::Text("Transform:");
         ImGui::Text("Position: (%.1f, %.1f)", position_.x, position_.y);
-        ImGui::Text("Rotation: %.2f radians", rotation_);
+        ImGui::SliderFloat("Rotation", &rotation_, -3.14f, 3.14f);
         ImGui::SliderFloat("Scale", &scale_, 10.0f, 200.0f);
         
         if (ImGui::Button("Reset Position")) {

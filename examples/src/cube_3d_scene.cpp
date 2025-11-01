@@ -15,7 +15,8 @@ import glm;
 
 namespace {
     constexpr float MOVE_SPEED = 3.0f;
-    constexpr float ROTATE_SPEED = 2.0f;
+    constexpr float AUTO_ROTATE_SPEED_Y = 0.5f;
+    constexpr float AUTO_ROTATE_SPEED_X = 0.3f;
 }
 
 class Cube3DScene : public examples::ExampleScene {
@@ -92,8 +93,8 @@ public:
         }
 
         // Auto-rotate the cube for demonstration
-        rotation_.y += 0.5f * delta_time;
-        rotation_.x += 0.3f * delta_time;
+        rotation_.y += AUTO_ROTATE_SPEED_Y * delta_time;
+        rotation_.x += AUTO_ROTATE_SPEED_X * delta_time;
     }
 
     void Render(engine::Engine& engine) override {

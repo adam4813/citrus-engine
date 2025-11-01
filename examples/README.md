@@ -218,10 +218,12 @@ auto texture = LoadTexture("assets/textures/example.png");
 - **Hello World**: Basic example scene demonstrating the infrastructure
 - **2D Triangle**: Colored triangle with orthographic projection and input controls
   - Demonstrates: 2D rendering, vertex colors, orthographic projection, keyboard input
-  - Controls: WASD/Arrow keys for movement
+  - Controls: WASD/Arrow keys for movement, rotation via UI slider
+  - Shaders: OpenGL ES 3.0 / WebGL 2.0 compatible
 - **3D Cube**: Colored cube with perspective projection, lighting, and input controls
-  - Demonstrates: 3D rendering, perspective projection, basic lighting, keyboard input
+  - Demonstrates: 3D rendering, perspective projection, basic Phong lighting, keyboard input
   - Controls: WASD/Arrow keys for movement, auto-rotation enabled
+  - Shaders: OpenGL ES 3.0 / WebGL 2.0 compatible
 
 ### Future Examples
 

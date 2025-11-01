@@ -1,11 +1,7 @@
 #include "scene_switcher.h"
 #include "scene_registry.h"
 
-#ifndef __EMSCRIPTEN__
 #include <imgui.h>
-#else
-#include <imgui.h>
-#endif
 
 import engine;
 
@@ -13,8 +9,7 @@ namespace examples {
 
 SceneSwitcher::SceneSwitcher()
     : active_scene_(nullptr)
-    , active_scene_name_("")
-    , show_scene_menu_(true) {
+    , active_scene_name_("") {
 }
 
 SceneSwitcher::~SceneSwitcher() = default;

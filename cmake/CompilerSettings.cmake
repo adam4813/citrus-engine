@@ -18,9 +18,9 @@ endif ()
 function(set_compiler_options target_name)
     target_compile_options(${target_name} PRIVATE
         $<$<CXX_COMPILER_ID:MSVC>:/W4 /permissive- /bigobj /Zc:__cplusplus /experimental:external /external:W0 /experimental:module>
-        $<$<CXX_COMPILER_ID:GNU,Clang>:-Wall -Wextra -Wpedantic>
+        $<$<OR:$<CXX_COMPILER_ID:GNU>,$<CXX_COMPILER_ID:Clang>>:-Wall -Wextra -Wpedantic>
         $<$<CXX_COMPILER_ID:GNU>:-fmodules-ts>
-        $<$<AND:$<CONFIG:Release>,$<CXX_COMPILER_ID:GNU,Clang>>:-O3>
+        $<$<AND:$<CONFIG:Release>,$<OR:$<CXX_COMPILER_ID:GNU>,$<CXX_COMPILER_ID:Clang>>>:-O3>
     )
     target_compile_definitions(${target_name} PRIVATE
         $<$<CXX_COMPILER_ID:MSVC>:_CRT_SECURE_NO_WARNINGS>

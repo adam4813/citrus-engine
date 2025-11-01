@@ -92,11 +92,7 @@ Create a new file (e.g., `examples/src/my_example.cpp`):
 
 import engine;
 
-#ifndef __EMSCRIPTEN__
 #include <imgui.h>
-#else
-#include <imgui.h>
-#endif
 
 class MyExampleScene : public examples::ExampleScene {
 public:

@@ -83,7 +83,6 @@ public:
 private:
     std::unique_ptr<ExampleScene> active_scene_;
     std::string active_scene_name_;
-    bool show_scene_menu_;
 };
 
 } // namespace examples

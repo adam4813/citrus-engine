@@ -5,3 +5,8 @@ add_engine_test(sanity_check_test
     sanity_check_test.cpp
 )
 
+# Add scripting system test
+add_engine_test(scripting_test
+    scripting_test.cpp
+)
+

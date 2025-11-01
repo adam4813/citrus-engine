@@ -18,6 +18,7 @@
         "opengl3-binding"
       ]
     },
+    "lua",
     "nlohmann-json",
     "spdlog",
     "stb"

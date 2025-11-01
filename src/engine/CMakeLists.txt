@@ -106,6 +106,9 @@ target_sources(engine-core PRIVATE
     # Scene module implementation
     scene/scene_manager.cpp
 
+    # Scripting module implementation
+    scripting/lua_backend.cpp
+
     ui/renderer.cpp
     ui/batch_renderer/batch_renderer.cpp
 
@@ -131,6 +134,8 @@ target_link_libraries(engine-core
     spdlog::spdlog
     nlohmann_json::nlohmann_json
     imgui::imgui
+    PRIVATE
+    lua
 )
 
 if (EMSCRIPTEN)

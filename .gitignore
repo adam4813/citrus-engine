@@ -61,3 +61,6 @@ vcpkg_installed/
 builds/
 /save_data/
 /demo/
+
+# Node.js dependencies
+node_modules/

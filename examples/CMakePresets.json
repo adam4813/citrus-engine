@@ -1,0 +1,81 @@
+{
+  "version": 8,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 28,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "base",
+      "hidden": true,
+      "generator": "Ninja Multi-Config",
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "toolchainFile": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
+      "cacheVariables": {
+        "CMAKE_CXX_STANDARD": "20",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+      }
+    },
+    {
+      "name": "native",
+      "displayName": "Native Build",
+      "inherits": "base"
+    },
+    {
+      "name": "cli-native",
+      "displayName": "CLI Native Build",
+      "description": "CLI/Agent native build preset",
+      "inherits": "base",
+      "binaryDir": "${sourceDir}/build/cli-native"
+    },
+    {
+      "name": "wasm",
+      "displayName": "WebAssembly Build",
+      "inherits": "base",
+      "cacheVariables": {
+        "VCPKG_CHAINLOAD_TOOLCHAIN_FILE": "$env{EMSDK}/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake",
+        "VCPKG_TARGET_TRIPLET": "wasm32-emscripten",
+        "EMSCRIPTEN_ROOT_PATH": "$env{EMSDK}/upstream/emscripten"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "native-debug",
+      "displayName": "Native Debug",
+      "configurePreset": "native",
+      "configuration": "Debug"
+    },
+    {
+      "name": "native-release",
+      "displayName": "Native Release",
+      "configurePreset": "native",
+      "configuration": "Release"
+    },
+    {
+      "name": "cli-native-debug",
+      "displayName": "CLI Native Debug",
+      "configurePreset": "cli-native",
+      "configuration": "Debug"
+    },
+    {
+      "name": "cli-native-release",
+      "displayName": "CLI Native Release",
+      "configurePreset": "cli-native",
+      "configuration": "Release"
+    },
+    {
+      "name": "wasm-debug",
+      "displayName": "WebAssembly Debug",
+      "configurePreset": "wasm",
+      "configuration": "Debug"
+    },
+    {
+      "name": "wasm-release",
+      "displayName": "WebAssembly Release",
+      "configurePreset": "wasm",
+      "configuration": "Release"
+    }
+  ]
+}

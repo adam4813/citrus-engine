@@ -1,0 +1,203 @@
+name: Build Examples (Windows, Linux, WebAssembly)
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'examples/**'
+      - 'ports/**'
+      - '.github/workflows/build-examples.yml'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'examples/**'
+      - 'ports/**'
+      - '.github/workflows/build-examples.yml'
+  workflow_dispatch:
+
+jobs:
+  build-examples:
+    name: Build Examples on ${{ matrix.os }} (${{ matrix.compiler }})
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Windows builds
+          - os: windows-latest
+            compiler: msvc
+            build_type: Release
+            vcpkg_triplet: x64-windows
+            artifact_name: citrus-examples-windows
+            preset_configure: cli-native
+            preset_build: cli-native-release
+
+          # Linux builds - Clang-18 (required for C++20 modules)
+          - os: ubuntu-latest
+            compiler: clang
+            clang_version: 18
+            build_type: Release
+            vcpkg_triplet: x64-linux
+            artifact_name: citrus-examples-linux
+            preset_configure: cli-native
+            preset_build: cli-native-release
+
+          # Emscripten/WebAssembly builds
+          - os: ubuntu-latest
+            compiler: emscripten
+            build_type: Release
+            vcpkg_triplet: wasm32-emscripten
+            artifact_name: citrus-examples-wasm
+            preset_configure: wasm
+            preset_build: wasm-release
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - uses: lukka/get-cmake@latest
+
+      - name: Install system dependencies (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            pkg-config \
+            libx11-dev \
+            libxrandr-dev \
+            libxinerama-dev \
+            libxcursor-dev \
+            libxi-dev \
+            libgl1-mesa-dev \
+            libglu1-mesa-dev
+
+      - name: Setup Cpp (with Clang version)
+        if: matrix.compiler != 'msvc' && matrix.compiler != 'emscripten' && matrix.clang_version
+        uses: aminya/setup-cpp@v1
+        with:
+          compiler: ${{ matrix.compiler }}
+          clang: ${{ matrix.clang_version }}
+          vcvarsall: ${{ runner.os == 'Windows' }}
+
+      - name: Setup Cpp (default)
+        if: matrix.compiler != 'msvc' && matrix.compiler != 'emscripten' && !matrix.clang_version
+        uses: aminya/setup-cpp@v1
+        with:
+          compiler: ${{ matrix.compiler }}
+          vcvarsall: ${{ runner.os == 'Windows' }}
+
+      - name: Setup Emscripten
+        if: matrix.compiler == 'emscripten'
+        uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: 'latest'
+
+      - name: Restore artifacts, or run vcpkg, build and cache artifacts
+        uses: lukka/run-vcpkg@v11
+        with:
+          vcpkgGitCommitId: dd3097e305afa53f7b4312371f62058d2e665320
+
+      # Now build the examples
+      - name: Run CMake with Presets (Build)
+        uses: lukka/run-cmake@v10
+        with:
+          cmakeListsTxtPath: '${{ github.workspace }}/examples/CMakeLists.txt'
+          configurePreset: ${{ matrix.preset_configure }}
+          buildPreset: ${{ matrix.preset_build }}
+          configurePresetAdditionalArgs: "['-DVCPKG_TARGET_TRIPLET=${{ matrix.vcpkg_triplet }}']"
+
+      - name: List build outputs (Native)
+        if: matrix.compiler != 'emscripten'
+        shell: bash
+        working-directory: examples
+        run: |
+          echo "=== Examples build directory structure ==="
+          ls -lh build/${{ matrix.preset_configure }}/Release/ || ls -lh build/${{ matrix.preset_configure }}/Debug/ || true
+          echo "=== Assets ==="
+          ls -lh build/${{ matrix.preset_configure }}/Release/assets/ || ls -lh build/${{ matrix.preset_configure }}/Debug/assets/ || true
+
+      - name: List build outputs (Emscripten)
+        if: matrix.compiler == 'emscripten'
+        shell: bash
+        working-directory: examples
+        run: |
+          echo "=== Examples build directory structure ==="
+          ls -lh build/${{ matrix.preset_configure }}/Release/ || ls -lh build/${{ matrix.preset_configure }}/Debug/ || true
+
+      # Package artifacts for upload
+      - name: Package artifacts (Windows)
+        if: matrix.os == 'windows-latest'
+        shell: bash
+        working-directory: examples
+        run: |
+          mkdir -p artifacts
+          cp build/${{ matrix.preset_configure }}/Release/citrus-examples.exe artifacts/ || true
+          cp -r build/${{ matrix.preset_configure }}/Release/assets artifacts/ || true
+          echo "Packaged Windows artifacts"
+          ls -lh artifacts/
+
+      - name: Package artifacts (Linux)
+        if: matrix.os == 'ubuntu-latest' && matrix.compiler == 'clang'
+        shell: bash
+        working-directory: examples
+        run: |
+          mkdir -p artifacts
+          cp build/${{ matrix.preset_configure }}/Release/citrus-examples artifacts/ || true
+          cp -r build/${{ matrix.preset_configure }}/Release/assets artifacts/ || true
+          chmod +x artifacts/citrus-examples || true
+          echo "Packaged Linux artifacts"
+          ls -lh artifacts/
+
+      - name: Package artifacts (WASM)
+        if: matrix.compiler == 'emscripten'
+        shell: bash
+        working-directory: examples
+        run: |
+          mkdir -p artifacts
+          cp build/${{ matrix.preset_configure }}/Release/citrus-examples.html artifacts/ || true
+          cp build/${{ matrix.preset_configure }}/Release/citrus-examples.js artifacts/ || true
+          cp build/${{ matrix.preset_configure }}/Release/citrus-examples.wasm artifacts/ || true
+          cp build/${{ matrix.preset_configure }}/Release/citrus-examples.data artifacts/ || true
+          echo "Packaged WASM artifacts"
+          ls -lh artifacts/
+
+      # Upload artifacts
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: examples/artifacts/
+          if-no-files-found: error
+          retention-days: 30
+
+  # Summary job that lists all artifacts
+  summary:
+    name: Build Summary
+    needs: build-examples
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: all-artifacts
+
+      - name: Display structure of downloaded files
+        run: |
+          echo "=== All build artifacts ==="
+          ls -R all-artifacts/
+          
+          echo ""
+          echo "=== Summary ==="
+          echo "Windows build: $(ls all-artifacts/citrus-examples-windows/ 2>/dev/null | wc -l) files"
+          echo "Linux build: $(ls all-artifacts/citrus-examples-linux/ 2>/dev/null | wc -l) files"
+          echo "WASM build: $(ls all-artifacts/citrus-examples-wasm/ 2>/dev/null | wc -l) files"

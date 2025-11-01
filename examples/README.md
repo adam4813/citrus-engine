@@ -213,13 +213,23 @@ auto texture = LoadTexture("assets/textures/example.png");
 
 ## Examples Included
 
+### Core Examples
+
 - **Hello World**: Basic example scene demonstrating the infrastructure
+- **2D Triangle**: Colored triangle with orthographic projection and input controls
+  - Demonstrates: 2D rendering, vertex colors, orthographic projection, keyboard input
+  - Controls: WASD/Arrow keys for movement
+- **3D Cube**: Colored cube with perspective projection, lighting, and input controls
+  - Demonstrates: 3D rendering, perspective projection, basic lighting, keyboard input
+  - Controls: WASD/Arrow keys for movement, auto-rotation enabled
 
-More examples will be added in future updates to demonstrate:
+### Future Examples
 
-- Rendering features
+More examples will be added to demonstrate:
+
+- Advanced rendering features (textures, materials)
 - Physics integration
 - Audio system
-- Input handling
+- Complex input handling
 - UI components
 - And more!

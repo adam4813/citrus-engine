@@ -172,8 +172,11 @@ namespace engine::scripting {
 
         void RegisterGlobalFunction(
             const std::string &name,
-            std::function<ScriptValue(const std::vector<ScriptValue>&)> func
+            std::function<ScriptValue(const std::vector<ScriptValue>&)> func,
+            const std::string &signature
         ) override {
+            // Note: Lua doesn't use the signature for type checking, but it's available for documentation
+            (void)signature; // Suppress unused parameter warning
             if (!lua_state_) {
                 return;
             }

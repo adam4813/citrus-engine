@@ -23,6 +23,30 @@ export namespace engine::scripting {
         return result;
     }
 
+    // Helper to build signature string from C++ types (e.g., "int(int,int)")
+    template<typename T>
+    constexpr const char* TypeToString() {
+        if constexpr (std::is_void_v<T>) return "void";
+        else if constexpr (std::is_same_v<T, int>) return "int";
+        else if constexpr (std::is_same_v<T, float>) return "float";
+        else if constexpr (std::is_same_v<T, double>) return "double";
+        else if constexpr (std::is_same_v<T, bool>) return "bool";
+        else if constexpr (std::is_same_v<T, std::string>) return "string";
+        else return "unknown";
+    }
+
+    template<typename ReturnType, typename... Args>
+    std::string MakeSignatureString() {
+        std::string sig = TypeToString<ReturnType>();
+        sig += "(";
+        if constexpr (sizeof...(Args) > 0) {
+            ((sig += TypeToString<Args>(), sig += ","), ...);
+            sig.pop_back(); // Remove trailing comma
+        }
+        sig += ")";
+        return sig;
+    }
+
     // Class registration helper (for fluent interface)
     class ClassRegistration {
     private:
@@ -60,9 +84,10 @@ export namespace engine::scripting {
                 }
             };
 
-            // Register the wrapped function
+            // Register the wrapped function with string signature
             const std::string full_name = class_name_ + "_" + method_name;
-            backend_->RegisterGlobalFunction(full_name, wrapper);
+            std::string signature = MakeSignatureString<ReturnType, Args...>();
+            backend_->RegisterGlobalFunction(full_name, wrapper, signature);
             return *this;
         }
 
@@ -148,7 +173,9 @@ export namespace engine::scripting {
                 }
             };
 
-            backend_->RegisterGlobalFunction(name, wrapper);
+            // Create string signature from template parameters (e.g., "int(int,int)")
+            std::string signature = MakeSignatureString<ReturnType, Args...>();
+            backend_->RegisterGlobalFunction(name, wrapper, signature);
         }
 
         // Convenience overload for function pointers
@@ -186,6 +213,42 @@ export namespace engine::scripting {
         // Get the active language
         [[nodiscard]] ScriptLanguage GetLanguage() const {
             return language_;
+        }
+
+        // Change the scripting language at runtime
+        // Note: This will shutdown the current backend and reinitialize with the new one
+        // All registered functions and state will be lost
+        bool SetLanguage(ScriptLanguage new_language) {
+            if (new_language == language_) {
+                return true; // Already using this language
+            }
+
+            // Shutdown current backend
+            if (backend_) {
+                backend_->Shutdown();
+            }
+
+            // Create and initialize new backend
+            try {
+                backend_ = CreateScriptingBackend(new_language);
+                if (!backend_ || !backend_->Initialize()) {
+                    // Revert to previous language on failure
+                    backend_ = CreateScriptingBackend(language_);
+                    if (backend_) {
+                        backend_->Initialize();
+                    }
+                    return false;
+                }
+                language_ = new_language;
+                return true;
+            } catch (...) {
+                // Revert to previous language on exception
+                backend_ = CreateScriptingBackend(language_);
+                if (backend_) {
+                    backend_->Initialize();
+                }
+                return false;
+            }
         }
 
     private:

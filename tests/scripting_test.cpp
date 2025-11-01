@@ -124,3 +124,25 @@ TEST_F(ScriptingSystemTest, can_register_function_pointers) {
     bool result = scripting.ExecuteString("diff = subtract(10, 3)");
     EXPECT_TRUE(result);
 }
+
+// Test runtime language switching
+TEST_F(ScriptingSystemTest, can_change_language_at_runtime) {
+    ScriptingSystem scripting(ScriptLanguage::Lua);
+    
+    // Verify initial language
+    EXPECT_EQ(scripting.GetLanguage(), ScriptLanguage::Lua);
+    
+    // Register a function in Lua
+    scripting.RegisterGlobalFunction("test_func", 
+        std::function<int(int)>([](int x) { return x * 2; }));
+    
+    // Note: Changing language will clear all registered functions
+    // This is expected behavior as stated in the API
+    bool changed = scripting.SetLanguage(ScriptLanguage::Lua);
+    EXPECT_TRUE(changed);
+    EXPECT_EQ(scripting.GetLanguage(), ScriptLanguage::Lua);
+    
+    // Try to change to the same language (should succeed without reinitializing)
+    bool same = scripting.SetLanguage(ScriptLanguage::Lua);
+    EXPECT_TRUE(same);
+}

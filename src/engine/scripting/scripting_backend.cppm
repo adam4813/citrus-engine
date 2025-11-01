@@ -50,9 +50,11 @@ export namespace engine::scripting {
         virtual bool ExecuteFile(const std::string &filepath) = 0;
 
         // Register a global function (no class binding)
+        // Signature is a simple string that all 3 languages can understand (e.g., "int(int,int)")
         virtual void RegisterGlobalFunction(
             const std::string &name,
-            std::function<ScriptValue(const std::vector<ScriptValue>&)> func
+            std::function<ScriptValue(const std::vector<ScriptValue>&)> func,
+            const std::string &signature = ""
         ) = 0;
 
         // Call a script function and get the return value

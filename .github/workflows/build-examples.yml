@@ -106,38 +106,38 @@ jobs:
           vcpkgGitCommitId: dd3097e305afa53f7b4312371f62058d2e665320
 
       # First build the engine library
-      - name: Build Engine Library - Native
-        if: matrix.compiler != 'emscripten'
-        uses: lukka/run-cmake@v10
-        with:
-          configurePreset: cli-native
-          buildPreset: cli-native-release
-          configurePresetAdditionalArgs: "['-DVCPKG_TARGET_TRIPLET=${{ matrix.vcpkg_triplet }}']"
+      #- name: Build Engine Library - Native
+      #  if: matrix.compiler != 'emscripten'
+      #  uses: lukka/run-cmake@v10
+      #  with:
+      #    configurePreset: cli-native
+      #    buildPreset: cli-native-release
+      #    configurePresetAdditionalArgs: "['-DVCPKG_TARGET_TRIPLET=${{ matrix.vcpkg_triplet }}']"
 
-      - name: Build Engine Library - Emscripten
-        if: matrix.compiler == 'emscripten'
-        uses: lukka/run-cmake@v10
-        with:
-          configurePreset: wasm
-          buildPreset: wasm-release
-          configurePresetAdditionalArgs: "['-DVCPKG_TARGET_TRIPLET=${{ matrix.vcpkg_triplet }}']"
+      #- name: Build Engine Library - Emscripten
+      #  if: matrix.compiler == 'emscripten'
+      #  uses: lukka/run-cmake@v10
+      #  with:
+      #    configurePreset: wasm
+      #    buildPreset: wasm-release
+      #    configurePresetAdditionalArgs: "['-DVCPKG_TARGET_TRIPLET=${{ matrix.vcpkg_triplet }}']"
 
       # Now build the examples
       - name: Build Examples - Native
-        if: matrix.compiler != 'emscripten'
+        #  if: matrix.compiler != 'emscripten'
         shell: bash
         working-directory: examples
         run: |
           cmake --preset ${{ matrix.preset_configure }} -DVCPKG_TARGET_TRIPLET=${{ matrix.vcpkg_triplet }}
           cmake --build --preset ${{ matrix.preset_build }} --parallel
 
-      - name: Build Examples - Emscripten
-        if: matrix.compiler == 'emscripten'
-        shell: bash
-        working-directory: examples
-        run: |
-          cmake --preset ${{ matrix.preset_configure }} -DVCPKG_TARGET_TRIPLET=${{ matrix.vcpkg_triplet }}
-          cmake --build --preset ${{ matrix.preset_build }} --parallel
+      #- name: Build Examples - Emscripten
+      #  if: matrix.compiler == 'emscripten'
+      #  shell: bash
+      #  working-directory: examples
+      #  run: |
+      #    cmake --preset ${{ matrix.preset_configure }} -DVCPKG_TARGET_TRIPLET=${{ matrix.vcpkg_triplet }}
+      #    cmake --build --preset ${{ matrix.preset_build }} --parallel
 
       - name: List build outputs (Native)
         if: matrix.compiler != 'emscripten'

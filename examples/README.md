@@ -5,6 +5,7 @@ This directory contains a unified examples application that demonstrates various
 ## Overview
 
 The examples application provides:
+
 - **Scene-based organization**: Each example is implemented as a self-contained scene
 - **Easy scene switching**: ImGui menu for switching between examples at runtime
 - **Cross-platform**: Builds for both native (Windows/Linux/macOS) and WebAssembly
@@ -25,11 +26,10 @@ cd examples
 export VCPKG_ROOT=/path/to/vcpkg
 
 # Configure
-cmake -B build -DCMAKE_TOOLCHAIN_FILE=$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake \
-  -DVCPKG_OVERLAY_PORTS=../ports
+cmake --preset native
 
 # Build
-cmake --build build --config Release
+cmake --build --preset native-release
 
 # Run
 ./build/citrus-examples
@@ -43,17 +43,13 @@ export VCPKG_ROOT=/path/to/vcpkg
 source /path/to/emsdk/emsdk_env.sh
 
 # Configure
-cmake -B build-wasm \
-  -DCMAKE_TOOLCHAIN_FILE=$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake \
-  -DVCPKG_CHAINLOAD_TOOLCHAIN_FILE=$EMSDK/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake \
-  -DVCPKG_TARGET_TRIPLET=wasm32-emscripten \
-  -DVCPKG_OVERLAY_PORTS=../ports
+cmake --preset wasm
 
 # Build
-cmake --build build-wasm --config Release
+cmake --build --preset wasm-release
 
 # Serve (requires Python)
-cd build-wasm
+cd build/wasm/Release
 python3 -m http.server 8080
 # Open http://localhost:8080/citrus-examples.html
 ```
@@ -193,6 +189,7 @@ Example assets are stored in `examples/assets/`:
 - **WASM builds**: Assets are preloaded into the Emscripten virtual filesystem
 
 Load assets using paths relative to the assets directory:
+
 ```cpp
 // This works on both native and WASM
 auto texture = LoadTexture("assets/textures/example.png");
@@ -223,6 +220,7 @@ auto texture = LoadTexture("assets/textures/example.png");
 - **Hello World**: Basic example scene demonstrating the infrastructure
 
 More examples will be added in future updates to demonstrate:
+
 - Rendering features
 - Physics integration
 - Audio system

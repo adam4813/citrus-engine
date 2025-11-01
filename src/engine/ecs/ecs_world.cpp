@@ -230,9 +230,31 @@ namespace engine::ecs {
 
     // Submit render commands for all renderable entities
     void ECSWorld::SubmitRenderCommands(const rendering::Renderer &renderer) {
+        // Static default camera to avoid recreation every frame
+        static const Camera default_camera = []() {
+            Camera cam;
+            const glm::vec3 default_position(0.0f, 0.0f, 10.0f);
+            cam.view_matrix = glm::lookAt(default_position, cam.target, cam.up);
+            cam.projection_matrix = glm::perspective(
+                glm::radians(cam.fov),
+                cam.aspect_ratio,
+                cam.near_plane,
+                cam.far_plane
+            );
+            return cam;
+        }();
+        
         const flecs::entity camera_entity = GetActiveCamera();
-        const auto camera_comp = camera_entity.get<Camera>();
-
+        
+        // Determine which camera to use: active camera or default fallback
+        const Camera* active_camera = &default_camera;
+        Camera camera_data;
+        if (camera_entity.is_valid() && camera_entity.has<Camera>()) {
+            camera_data = camera_entity.get<Camera>();
+            active_camera = &camera_data;
+        }
+        
+        // Single query loop for all renderables
         const auto renderable_query = world_.query<const WorldTransform, const rendering::Renderable>();
         renderable_query.each(
             [&](flecs::iter, size_t, const WorldTransform &transform, const rendering::Renderable &renderable) {
@@ -241,7 +263,7 @@ namespace engine::ecs {
                 }
                 rendering::RenderCommand cmd{.mesh = renderable.mesh, .material = renderable.material};
 
-                const auto model = camera_comp.projection_matrix * camera_comp.view_matrix * transform.matrix;
+                const auto model = active_camera->projection_matrix * active_camera->view_matrix * transform.matrix;
 
                 cmd.transform = model;
 

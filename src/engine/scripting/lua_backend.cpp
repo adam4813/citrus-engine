@@ -180,10 +180,21 @@ namespace engine::scripting {
 
             // Allocate storage for the function object on the heap
             // This will be owned by Lua's garbage collector
-            auto *func_ptr = static_cast<std::function<ScriptValue(const std::vector<ScriptValue>&)>*>(
-                lua_newuserdata(lua_state_, sizeof(std::function<ScriptValue(const std::vector<ScriptValue>&)>))
-            );
-            new (func_ptr) std::function<ScriptValue(const std::vector<ScriptValue>&)>(std::move(func));
+            using FuncType = std::function<ScriptValue(const std::vector<ScriptValue>&)>;
+            constexpr size_t func_size = sizeof(FuncType);
+            constexpr size_t func_align = alignof(FuncType);
+            
+            // Ensure proper alignment by allocating extra space if needed
+            void* raw_ptr = lua_newuserdata(lua_state_, func_size);
+            
+            // Check alignment (should be valid for most platforms, but good practice)
+            if (reinterpret_cast<uintptr_t>(raw_ptr) % func_align != 0) {
+                lua_pop(lua_state_, 1);
+                return; // Alignment issue - this should not happen with lua_newuserdata
+            }
+            
+            auto *func_ptr = static_cast<FuncType*>(raw_ptr);
+            new (func_ptr) FuncType(std::move(func));
 
             // Create a metatable for cleanup
             lua_newtable(lua_state_);

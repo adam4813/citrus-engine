@@ -8,6 +8,7 @@ module;
 #include <type_traits>
 #include <utility>
 #include <vector>
+#include <spdlog/spdlog.h>
 
 export module engine.scripting;
 
@@ -87,9 +88,11 @@ export namespace engine::scripting {
             std::function<ReturnType(Args...)> func
         ) {
             // Wrap the function to handle type conversions
-            auto wrapper = [func](const std::vector<ScriptValue> &args) -> ScriptValue {
+            auto wrapper = [func, method_name](const std::vector<ScriptValue> &args) -> ScriptValue {
                 if (args.size() != sizeof...(Args)) {
-                    // Argument count mismatch - return default value
+                    // Argument count mismatch - log warning and return default value
+                    spdlog::warn("[Scripting] Argument count mismatch for method '{}': expected {}, got {}", 
+                                 method_name, sizeof...(Args), args.size());
                     if constexpr (!std::is_void_v<ReturnType>) {
                         return ToScriptValue(ReturnType{});
                     } else {
@@ -151,8 +154,8 @@ export namespace engine::scripting {
         ScriptingSystem& operator=(const ScriptingSystem&) = delete;
 
         // Enable move
-        ScriptingSystem(ScriptingSystem&&) noexcept = default;
-        ScriptingSystem& operator=(ScriptingSystem&&) noexcept = default;
+        ScriptingSystem(ScriptingSystem&&) = default;
+        ScriptingSystem& operator=(ScriptingSystem&&) = default;
 
         // Register a class (returns helper for fluent interface)
         ClassRegistration RegisterClass(const std::string &class_name) {
@@ -165,8 +168,11 @@ export namespace engine::scripting {
             const std::string &name,
             std::function<ReturnType(Args...)> func
         ) {
-            auto wrapper = [func](const std::vector<ScriptValue> &args) -> ScriptValue {
+            auto wrapper = [func, name](const std::vector<ScriptValue> &args) -> ScriptValue {
                 if (args.size() != sizeof...(Args)) {
+                    // Argument count mismatch - log warning and return default value
+                    spdlog::warn("[Scripting] Argument count mismatch for function '{}': expected {}, got {}", 
+                                 name, sizeof...(Args), args.size());
                     if constexpr (!std::is_void_v<ReturnType>) {
                         return ToScriptValue(ReturnType{});
                     } else {

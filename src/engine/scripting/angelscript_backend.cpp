@@ -8,6 +8,7 @@ module;
 #include <stdexcept>
 #include <string>
 #include <vector>
+#include <spdlog/spdlog.h>
 
 #include <angelscript.h>
 
@@ -31,9 +32,8 @@ namespace engine::scripting {
             } else if (value.Is<bool>()) {
                 ctx->SetArgByte(arg_index, value.As<bool>() ? 1 : 0);
             } else if (value.Is<std::string>()) {
-                // AngelScript strings need special handling
-                // For now, skip string arguments (would need proper string registration)
-                (void)arg_index;
+                // String arguments are not supported; throw an error to prevent silent failure
+                throw std::invalid_argument("AngelScriptBackend: String arguments are not supported. Please avoid passing std::string to scripts, or implement proper string registration.");
             }
         }
 
@@ -174,9 +174,9 @@ namespace engine::scripting {
         }
 
         bool ExecuteFile(const std::string &filepath) override {
-            // For simplicity, would need to read file and call ExecuteString
+            // Not yet implemented: AngelScript file execution is not supported.
             (void)filepath;
-            return false;
+            throw std::runtime_error("AngelScriptBackend::ExecuteFile is not yet supported.");
         }
 
         void RegisterGlobalFunction(

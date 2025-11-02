@@ -7,6 +7,7 @@ module;
 #include <stdexcept>
 #include <string>
 #include <vector>
+#include <spdlog/spdlog.h>
 
 extern "C" {
 #include <lua.h>
@@ -158,7 +159,9 @@ namespace engine::scripting {
             }
 
             if (luaL_dostring(lua_state_, script.c_str()) != LUA_OK) {
-                // Error handling - could be improved
+                // Retrieve and log the error message
+                const char* error_msg = lua_tostring(lua_state_, -1);
+                spdlog::error("[Lua] Script execution failed: {}", error_msg ? error_msg : "unknown error");
                 lua_pop(lua_state_, 1);
                 return false;
             }
@@ -172,6 +175,9 @@ namespace engine::scripting {
             }
 
             if (luaL_dofile(lua_state_, filepath.c_str()) != LUA_OK) {
+                // Retrieve and log the error message
+                const char* error_msg = lua_tostring(lua_state_, -1);
+                spdlog::error("[Lua] Script file execution failed ({}): {}", filepath, error_msg ? error_msg : "unknown error");
                 lua_pop(lua_state_, 1);
                 return false;
             }
@@ -201,6 +207,8 @@ namespace engine::scripting {
             
             // Check alignment (should be valid for most platforms, but good practice)
             if (reinterpret_cast<uintptr_t>(raw_ptr) % func_align != 0) {
+                spdlog::error("[Lua] Alignment check failed for function userdata. Expected alignment: {}, got address: {}", 
+                              func_align, reinterpret_cast<uintptr_t>(raw_ptr));
                 lua_pop(lua_state_, 1);
                 return; // Alignment issue - this should not happen with lua_newuserdata
             }

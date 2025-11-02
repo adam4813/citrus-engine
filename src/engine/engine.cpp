@@ -8,6 +8,7 @@ module;
 #endif
 #include <GLFW/glfw3.h>
 #include <exception>
+#include <memory>
 
 module engine;
 
@@ -46,7 +47,7 @@ namespace engine {
 
         // Initialize scripting system with default language (Lua)
         try {
-            scripting_system = new scripting::ScriptingSystem();
+            scripting_system = std::make_unique<scripting::ScriptingSystem>();
         } catch (const std::exception&) {
             // Failed to initialize scripting system
             return false;
@@ -68,11 +69,8 @@ namespace engine {
     }
 
     void Engine::Shutdown() {
-        // Shutdown scripting system
-        if (scripting_system) {
-            delete scripting_system;
-            scripting_system = nullptr;
-        }
+        // Shutdown scripting system (unique_ptr handles cleanup automatically)
+        scripting_system.reset();
         // Shutdown input system
         input::Input::Shutdown();
         // Shutdown renderer

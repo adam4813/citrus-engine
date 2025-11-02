@@ -338,6 +338,88 @@ int main() {
 }
 ```
 
+---
+
+## ⚠️ Important: Shader Vertex Layout Requirements
+
+When writing custom shaders for Citrus Engine, you **must** match the engine's vertex attribute layout. Mismatched layouts cause **silent rendering failures** (no errors, nothing renders).
+
+### 📋 Required Vertex Attribute Locations
+
+The engine uploads these 4 attributes to the GPU in this exact order:
+
+| Location | Type  | GLSL Declaration                      | C++ Field       |
+|----------|-------|---------------------------------------|-----------------|
+| **0**    | vec3  | `layout(location = 0) in vec3 aPos;`  | `position`      |
+| **1**    | vec3  | `layout(location = 1) in vec3 aNormal;` | `normal`      |
+| **2**    | vec2  | `layout(location = 2) in vec2 aTexCoord;` | `tex_coords` |
+| **3**    | vec4  | `layout(location = 3) in vec4 aColor;` | `color`        |
+
+### ✅ Correct Shader Example
+
+```glsl
+#version 300 es
+
+// CORRECT: Use exact layout locations
+layout(location = 0) in vec3 aPos;
+layout(location = 1) in vec3 aNormal;
+layout(location = 2) in vec2 aTexCoord;
+layout(location = 3) in vec4 aColor;
+
+uniform mat4 u_MVP;
+out vec4 vColor;
+
+void main() {
+    vColor = aColor;
+    gl_Position = u_MVP * vec4(aPos, 1.0);
+}
+```
+
+### ⚠️ Using Subset of Attributes
+
+You can use fewer attributes, **but location numbers must stay the same**:
+
+```glsl
+#version 300 es
+
+// CORRECT: Skip unused attributes but keep location numbers
+layout(location = 0) in vec3 aPos;
+// Skip location 1 (normal) - not used
+// Skip location 2 (texcoord) - not used
+layout(location = 3) in vec4 aColor;  // Must be location 3, not 1!
+
+uniform mat4 u_MVP;
+out vec4 vColor;
+
+void main() {
+    vColor = aColor;
+    gl_Position = u_MVP * vec4(aPos, 1.0);
+}
+```
+
+### ❌ Common Mistakes
+
+**WRONG - Renumbering locations:**
+```glsl
+layout(location = 0) in vec3 aPos;
+layout(location = 1) in vec4 aColor;  // WRONG! Color is location 3
+```
+
+**WRONG - Wrong types:**
+```glsl
+layout(location = 3) in vec3 aColor;  // WRONG! Color is vec4, not vec3
+```
+
+### 📚 Reference Shaders
+
+See working examples in `examples/assets/shaders/`:
+- `colored_2d.vert` - Simple 2D colored vertex shader
+- Additional shader examples (coming soon)
+
+### 🔮 Future Improvement
+
+The Citrus Engine team is planning a shader-driven vertex layout system that will automatically adapt to any shader layout locations. This will eliminate silent failures and make shader development more flexible. Track progress in [issue #TBD].
+
 ### 🏗️ Building Your Project
 
 ```bash

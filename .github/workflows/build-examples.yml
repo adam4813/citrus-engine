@@ -140,6 +140,7 @@ jobs:
         run: |
           mkdir -p artifacts
           cp build/${{ matrix.preset_configure }}/Release/citrus-examples.exe artifacts/ || true
+          cp build/${{ matrix.preset_configure }}/Release/*.dll artifacts/ || true
           cp -r build/${{ matrix.preset_configure }}/Release/assets artifacts/ || true
           echo "Packaged Windows artifacts"
           ls -lh artifacts/

@@ -3,6 +3,7 @@
   "name": "game-engine",
   "version": "0.0.1",
   "dependencies": [
+    "angelscript",
     "flecs",
     {
       "name": "glad",
@@ -18,6 +19,7 @@
         "opengl3-binding"
       ]
     },
+    "lua",
     "nlohmann-json",
     "spdlog",
     "stb"

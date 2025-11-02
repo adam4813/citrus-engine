@@ -58,6 +58,8 @@ target_sources(engine-core
     rendering/tilemap_renderer.cppm
     rendering/rendering.cppm
     scene/scene.cppm
+    scripting/scripting_backend.cppm
+    scripting/scripting_system.cppm
     ui/ui.cppm
     ui/renderer.cppm
     ui/types.cppm
@@ -108,6 +110,11 @@ target_sources(engine-core PRIVATE
     # Scene module implementation
     scene/scene_manager.cpp
 
+    # Scripting module implementation
+    scripting/lua_backend.cpp
+    scripting/angelscript_backend.cpp
+    scripting/scripting_factory.cpp
+
     ui/renderer.cpp
     ui/batch_renderer/batch_renderer.cpp
 
@@ -133,6 +140,9 @@ target_link_libraries(engine-core
     spdlog::spdlog
     nlohmann_json::nlohmann_json
     imgui::imgui
+    PRIVATE
+    Angelscript::angelscript
+    lua
 )
 
 if (EMSCRIPTEN)

@@ -10,3 +10,8 @@ add_engine_test(scripting_test
     scripting_test.cpp
 )
 
+# Add renderer test
+add_engine_test(renderer_test
+    renderer_test.cpp
+)
+

@@ -67,6 +67,15 @@ namespace engine::scripting {
             return result;
         }
 
+        // Static destructor for cleaning up function objects in Lua userdata
+        static int FunctionDestructor(lua_State *L) {
+            auto *ptr = static_cast<std::function<ScriptValue(const std::vector<ScriptValue>&)>*>(
+                lua_touserdata(L, 1)
+            );
+            ptr->~function();
+            return 0;
+        }
+
         // C function wrapper for Lua callbacks
         static int LuaCFunctionWrapper(lua_State *L) {
             // Get the function pointer from upvalue
@@ -201,13 +210,7 @@ namespace engine::scripting {
 
             // Create a metatable for cleanup
             lua_newtable(lua_state_);
-            lua_pushcfunction(lua_state_, [](lua_State *L) -> int {
-                auto *ptr = static_cast<std::function<ScriptValue(const std::vector<ScriptValue>&)>*>(
-                    lua_touserdata(L, 1)
-                );
-                ptr->~function();
-                return 0;
-            });
+            lua_pushcfunction(lua_state_, FunctionDestructor);
             lua_setfield(lua_state_, -2, "__gc");
             lua_setmetatable(lua_state_, -2);
 

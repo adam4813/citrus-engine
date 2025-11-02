@@ -47,6 +47,29 @@ export namespace engine::scripting {
         return sig;
     }
 
+    // Helper to convert script arguments to C++ types (shared between ScriptingSystem and ClassRegistration)
+    namespace detail {
+        // Forward declaration
+        template<typename... Args, std::size_t... Indices>
+        std::tuple<Args...> ConvertArgsImpl(
+            const std::vector<ScriptValue> &script_args,
+            std::index_sequence<Indices...>
+        );
+
+        template<typename... Args>
+        std::tuple<Args...> ConvertArgs(const std::vector<ScriptValue> &script_args) {
+            return ConvertArgsImpl<Args...>(script_args, std::index_sequence_for<Args...>{});
+        }
+
+        template<typename... Args, std::size_t... Indices>
+        std::tuple<Args...> ConvertArgsImpl(
+            const std::vector<ScriptValue> &script_args,
+            std::index_sequence<Indices...>
+        ) {
+            return std::make_tuple(script_args[Indices].As<Args>()...);
+        }
+    }
+
     // Class registration helper (for fluent interface)
     class ClassRegistration {
     private:
@@ -76,10 +99,10 @@ export namespace engine::scripting {
 
                 // Call the function with converted arguments
                 if constexpr (std::is_void_v<ReturnType>) {
-                    std::apply(func, ConvertArgs<Args...>(args));
+                    std::apply(func, detail::ConvertArgs<Args...>(args));
                     return ScriptValue{};
                 } else {
-                    ReturnType result = std::apply(func, ConvertArgs<Args...>(args));
+                    ReturnType result = std::apply(func, detail::ConvertArgs<Args...>(args));
                     return ToScriptValue(result);
                 }
             };
@@ -99,21 +122,6 @@ export namespace engine::scripting {
         ) {
             return Method(method_name, func);
         }
-
-    private:
-        // Helper to convert script arguments to C++ types
-        template<typename... Args>
-        static std::tuple<Args...> ConvertArgs(const std::vector<ScriptValue> &script_args) {
-            return ConvertArgsImpl<Args...>(script_args, std::index_sequence_for<Args...>{});
-        }
-
-        template<typename... Args, std::size_t... Indices>
-        static std::tuple<Args...> ConvertArgsImpl(
-            const std::vector<ScriptValue> &script_args,
-            std::index_sequence<Indices...>
-        ) {
-            return std::make_tuple(script_args[Indices].As<Args>()...);
-        }
     };
 
     // Main scripting system
@@ -127,7 +135,9 @@ export namespace engine::scripting {
         explicit ScriptingSystem(ScriptLanguage language = ScriptLanguage::Lua)
             : language_(language) {
             backend_ = CreateScriptingBackend(language);
-            backend_->Initialize();
+            if (!backend_ || !backend_->Initialize()) {
+                throw std::runtime_error("Failed to initialize scripting backend");
+            }
         }
 
         ~ScriptingSystem() {
@@ -165,10 +175,10 @@ export namespace engine::scripting {
                 }
 
                 if constexpr (std::is_void_v<ReturnType>) {
-                    std::apply(func, ConvertArgs<Args...>(args));
+                    std::apply(func, detail::ConvertArgs<Args...>(args));
                     return ScriptValue{};
                 } else {
-                    ReturnType result = std::apply(func, ConvertArgs<Args...>(args));
+                    ReturnType result = std::apply(func, detail::ConvertArgs<Args...>(args));
                     return ToScriptValue(result);
                 }
             };
@@ -216,11 +226,12 @@ export namespace engine::scripting {
         }
 
         // Change the scripting language at runtime
-        // Note: This will shutdown the current backend and reinitialize with the new one
-        // All registered functions and state will be lost
+        // Note: If the new language is the same as the current one, this is a no-op and the backend is not reinitialized.
+        // If the language is changed, this will shutdown the current backend and reinitialize with the new one.
+        // All registered functions and state will be lost when the language is changed.
         bool SetLanguage(ScriptLanguage new_language) {
             if (new_language == language_) {
-                return true; // Already using this language
+                return true; // Already using this language; no reinitialization occurs
             }
 
             // Shutdown current backend
@@ -251,18 +262,5 @@ export namespace engine::scripting {
             }
         }
 
-    private:
-        template<typename... Args>
-        static std::tuple<Args...> ConvertArgs(const std::vector<ScriptValue> &script_args) {
-            return ConvertArgsImpl<Args...>(script_args, std::index_sequence_for<Args...>{});
-        }
-
-        template<typename... Args, std::size_t... Indices>
-        static std::tuple<Args...> ConvertArgsImpl(
-            const std::vector<ScriptValue> &script_args,
-            std::index_sequence<Indices...>
-        ) {
-            return std::make_tuple(script_args[Indices].As<Args>()...);
-        }
     };
 }

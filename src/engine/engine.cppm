@@ -1,6 +1,7 @@
 module;
 
 #include <cstdint>
+#include <memory>
 #include <flecs.h>
 #ifndef __EMSCRIPTEN__
 #include <glad/glad.h>
@@ -21,6 +22,7 @@ export import engine.components;
 export import engine.rendering;
 export import engine.os;
 export import engine.input;
+export import engine.scripting;
 export import engine.ui;
 
 // Main engine namespace
@@ -52,6 +54,7 @@ export namespace engine {
         GLFWwindow *window{nullptr};
         // Input system: managed via input::Input namespace (no instance needed)
         // Scene system: add if you have a SceneSystem class
+        std::unique_ptr<scripting::ScriptingSystem> scripting_system;
         ui::UIRenderer ui_renderer;
     };
 } // namespace engine

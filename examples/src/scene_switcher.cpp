@@ -1,5 +1,6 @@
 #include "scene_switcher.h"
 #include "scene_registry.h"
+#include "engine_scene_adapter.h"
 
 #include <imgui.h>
 
@@ -9,7 +10,9 @@ namespace examples {
 
 SceneSwitcher::SceneSwitcher()
     : active_scene_(nullptr)
-    , active_scene_name_("") {
+    , active_scene_name_("")
+    , active_adapter_(nullptr)
+    , active_engine_scene_id_(engine::scene::INVALID_SCENE) {
 }
 
 SceneSwitcher::~SceneSwitcher() = default;
@@ -29,20 +32,30 @@ void SceneSwitcher::Initialize(engine::Engine& engine, const std::string& defaul
 }
 
 void SceneSwitcher::Shutdown(engine::Engine& engine) {
-    if (active_scene_) {
-        active_scene_->Shutdown(engine);
-        active_scene_.reset();
-        active_scene_name_.clear();
+    // Destroy the engine scene (will call shutdown callback)
+    if (active_engine_scene_id_ != engine::scene::INVALID_SCENE) {
+        auto& scene_manager = engine::scene::GetSceneManager();
+        scene_manager.DestroyScene(active_engine_scene_id_);
+        active_engine_scene_id_ = engine::scene::INVALID_SCENE;
     }
+    
+    // Clean up adapter (which owns the example scene)
+    active_adapter_.reset();
+    active_scene_ = nullptr;
+    active_scene_name_.clear();
 }
 
 void SceneSwitcher::Update(engine::Engine& engine, float delta_time) {
+    // Update is now handled by the engine's scene manager through callbacks
+    // But we still call it here for backward compatibility
     if (active_scene_) {
         active_scene_->Update(engine, delta_time);
     }
 }
 
 void SceneSwitcher::Render(engine::Engine& engine) {
+    // Render is now handled by the engine's scene manager through callbacks
+    // But we still call it here for backward compatibility
     if (active_scene_) {
         active_scene_->Render(engine);
     }
@@ -90,25 +103,69 @@ void SceneSwitcher::RenderUI(engine::Engine& engine) {
 
 bool SceneSwitcher::SwitchToScene(engine::Engine& engine, const std::string& scene_name) {
     // If already active, nothing to do
-    if (scene_name == active_scene_name_ && active_scene_) {
+    if (scene_name == active_scene_name_ && active_adapter_) {
         return true;
     }
 
-    // Shutdown current scene
-    if (active_scene_) {
-        active_scene_->Shutdown(engine);
-        active_scene_.reset();
+    auto& scene_manager = engine::scene::GetSceneManager();
+
+    // Destroy current engine scene (will call shutdown callback)
+    if (active_engine_scene_id_ != engine::scene::INVALID_SCENE) {
+        scene_manager.DestroyScene(active_engine_scene_id_);
+        active_engine_scene_id_ = engine::scene::INVALID_SCENE;
     }
 
-    // Create and initialize new scene
-    active_scene_ = SceneRegistry::Instance().CreateScene(scene_name);
-    if (!active_scene_) {
+    // Clean up adapter (which owns the example scene)
+    active_adapter_.reset();
+    active_scene_ = nullptr;
+
+    // Create new example scene
+    auto example_scene = SceneRegistry::Instance().CreateScene(scene_name);
+    if (!example_scene) {
         active_scene_name_.clear();
         return false;
     }
 
     active_scene_name_ = scene_name;
-    active_scene_->Initialize(engine);
+
+    // Create engine scene for this example
+    active_engine_scene_id_ = scene_manager.CreateScene(scene_name);
+    auto& engine_scene = scene_manager.GetScene(active_engine_scene_id_);
+
+    // Create adapter to bridge ExampleScene lifecycle with engine::scene::Scene
+    active_adapter_ = std::make_unique<EngineSceneAdapter>(engine, std::move(example_scene));
+
+    // Keep a raw pointer to the scene for direct access (UI rendering, etc.)
+    active_scene_ = active_adapter_->GetScene();
+
+    // Set up lifecycle callbacks
+    engine_scene.SetInitializeCallback([this]() {
+        if (active_adapter_) {
+            active_adapter_->OnInitialize();
+        }
+    });
+
+    engine_scene.SetShutdownCallback([this]() {
+        if (active_adapter_) {
+            active_adapter_->OnShutdown();
+        }
+    });
+
+    engine_scene.SetUpdateCallback([this](float delta_time) {
+        if (active_adapter_) {
+            active_adapter_->OnUpdate(delta_time);
+        }
+    });
+
+    engine_scene.SetRenderCallback([this]() {
+        if (active_adapter_) {
+            active_adapter_->OnRender();
+        }
+    });
+
+    // Activate the engine scene (will call initialize callback)
+    scene_manager.SetActiveScene(active_engine_scene_id_);
+
     return true;
 }
 

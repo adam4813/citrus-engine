@@ -81,8 +81,12 @@ public:
     bool HasActiveScene() const;
 
 private:
-    std::unique_ptr<ExampleScene> active_scene_;
+    class EngineSceneAdapter;
+    
+    ExampleScene* active_scene_; // Non-owning pointer (owned by adapter)
     std::string active_scene_name_;
+    std::unique_ptr<EngineSceneAdapter> active_adapter_;
+    engine::scene::SceneId active_engine_scene_id_;
 };
 
 } // namespace examples

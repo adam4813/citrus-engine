@@ -263,6 +263,12 @@ documented patterns.
 
 **Rule of thumb**: If you're just going to tell the user about it anyway, don't create a file for it.
 
+**CRITICAL**: If the justification for creating documentation is NOT immediately obvious:
+1. **DO NOT create the file**
+2. **Explain your reasoning to the user first**
+3. **Wait for explicit approval**
+4. If unclear whether documentation is needed, **update AGENTS.md to clarify the policy** rather than guess
+
 ### 5. No Standalone Applications
 
 - Do not create standalone test applications

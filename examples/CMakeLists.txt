@@ -16,6 +16,8 @@ add_executable(citrus-examples
     src/example_scene.cpp
     src/scene_registry.cpp
     src/scene_switcher.cpp
+    src/triangle_2d_scene.cpp
+    src/cube_3d_scene.cpp
 )
 
 target_include_directories(citrus-examples PRIVATE

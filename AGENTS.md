@@ -579,4 +579,50 @@ When given a task:
 
 ---
 
+## Adding Dependencies to the Engine
+
+**CRITICAL**: When adding a new dependency to the engine, you MUST update THREE files:
+
+1. **`vcpkg.json`** (root) - Main dependency list for the engine
+2. **`ports/game-engine/vcpkg.json`** - Overlay port dependency list (must match root vcpkg.json)
+3. **`cmake/game-engine-config.cmake.in`** - CMake config with `find_dependency()` calls
+
+**Example**: Adding a library called "newlib"
+
+```json
+// 1. vcpkg.json (root)
+{
+  "dependencies": [
+    "newlib",  // Add here
+    "flecs",
+    // ... other deps
+  ]
+}
+
+// 2. ports/game-engine/vcpkg.json
+{
+  "dependencies": [
+    "newlib",  // Add here too
+    "flecs",
+    // ... other deps
+  ]
+}
+```
+
+```cmake
+# 3. cmake/game-engine-config.cmake.in
+find_dependency(newlib CONFIG)  # Add this
+find_dependency(flecs CONFIG)
+# ... other find_dependency calls
+```
+
+**Why this is needed:**
+- vcpkg.json: Tells vcpkg what to install when building the engine standalone
+- ports/game-engine/vcpkg.json: Tells vcpkg what to install when building via the overlay port (used by examples)
+- game-engine-config.cmake.in: Tells CMake how to find the dependencies when someone uses the engine
+
+**Forgetting any of these will cause build failures** for consumers of the engine (like the examples).
+
+---
+
 **Status**: This file is the only internal process documentation permitted. Follow these directives strictly.

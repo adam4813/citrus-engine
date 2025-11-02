@@ -158,16 +158,34 @@ export namespace engine::ui::batch_renderer {
         );
 
         /**
-         * @brief Submit text (flushes batch, calls native rendering)
+         * @brief Submit text for rendering using the font atlas system.
          *
-         * Text rendering uses native rendering as it's already optimized.
-         * We flush current batch, draw text, then resume batching.
+         * Renders text at the specified position using the default font from FontManager.
+         * Text is rendered as textured quads from the font atlas, automatically batched
+         * with other UI elements for efficient GPU submission.
          *
-         * @param text Text to render
-         * @param x X position
-         * @param y Y position
-         * @param font_size Font size
-         * @param color Text color
+         * @param text UTF-8 encoded text string to render (supports newlines)
+         * @param x X position in screen space (top-left of text)
+         * @param y Y position in screen space (top-left of text)
+         * @param font_size Font size in pixels (currently ignored, uses default font size)
+         * @param color Text color (RGBA, 0.0-1.0 range)
+         * 
+         * @note Requires FontManager to be initialized with a default font.
+         * @note Text is laid out left-aligned with no word wrapping.
+         * @note All glyphs from the same font are batched into a single draw call.
+         * 
+         * @code
+         * FontManager::Initialize("assets/fonts/Roboto.ttf", 16);
+         * BatchRenderer::BeginFrame();
+         * 
+         * Color white{1.0f, 1.0f, 1.0f, 1.0f};
+         * BatchRenderer::SubmitText("Score: 100", 10.0f, 10.0f, 16, white);
+         * 
+         * BatchRenderer::EndFrame();
+         * @endcode
+         * 
+         * @see text_renderer::FontManager
+         * @see SubmitTextRect
          */
         static void SubmitText(
             const std::string &text,
@@ -178,12 +196,38 @@ export namespace engine::ui::batch_renderer {
         );
 
         /**
-         * @brief Submit text within a bounding rect (with clipping)
+         * @brief Submit text within a bounding rectangle with clipping and wrapping.
          *
-         * @param rect Bounding rectangle for text
-         * @param text Text to render
-         * @param font_size Font size
-         * @param color Text color
+         * Renders text within the specified rectangle, with automatic word wrapping
+         * and scissor-based clipping. Text that exceeds the rectangle bounds is clipped.
+         * 
+         * @param rect Bounding rectangle for text (x, y, width, height)
+         * @param text UTF-8 encoded text string to render
+         * @param font_size Font size in pixels (currently ignored, uses default font size)
+         * @param color Text color (RGBA, 0.0-1.0 range)
+         * 
+         * @note Requires FontManager to be initialized with a default font.
+         * @note Text automatically wraps at rectangle width boundaries.
+         * @note Text is left-aligned and top-aligned within the rectangle.
+         * @note Scissor test ensures text doesn't render outside the rectangle.
+         * 
+         * @code
+         * FontManager::Initialize("assets/fonts/Roboto.ttf", 16);
+         * BatchRenderer::BeginFrame();
+         * 
+         * Rectangle textBox{50.0f, 50.0f, 300.0f, 150.0f};
+         * Color white{1.0f, 1.0f, 1.0f, 1.0f};
+         * BatchRenderer::SubmitTextRect(
+         *     textBox,
+         *     "This is a long text that will wrap within the box",
+         *     16, white
+         * );
+         * 
+         * BatchRenderer::EndFrame();
+         * @endcode
+         * 
+         * @see text_renderer::FontManager
+         * @see SubmitText
          */
         static void SubmitTextRect(
             const Rectangle &rect,

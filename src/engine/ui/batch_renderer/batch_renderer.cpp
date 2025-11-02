@@ -18,6 +18,7 @@ module engine.ui.batch_renderer;
 
 import engine.rendering;
 import engine.platform;
+import engine.ui;
 import glm;
 
 namespace engine::ui::batch_renderer {
@@ -472,17 +473,38 @@ namespace engine::ui::batch_renderer {
     ) {
         if (!state_ || text.empty()) return;
 
-        // Flush current batch before text rendering
-        if (!state_->vertices.empty()) {
-            FlushBatch();
+        // Get default font from font manager
+        auto* font = text_renderer::FontManager::GetDefaultFont();
+        if (!font || !font->IsValid()) {
+            return; // Font not loaded
         }
 
-        // TODO: Implement text rendering using a font atlas texture
-        // For now, this is a stub - text rendering will be added later
-        // Text should be rendered as textured quads from a font atlas
+        // Layout text (simple single-line layout)
+        text_renderer::LayoutOptions options;
+        options.h_align = text_renderer::HorizontalAlign::Left;
+        options.v_align = text_renderer::VerticalAlign::Top;
+        options.max_width = 0.0f; // No wrapping
 
-        // Count as 1 draw call
-        state_->draw_call_count++;
+        auto glyphs = text_renderer::TextLayout::Layout(text, *font, options);
+
+        // Submit each glyph as a textured quad
+        uint32_t texture_id = font->GetTextureId();
+
+        for (const auto& pg : glyphs) {
+            if (pg.metrics->size.x == 0 || pg.metrics->size.y == 0) {
+                continue; // Skip empty glyphs (like space)
+            }
+
+            Rectangle screen_rect(
+                x + pg.position.x,
+                y + pg.position.y,
+                pg.metrics->size.x,
+                pg.metrics->size.y
+            );
+
+            // Submit quad with glyph's UV coordinates
+            SubmitQuad(screen_rect, color, pg.metrics->atlas_rect, texture_id);
+        }
     }
 
     void BatchRenderer::SubmitTextRect(
@@ -493,15 +515,44 @@ namespace engine::ui::batch_renderer {
     ) {
         if (!state_ || text.empty()) return;
 
-        // Flush current batch
-        if (!state_->vertices.empty()) {
-            FlushBatch();
+        // Get default font from font manager
+        auto* font = text_renderer::FontManager::GetDefaultFont();
+        if (!font || !font->IsValid()) {
+            return; // Font not loaded
         }
 
-        // TODO: Implement clipped text rendering
-        // This should use scissor test and font atlas rendering
+        // Layout text with wrapping and alignment
+        text_renderer::LayoutOptions options;
+        options.h_align = text_renderer::HorizontalAlign::Left;
+        options.v_align = text_renderer::VerticalAlign::Top;
+        options.max_width = rect.width; // Enable wrapping
 
-        state_->draw_call_count++;
+        auto glyphs = text_renderer::TextLayout::Layout(text, *font, options);
+
+        // Push scissor for clipping
+        PushScissor(ScissorRect(rect.x, rect.y, rect.width, rect.height));
+
+        // Submit each glyph as a textured quad
+        uint32_t texture_id = font->GetTextureId();
+
+        for (const auto& pg : glyphs) {
+            if (pg.metrics->size.x == 0 || pg.metrics->size.y == 0) {
+                continue; // Skip empty glyphs
+            }
+
+            Rectangle screen_rect(
+                rect.x + pg.position.x,
+                rect.y + pg.position.y,
+                pg.metrics->size.x,
+                pg.metrics->size.y
+            );
+
+            // Submit quad with glyph's UV coordinates
+            SubmitQuad(screen_rect, color, pg.metrics->atlas_rect, texture_id);
+        }
+
+        // Pop scissor
+        PopScissor();
     }
 
     void BatchRenderer::Flush() {

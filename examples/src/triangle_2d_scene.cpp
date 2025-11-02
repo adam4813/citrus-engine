@@ -30,22 +30,14 @@ public:
 
 		// Create triangle mesh with colored vertices
 		engine::rendering::MeshCreateInfo mesh_info;
+		// clang-format off
 		mesh_info.vertices = {
-				// Position                  Normal              TexCoords   Color (RGB)
-				{{0.0f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {0.5f, 1.0f}, {}, {}, {1.0f, 0.0f, 0.0f, 1.0f}}, // Top (Red)
-				{{-0.5f, -0.5f, 0.0f},
-				 {0.0f, 0.0f, 1.0f},
-				 {0.0f, 0.0f},
-				 {},
-				 {},
-				 {0.0f, 1.0f, 0.0f, 1.0f}}, // Bottom-left (Green)
-				{{0.5f, -0.5f, 0.0f},
-				 {0.0f, 0.0f, 1.0f},
-				 {1.0f, 0.0f},
-				 {},
-				 {},
-				 {0.0f, 0.0f, 1.0f, 1.0f}} // Bottom-right (Blue)
+				// Position                  Normal              TexCoords   Color (RGBA)
+				{{0.0f, 0.5f, 0.0f},    {0.0f, 0.0f, 1.0f}, {0.5f, 1.0f}, {}, {}, {1.0f, 0.0f, 0.0f, 1.0f}}, // Top (Red)
+				{{-0.5f, -0.5f, 0.0f},  {0.0f, 0.0f, 1.0f}, {0.0f, 0.0f}, {}, {}, {0.0f, 1.0f, 0.0f, 1.0f}}, // Bottom-left (Green)
+				{{0.5f, -0.5f, 0.0f},   {0.0f, 0.0f, 1.0f}, {1.0f, 0.0f}, {}, {}, {0.0f, 0.0f, 1.0f, 1.0f}}  // Bottom-right (Blue)
 		};
+		// clang-format on
 		mesh_info.indices = {0, 1, 2};
 		mesh_info.dynamic = false;
 

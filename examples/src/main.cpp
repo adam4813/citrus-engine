@@ -73,10 +73,10 @@ static AppState* g_app_state = nullptr;
 void CreateMainCamera(engine::ecs::ECSWorld& ecs) {
 	const flecs::entity camera_entity = ecs.CreateEntity("MainCamera");
 
-	// Position camera to look down at the tilemap from above
+	// Position camera at (0, 0, -1) looking towards the origin for the example scenes
 	camera_entity.set<engine::components::Transform>({{0.0f, 0.0f, -1.0f}});
 	camera_entity.set<engine::components::Camera>(
-			{.target = {0.0f, 0.0f, 0.0f}, // Look at the center of the tilemap
+			{.target = {0.0f, 0.0f, 0.0f}, // Look at the origin
 			 .up = {0.0f, 1.0f, 0.0f},
 			 .fov = 60.0f,
 			 .aspect_ratio = static_cast<float>(800) / static_cast<float>(600),

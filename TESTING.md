@@ -55,7 +55,7 @@ tests/
 
 ## Prerequisites
 
-**🎉 GitHub Copilot users**: The `.github/copilot-setup.sh` script automatically installs all prerequisites when you start Copilot. No manual setup required!
+**🎉 GitHub Copilot users**: The `.github/workflows/copilot-setup-steps.yml` workflow automatically installs all prerequisites when you start Copilot. No manual setup required!
 
 **For manual setup**, ensure you have:
 

@@ -184,15 +184,14 @@ cmake --build --preset cli-native-release --parallel 4
 
 ### Automated Setup for GitHub Copilot
 
-**GitHub Copilot users**: The repository includes an automated setup script at `.github/copilot-setup.sh` that runs automatically when Copilot starts. This script:
+**GitHub Copilot users**: The repository includes an automated setup workflow at `.github/workflows/copilot-setup-steps.yml` that runs automatically when Copilot starts. This workflow:
 
 - Installs system dependencies (Linux: X11, OpenGL, build tools)
 - Configures Clang-18 compiler
-- Clones and bootstraps vcpkg if not present
-- Sets up environment variables (VCPKG_ROOT, CC, CXX)
-- Verifies the setup and provides next steps
+- Sets up vcpkg and caches dependencies
+- Prepares the environment for building and testing
 
-**No manual setup required when using GitHub Copilot** - the script runs automatically in your Copilot environment.
+**No manual setup required when using GitHub Copilot** - the workflow runs automatically in your Copilot environment.
 
 ---
 

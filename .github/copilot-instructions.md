@@ -23,7 +23,7 @@ When working in specific domains, read the relevant pattern guide:
 
 ## Quick Reference (Full details in AGENTS.md)
 
-**🎉 AUTOMATED SETUP**: When using GitHub Copilot, `.github/copilot-setup.sh` runs automatically to install all dependencies!
+**🎉 AUTOMATED SETUP**: When using GitHub Copilot, `.github/workflows/copilot-setup-steps.yml` runs automatically to install all dependencies!
 
 **⚠️ MANUAL SETUP** (if automated setup doesn't run):
 1. **System deps** (Linux): `sudo apt-get install -y build-essential cmake ninja-build clang-18 libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libgl1-mesa-dev libglu1-mesa-dev`

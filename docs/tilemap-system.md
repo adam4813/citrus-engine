@@ -366,6 +366,10 @@ std::cout << "Vertices: " << stats.vertices << std::endl;
 3. **Optimize Tile Placement**: Remove tiles outside the visible area
 4. **Use Appropriate Batch Sizes**: Balance memory usage vs. draw call reduction
 
+## Examples
+
+See the [Basic Usage](#basic-usage) and [Advanced Usage](#advanced-usage) sections above for complete working examples.
+
 ## API Reference
 
 ### Tileset Class

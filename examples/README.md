@@ -225,6 +225,17 @@ auto texture = LoadTexture("assets/textures/example.png");
   - Controls: WASD/Arrow keys for movement, auto-rotation enabled
   - Shaders: OpenGL ES 3.0 / WebGL 2.0 compatible
 
+### Engine Features
+
+- **Scene Management**: Demonstrates the engine's scene management system
+  - Creates multiple sub-scenes using `SceneManager`
+  - Shows scene transitions and activation/deactivation
+  - Demonstrates entity management within scenes
+  - Shows scene hierarchy with parent-child relationships
+  - Illustrates scene lifecycle (load/unload)
+  - Interactive UI for switching between scenes and viewing scene state
+  - This example bridges the gap between simple example scenes and the full engine scene system
+
 ### Future Examples
 
 More examples will be added to demonstrate:

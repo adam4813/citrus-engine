@@ -23,7 +23,9 @@ When working in specific domains, read the relevant pattern guide:
 
 ## Quick Reference (Full details in AGENTS.md)
 
-**⚠️ PREREQUIS ITES FIRST**: Before building, you MUST install:
+**🎉 AUTOMATED SETUP**: When using GitHub Copilot, `.github/copilot-setup.sh` runs automatically to install all dependencies!
+
+**⚠️ MANUAL SETUP** (if automated setup doesn't run):
 1. **System deps** (Linux): `sudo apt-get install -y build-essential cmake ninja-build clang-18 libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libgl1-mesa-dev libglu1-mesa-dev`
 2. **vcpkg**: Clone to parent directory, bootstrap, set `VCPKG_ROOT`
 3. **Emscripten** (for web): Clone emsdk, `./emsdk install latest && ./emsdk activate latest && source ./emsdk_env.sh`
@@ -36,7 +38,7 @@ When working in specific domains, read the relevant pattern guide:
 
 **Presets**: Use `cli-*` presets (NOT `native` or `test` - those are for IDEs). You must specify `-DVCPKG_TARGET_TRIPLET` for your platform (x64-windows, x64-linux, etc.).
 
-**Automation**: Use `aminya/setup-cpp` GitHub Action for automated tool setup in web environments
+**CI/CD Automation**: GitHub Actions workflows use `.github/actions/setup-environment` composite action for consistent setup across all builds
 
 **Note**: 
 - Presets no longer have hard-coded triplets. Specify `-DVCPKG_TARGET_TRIPLET` on the command line.

@@ -43,16 +43,21 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y doxygen graphviz
+          sudo apt-get install -y graphviz
       
       - name: Install Python dependencies
         run: |
           pip install -r docs/requirements.txt
       
-      - name: Build documentation
+      - name: Build Doxygen documentation
+        uses: mattnotmitt/doxygen-action@v1.12.0
+        with:
+          working-directory: .
+          doxyfile-path: ./Doxyfile
+      
+      - name: Build MkDocs site
         run: |
-          chmod +x scripts/*.sh
-          ./scripts/build-docs.sh --clean
+          mkdocs build
       
       - name: Upload to GitHub Pages
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'

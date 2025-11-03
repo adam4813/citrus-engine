@@ -51,7 +51,8 @@ _Get more juice from your code with C++20, ECS architecture, and cross-platform 
 
 ## 🍊 What is Citrus Engine?
 
-**Citrus Engine** is a high-performance, cross-platform game engine that brings the zest back to C++20 game development! Like a perfectly ripe orange, it's:
+**Citrus Engine** is a high-performance, cross-platform game engine that brings the zest back to C++20 game development!
+Like a perfectly ripe orange, it's:
 
 - 🍋 **Fresh & Modern** - Built from scratch with C++20 modules, concepts, and coroutines (no legacy baggage!)
 - 🍊 **Perfectly Balanced** - Entity Component System architecture for juicy performance gains
@@ -59,7 +60,8 @@ _Get more juice from your code with C++20, ECS architecture, and cross-platform 
 - 🌐 **Cross-Platform Goodness** - Native Windows/Linux and WebAssembly with identical features
 - 💚 **Open & Sweet** - Zero license fees, no vendor lock-in, clean architecture with zero technical debt
 
-Whether you're crafting a colony simulation, real-time strategy game, or any performance-critical application, Citrus Engine gives your project that fresh C++20 boost it needs!
+Whether you're crafting a colony simulation, real-time strategy game, or any performance-critical application, Citrus
+Engine gives your project that fresh C++20 boost it needs!
 
 ---
 
@@ -80,17 +82,17 @@ Whether you're crafting a colony simulation, real-time strategy game, or any per
 
 ### ⚡ Key Features
 
-| Feature | Description |
-|---------|-------------|
-| 🎯 **Modern C++20** | Leverage modules, concepts, coroutines, and ranges for clean, expressive code |
-| ⚡ **ECS Architecture** | Data-oriented Entity Component System using [Flecs](https://github.com/SanderMertens/flecs) for maximum performance |
-| 🎨 **Cross-Platform Rendering** | OpenGL ES 2.0 / WebGL abstraction for consistent visuals everywhere |
-| 🚀 **Multi-Threading** | Job system with frame pipelining for parallel execution |
-| 🌐 **WebAssembly First** | Deploy to browsers with full feature parity to native builds |
-| 📦 **vcpkg Integration** | Easy dependency management with vcpkg overlay ports |
-| 🎮 **ImGui Integration** | Built-in immediate mode GUI for development tools |
-| 🗺️ **Tilemap System** | Efficient 2D tile-based rendering for strategy and simulation games |
-| 🎯 **Zero License Fees** | Open source with no royalties or subscriptions |
+| Feature                         | Description                                                                                                         |
+|---------------------------------|---------------------------------------------------------------------------------------------------------------------|
+| 🎯 **Modern C++20**             | Leverage modules, concepts, coroutines, and ranges for clean, expressive code                                       |
+| ⚡ **ECS Architecture**          | Data-oriented Entity Component System using [Flecs](https://github.com/SanderMertens/flecs) for maximum performance |
+| 🎨 **Cross-Platform Rendering** | OpenGL ES 2.0 / WebGL abstraction for consistent visuals everywhere                                                 |
+| 🚀 **Multi-Threading**          | Job system with frame pipelining for parallel execution                                                             |
+| 🌐 **WebAssembly First**        | Deploy to browsers with full feature parity to native builds                                                        |
+| 📦 **vcpkg Integration**        | Easy dependency management with vcpkg overlay ports                                                                 |
+| 🎮 **ImGui Integration**        | Built-in immediate mode GUI for development tools                                                                   |
+| 🗺️ **Tilemap System**          | Efficient 2D tile-based rendering for strategy and simulation games                                                 |
+| 🎯 **Zero License Fees**        | Open source with no royalties or subscriptions                                                                      |
 
 ---
 
@@ -101,12 +103,14 @@ Whether you're crafting a colony simulation, real-time strategy game, or any per
 Before you begin, ensure you have these tools installed:
 
 #### 🪟 Windows Development
+
 - **Visual Studio 2022** (17.0 or later) with C++20 support
 - **CMake 3.20+**
 - **vcpkg** package manager
 - **Git** for version control
 
 #### 🌐 WebAssembly (Additional)
+
 - **Emscripten SDK (emsdk)** for WASM compilation
 - **Node.js** (optional, for local web server)
 
@@ -124,6 +128,7 @@ cd C:\vcpkg
 ```
 
 Set environment variable:
+
 ```bash
 VCPKG_ROOT=C:\vcpkg
 ```
@@ -138,6 +143,7 @@ emsdk activate latest
 ```
 
 Set environment variable:
+
 ```bash
 EMSDK=C:\emsdk
 ```
@@ -192,6 +198,7 @@ vcpkg install game-engine:wasm32-emscripten --overlay-ports=ports
 ```
 
 Use in your CMake project:
+
 ```cmake
 find_package(game-engine CONFIG REQUIRED)
 target_link_libraries(your-target PRIVATE game-engine::engine-core)
@@ -249,6 +256,8 @@ target_link_libraries(your-game PRIVATE
     game-engine::engine-core
 )
 
+setup_asset_preload(your-game ${CMAKE_CURRENT_SOURCE_DIR}/assets)
+
 # WebAssembly configuration (optional)
 if (EMSCRIPTEN)
     set(CMAKE_EXECUTABLE_SUFFIX ".html")
@@ -258,8 +267,7 @@ if (EMSCRIPTEN)
         -sINITIAL_MEMORY=67108864    # 64MB
         -sMAXIMUM_MEMORY=134217728   # 128MB
     )
-    setup_asset_preload(your-game ${CMAKE_CURRENT_SOURCE_DIR}/assets)
-endif()
+endif ()
 ```
 
 #### 3. Configure CMake Presets
@@ -330,6 +338,88 @@ int main() {
 }
 ```
 
+---
+
+## ⚠️ Important: Shader Vertex Layout Requirements
+
+When writing custom shaders for Citrus Engine, you **must** match the engine's vertex attribute layout. Mismatched layouts cause **silent rendering failures** (no errors, nothing renders).
+
+### 📋 Required Vertex Attribute Locations
+
+The engine uploads these 4 attributes to the GPU in this exact order:
+
+| Location | Type  | GLSL Declaration                      | C++ Field       |
+|----------|-------|---------------------------------------|-----------------|
+| **0**    | vec3  | `layout(location = 0) in vec3 aPos;`  | `position`      |
+| **1**    | vec3  | `layout(location = 1) in vec3 aNormal;` | `normal`      |
+| **2**    | vec2  | `layout(location = 2) in vec2 aTexCoord;` | `tex_coords` |
+| **3**    | vec4  | `layout(location = 3) in vec4 aColor;` | `color`        |
+
+### ✅ Correct Shader Example
+
+```glsl
+#version 300 es
+
+// CORRECT: Use exact layout locations
+layout(location = 0) in vec3 aPos;
+layout(location = 1) in vec3 aNormal;
+layout(location = 2) in vec2 aTexCoord;
+layout(location = 3) in vec4 aColor;
+
+uniform mat4 u_MVP;
+out vec4 vColor;
+
+void main() {
+    vColor = aColor;
+    gl_Position = u_MVP * vec4(aPos, 1.0);
+}
+```
+
+### ⚠️ Using Subset of Attributes
+
+You can use fewer attributes, **but location numbers must stay the same**:
+
+```glsl
+#version 300 es
+
+// CORRECT: Skip unused attributes but keep location numbers
+layout(location = 0) in vec3 aPos;
+// Skip location 1 (normal) - not used
+// Skip location 2 (texcoord) - not used
+layout(location = 3) in vec4 aColor;  // Must be location 3, not 1!
+
+uniform mat4 u_MVP;
+out vec4 vColor;
+
+void main() {
+    vColor = aColor;
+    gl_Position = u_MVP * vec4(aPos, 1.0);
+}
+```
+
+### ❌ Common Mistakes
+
+**WRONG - Renumbering locations:**
+```glsl
+layout(location = 0) in vec3 aPos;
+layout(location = 1) in vec4 aColor;  // WRONG! Color is location 3
+```
+
+**WRONG - Wrong types:**
+```glsl
+layout(location = 3) in vec3 aColor;  // WRONG! Color is vec4, not vec3
+```
+
+### 📚 Reference Shaders
+
+See working examples in `examples/assets/shaders/`:
+- `colored_2d.vert` - Simple 2D colored vertex shader
+- Additional shader examples (coming soon)
+
+### 🔮 Future Improvement
+
+The Citrus Engine team is planning a shader-driven vertex layout system that will automatically adapt to any shader layout locations. This will eliminate silent failures and make shader development more flexible. Track progress in [issue #TBD].
+
 ### 🏗️ Building Your Project
 
 ```bash
@@ -364,11 +454,13 @@ assets/
 ### 🌐 Platform-Specific Asset Loading
 
 #### Native Builds
+
 - Assets loaded directly from filesystem
 - Supports hot-reloading during development
 - No build-time processing required
 
 #### WebAssembly Builds
+
 - Assets preloaded into WASM virtual filesystem
 - Automatic detection from `assets/` directory
 - Available at `/assets/` path in runtime
@@ -413,13 +505,13 @@ Citrus Engine follows a clean, modular architecture:
 
 ### 💡 Design Principles
 
-| Principle | Description |
-|-----------|-------------|
-| 🎯 **Data-Oriented** | Cache-friendly memory layouts for maximum performance |
-| 🌐 **Cross-Platform First** | Identical behavior on all target platforms |
-| 🔒 **Thread-Safe** | Lock-free architecture where possible |
-| 🚀 **Modern C++20** | Concepts, modules, and coroutines throughout |
-| 🍊 **Zero-Cost Abstractions** | Performance without compromise |
+| Principle                     | Description                                           |
+|-------------------------------|-------------------------------------------------------|
+| 🎯 **Data-Oriented**          | Cache-friendly memory layouts for maximum performance |
+| 🌐 **Cross-Platform First**   | Identical behavior on all target platforms            |
+| 🔒 **Thread-Safe**            | Lock-free architecture where possible                 |
+| 🚀 **Modern C++20**           | Concepts, modules, and coroutines throughout          |
+| 🍊 **Zero-Cost Abstractions** | Performance without compromise                        |
 
 ### 📊 Project Structure
 
@@ -454,11 +546,11 @@ Our current MVP demonstrates the power of Citrus Engine:
 
 ### 🎹 Demo Controls
 
-| Key | Action |
-|-----|--------|
-| **WASD** | Move camera/world position |
-| **Arrow Keys** | Rotate selected objects |
-| **ESC** | Exit application |
+| Key            | Action                     |
+|----------------|----------------------------|
+| **WASD**       | Move camera/world position |
+| **Arrow Keys** | Rotate selected objects    |
+| **ESC**        | Exit application           |
 
 ### 🔧 Development Workflow
 
@@ -498,6 +590,7 @@ echo %VCPKG_ROOT%  # Should show C:\vcpkg or your installation path
 # Set it if missing:
 set VCPKG_ROOT=C:\vcpkg
 ```
+
 </details>
 
 <details>
@@ -511,6 +604,7 @@ emsdk list         # Verify installation
 # Ensure latest version is activated
 emsdk activate latest
 ```
+
 </details>
 
 <details>
@@ -520,6 +614,7 @@ emsdk activate latest
 # Native: Update graphics drivers and ensure OpenGL 3.3+ support
 # WASM: Ensure WebGL 2.0 support in browser (use Chrome/Firefox/Edge)
 ```
+
 </details>
 
 <details>
@@ -530,16 +625,19 @@ emsdk activate latest
 # Check that assets/ directory exists in build output
 # For WASM: Ensure setup_asset_preload() is called in CMakeLists.txt
 ```
+
 </details>
 
 ### ⚡ Performance Issues
 
 **🐌 Low FPS on Windows**
+
 - ✅ Check Debug vs Release build configuration
 - ✅ Verify V-Sync settings
 - ✅ Profile with Visual Studio Diagnostic Tools
 
 **🐌 Slow WASM Performance**
+
 - ✅ Verify Release build with optimizations enabled
 - ✅ Check browser WebGL implementation (prefer Chrome/Firefox)
 - ✅ Monitor browser console for warnings
@@ -635,14 +733,14 @@ Thank you to all our contributors who help make Citrus Engine better!
 
 ### 🔗 Essential Links
 
-| Resource | Description |
-|----------|-------------|
+| Resource                                                       | Description                  |
+|----------------------------------------------------------------|------------------------------|
 | 📖 **[C++20 Reference](https://en.cppreference.com/w/cpp/20)** | Modern C++ language features |
-| 🎨 **[OpenGL ES 2.0](https://www.khronos.org/opengles/)** | Graphics API specification |
-| 🌐 **[WebGL 2.0](https://www.khronos.org/webgl/)** | Web graphics API |
-| ⚙️ **[Emscripten Docs](https://emscripten.org/docs/)** | WebAssembly compilation |
-| 📦 **[vcpkg](https://vcpkg.io/)** | C++ package manager |
-| 🎯 **[Flecs Documentation](https://www.flecs.dev/flecs/)** | ECS framework guide |
+| 🎨 **[OpenGL ES 2.0](https://www.khronos.org/opengles/)**      | Graphics API specification   |
+| 🌐 **[WebGL 2.0](https://www.khronos.org/webgl/)**             | Web graphics API             |
+| ⚙️ **[Emscripten Docs](https://emscripten.org/docs/)**         | WebAssembly compilation      |
+| 📦 **[vcpkg](https://vcpkg.io/)**                              | C++ package manager          |
+| 🎯 **[Flecs Documentation](https://www.flecs.dev/flecs/)**     | ECS framework guide          |
 
 ### 📁 Additional Documentation
 

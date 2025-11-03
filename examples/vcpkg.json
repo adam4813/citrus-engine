@@ -1,28 +1,9 @@
 {
   "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg.schema.json",
-  "name": "game-engine",
+  "name": "citrus-examples",
   "version": "0.0.1",
   "dependencies": [
-    "angelscript",
-    "flecs",
-    {
-      "name": "glad",
-      "platform": "!(emscripten)"
-    },
-    "glfw3",
-    "glm",
-    "gtest",
-    {
-      "name": "imgui",
-      "features": [
-        "glfw-binding",
-        "opengl3-binding"
-      ]
-    },
-    "lua",
-    "nlohmann-json",
-    "spdlog",
-    "stb"
+    "game-engine"
   ],
   "supports": "windows | linux | osx | emscripten",
   "builtin-baseline": "dd3097e305afa53f7b4312371f62058d2e665320",

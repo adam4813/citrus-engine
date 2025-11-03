@@ -182,12 +182,37 @@ cmake --build --preset cli-native-release --parallel 4
 
 ---
 
-### Using setup-cpp for Automated Setup (Web Coding Environments)
+### Automated Setup for GitHub Copilot
 
-If you're in a web-based coding environment like GitHub Codespaces, use the `aminya/setup-cpp` action to automate tool installation:
+**GitHub Copilot users**: The repository includes an automated setup workflow at `.github/workflows/copilot-setup-steps.yml` that runs automatically when Copilot starts. This workflow:
+
+- Installs system dependencies (Linux: X11, OpenGL, build tools)
+- Configures Clang-18 compiler
+- Sets up vcpkg and caches dependencies
+- Prepares the environment for building and testing
+
+**No manual setup required when using GitHub Copilot** - the workflow runs automatically in your Copilot environment.
+
+---
+
+### Using setup-cpp for Automated Setup (GitHub Actions)
+
+For GitHub Actions workflows, use the shared composite action to automate environment setup:
 
 ```yaml
-# In GitHub Actions or Codespaces
+# In GitHub Actions workflows
+- name: Setup Citrus Engine Environment
+  uses: ./.github/actions/setup-environment
+  with:
+    compiler: clang
+    clang-version: 18
+```
+
+This composite action is used by both `build.yml` and `build-examples.yml` workflows to ensure consistent setup across all CI builds.
+
+For other web-based coding environments (like Codespaces), you can also use `aminya/setup-cpp` directly:
+
+```yaml
 - name: Setup C++ environment
   uses: aminya/setup-cpp@v1
   with:
@@ -197,8 +222,6 @@ If you're in a web-based coding environment like GitHub Codespaces, use the `ami
     ninja: true
     vcpkg: true
 ```
-
-This automatically installs Clang-18, CMake, Ninja, and vcpkg without manual steps.
 
 ---
 
@@ -262,6 +285,12 @@ documented patterns.
 - Updating existing documentation does NOT require justification
 
 **Rule of thumb**: If you're just going to tell the user about it anyway, don't create a file for it.
+
+**CRITICAL**: If the justification for creating documentation is NOT immediately obvious:
+1. **DO NOT create the file**
+2. **Explain your reasoning to the user first**
+3. **Wait for explicit approval**
+4. If unclear whether documentation is needed, **update AGENTS.md to clarify the policy** rather than guess
 
 ### 5. No Standalone Applications
 
@@ -570,6 +599,52 @@ When given a task:
 4. **Build verification is mandatory**
 5. **No supplementary documentation**
 6. **When in doubt, ask the user**
+
+---
+
+## Adding Dependencies to the Engine
+
+**CRITICAL**: When adding a new dependency to the engine, you MUST update THREE files:
+
+1. **`vcpkg.json`** (root) - Main dependency list for the engine
+2. **`ports/game-engine/vcpkg.json`** - Overlay port dependency list (must match root vcpkg.json)
+3. **`cmake/game-engine-config.cmake.in`** - CMake config with `find_dependency()` calls
+
+**Example**: Adding a library called "newlib"
+
+```json
+// 1. vcpkg.json (root)
+{
+  "dependencies": [
+    "newlib",  // Add here
+    "flecs",
+    // ... other deps
+  ]
+}
+
+// 2. ports/game-engine/vcpkg.json
+{
+  "dependencies": [
+    "newlib",  // Add here too
+    "flecs",
+    // ... other deps
+  ]
+}
+```
+
+```cmake
+# 3. cmake/game-engine-config.cmake.in
+find_dependency(newlib CONFIG)  # Add this
+find_dependency(flecs CONFIG)
+# ... other find_dependency calls
+```
+
+**Why this is needed:**
+- vcpkg.json: Tells vcpkg what to install when building the engine standalone
+- ports/game-engine/vcpkg.json: Tells vcpkg what to install when building via the overlay port (used by examples)
+- game-engine-config.cmake.in: Tells CMake how to find the dependencies when someone uses the engine
+
+**Forgetting any of these will cause build failures** for consumers of the engine (like the examples).
 
 ---
 

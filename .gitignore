@@ -66,3 +66,6 @@ builds/
 docs/_build/
 docs/_doxygen/
 site/
+
+# Node.js dependencies
+node_modules/

@@ -7,6 +7,8 @@ module;
 #include <emscripten/emscripten.h>
 #endif
 #include <GLFW/glfw3.h>
+#include <exception>
+#include <memory>
 
 module engine;
 
@@ -43,6 +45,14 @@ namespace engine {
             return false;
         }
 
+        // Initialize scripting system with default language (Lua)
+        try {
+            scripting_system = std::make_unique<scripting::ScriptingSystem>();
+        } catch (const std::exception&) {
+            // Failed to initialize scripting system
+            return false;
+        }
+
         // ECSWorld is constructed automatically
         scene::InitializeSceneSystem(ecs);
         return true;
@@ -59,6 +69,8 @@ namespace engine {
     }
 
     void Engine::Shutdown() {
+        // Shutdown scripting system (unique_ptr handles cleanup automatically)
+        scripting_system.reset();
         // Shutdown input system
         input::Input::Shutdown();
         // Shutdown renderer

@@ -6,7 +6,7 @@
 **Audience**: AI assistants only (not user documentation)  
 **Status**: Active
 
-**Note**: The citrus-engine UI system is built on a vertex-based batch renderer for high-performance rendering. ImGui is included as a dependency for debugging/development tools only.
+**CRITICAL**: The citrus-engine production UI system is the **custom vertex-based batch renderer**. ImGui is included **ONLY** for temporary debugging and testing purposes and is NOT the primary UI system. All production UI must use the batch renderer.
 
 ---
 
@@ -149,11 +149,11 @@ Constructor() {
 
 ---
 
-## Citrus Engine Batch Renderer Architecture
+## Citrus Engine Batch Renderer Architecture (Production UI System)
 
 ### Vertex-Based Rendering
 
-The citrus-engine UI is built on a high-performance vertex-based batch renderer that minimizes GPU draw calls:
+**This is the production UI system.** The citrus-engine UI is built on a high-performance vertex-based batch renderer that minimizes GPU draw calls:
 
 ```cpp
 using namespace engine::ui::batch_renderer;
@@ -1756,11 +1756,11 @@ private:
 ## Architecture Summary
 
 **Citrus Engine UI System**:
-- **Declarative, reactive, event-driven** retained-mode architecture
+- **Production System**: Custom vertex-based batch renderer (declarative, reactive, event-driven)
 - **Vertex-based rendering** via `BatchRenderer` for high performance
 - **Automatic batching** minimizes GPU draw calls
 - **Scissor clipping** for panels and scroll regions
-- **ImGui for debugging only** - production UI uses custom batch renderer
+- **ImGui**: ONLY for temporary debugging/testing - NOT production UI
 
 **Key APIs**:
 - `BatchRenderer::SubmitQuad()` - Submit filled rectangles

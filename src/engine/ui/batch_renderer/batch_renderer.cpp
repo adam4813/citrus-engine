@@ -473,10 +473,22 @@ namespace engine::ui::batch_renderer {
     ) {
         if (!state_ || text.empty()) return;
 
-        // Get default font from font manager
-        auto* font = text_renderer::FontManager::GetDefaultFont();
-        if (!font || !font->IsValid()) {
-            return; // Font not loaded
+        // Get font from font manager - if font_size matches default, use default font
+        // Otherwise try to get the default font path with the requested size
+        auto* default_font = text_renderer::FontManager::GetDefaultFont();
+        if (!default_font || !default_font->IsValid()) {
+            return; // Font manager not initialized
+        }
+
+        text_renderer::FontAtlas* font = default_font;
+        
+        // If a different size is requested, try to load it
+        // Note: This only works if the default font is already loaded
+        // For more flexibility, users should use FontManager directly
+        if (font_size > 0 && font_size != default_font->GetFontSize()) {
+            // We can't get the font path from the default font, so just use default size
+            // This parameter is kept for API compatibility but currently limited
+            font = default_font;
         }
 
         // Layout text (simple single-line layout)

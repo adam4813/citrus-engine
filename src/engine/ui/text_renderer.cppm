@@ -487,7 +487,7 @@ export namespace engine::ui::text_renderer {
 
         struct FontKeyHash {
             size_t operator()(const FontKey& key) const {
-                return std::hash<std::string>()(key.path) ^ std::hash<int>()(key.size);
+                return std::hash<std::string>()(key.path) ^ (std::hash<int>()(key.size) << 1);
             }
         };
 

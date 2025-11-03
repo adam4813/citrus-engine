@@ -201,7 +201,7 @@ namespace engine::ui::text_renderer {
             .generate_mipmaps = false
         };
 
-        atlas_texture_id_ = texture_mgr.CreateTexture(font_path + "_atlas", tex_info);
+        atlas_texture_id_ = texture_mgr.CreateTexture(font_path + "_atlas_" + std::to_string(font_size_px), tex_info);
     }
 
     FontAtlas::~FontAtlas() {
@@ -236,7 +236,8 @@ namespace engine::ui::text_renderer {
                     i += 1;
                 } else if ((byte & 0xE0) == 0xC0) {
                     // 2-byte character
-                    if (i + 1 < utf8_string.size()) {
+                    if (i + 1 < utf8_string.size() && 
+                        (static_cast<uint8_t>(utf8_string[i + 1]) & 0xC0) == 0x80) {
                         codepoint = ((byte & 0x1F) << 6) |
                                     (static_cast<uint8_t>(utf8_string[i + 1]) & 0x3F);
                         i += 2;
@@ -245,7 +246,9 @@ namespace engine::ui::text_renderer {
                     }
                 } else if ((byte & 0xF0) == 0xE0) {
                     // 3-byte character
-                    if (i + 2 < utf8_string.size()) {
+                    if (i + 2 < utf8_string.size() &&
+                        (static_cast<uint8_t>(utf8_string[i + 1]) & 0xC0) == 0x80 &&
+                        (static_cast<uint8_t>(utf8_string[i + 2]) & 0xC0) == 0x80) {
                         codepoint = ((byte & 0x0F) << 12) |
                                     ((static_cast<uint8_t>(utf8_string[i + 1]) & 0x3F) << 6) |
                                     (static_cast<uint8_t>(utf8_string[i + 2]) & 0x3F);
@@ -255,7 +258,10 @@ namespace engine::ui::text_renderer {
                     }
                 } else if ((byte & 0xF8) == 0xF0) {
                     // 4-byte character
-                    if (i + 3 < utf8_string.size()) {
+                    if (i + 3 < utf8_string.size() &&
+                        (static_cast<uint8_t>(utf8_string[i + 1]) & 0xC0) == 0x80 &&
+                        (static_cast<uint8_t>(utf8_string[i + 2]) & 0xC0) == 0x80 &&
+                        (static_cast<uint8_t>(utf8_string[i + 3]) & 0xC0) == 0x80) {
                         codepoint = ((byte & 0x07) << 18) |
                                     ((static_cast<uint8_t>(utf8_string[i + 1]) & 0x3F) << 12) |
                                     ((static_cast<uint8_t>(utf8_string[i + 2]) & 0x3F) << 6) |
@@ -269,9 +275,7 @@ namespace engine::ui::text_renderer {
                     i += 1;
                 }
 
-                if (codepoint != 0) {
-                    codepoints.push_back(codepoint);
-                }
+                codepoints.push_back(codepoint);
             }
 
             return codepoints;
@@ -326,11 +330,7 @@ namespace engine::ui::text_renderer {
 
             const GlyphMetrics* glyph = font.GetGlyph(cp);
             if (!glyph) {
-                // Try to use replacement character
-                glyph = font.GetGlyph(0xFFFD);
-                if (!glyph) {
-                    continue; // Skip missing glyphs
-                }
+                continue; // Skip missing glyphs (replacement char U+FFFD not in atlas)
             }
 
             // Check if line wrapping needed
@@ -421,6 +421,7 @@ namespace engine::ui::text_renderer {
         float cursor_x = 0.0f;
         float max_line_width = 0.0f;
         int line_count = 1;
+        bool has_content = false;
 
         for (uint32_t cp : codepoints) {
             // Handle newline
@@ -428,6 +429,7 @@ namespace engine::ui::text_renderer {
                 max_line_width = std::max(max_line_width, cursor_x);
                 cursor_x = 0.0f;
                 line_count++;
+                has_content = false;
                 continue;
             }
 
@@ -436,14 +438,16 @@ namespace engine::ui::text_renderer {
                 continue;
             }
 
-            // Check wrapping
-            if (max_width > 0.0f && cursor_x + glyph->advance > max_width && cursor_x > 0.0f) {
+            // Check wrapping (use same condition as Layout for consistency)
+            if (max_width > 0.0f && cursor_x + glyph->advance > max_width && has_content) {
                 max_line_width = std::max(max_line_width, cursor_x);
                 cursor_x = 0.0f;
                 line_count++;
+                has_content = false;
             }
 
             cursor_x += glyph->advance;
+            has_content = true;
         }
 
         max_line_width = std::max(max_line_width, cursor_x);

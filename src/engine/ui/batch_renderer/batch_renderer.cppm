@@ -167,7 +167,7 @@ export namespace engine::ui::batch_renderer {
          * @param text UTF-8 encoded text string to render (supports newlines)
          * @param x X position in screen space (top-left of text)
          * @param y Y position in screen space (top-left of text)
-         * @param font_size Font size in pixels (currently ignored, uses default font size)
+         * @param font_size Font size in pixels (currently uses default font size; for variable sizes, pre-load fonts with FontManager::GetFont)
          * @param color Text color (RGBA, 0.0-1.0 range)
          * 
          * @note Requires FontManager to be initialized with a default font.
@@ -203,7 +203,7 @@ export namespace engine::ui::batch_renderer {
          * 
          * @param rect Bounding rectangle for text (x, y, width, height)
          * @param text UTF-8 encoded text string to render
-         * @param font_size Font size in pixels (currently ignored, uses default font size)
+         * @param font_size Font size in pixels (currently uses default font size; for variable sizes, pre-load fonts with FontManager::GetFont)
          * @param color Text color (RGBA, 0.0-1.0 range)
          * 
          * @note Requires FontManager to be initialized with a default font.

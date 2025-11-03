@@ -28,7 +28,7 @@ done
 
 # Build documentation
 doxygen Doxyfile
-#mkdocs build
+mkdocs build
 
 # Serve if requested
 [ "$SERVE" = true ] && exec mkdocs serve

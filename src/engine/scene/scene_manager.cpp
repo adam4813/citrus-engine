@@ -34,6 +34,12 @@ namespace engine::scene {
         // Asset management
         std::vector<std::string> required_assets; // Asset IDs or paths
 
+        // Lifecycle callbacks
+        InitializeCallback initialize_callback;
+        ShutdownCallback shutdown_callback;
+        UpdateCallback update_callback;
+        RenderCallback render_callback;
+
         Impl(const std::string &scene_name, ecs::ECSWorld &world)
             : name(scene_name), ecs_world(world) {
             static SceneId next_scene_id = 1;
@@ -169,8 +175,48 @@ namespace engine::scene {
     }
 
     void Scene::Update(float delta_time) {
+        // Call user-defined update callback
+        if (pimpl_->update_callback) {
+            pimpl_->update_callback(delta_time);
+        }
         // Scene-specific update logic can go here
         // The ECS world systems will handle entity updates automatically
+    }
+
+    // === LIFECYCLE CALLBACKS ===
+
+    void Scene::SetInitializeCallback(InitializeCallback callback) {
+        pimpl_->initialize_callback = std::move(callback);
+    }
+
+    void Scene::SetShutdownCallback(ShutdownCallback callback) {
+        pimpl_->shutdown_callback = std::move(callback);
+    }
+
+    void Scene::SetUpdateCallback(UpdateCallback callback) {
+        pimpl_->update_callback = std::move(callback);
+    }
+
+    void Scene::SetRenderCallback(RenderCallback callback) {
+        pimpl_->render_callback = std::move(callback);
+    }
+
+    void Scene::Initialize() {
+        if (pimpl_->initialize_callback) {
+            pimpl_->initialize_callback();
+        }
+    }
+
+    void Scene::Shutdown() {
+        if (pimpl_->shutdown_callback) {
+            pimpl_->shutdown_callback();
+        }
+    }
+
+    void Scene::Render() {
+        if (pimpl_->render_callback) {
+            pimpl_->render_callback();
+        }
     }
 
     // === ASSET MANAGEMENT ===
@@ -341,6 +387,7 @@ namespace engine::scene {
         // Deactivate previous active scene
         if (pimpl_->active_scene != INVALID_SCENE) {
             if (const auto prev_scene = pimpl_->scenes.find(pimpl_->active_scene); prev_scene != pimpl_->scenes.end()) {
+                prev_scene->second->Shutdown(); // Call shutdown callback
                 prev_scene->second->SetActive(false);
                 prev_scene->second->UnloadAssets(); // Unload assets of previous scene
             }
@@ -352,6 +399,7 @@ namespace engine::scene {
                 // Failed to load assets, log error and do not activate
                 std::cerr << "Failed to load assets for scene: " << it->second->GetName() << '\n';
             }
+            it->second->Initialize(); // Call initialize callback
             pimpl_->active_scene = scene_id;
         }
     }
@@ -367,6 +415,7 @@ namespace engine::scene {
     void SceneManager::DeactivateScene(const SceneId scene_id) {
         if (pimpl_->active_scene == scene_id) {
             if (const auto scene = TryGetScene(scene_id)) {
+                scene->Shutdown(); // Call shutdown callback
                 scene->SetActive(false);
                 scene->UnloadAssets(); // Unload assets when deactivating
             }
@@ -379,7 +428,10 @@ namespace engine::scene {
                                           scene_id);
         if (it == pimpl_->additional_active_scenes.end()) {
             pimpl_->additional_active_scenes.push_back(scene_id);
-            if (const auto scene = TryGetScene(scene_id)) { scene->SetActive(true); }
+            if (const auto scene = TryGetScene(scene_id)) {
+                scene->SetActive(true);
+                scene->Initialize(); // Call initialize callback
+            }
         }
     }
 
@@ -389,6 +441,7 @@ namespace engine::scene {
         if (it != pimpl_->additional_active_scenes.end()) {
             pimpl_->additional_active_scenes.erase(it);
             if (const auto scene = TryGetScene(scene_id)) {
+                scene->Shutdown(); // Call shutdown callback
                 scene->SetActive(false);
                 scene->UnloadAssets(); // Unload assets for additional scene
             }
@@ -431,6 +484,14 @@ namespace engine::scene {
         for (const SceneId scene_id: GetActiveScenes()) {
             if (const auto scene = TryGetScene(scene_id)) {
                 scene->Update(delta_time);
+            }
+        }
+    }
+
+    void SceneManager::Render() {
+        for (const SceneId scene_id: GetActiveScenes()) {
+            if (const auto scene = TryGetScene(scene_id)) {
+                scene->Render();
             }
         }
     }

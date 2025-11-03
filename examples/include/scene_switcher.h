@@ -10,6 +10,8 @@ namespace engine {
 
 namespace examples {
 
+class EngineSceneAdapter;  // Forward declaration
+
 /**
  * Manages the active example scene and provides UI for switching between scenes.
  * 
@@ -80,9 +82,11 @@ public:
      */
     bool HasActiveScene() const;
 
-private:
-    std::unique_ptr<ExampleScene> active_scene_;
+private:    
+    ExampleScene* active_scene_; // Non-owning pointer (owned by adapter)
     std::string active_scene_name_;
+    std::shared_ptr<EngineSceneAdapter> active_adapter_;  // Shared ownership for safe callback capture
+    uint32_t active_engine_scene_id_;  // Use uint32_t instead of engine::scene::SceneId to avoid import in header
 };
 
 } // namespace examples

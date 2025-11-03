@@ -116,6 +116,25 @@ export namespace engine::scene {
         // Update scene (called each frame)
         void Update(float delta_time);
 
+        // === LIFECYCLE CALLBACKS ===
+        
+        // Lifecycle callback types
+        using InitializeCallback = std::function<void()>;
+        using ShutdownCallback = std::function<void()>;
+        using UpdateCallback = std::function<void(float)>;
+        using RenderCallback = std::function<void()>;
+
+        // Set lifecycle callbacks
+        void SetInitializeCallback(InitializeCallback callback);
+        void SetShutdownCallback(ShutdownCallback callback);
+        void SetUpdateCallback(UpdateCallback callback);
+        void SetRenderCallback(RenderCallback callback);
+
+        // Trigger lifecycle events (called by SceneManager)
+        void Initialize();
+        void Shutdown();
+        void Render();
+
     private:
         struct Impl;
         std::unique_ptr<Impl> pimpl_;
@@ -189,6 +208,9 @@ export namespace engine::scene {
 
         // Update all active scenes
         void Update(float delta_time);
+
+        // Render all active scenes
+        void Render();
 
         // Statistics
         size_t GetSceneCount() const;

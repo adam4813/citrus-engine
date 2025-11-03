@@ -11,7 +11,7 @@ namespace examples {
 SceneSwitcher::SceneSwitcher()
     : active_scene_(nullptr)
     , active_scene_name_("")
-    , active_adapter_(nullptr, [](void*) {})
+    , active_adapter_(nullptr)
     , active_engine_scene_id_(0) {  // 0 is INVALID_SCENE
 }
 
@@ -133,42 +133,36 @@ bool SceneSwitcher::SwitchToScene(engine::Engine& engine, const std::string& sce
     auto& engine_scene = scene_manager.GetScene(active_engine_scene_id_);
 
     // Create adapter to bridge ExampleScene lifecycle with engine::scene::Scene
-    auto adapter = std::make_unique<EngineSceneAdapter>(engine, std::move(example_scene));
+    active_adapter_ = std::make_shared<EngineSceneAdapter>(engine, std::move(example_scene));
     
     // Keep a raw pointer to the scene for direct access (UI rendering, etc.)
-    active_scene_ = adapter->GetScene();
+    active_scene_ = active_adapter_->GetScene();
+
+    // Set up lifecycle callbacks with weak_ptr to prevent use-after-free
+    // Capture a weak_ptr so callbacks can safely check if adapter still exists
+    std::weak_ptr<EngineSceneAdapter> weak_adapter = active_adapter_;
     
-    // Store the adapter with type erasure
-    active_adapter_ = std::unique_ptr<void, void(*)(void*)>(
-        adapter.release(),
-        [](void* ptr) { delete static_cast<EngineSceneAdapter*>(ptr); }
-    );
-
-    // Set up lifecycle callbacks
-    // Capture the adapter pointer for callbacks
-    auto* adapter_ptr = static_cast<EngineSceneAdapter*>(active_adapter_.get());
-    
-    engine_scene.SetInitializeCallback([adapter_ptr]() {
-        if (adapter_ptr) {
-            adapter_ptr->OnInitialize();
+    engine_scene.SetInitializeCallback([weak_adapter]() {
+        if (auto adapter = weak_adapter.lock()) {
+            adapter->OnInitialize();
         }
     });
 
-    engine_scene.SetShutdownCallback([adapter_ptr]() {
-        if (adapter_ptr) {
-            adapter_ptr->OnShutdown();
+    engine_scene.SetShutdownCallback([weak_adapter]() {
+        if (auto adapter = weak_adapter.lock()) {
+            adapter->OnShutdown();
         }
     });
 
-    engine_scene.SetUpdateCallback([adapter_ptr](float delta_time) {
-        if (adapter_ptr) {
-            adapter_ptr->OnUpdate(delta_time);
+    engine_scene.SetUpdateCallback([weak_adapter](float delta_time) {
+        if (auto adapter = weak_adapter.lock()) {
+            adapter->OnUpdate(delta_time);
         }
     });
 
-    engine_scene.SetRenderCallback([adapter_ptr]() {
-        if (adapter_ptr) {
-            adapter_ptr->OnRender();
+    engine_scene.SetRenderCallback([weak_adapter]() {
+        if (auto adapter = weak_adapter.lock()) {
+            adapter->OnRender();
         }
     });
 

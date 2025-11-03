@@ -81,9 +81,11 @@ public:
     bool HasActiveScene() const;
 
 private:
+    class EngineSceneAdapter;  // Forward declaration
+    
     ExampleScene* active_scene_; // Non-owning pointer (owned by adapter)
     std::string active_scene_name_;
-    std::unique_ptr<void, void(*)(void*)> active_adapter_;  // Type-erased pointer with custom deleter
+    std::shared_ptr<EngineSceneAdapter> active_adapter_;  // Shared ownership for safe callback capture
     uint32_t active_engine_scene_id_;  // Use uint32_t instead of engine::scene::SceneId to avoid import in header
 };
 

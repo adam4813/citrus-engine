@@ -182,12 +182,37 @@ cmake --build --preset cli-native-release --parallel 4
 
 ---
 
-### Using setup-cpp for Automated Setup (Web Coding Environments)
+### Automated Setup for GitHub Copilot
 
-If you're in a web-based coding environment like GitHub Codespaces, use the `aminya/setup-cpp` action to automate tool installation:
+**GitHub Copilot users**: The repository includes an automated setup workflow at `.github/workflows/copilot-setup-steps.yml` that runs automatically when Copilot starts. This workflow:
+
+- Installs system dependencies (Linux: X11, OpenGL, build tools)
+- Configures Clang-18 compiler
+- Sets up vcpkg and caches dependencies
+- Prepares the environment for building and testing
+
+**No manual setup required when using GitHub Copilot** - the workflow runs automatically in your Copilot environment.
+
+---
+
+### Using setup-cpp for Automated Setup (GitHub Actions)
+
+For GitHub Actions workflows, use the shared composite action to automate environment setup:
 
 ```yaml
-# In GitHub Actions or Codespaces
+# In GitHub Actions workflows
+- name: Setup Citrus Engine Environment
+  uses: ./.github/actions/setup-environment
+  with:
+    compiler: clang
+    clang-version: 18
+```
+
+This composite action is used by both `build.yml` and `build-examples.yml` workflows to ensure consistent setup across all CI builds.
+
+For other web-based coding environments (like Codespaces), you can also use `aminya/setup-cpp` directly:
+
+```yaml
 - name: Setup C++ environment
   uses: aminya/setup-cpp@v1
   with:
@@ -197,8 +222,6 @@ If you're in a web-based coding environment like GitHub Codespaces, use the `ami
     ninja: true
     vcpkg: true
 ```
-
-This automatically installs Clang-18, CMake, Ninja, and vcpkg without manual steps.
 
 ---
 

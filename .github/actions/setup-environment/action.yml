@@ -1,0 +1,61 @@
+name: 'Setup Citrus Engine Environment'
+description: 'Install system dependencies, configure compiler, and setup vcpkg for building Citrus Engine'
+
+inputs:
+  compiler:
+    description: 'Compiler to use (clang, gcc, msvc, emscripten)'
+    required: true
+  clang-version:
+    description: 'Clang version (if using clang)'
+    required: false
+    default: '18'
+  vcpkg-commit:
+    description: 'vcpkg Git commit ID to use'
+    required: false
+    default: 'dd3097e305afa53f7b4312371f62058d2e665320'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Install system dependencies (Linux)
+      if: runner.os == 'Linux'
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          build-essential \
+          pkg-config \
+          libx11-dev \
+          libxrandr-dev \
+          libxinerama-dev \
+          libxcursor-dev \
+          libxi-dev \
+          libgl1-mesa-dev \
+          libglu1-mesa-dev \
+          xvfb
+
+    - name: Setup Cpp with Clang version
+      if: inputs.compiler != 'msvc' && inputs.compiler != 'emscripten' && inputs.clang-version != ''
+      uses: aminya/setup-cpp@v1
+      with:
+        compiler: ${{ inputs.compiler }}
+        clang: ${{ inputs.clang-version }}
+        vcvarsall: ${{ runner.os == 'Windows' }}
+
+    - name: Setup Cpp (default)
+      if: inputs.compiler != 'msvc' && inputs.compiler != 'emscripten' && inputs.clang-version == ''
+      uses: aminya/setup-cpp@v1
+      with:
+        compiler: ${{ inputs.compiler }}
+        vcvarsall: ${{ runner.os == 'Windows' }}
+
+    - name: Setup Emscripten
+      if: inputs.compiler == 'emscripten'
+      uses: mymindstorm/setup-emsdk@v14
+      with:
+        version: 'latest'
+
+    - name: Restore artifacts, or run vcpkg, build and cache artifacts
+      uses: lukka/run-vcpkg@v11
+      with:
+        vcpkgGitCommitId: ${{ inputs.vcpkg-commit }}

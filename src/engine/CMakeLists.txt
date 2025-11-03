@@ -3,6 +3,8 @@
 # Engine library configuration - set up as C++20 module
 add_library(engine-core STATIC)
 
+set_compiler_options(engine-core)
+
 # Ensure debug information is available for library consumers
 set_target_properties(engine-core PROPERTIES
     # Generate debug info for all configurations
@@ -56,6 +58,8 @@ target_sources(engine-core
     rendering/tilemap_renderer.cppm
     rendering/rendering.cppm
     scene/scene.cppm
+    scripting/scripting_backend.cppm
+    scripting/scripting_system.cppm
     ui/ui.cppm
     ui/renderer.cppm
     ui/types.cppm
@@ -107,6 +111,11 @@ target_sources(engine-core PRIVATE
     # Scene module implementation
     scene/scene_manager.cpp
 
+    # Scripting module implementation
+    scripting/lua_backend.cpp
+    scripting/angelscript_backend.cpp
+    scripting/scripting_factory.cpp
+
     ui/renderer.cpp
     ui/text_renderer.cpp
     ui/batch_renderer/batch_renderer.cpp
@@ -133,6 +142,9 @@ target_link_libraries(engine-core
     spdlog::spdlog
     nlohmann_json::nlohmann_json
     imgui::imgui
+    PRIVATE
+    Angelscript::angelscript
+    lua
 )
 
 if (EMSCRIPTEN)

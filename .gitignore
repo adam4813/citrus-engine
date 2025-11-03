@@ -61,3 +61,11 @@ vcpkg_installed/
 builds/
 /save_data/
 /demo/
+
+# Documentation build artifacts
+docs/_build/
+docs/_doxygen/
+site/
+
+# Node.js dependencies
+node_modules/

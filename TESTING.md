@@ -55,7 +55,9 @@ tests/
 
 ## Prerequisites
 
-Before running tests, ensure you have:
+**🎉 GitHub Copilot users**: The `.github/workflows/copilot-setup-steps.yml` workflow automatically installs all prerequisites when you start Copilot. No manual setup required!
+
+**For manual setup**, ensure you have:
 
 1. CMake 3.28 or newer
 2. A C++20-capable compiler (GCC 10+, Clang 10+, or MSVC 2022+)

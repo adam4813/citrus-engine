@@ -235,6 +235,79 @@ void main() {
         pimpl_->triangle_count += gl_mesh->index_count / 3;
     }
 
+    void Renderer::SubmitUIBatch(const UIBatchRenderCommand &command) const {
+        // Get shader
+        const Shader &shader = pimpl_->shader_manager.GetShader(command.shader);
+        if (!shader.IsValid()) {
+            return;
+        }
+
+        // Use the UI batch shader
+        shader.Use();
+
+        // Set projection matrix
+        shader.SetUniform("u_Projection", command.projection);
+
+        // Bind textures to their slots
+        int tex_samplers[UI_BATCH_MAX_TEXTURE_SLOTS] = {0, 1, 2, 3, 4, 5, 6, 7};
+        for (size_t i = 0; i < command.texture_count; ++i) {
+            glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(i));
+            glBindTexture(GL_TEXTURE_2D, command.texture_ids[i]);
+        }
+
+        // Set texture sampler array uniform
+        // TODO: The shader system needs enhancement to support array uniforms properly
+        // For now, we pass the first element which works for simple cases
+        shader.SetUniform("u_Textures", tex_samplers[0]);
+
+        // Apply scissor if active
+        if (command.enable_scissor) {
+            glEnable(GL_SCISSOR_TEST);
+            glScissor(
+                command.scissor_x,
+                command.scissor_y,
+                command.scissor_width,
+                command.scissor_height
+            );
+        }
+
+        // Upload vertex and index data
+        glBindVertexArray(command.vao);
+
+        glBindBuffer(GL_ARRAY_BUFFER, command.vbo);
+        glBufferSubData(GL_ARRAY_BUFFER, 0,
+                        command.vertex_data_size,
+                        command.vertex_data);
+
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, command.ebo);
+        glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0,
+                        command.index_data_size,
+                        command.index_data);
+
+        // Enable blending for transparency
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+        // Draw the batch
+        glDrawElements(GL_TRIANGLES,
+                       static_cast<GLsizei>(command.index_count),
+                       GL_UNSIGNED_INT,
+                       nullptr);
+
+        // Disable blending
+        glDisable(GL_BLEND);
+
+        // Disable scissor
+        if (command.enable_scissor) {
+            glDisable(GL_SCISSOR_TEST);
+        }
+
+        glBindVertexArray(0);
+
+        pimpl_->draw_call_count++;
+        pimpl_->triangle_count += command.index_count / 3;
+    }
+
     void Renderer::DrawLine(const Vec3 &start, const Vec3 &end, const Color &color) {
         // TODO: Implement debug line drawing
     }

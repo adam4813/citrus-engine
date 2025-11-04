@@ -25,5 +25,15 @@ export namespace engine::assets {
         static std::shared_ptr<Image> LoadImage(const std::string &path);
 
         static std::optional<std::string> LoadTextFile(const std::string &path);
+
+        /**
+         * @brief Load a binary file from the assets directory
+         * @param path Path relative to assets directory
+         * @return Binary data as vector of bytes, or empty vector if loading fails
+         * 
+         * This method loads any binary file (fonts, audio, etc.) without decoding.
+         * Suitable for font files (.ttf, .otf) and other binary assets.
+         */
+        static std::vector<uint8_t> LoadBinaryFile(const std::string &path);
     };
 }

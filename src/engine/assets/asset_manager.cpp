@@ -66,4 +66,22 @@ namespace engine::assets {
         }
         return text;
     }
+
+    std::vector<uint8_t> AssetManager::LoadBinaryFile(const std::string &path) {
+        using namespace engine::platform;
+        const fs::Path asset_path = fs::GetAssetsDirectory() / path;
+        std::cout << "Loading binary file from: " << asset_path.string() << std::endl;
+        fs::File file;
+        if (!file.Open(asset_path, fs::FileMode::Read, fs::FileType::Binary)) {
+            std::cout << "Failed to open binary file: " << asset_path.string() << std::endl;
+            return std::vector<uint8_t>();
+        }
+        std::vector<uint8_t> file_data = file.ReadAll();
+        if (file_data.empty()) {
+            std::cout << "Binary file is empty or failed to read: " << asset_path.string() << std::endl;
+            return std::vector<uint8_t>();
+        }
+        std::cout << "Successfully loaded binary file: " << file_data.size() << " bytes" << std::endl;
+        return file_data;
+    }
 } // namespace engine::assets

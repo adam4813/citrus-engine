@@ -30,7 +30,11 @@ public:
 
 	const char* GetDescription() const override { return "A simple hello world example scene"; }
 
-	void Initialize(engine::Engine& engine) override { std::cout << "HelloScene initialized" << std::endl; }
+	void Initialize(engine::Engine& engine) override {
+		std::cout << "HelloScene initialized" << std::endl;
+		engine::ui::text_renderer::FontManager::Initialize("assets/fonts/Kenney Future.ttf", 16);
+		engine::ui::batch_renderer::BatchRenderer::Initialize();
+	}
 
 	void Shutdown(engine::Engine& engine) override { std::cout << "HelloScene shutdown" << std::endl; }
 
@@ -38,8 +42,11 @@ public:
 		// Simple update logic
 	}
 
-	void Render(engine::Engine& engine) override {
-		// Simple rendering
+	void Render(engine::Engine& engine) override { // Initialize
+		engine::ui::batch_renderer::BatchRenderer::BeginFrame();
+		engine::ui::batch_renderer::Color white{1, 1, 1, 1};
+		engine::ui::batch_renderer::BatchRenderer::SubmitText("Hello World!", 100, 100, 16, white);
+		engine::ui::batch_renderer::BatchRenderer::EndFrame();
 	}
 
 	void RenderUI(engine::Engine& engine) override {

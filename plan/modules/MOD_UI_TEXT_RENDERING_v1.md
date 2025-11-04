@@ -87,6 +87,7 @@ Text Rendering Pipeline:                                                    Font
       std::unordered_map<uint32_t, GlyphMetrics> glyphs_;
       uint32_t atlas_texture_id_;
       float ascent_, descent_, line_gap_;
+      std::vector<uint8_t> font_data_;  // Font file data (must remain valid for stb_truetype)
   };
   
   struct GlyphMetrics {
@@ -96,7 +97,7 @@ Text Rendering Pipeline:                                                    Font
       Vector2 size;          // Glyph bitmap dimensions
   };
   ```
-- **Data Flow**: Font file → stb_truetype → SDF bitmap → Atlas packer → GPU texture
+- **Data Flow**: Font file → AssetManager → stb_truetype → SDF bitmap → Atlas packer → GPU texture
 
 #### Component 2: Text Layout Engine
 
@@ -434,6 +435,8 @@ std::vector<PositionedGlyph> TextLayout::Layout(
 
 1. **Font Atlas System**
    - Implement `FontAtlas` class with stb_truetype integration
+   - **Use `AssetManager::LoadBinaryFile()` to load font files (NOT raw file I/O)**
+   - Store font data in `std::vector<uint8_t>` member (stb_truetype requires data to remain valid)
    - Implement basic glyph rasterization (no SDF yet)
    - Implement shelf-based atlas packing algorithm
    - Upload atlas texture to GPU
@@ -533,7 +536,23 @@ The font atlas textures are managed through the existing `TextureManager`:
 ```cpp
 // FontAtlas::FontAtlas() constructor
 FontAtlas::FontAtlas(const std::string& font_path, int font_size_px) {
-    // ... generate atlas bitmap ...
+    // Load font file using AssetManager (handles asset directory path and binary loading)
+    import engine.assets;
+    std::vector<uint8_t> font_data = engine::assets::AssetManager::LoadBinaryFile(font_path);
+    if (font_data.empty()) {
+        throw std::runtime_error("Failed to load font file: " + font_path);
+    }
+    
+    // Parse font with stb_truetype
+    stbtt_fontinfo font_info;
+    if (!stbtt_InitFont(&font_info, font_data.data(), 0)) {
+        throw std::runtime_error("Failed to parse font file: " + font_path);
+    }
+    
+    // Store font data (stb_truetype needs it to remain valid)
+    font_data_ = std::move(font_data);
+    
+    // ... generate atlas bitmap using font_info ...
     
     auto& renderer = rendering::GetRenderer();
     auto& texture_mgr = renderer.GetTextureManager();
@@ -557,7 +576,7 @@ FontAtlas::FontAtlas(const std::string& font_path, int font_size_px) {
 
 ### Asset Management
 
-Fonts are loaded as engine assets:
+Fonts are loaded as engine assets through the AssetManager:
 
 ```
 assets/
@@ -567,10 +586,23 @@ assets/
     └── RobotoMono-Regular.ttf (Monospace for debug)
 ```
 
-Font loading via `FontManager`:
+Font loading via `FontManager` uses `AssetManager::LoadBinaryFile()`:
 ```cpp
-FontManager::Initialize("assets/fonts/Roboto-Regular.ttf");
+// Initialize FontManager with default font
+// Path is relative to assets directory
+FontManager::Initialize("fonts/Roboto-Regular.ttf");
+
+// Internally, FontManager uses AssetManager:
+import engine.assets;
+std::vector<uint8_t> font_data = engine::assets::AssetManager::LoadBinaryFile("fonts/Roboto-Regular.ttf");
+// Then passes font_data to stb_truetype for parsing
 ```
+
+**IMPORTANT**: Never use raw file I/O (fopen, ifstream, etc.) to load font files. Always use `AssetManager::LoadBinaryFile()` which:
+- Handles the assets directory path automatically
+- Uses platform abstraction layer for cross-platform compatibility
+- Provides consistent error handling
+- Works correctly in all build configurations (native, web, etc.)
 
 ## Performance Considerations
 

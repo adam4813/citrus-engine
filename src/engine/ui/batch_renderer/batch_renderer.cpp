@@ -108,9 +108,9 @@ void BatchRenderer::Initialize() {
 		glEnableVertexAttribArray(1);
 		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, u));
 
-		// Color (packed uint32 -> vec4)
+		// Color (vec4)
 		glEnableVertexAttribArray(2);
-		glVertexAttribPointer(2, 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(Vertex), (void*)offsetof(Vertex, color));
+		glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, r));
 
 		// TexIndex (float)
 		glEnableVertexAttribArray(3);
@@ -242,7 +242,6 @@ void BatchRenderer::SubmitQuad(
 
 	// Get texture slot
 	const int tex_slot = GetOrAddTextureSlot(texture_id);
-	const uint32_t packed_color = ColorToRGBA(color);
 
 	// UV coordinates (default to full texture)
 	float u0 = 0.0f, v0 = 0.0f, u1 = 1.0f, v1 = 1.0f;
@@ -278,7 +277,7 @@ void BatchRenderer::SubmitQuad(
 			y1,
 			u0,
 			v1, // Bottom-left
-			packed_color,
+			color,
 			static_cast<float>(tex_slot));
 
 	const uint32_t base = static_cast<uint32_t>(state_->vertices.size()) - 4;
@@ -328,7 +327,6 @@ void BatchRenderer::SubmitLine(
 	}
 
 	const int tex_slot = GetOrAddTextureSlot(texture_id);
-	const uint32_t packed_color = ColorToRGBA(color);
 
 	PushQuadVertices(
 			xa,
@@ -347,7 +345,7 @@ void BatchRenderer::SubmitLine(
 			yb,
 			0.0f,
 			1.0f,
-			packed_color,
+			color,
 			static_cast<float>(tex_slot));
 
 	const uint32_t base = static_cast<uint32_t>(state_->vertices.size()) - 4;
@@ -366,12 +364,11 @@ void BatchRenderer::SubmitCircle(
 	}
 
 	const int tex_slot = GetOrAddTextureSlot(texture_id);
-	const uint32_t packed_color = ColorToRGBA(color);
 	const auto tex_index = static_cast<float>(tex_slot);
 
 	// Center vertex
 	const auto center_idx = static_cast<uint32_t>(state_->vertices.size());
-	state_->vertices.emplace_back(center_x, center_y, 0.5f, 0.5f, packed_color, tex_index);
+	state_->vertices.emplace_back(center_x, center_y, 0.5f, 0.5f, color, tex_index);
 
 	// Perimeter vertices (triangle fan)
 	const float angle_step = 2.0f * PI / static_cast<float>(segments);
@@ -379,7 +376,7 @@ void BatchRenderer::SubmitCircle(
 		const float angle = static_cast<float>(i) * angle_step;
 		const float x = center_x + std::cos(angle) * radius;
 		const float y = center_y + std::sin(angle) * radius;
-		state_->vertices.emplace_back(x, y, 0.5f, 0.5f, packed_color, tex_index);
+		state_->vertices.emplace_back(x, y, 0.5f, 0.5f, color, tex_index);
 	}
 
 	// Indices (triangle fan)
@@ -412,7 +409,6 @@ void BatchRenderer::SubmitRoundedRect(
 	}
 
 	const int tex_slot = GetOrAddTextureSlot(texture_id);
-	const uint32_t packed_color = ColorToRGBA(color);
 	const auto tex_index = static_cast<float>(tex_slot);
 
 	// Center rectangle (non-rounded part)
@@ -444,7 +440,7 @@ void BatchRenderer::SubmitRoundedRect(
 
 	for (int c = 0; c < 4; ++c) {
 		const auto center_idx = static_cast<uint32_t>(state_->vertices.size());
-		state_->vertices.emplace_back(corners[c].x, corners[c].y, 0.5f, 0.5f, packed_color, tex_index);
+		state_->vertices.emplace_back(corners[c].x, corners[c].y, 0.5f, 0.5f, color, tex_index);
 
 		const float angle_start = angle_offsets[c];
 		const float angle_step = (PI * 0.5f) / static_cast<float>(corner_segments);
@@ -453,7 +449,7 @@ void BatchRenderer::SubmitRoundedRect(
 			const float angle = angle_start + static_cast<float>(i) * angle_step;
 			const float x = corners[c].x + std::cos(angle) * corner_radius;
 			const float y = corners[c].y + std::sin(angle) * corner_radius;
-			state_->vertices.emplace_back(x, y, 0.5f, 0.5f, packed_color, tex_index);
+			state_->vertices.emplace_back(x, y, 0.5f, 0.5f, color, tex_index);
 		}
 
 		for (int i = 0; i < corner_segments; ++i) {
@@ -587,7 +583,7 @@ void BatchRenderer::PushQuadVertices(
 		float y3,
 		float u3,
 		float v3,
-		uint32_t color,
+		const Color& color,
 		float tex_index) {
 	state_->vertices.emplace_back(x0, y0, u0, v0, color, tex_index);
 	state_->vertices.emplace_back(x1, y1, u1, v1, color, tex_index);
@@ -654,8 +650,7 @@ void BatchRenderer::FlushBatch() {
 	}
 
 	// Set texture sampler array uniform
-	shader.SetUniform("u_Textures", tex_samplers[0]); // This needs to be an array uniform
-	// Note: The shader system may need enhancement to support array uniforms properly
+	shader.SetUniformArray("u_Textures", tex_samplers, MAX_TEXTURE_SLOTS);
 
 	// Apply scissor if active
 	const bool use_scissor = state_->current_scissor.IsValid();

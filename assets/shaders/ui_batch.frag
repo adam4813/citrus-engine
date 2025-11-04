@@ -36,6 +36,6 @@ void main() {
         texColor = texture(u_Textures[7], vTexCoord);
     }
     
-    // Multiply by vertex color
+    // Multiply texture by vertex color (standard)
     FragColor = texColor * vColor;
 }

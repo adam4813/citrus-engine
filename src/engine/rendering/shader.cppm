@@ -57,6 +57,8 @@ export namespace engine::rendering {
 
         void SetUniform(const std::string &name, const Mat4 &value) const;
 
+        void SetUniformArray(const std::string &name, const int* values, int count) const;
+
         void SetTexture(const std::string &name, TextureId texture, uint32_t slot = 0) const;
 
         void Use() const;

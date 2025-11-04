@@ -188,11 +188,21 @@ namespace engine::ui::text_renderer {
         auto& renderer = rendering::GetRenderer();
         auto& texture_mgr = renderer.GetTextureManager();
 
+        // Convert grayscale to RGBA (white RGB, grayscale in alpha channel)
+        std::vector<uint8_t> rgba_bitmap;
+        rgba_bitmap.reserve(atlas_bitmap.size() * 4);
+        for (uint8_t gray : atlas_bitmap) {
+            rgba_bitmap.push_back(255); // R
+            rgba_bitmap.push_back(255); // G
+            rgba_bitmap.push_back(255); // B
+            rgba_bitmap.push_back(gray); // A (coverage)
+        }
+
         rendering::TextureCreateInfo tex_info{};
         tex_info.width = static_cast<uint32_t>(atlas_width_);
         tex_info.height = static_cast<uint32_t>(atlas_height_);
-        tex_info.format = rendering::TextureFormat::R8;  // Single-channel grayscale
-        tex_info.data = atlas_bitmap.data();
+        tex_info.format = rendering::TextureFormat::RGBA8;
+        tex_info.data = rgba_bitmap.data();
         tex_info.parameters = {
             .min_filter = rendering::TextureFilter::Linear,
             .mag_filter = rendering::TextureFilter::Linear,

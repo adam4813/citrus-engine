@@ -15,8 +15,8 @@ uniform sampler2D u_Textures[8];
 void main() {
     // Sample from the correct texture based on texture index
     vec4 texColor;
-    int texIdx = int(vTexIndex + 0.5); // Round to nearest int
-    
+    int texIdx = int(vTexIndex + 0.5);// Round to nearest int
+
     // Manual texture selection (GLSL ES doesn't support dynamic indexing easily)
     if (texIdx == 0) {
         texColor = texture(u_Textures[0], vTexCoord);
@@ -35,7 +35,7 @@ void main() {
     } else {
         texColor = texture(u_Textures[7], vTexCoord);
     }
-    
-    // Multiply by vertex color
+
+    // Multiply texture by vertex color (standard)
     FragColor = texColor * vColor;
 }

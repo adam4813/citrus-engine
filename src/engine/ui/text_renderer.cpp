@@ -20,6 +20,7 @@ import :text_renderer;
 import engine.ui.batch_renderer;
 import engine.rendering;
 import engine.platform;
+import engine.assets;
 
 namespace engine::ui::text_renderer {
     
@@ -65,18 +66,14 @@ namespace engine::ui::text_renderer {
     FontAtlas::FontAtlas(const std::string& font_path, int font_size_px)
         : font_size_(font_size_px) {
         
-        // Load font file
-        platform::fs::File file;
-        if (!file.Open(font_path, platform::fs::FileMode::Read)) {
-            // Failed to open font file
+        // Load font file through asset manager
+        auto font_data_opt = assets::AssetManager::LoadBinaryFile(font_path);
+        if (!font_data_opt.has_value()) {
+            // Failed to load font file
             return;
         }
         
-        const std::vector<uint8_t> file_data = file.ReadAll();
-        if (file_data.empty()) {
-            // Failed to load font
-            return;
-        }
+        const std::vector<uint8_t>& file_data = font_data_opt.value();
 
         // Initialize stb_truetype
         stbtt_fontinfo font_info;

@@ -23,6 +23,8 @@ import glm;
 
 namespace engine::ui::batch_renderer {
 constexpr float PI = 3.14159265358979323846f;
+constexpr float MIN_LINE_LENGTH = 0.001f; // Minimum line length to avoid degenerate geometry
+constexpr float MIN_CORNER_RADIUS = 0.1f; // Minimum corner radius for rounded rectangles
 
 struct BatchRenderer::BatchState {
 	// Current batch buffers
@@ -102,19 +104,20 @@ void BatchRenderer::Initialize() {
 		// Setup vertex attributes
 		// Position (x, y)
 		glEnableVertexAttribArray(0);
-		glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, x));
+		glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), reinterpret_cast<void*>(offsetof(Vertex, x)));
 
 		// TexCoord (u, v)
 		glEnableVertexAttribArray(1);
-		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, u));
+		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), reinterpret_cast<void*>(offsetof(Vertex, u)));
 
 		// Color (vec4)
 		glEnableVertexAttribArray(2);
-		glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, r));
+		glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex), reinterpret_cast<void*>(offsetof(Vertex, r)));
 
 		// TexIndex (float)
 		glEnableVertexAttribArray(3);
-		glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, tex_index));
+		glVertexAttribPointer(
+				3, 1, GL_FLOAT, GL_FALSE, sizeof(Vertex), reinterpret_cast<void*>(offsetof(Vertex, tex_index)));
 
 		glBindVertexArray(0);
 
@@ -181,8 +184,9 @@ void BatchRenderer::BeginFrame() {
 }
 
 void BatchRenderer::EndFrame() {
-	if (!state_ || !state_->in_frame)
+	if (!state_ || !state_->in_frame) {
 		return;
+	}
 
 	// Flush any remaining batched draws
 	if (!state_->vertices.empty()) {
@@ -193,8 +197,9 @@ void BatchRenderer::EndFrame() {
 }
 
 void BatchRenderer::PushScissor(const ScissorRect& scissor) {
-	if (!state_)
+	if (!state_) {
 		return;
+	}
 
 	// Intersect with current scissor
 	ScissorRect new_scissor = state_->current_scissor.Intersect(scissor);
@@ -209,8 +214,9 @@ void BatchRenderer::PushScissor(const ScissorRect& scissor) {
 }
 
 void BatchRenderer::PopScissor() {
-	if (!state_ || state_->scissor_stack.empty())
+	if (!state_ || state_->scissor_stack.empty()) {
 		return;
+	}
 
 	ScissorRect previous = state_->scissor_stack.back();
 	state_->scissor_stack.pop_back();
@@ -227,8 +233,9 @@ ScissorRect BatchRenderer::GetCurrentScissor() { return state_ ? state_->current
 
 void BatchRenderer::SubmitQuad(
 		const Rectangle& rect, const Color& color, const std::optional<Rectangle>& uv_coords, uint32_t texture_id) {
-	if (!state_)
+	if (!state_) {
 		return;
+	}
 
 	// Use white texture if none specified
 	if (texture_id == 0) {
@@ -260,25 +267,16 @@ void BatchRenderer::SubmitQuad(
 	const float x1 = rect.x + rect.width;
 	const float y1 = rect.y;
 
+	const float tex_slot_f = static_cast<float>(tex_slot);
+
+	// clang-format off
 	PushQuadVertices(
-			x0,
-			y0,
-			u0,
-			v0, // Top-left
-			x1,
-			y0,
-			u1,
-			v0, // Top-right
-			x1,
-			y1,
-			u1,
-			v1, // Bottom-right
-			x0,
-			y1,
-			u0,
-			v1, // Bottom-left
-			color,
-			static_cast<float>(tex_slot));
+			Vertex(x0, y0, u0, v0, color, tex_slot_f), // Top-left
+			Vertex(x1, y0, u1, v0, color, tex_slot_f), // Top-right
+			Vertex(x1, y1, u1, v1, color, tex_slot_f), // Bottom-right
+			Vertex(x0, y1, u0, v1, color, tex_slot_f)  // Bottom-left
+	);
+	// clang-format on
 
 	const uint32_t base = static_cast<uint32_t>(state_->vertices.size()) - 4;
 	PushQuadIndices(base);
@@ -292,16 +290,18 @@ void BatchRenderer::SubmitLine(
 		const float thickness,
 		const Color& color,
 		uint32_t texture_id) {
-	if (!state_)
+	if (!state_) {
 		return;
+	}
 
 	// Tessellate line as quad (2 triangles)
 	const float dx = x1 - x0;
 	const float dy = y1 - y0;
 	const float len = std::sqrt(dx * dx + dy * dy);
 
-	if (len < 0.001f)
+	if (len < MIN_LINE_LENGTH) {
 		return; // Degenerate line
+	}
 
 	// Perpendicular vector (normalized, scaled by half thickness)
 	const float nx = -dy / len * (thickness * 0.5f);
@@ -327,26 +327,13 @@ void BatchRenderer::SubmitLine(
 	}
 
 	const int tex_slot = GetOrAddTextureSlot(texture_id);
+	const float tex_slot_f = static_cast<float>(tex_slot);
 
 	PushQuadVertices(
-			xa,
-			ya,
-			0.0f,
-			0.0f,
-			xd,
-			yd,
-			1.0f,
-			0.0f,
-			xc,
-			yc,
-			1.0f,
-			1.0f,
-			xb,
-			yb,
-			0.0f,
-			1.0f,
-			color,
-			static_cast<float>(tex_slot));
+			Vertex(xa, ya, 0.0f, 0.0f, color, tex_slot_f),
+			Vertex(xd, yd, 1.0f, 0.0f, color, tex_slot_f),
+			Vertex(xc, yc, 1.0f, 1.0f, color, tex_slot_f),
+			Vertex(xb, yb, 0.0f, 1.0f, color, tex_slot_f));
 
 	const uint32_t base = static_cast<uint32_t>(state_->vertices.size()) - 4;
 	PushQuadIndices(base);
@@ -354,8 +341,9 @@ void BatchRenderer::SubmitLine(
 
 void BatchRenderer::SubmitCircle(
 		float center_x, float center_y, const float radius, const Color& color, const int segments) {
-	if (!state_ || segments < 3)
+	if (!state_ || segments < 3) {
 		return;
+	}
 
 	const uint32_t texture_id = state_->white_texture_id;
 
@@ -389,14 +377,15 @@ void BatchRenderer::SubmitCircle(
 
 void BatchRenderer::SubmitRoundedRect(
 		const Rectangle& rect, float corner_radius, const Color& color, const int corner_segments) {
-	if (!state_ || corner_segments < 1)
+	if (!state_ || corner_segments < 1) {
 		return;
+	}
 
 	// Clamp corner radius
 	const float max_radius = std::min(rect.width, rect.height) * 0.5f;
 	corner_radius = std::min(corner_radius, max_radius);
 
-	if (corner_radius < 0.1f) {
+	if (corner_radius < MIN_CORNER_RADIUS) {
 		// Degenerate to normal quad
 		SubmitQuad(rect, color);
 		return;
@@ -462,8 +451,9 @@ void BatchRenderer::SubmitRoundedRect(
 
 void BatchRenderer::SubmitText(
 		const std::string& text, const float x, const float y, const int font_size, const Color& color) {
-	if (!state_ || text.empty())
+	if (!state_ || text.empty()) {
 		return;
+	}
 
 	// Get font from font manager - if font_size matches default, use default font
 	// Otherwise try to get the default font path with the requested size
@@ -508,8 +498,9 @@ void BatchRenderer::SubmitText(
 
 void BatchRenderer::SubmitTextRect(
 		const Rectangle& rect, const std::string& text, const int font_size, const Color& color) {
-	if (!state_ || text.empty())
+	if (!state_ || text.empty()) {
 		return;
+	}
 
 	// Get default font from font manager
 	auto* font = text_renderer::FontManager::GetDefaultFont();
@@ -547,8 +538,9 @@ void BatchRenderer::SubmitTextRect(
 }
 
 void BatchRenderer::Flush() {
-	if (!state_ || state_->vertices.empty())
+	if (!state_ || state_->vertices.empty()) {
 		return;
+	}
 	FlushBatch();
 }
 
@@ -566,29 +558,11 @@ void BatchRenderer::ResetDrawCallCount() {
 
 // Private helper implementations
 
-void BatchRenderer::PushQuadVertices(
-		float x0,
-		float y0,
-		float u0,
-		float v0,
-		float x1,
-		float y1,
-		float u1,
-		float v1,
-		float x2,
-		float y2,
-		float u2,
-		float v2,
-		float x3,
-		float y3,
-		float u3,
-		float v3,
-		const Color& color,
-		float tex_index) {
-	state_->vertices.emplace_back(x0, y0, u0, v0, color, tex_index);
-	state_->vertices.emplace_back(x1, y1, u1, v1, color, tex_index);
-	state_->vertices.emplace_back(x2, y2, u2, v2, color, tex_index);
-	state_->vertices.emplace_back(x3, y3, u3, v3, color, tex_index);
+void BatchRenderer::PushQuadVertices(const Vertex& v0, const Vertex& v1, const Vertex& v2, const Vertex& v3) {
+	state_->vertices.push_back(v0);
+	state_->vertices.push_back(v1);
+	state_->vertices.push_back(v2);
+	state_->vertices.push_back(v3);
 }
 
 void BatchRenderer::PushQuadIndices(const uint32_t base_vertex) {
@@ -603,8 +577,9 @@ void BatchRenderer::PushQuadIndices(const uint32_t base_vertex) {
 }
 
 bool BatchRenderer::ShouldFlush(const uint32_t texture_id) {
-	if (!state_)
+	if (!state_) {
 		return false;
+	}
 
 	// Check if adding this texture would exceed limit
 	if (state_->texture_slots.find(texture_id) == state_->texture_slots.end()) {
@@ -628,8 +603,9 @@ int BatchRenderer::GetOrAddTextureSlot(const uint32_t texture_id) {
 }
 
 void BatchRenderer::FlushBatch() {
-	if (!state_ || state_->vertices.empty())
+	if (!state_ || state_->vertices.empty()) {
 		return;
+	}
 
 	// Get renderer and shader
 	auto& renderer = rendering::GetRenderer();
@@ -696,8 +672,9 @@ void BatchRenderer::FlushBatch() {
 }
 
 void BatchRenderer::StartNewBatch() {
-	if (!state_)
+	if (!state_) {
 		return;
+	}
 
 	state_->vertices.clear();
 	state_->indices.clear();

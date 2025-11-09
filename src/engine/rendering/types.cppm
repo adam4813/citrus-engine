@@ -1,6 +1,7 @@
 module;
 
 #include <cstdint>
+#include <cstddef>
 
 export module engine.rendering:types;
 
@@ -59,6 +60,30 @@ export namespace engine::rendering {
         Vec2 texture_offset{0.0f, 0.0f};
         Vec2 texture_scale{1.0f, 1.0f};
         int layer = 0;
+    };
+
+    // UI Batch render command for batch renderer
+    // Maximum texture slots supported by UI batch renderer
+    constexpr size_t UI_BATCH_MAX_TEXTURE_SLOTS = 8;
+
+    struct UIBatchRenderCommand {
+        ShaderId shader;
+        Mat4 projection;
+        uint32_t vao;
+        uint32_t vbo;
+        uint32_t ebo;
+        const void* vertex_data;
+        size_t vertex_data_size;
+        const void* index_data;
+        size_t index_data_size;
+        size_t index_count;
+        const uint32_t* texture_ids;
+        size_t texture_count;
+        bool enable_scissor = false;
+        int scissor_x = 0;
+        int scissor_y = 0;
+        int scissor_width = 0;
+        int scissor_height = 0;
     };
 
     struct Renderable {

@@ -32,11 +32,15 @@ public:
 
 	void Initialize(engine::Engine& engine) override {
 		std::cout << "HelloScene initialized" << std::endl;
-		engine::ui::text_renderer::FontManager::Initialize("assets/fonts/Kenney Future.ttf", 16);
+		engine::ui::text_renderer::FontManager::Initialize("fonts/Kenney Future.ttf", 16);
 		engine::ui::batch_renderer::BatchRenderer::Initialize();
 	}
 
-	void Shutdown(engine::Engine& engine) override { std::cout << "HelloScene shutdown" << std::endl; }
+	void Shutdown(engine::Engine& engine) override {
+		engine::ui::batch_renderer::BatchRenderer::Shutdown();
+		engine::ui::text_renderer::FontManager::Shutdown();
+		std::cout << "HelloScene shutdown" << std::endl;
+	}
 
 	void Update(engine::Engine& engine, float delta_time) override {
 		// Simple update logic
@@ -44,8 +48,16 @@ public:
 
 	void Render(engine::Engine& engine) override { // Initialize
 		engine::ui::batch_renderer::BatchRenderer::BeginFrame();
+
+		// Test: Draw a red rectangle to verify rendering works
+		engine::ui::batch_renderer::Color red{1, 0, 0, 1};
+		engine::ui::batch_renderer::Rectangle test_rect{200, 200, 100, 100};
+		engine::ui::batch_renderer::BatchRenderer::SubmitQuad(test_rect, red);
+
+		// Draw text
 		engine::ui::batch_renderer::Color white{1, 1, 1, 1};
 		engine::ui::batch_renderer::BatchRenderer::SubmitText("Hello World!", 100, 100, 16, white);
+
 		engine::ui::batch_renderer::BatchRenderer::EndFrame();
 	}
 

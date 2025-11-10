@@ -38,7 +38,9 @@ void SceneSwitcher::Shutdown(engine::Engine& engine) {
 	}
 
 	// Clean up adapter (which owns the example scene)
-	active_adapter_->OnShutdown();
+	if (active_adapter_) {
+		active_adapter_->OnShutdown();
+	}
 	active_adapter_.reset();
 	active_scene_ = nullptr;
 	active_scene_name_.clear();

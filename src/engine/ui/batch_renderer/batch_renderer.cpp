@@ -607,63 +607,44 @@ void BatchRenderer::FlushBatch() {
 		return;
 	}
 
-	// Get renderer and shader
+	// Get renderer
 	auto& renderer = rendering::GetRenderer();
-	auto& shader_mgr = renderer.GetShaderManager();
-	auto& shader = shader_mgr.GetShader(state_->ui_shader);
 
-	// Use the UI batch shader
-	shader.Use();
 
-	// Set projection matrix
-	shader.SetUniform("u_Projection", state_->projection);
-
-	// Bind textures to their slots
-	int tex_samplers[MAX_TEXTURE_SLOTS] = {0, 1, 2, 3, 4, 5, 6, 7};
+	// Prepare texture IDs array for the command
+	uint32_t texture_ids[MAX_TEXTURE_SLOTS] = {0};
 	for (const auto& [texture_id, slot] : state_->texture_slots) {
-		glActiveTexture(GL_TEXTURE0 + slot);
-		glBindTexture(GL_TEXTURE_2D, texture_id);
+		texture_ids[slot] = texture_id;
 	}
-
-	// Set texture sampler array uniform
-	shader.SetUniformArray("u_Textures", tex_samplers, MAX_TEXTURE_SLOTS);
 
 	// Apply scissor if active
 	const bool use_scissor = state_->current_scissor.IsValid();
+
+
+	// Create UI batch render command
+	rendering::UIBatchRenderCommand command{};
+	command.shader = state_->ui_shader;
+	command.projection = state_->projection;
+	command.vao = state_->vao;
+	command.vbo = state_->vbo;
+	command.ebo = state_->ebo;
+	command.vertex_data = state_->vertices.data();
+	command.vertex_data_size = state_->vertices.size() * sizeof(Vertex);
+	command.index_data = state_->indices.data();
+	command.index_data_size = state_->indices.size() * sizeof(uint32_t);
+	command.index_count = state_->indices.size();
+	command.texture_ids = texture_ids;
+	command.texture_count = state_->texture_slots.size();
+	command.enable_scissor = use_scissor;
 	if (use_scissor) {
-		glEnable(GL_SCISSOR_TEST);
-		glScissor(
-				static_cast<GLint>(state_->current_scissor.x),
-				static_cast<GLint>(state_->current_scissor.y),
-				static_cast<GLsizei>(state_->current_scissor.width),
-				static_cast<GLsizei>(state_->current_scissor.height));
+		command.scissor_x = static_cast<int>(state_->current_scissor.x);
+	command.scissor_y = static_cast<int>(state_->current_scissor.y);
+	command.scissor_width = static_cast<int>(state_->current_scissor.width);
+		command.scissor_height = static_cast<int>(state_->current_scissor.height);
 	}
 
-	// Upload vertex and index data
-	glBindVertexArray(state_->vao);
-
-	glBindBuffer(GL_ARRAY_BUFFER, state_->vbo);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, state_->vertices.size() * sizeof(Vertex), state_->vertices.data());
-
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, state_->ebo);
-	glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, state_->indices.size() * sizeof(uint32_t), state_->indices.data());
-
-	// Enable blending for transparency
-	glEnable(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-	// Draw the batch
-	glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(state_->indices.size()), GL_UNSIGNED_INT, nullptr);
-
-	// Disable blending
-	glDisable(GL_BLEND);
-
-	// Disable scissor
-	if (use_scissor) {
-		glDisable(GL_SCISSOR_TEST);
-	}
-
-	glBindVertexArray(0);
+	// Submit the batch command to the renderer
+	renderer.SubmitUIBatch(command);
 
 	state_->draw_call_count++;
 

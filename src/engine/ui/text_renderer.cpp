@@ -170,18 +170,21 @@ std::vector<uint32_t> Decode(const std::string& utf8_string) {
 
 	for (size_t i = 0; i < utf8_string.size();) {
 		uint32_t codepoint = 0;
+		bool valid = false;
 		const uint8_t byte = static_cast<uint8_t>(utf8_string[i]);
 
 		if ((byte & 0x80) == 0) {
 			// 1-byte character (ASCII)
 			codepoint = byte;
 			i += 1;
+			valid = true;
 		}
 		else if ((byte & 0xE0) == 0xC0) {
 			// 2-byte character
 			if (i + 1 < utf8_string.size() && (static_cast<uint8_t>(utf8_string[i + 1]) & 0xC0) == 0x80) {
 				codepoint = ((byte & 0x1F) << 6) | (static_cast<uint8_t>(utf8_string[i + 1]) & 0x3F);
 				i += 2;
+				valid = true;
 			}
 			else {
 				i += 1; // Invalid UTF-8, skip
@@ -194,6 +197,7 @@ std::vector<uint32_t> Decode(const std::string& utf8_string) {
 				codepoint = ((byte & 0x0F) << 12) | ((static_cast<uint8_t>(utf8_string[i + 1]) & 0x3F) << 6)
 							| (static_cast<uint8_t>(utf8_string[i + 2]) & 0x3F);
 				i += 3;
+				valid = true;
 			}
 			else {
 				i += 1; // Invalid UTF-8, skip
@@ -208,6 +212,7 @@ std::vector<uint32_t> Decode(const std::string& utf8_string) {
 							| ((static_cast<uint8_t>(utf8_string[i + 2]) & 0x3F) << 6)
 							| (static_cast<uint8_t>(utf8_string[i + 3]) & 0x3F);
 				i += 4;
+				valid = true;
 			}
 			else {
 				i += 1; // Invalid UTF-8, skip
@@ -218,7 +223,10 @@ std::vector<uint32_t> Decode(const std::string& utf8_string) {
 			i += 1;
 		}
 
-		codepoints.push_back(codepoint);
+		// Only push valid codepoints
+		if (valid) {
+			codepoints.push_back(codepoint);
+		}
 	}
 
 	return codepoints;

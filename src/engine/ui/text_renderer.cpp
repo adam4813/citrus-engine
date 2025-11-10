@@ -24,46 +24,15 @@ import engine.assets;
 
 namespace engine::ui::text_renderer {
 
-// Atlas packing helper
-class AtlasPacker {
-public:
-	AtlasPacker(int width, int height) : width_(width), height_(height), current_y_(0), current_x_(0), row_height_(0) {}
-
-	std::optional<batch_renderer::Rectangle> Pack(int w, int h) {
-		// Check if current row has space
-		if (current_x_ + w > width_) {
-			// Move to next row
-			current_x_ = 0;
-			current_y_ += row_height_;
-			row_height_ = 0;
-		}
-
-		// Check if atlas is full
-		if (current_y_ + h > height_) {
-			return std::nullopt;
-		}
-
-		// Allocate space
-		batch_renderer::Rectangle rect(
-				static_cast<float>(current_x_),
-				static_cast<float>(current_y_),
-				static_cast<float>(w),
-				static_cast<float>(h));
-		current_x_ += w;
-		row_height_ = std::max(row_height_, h);
-
-		return rect;
-	}
-
-private:
-	int width_, height_;
-	int current_x_, current_y_, row_height_;
+// Helper to store stbtt_bakedchar data alongside our GlyphMetrics
+struct BakedCharData {
+	stbtt_bakedchar baked_chars[224]; // ASCII 32-255 (224 characters)
 };
 
 // FontAtlas implementation
 FontAtlas::FontAtlas(const std::string& font_path, int font_size_px) : font_size_(font_size_px) {
 
-	// Load font filethrough asset manager
+	// Load font file through asset manager
 	auto font_data_opt = assets::AssetManager::LoadBinaryFile(font_path);
 	if (!font_data_opt.has_value()) {
 		// Failed to load font file
@@ -94,81 +63,51 @@ FontAtlas::FontAtlas(const std::string& font_path, int font_size_px) : font_size
 	atlas_height_ = 512;
 	std::vector<uint8_t> atlas_bitmap(atlas_width_ * atlas_height_, 0);
 
-	AtlasPacker packer(atlas_width_, atlas_height_);
+	// Use stb_truetype's built-in packing
+	BakedCharData baked_data;
+	
+	// Bake ASCII and Latin-1 characters (32-255) into atlas
+	// Returns the first unused row or -1 if atlas is too small
+	int result = stbtt_BakeFontBitmap(
+		file_data.data(), 
+		0,  // font offset
+		static_cast<float>(font_size_px),  // pixel height
+		atlas_bitmap.data(),
+		atlas_width_, 
+		atlas_height_,
+		32,  // first character (space)
+		224, // number of characters (32-255 = 224 chars)
+		baked_data.baked_chars
+	);
+	
+	if (result < 0) {
+		// Atlas too small, but continue with what we have
+	}
 
-	// Rasterize common ASCII and Latin-1 characters (32-255)
-	for (uint32_t codepoint = 32; codepoint < 256; ++codepoint) {
-		const int glyph_index = stbtt_FindGlyphIndex(&font_info, static_cast<int>(codepoint));
-		if (glyph_index == 0 && codepoint != 0) {
-			continue; // Glyph not found in font
-		}
-
-		// Get glyph bounding box
-		int x0, y0, x1, y1;
-		stbtt_GetGlyphBitmapBox(&font_info, glyph_index, scale, scale, &x0, &y0, &x1, &y1);
-
-		const int glyph_width = x1 - x0;
-		const int glyph_height = y1 - y0;
-
-		// Skip empty glyphs (like space)
-		if (glyph_width == 0 || glyph_height == 0) {
-			// Still store metrics for spacing
-			int advance, left_bearing;
-			stbtt_GetGlyphHMetrics(&font_info, glyph_index, &advance, &left_bearing);
-
-			GlyphMetrics metrics;
-			metrics.atlas_rect = batch_renderer::Rectangle(0, 0, 0, 0);
-			metrics.bearing = batch_renderer::Vector2(static_cast<float>(left_bearing) * scale, 0.0f);
-			metrics.advance = static_cast<float>(advance) * scale;
-			metrics.size = batch_renderer::Vector2(0, 0);
-
-			glyphs_[codepoint] = metrics;
-			continue;
-		}
-
-		// Try to pack glyph into atlas
-		auto pack_result = packer.Pack(glyph_width + 2, glyph_height + 2); // +2 for padding
-		if (!pack_result.has_value()) {
-			// Atlas full, skip remaining glyphs
-			break;
-		}
-
-		const auto& rect = pack_result.value();
-
-		// Rasterize glyph into atlas
-		const int pixel_x = static_cast<int>(rect.x) + 1; // +1 for padding
-		const int pixel_y = static_cast<int>(rect.y) + 1;
-
-		stbtt_MakeGlyphBitmap(
-				&font_info,
-				atlas_bitmap.data() + pixel_y * atlas_width_ + pixel_x,
-				glyph_width,
-				glyph_height,
-				atlas_width_,
-				scale,
-				scale,
-				glyph_index);
-
-		// Get glyph metrics
-		int advance, left_bearing;
-		stbtt_GetGlyphHMetrics(&font_info, glyph_index, &advance, &left_bearing);
-
-		// Store glyph metrics
-		// Flip V coordinate because stb_truetype uses top-left origin but OpenGL uses bottom-left
-		float uv_x = static_cast<float>(pixel_x) / static_cast<float>(atlas_width_);
-		float uv_y = static_cast<float>(pixel_y) / static_cast<float>(atlas_height_);
-		float uv_w = static_cast<float>(glyph_width) / static_cast<float>(atlas_width_);
-		float uv_h = static_cast<float>(glyph_height) / static_cast<float>(atlas_height_);
-
+	// Convert baked char data to our GlyphMetrics format
+	for (int i = 0; i < 224; ++i) {
+		const uint32_t codepoint = 32 + i;
+		const stbtt_bakedchar& bc = baked_data.baked_chars[i];
+		
+		// Get UV coordinates from baked char
+		// Note: stb_truetype's baked coords are in pixels, need to normalize
+		float uv_x = bc.x0 / static_cast<float>(atlas_width_);
+		float uv_y = bc.y0 / static_cast<float>(atlas_height_);
+		float uv_w = (bc.x1 - bc.x0) / static_cast<float>(atlas_width_);
+		float uv_h = (bc.y1 - bc.y0) / static_cast<float>(atlas_height_);
+		
 		GlyphMetrics metrics;
-		metrics.atlas_rect = batch_renderer::Rectangle(uv_x, uv_y, uv_w, uv_h);
-		metrics.bearing = batch_renderer::Vector2(
-				static_cast<float>(x0),
-				static_cast<float>(-y0) // Flip Y for screen coordinates
+		// Flip V coordinates for OpenGL (1.0 - v)
+		metrics.atlas_rect = batch_renderer::Rectangle(
+			uv_x, 
+			1.0f - uv_y - uv_h,  // Flip: start from bottom
+			uv_w, 
+			uv_h
 		);
-		metrics.advance = static_cast<float>(advance) * scale;
-		metrics.size = batch_renderer::Vector2(static_cast<float>(glyph_width), static_cast<float>(glyph_height));
-
+		metrics.bearing = batch_renderer::Vector2(bc.xoff, bc.yoff);
+		metrics.advance = bc.xadvance;
+		metrics.size = batch_renderer::Vector2(bc.x1 - bc.x0, bc.y1 - bc.y0);
+		
 		glyphs_[codepoint] = metrics;
 	}
 

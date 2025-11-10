@@ -65,6 +65,8 @@ export namespace engine::rendering {
 
         void SubmitSprite(const SpriteRenderCommand &command) const;
 
+        void SubmitUIBatch(const UIBatchRenderCommand &command) const;
+
         // Immediate mode rendering (for debugging)
         void DrawLine(const Vec3 &start, const Vec3 &end, const Color &color = colors::white);
 

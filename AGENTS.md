@@ -315,6 +315,26 @@ documented patterns.
 - Ignore unrelated bugs or broken tests
 - Update documentation only if directly related to changes
 
+### Implementation Philosophy
+
+**Priority: Correctness > Simplicity > Performance**
+
+1. **Make it work first** - Focus on correct behavior before optimization
+2. **Keep it simple** - Minimal code changes that achieve the goal
+3. **Optimize later** - Performance and size optimizations come after correctness is verified
+
+**Avoid:**
+- Premature optimization
+- Over-engineered solutions
+- Complex abstractions without proven need
+
+**Prefer:**
+- The simplest solution that works correctly
+- Clear, readable code over clever tricks
+- Straightforward implementations in first iterations
+
+**Example**: Use unpacked float colors (simple, debuggable) rather than packed uint32 colors (complex, harder to debug) until profiling proves the memory savings matter.
+
 ### Build Verification (REQUIRED)
 
 **Build/test MUST succeed before completing any task.**

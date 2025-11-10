@@ -66,4 +66,18 @@ namespace engine::assets {
         }
         return text;
     }
+
+    std::optional<std::vector<uint8_t>> AssetManager::LoadBinaryFile(const std::string &path) {
+        using namespace engine::platform;
+        const fs::Path asset_path = fs::GetAssetsDirectory() / path;
+        fs::File file;
+        if (!file.Open(asset_path, fs::FileMode::Read)) {
+            return std::nullopt;
+        }
+        const std::vector<uint8_t> data = file.ReadAll();
+        if (data.empty()) {
+            return std::nullopt;
+        }
+        return data;
+    }
 } // namespace engine::assets

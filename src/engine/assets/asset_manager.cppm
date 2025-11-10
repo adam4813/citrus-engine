@@ -25,5 +25,7 @@ export namespace engine::assets {
         static std::shared_ptr<Image> LoadImage(const std::string &path);
 
         static std::optional<std::string> LoadTextFile(const std::string &path);
+
+        static std::optional<std::vector<uint8_t>> LoadBinaryFile(const std::string &path);
     };
 }

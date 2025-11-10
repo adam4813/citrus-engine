@@ -8,6 +8,19 @@ export module engine.ui.batch_renderer:batch_types;
 
 export namespace engine::ui::batch_renderer {
     /**
+     * @brief Color type for batch renderer (RGBA, 0.0-1.0 range)
+     */
+    struct Color {
+        float r, g, b, a;
+
+        Color() : r(1.0f), g(1.0f), b(1.0f), a(1.0f) {
+        }
+
+        Color(float r, float g, float b, float a = 1.0f) : r(r), g(g), b(b), a(a) {
+        }
+    };
+
+    /**
      * @brief Vertex layout for batched rendering
      * 
      * Packed vertex format for efficient GPU upload.
@@ -16,14 +29,14 @@ export namespace engine::ui::batch_renderer {
     struct Vertex {
         float x, y; // Position (screen-space)
         float u, v; // Texture coordinates (0.0-1.0)
-        uint32_t color; // RGBA packed (0xRRGGBBAA)
+        float r, g, b, a; // Color components (0.0-1.0)
         float tex_index; // Texture slot index (0-7)
 
         Vertex() = default;
 
-        Vertex(const float x, const float y, const float u, const float v, const uint32_t color,
+        Vertex(const float x, const float y, const float u, const float v, const Color& color,
                const float tex_index = 0.0f)
-            : x(x), y(y), u(u), v(v), color(color), tex_index(tex_index) {
+            : x(x), y(y), u(u), v(v), r(color.r), g(color.g), b(color.b), a(color.a), tex_index(tex_index) {
         }
     };
 
@@ -97,19 +110,6 @@ export namespace engine::ui::batch_renderer {
         }
 
         Rectangle(float x, float y, float w, float h) : x(x), y(y), width(w), height(h) {
-        }
-    };
-
-    /**
-     * @brief Color type for batch renderer (RGBA, 0.0-1.0 range)
-     */
-    struct Color {
-        float r, g, b, a;
-
-        Color() : r(1.0f), g(1.0f), b(1.0f), a(1.0f) {
-        }
-
-        Color(float r, float g, float b, float a = 1.0f) : r(r), g(g), b(b), a(a) {
         }
     };
 

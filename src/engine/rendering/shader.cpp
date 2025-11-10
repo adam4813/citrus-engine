@@ -167,6 +167,19 @@ namespace engine::rendering {
         }
     }
 
+    void Shader::SetUniformArray(const std::string &name, const int* values, int count) const {
+        GLint location = -1;
+        if (!pimpl_->uniform_locations.contains(name)) {
+            location = glGetUniformLocation(pimpl_->program, name.c_str());
+            pimpl_->uniform_locations[name] = location;
+        } else {
+            location = pimpl_->uniform_locations[name];
+        }
+        if (location != -1) {
+            glUniform1iv(location, count, values);
+        }
+    }
+
     void Shader::SetTexture(const std::string &name, const TextureId texture, const uint32_t slot) const {
         GLint location = -1;
         if (!pimpl_->uniform_locations.contains(name)) {

@@ -63,6 +63,7 @@ target_sources(engine-core
     ui/ui.cppm
     ui/renderer.cppm
     ui/types.cppm
+    ui/text_renderer.cppm
     ui/batch_renderer.cppm
     ui/batch_renderer/batch_types.cppm
     ui/batch_renderer/batch_renderer.cppm
@@ -116,6 +117,7 @@ target_sources(engine-core PRIVATE
     scripting/scripting_factory.cpp
 
     ui/renderer.cpp
+    ui/text_renderer.cpp
     ui/batch_renderer/batch_renderer.cpp
 
     engine.cpp

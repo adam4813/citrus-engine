@@ -10,7 +10,11 @@ module;
 #include <unordered_map>
 #include <vector>
 
-// stb_truetype for font loading (includes rect_pack internally)
+// stb_rect_pack for improved packing (include before stb_truetype)
+#define STB_RECT_PACK_IMPLEMENTATION
+#include <stb_rect_pack.h>
+
+// stb_truetype for font loading
 #define STB_TRUETYPE_IMPLEMENTATION
 #include <stb_truetype.h>
 

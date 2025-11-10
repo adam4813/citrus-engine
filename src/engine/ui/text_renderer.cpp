@@ -70,27 +70,28 @@ FontAtlas::FontAtlas(const std::string& font_path, int font_size_px) : font_size
 	// Use improved 3D API with stb_rect_pack
 	PackedCharData packed_data;
 	stbtt_pack_context pack_context;
-	
+
 	// Initialize packing context
 	if (!stbtt_PackBegin(&pack_context, atlas_bitmap.data(), atlas_width_, atlas_height_, 0, 1, nullptr)) {
 		// Failed to initialize packing
 		return;
 	}
-	
+
 	// Set oversampling for improved quality on small fonts
 	stbtt_PackSetOversampling(&pack_context, 2, 2);
-	
+
 	// Pack ASCII and Latin-1 characters (32-255)
 	stbtt_pack_range range;
 	range.font_size = static_cast<float>(font_size_px);
 	range.first_unicode_codepoint_in_range = 32;
-	range.num_chars = 224;  // 32-255 (224 characters)
+	range.array_of_unicode_codepoints = nullptr; // Use sequential codepoints
+	range.num_chars = 224; // 32-255 (224 characters)
 	range.chardata_for_range = packed_data.packed_chars;
-	
+
 	if (!stbtt_PackFontRanges(&pack_context, file_data.data(), 0, &range, 1)) {
 		// Packing failed, but continue with what we have
 	}
-	
+
 	// Clean up packing context
 	stbtt_PackEnd(&pack_context);
 
@@ -98,21 +99,21 @@ FontAtlas::FontAtlas(const std::string& font_path, int font_size_px) : font_size
 	for (int i = 0; i < 224; ++i) {
 		const uint32_t codepoint = 32 + i;
 		const stbtt_packedchar& pc = packed_data.packed_chars[i];
-		
+
 		// Get UV coordinates from packed char
 		// stbtt_packedchar stores normalized coordinates [0,1]
-		float uv_x = pc.x0;
-		float uv_y = pc.y0;
-		float uv_w = pc.x1 - pc.x0;
-		float uv_h = pc.y1 - pc.y0;
-		
+		float uv_x = pc.x0 / static_cast<float>(atlas_width_);
+		float uv_y = pc.y0 / static_cast<float>(atlas_height_);
+		float uv_w = (pc.x1 - pc.x0) / static_cast<float>(atlas_width_);
+		float uv_h = (pc.y1 - pc.y0) / static_cast<float>(atlas_height_);
+
 		GlyphMetrics metrics;
 		// Use UV coordinates as-is from PackFontRanges (already normalized for OpenGL)
 		metrics.atlas_rect = batch_renderer::Rectangle(uv_x, uv_y, uv_w, uv_h);
 		metrics.bearing = batch_renderer::Vector2(pc.xoff, pc.yoff);
 		metrics.advance = pc.xadvance;
 		metrics.size = batch_renderer::Vector2(pc.xoff2 - pc.xoff, pc.yoff2 - pc.yoff);
-		
+
 		glyphs_[codepoint] = metrics;
 	}
 

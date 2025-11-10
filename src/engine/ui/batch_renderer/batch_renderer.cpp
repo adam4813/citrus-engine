@@ -255,9 +255,9 @@ void BatchRenderer::SubmitQuad(
 	if (uv_coords.has_value()) {
 		const Rectangle& uv = uv_coords.value();
 		u0 = uv.x;
-		v0 = uv.y;
+		v0 = uv.y + uv.height;
 		u1 = uv.x + uv.width;
-		v1 = uv.y + uv.height;
+		v1 = uv.y;
 	}
 
 	// Quad vertices (top-left origin)

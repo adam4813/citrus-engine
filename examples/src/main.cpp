@@ -25,6 +25,8 @@ import engine;
 // =============================================================================
 
 class HelloScene : public examples::ExampleScene {
+	uint32_t font_texture_id = 0;
+
 public:
 	const char* GetName() const override { return "Hello World"; }
 
@@ -34,6 +36,7 @@ public:
 		std::cout << "HelloScene initialized" << std::endl;
 		engine::ui::text_renderer::FontManager::Initialize("fonts/Kenney Future.ttf", 16);
 		engine::ui::batch_renderer::BatchRenderer::Initialize();
+		font_texture_id = engine::ui::text_renderer::FontManager::GetDefaultFont()->GetTextureId();
 	}
 
 	void Shutdown(engine::Engine& engine) override {
@@ -51,8 +54,9 @@ public:
 
 		// Test: Draw a red rectangle to verify rendering works
 		engine::ui::batch_renderer::Color red{1, 0, 0, 1};
-		engine::ui::batch_renderer::Rectangle test_rect{200, 200, 100, 100};
-		engine::ui::batch_renderer::BatchRenderer::SubmitQuad(test_rect, red);
+		engine::ui::batch_renderer::Rectangle test_rect{200, 200, 200, 200};
+		engine::ui::batch_renderer::Rectangle uv_rect{0, 0, 1, 1};
+		engine::ui::batch_renderer::BatchRenderer::SubmitQuad(test_rect, red, uv_rect, font_texture_id);
 
 		// Draw text
 		engine::ui::batch_renderer::Color white{1, 1, 1, 1};

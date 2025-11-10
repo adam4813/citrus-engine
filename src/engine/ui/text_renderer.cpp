@@ -10,7 +10,7 @@ module;
 #include <unordered_map>
 #include <vector>
 
-// stb_truetype for font loading
+// stb_truetype for font loading (includes rect_pack internally)
 #define STB_TRUETYPE_IMPLEMENTATION
 #include <stb_truetype.h>
 
@@ -24,9 +24,9 @@ import engine.assets;
 
 namespace engine::ui::text_renderer {
 
-// Helper to store stbtt_bakedchar data alongside our GlyphMetrics
-struct BakedCharData {
-	stbtt_bakedchar baked_chars[224]; // ASCII 32-255 (224 characters)
+// Helper to store stbtt_packedchar data
+struct PackedCharData {
+	stbtt_packedchar packed_chars[224]; // ASCII 32-255 (224 characters)
 };
 
 // FontAtlas implementation
@@ -63,72 +63,51 @@ FontAtlas::FontAtlas(const std::string& font_path, int font_size_px) : font_size
 	atlas_height_ = 512;
 	std::vector<uint8_t> atlas_bitmap(atlas_width_ * atlas_height_, 0);
 
-	// Use stb_truetype's built-in packing
-	BakedCharData baked_data;
+	// Use improved 3D API with stb_rect_pack
+	PackedCharData packed_data;
+	stbtt_pack_context pack_context;
 	
-	// Bake ASCII and Latin-1 characters (32-255) into atlas
-	// Returns the first unused row or -1 if atlas is too small
-	int result = stbtt_BakeFontBitmap(
-		file_data.data(), 
-		0,  // font offset
-		static_cast<float>(font_size_px),  // pixel height
-		atlas_bitmap.data(),
-		atlas_width_, 
-		atlas_height_,
-		32,  // first character (space)
-		224, // number of characters (32-255 = 224 chars)
-		baked_data.baked_chars
-	);
-	
-	if (result < 0) {
-		// Atlas too small, but continue with what we have
+	// Initialize packing context
+	if (!stbtt_PackBegin(&pack_context, atlas_bitmap.data(), atlas_width_, atlas_height_, 0, 1, nullptr)) {
+		// Failed to initialize packing
+		return;
 	}
+	
+	// Set oversampling for improved quality on small fonts
+	stbtt_PackSetOversampling(&pack_context, 2, 2);
+	
+	// Pack ASCII and Latin-1 characters (32-255)
+	stbtt_pack_range range;
+	range.font_size = static_cast<float>(font_size_px);
+	range.first_unicode_codepoint_in_range = 32;
+	range.num_chars = 224;  // 32-255 (224 characters)
+	range.chardata_for_range = packed_data.packed_chars;
+	
+	if (!stbtt_PackFontRanges(&pack_context, file_data.data(), 0, &range, 1)) {
+		// Packing failed, but continue with what we have
+	}
+	
+	// Clean up packing context
+	stbtt_PackEnd(&pack_context);
 
-	// Convert baked char data to our GlyphMetrics format
-	// Use stbtt_GetBakedQuad to get proper texture coordinates
+	// Convert packed char data to our GlyphMetrics format
 	for (int i = 0; i < 224; ++i) {
 		const uint32_t codepoint = 32 + i;
+		const stbtt_packedchar& pc = packed_data.packed_chars[i];
 		
-		// Get quad with proper texture coordinates using stbtt_GetBakedQuad
-		// This function handles coordinate system conversions for us
-		float x = 0, y = 0;  // Dummy position, we only care about UV coords
-		stbtt_aligned_quad quad;
-		stbtt_GetBakedQuad(
-			baked_data.baked_chars,
-			atlas_width_,
-			atlas_height_,
-			i,  // char_index (0-based from first_char)
-			&x, &y,  // position (modified by function, we don't use)
-			&quad,
-			1  // opengl_fillrule: 1 for OpenGL (bottom-left origin)
-		);
-		
-		// stbtt_GetBakedQuad returns texture coordinates in PIXEL units - normalize them
-		// Note: Flip V coordinates for OpenGL's Y-up texture coordinate system
-		float s0 = quad.s0 / static_cast<float>(atlas_width_);
-		float t0 = quad.t0 / static_cast<float>(atlas_height_);
-		float s1 = quad.s1 / static_cast<float>(atlas_width_);
-		float t1 = quad.t1 / static_cast<float>(atlas_height_);
-		
-		// Flip T (V) coordinates: OpenGL textures have origin at bottom-left
-		t0 = 1.0f - t0;
-		t1 = 1.0f - t1;
-		
-		// Convert to Rectangle format (x, y, width, height)
-		float uv_x = s0;
-		float uv_y = t1;  // Use the flipped t1 as the starting point (it's now smaller after flip)
-		float uv_w = s1 - s0;
-		float uv_h = t0 - t1;  // Height is now t0 - t1 (both flipped)
-		
-		// Get metrics from bakedchar
-		const stbtt_bakedchar& bc = baked_data.baked_chars[i];
+		// Get UV coordinates from packed char
+		// stbtt_packedchar stores normalized coordinates [0,1]
+		float uv_x = pc.x0;
+		float uv_y = pc.y0;
+		float uv_w = pc.x1 - pc.x0;
+		float uv_h = pc.y1 - pc.y0;
 		
 		GlyphMetrics metrics;
-		// Use normalized UV coordinates from stbtt_GetBakedQuad
+		// Use UV coordinates as-is from PackFontRanges (already normalized for OpenGL)
 		metrics.atlas_rect = batch_renderer::Rectangle(uv_x, uv_y, uv_w, uv_h);
-		metrics.bearing = batch_renderer::Vector2(bc.xoff, bc.yoff);
-		metrics.advance = bc.xadvance;
-		metrics.size = batch_renderer::Vector2(bc.x1 - bc.x0, bc.y1 - bc.y0);
+		metrics.bearing = batch_renderer::Vector2(pc.xoff, pc.yoff);
+		metrics.advance = pc.xadvance;
+		metrics.size = batch_renderer::Vector2(pc.xoff2 - pc.xoff, pc.yoff2 - pc.yoff);
 		
 		glyphs_[codepoint] = metrics;
 	}

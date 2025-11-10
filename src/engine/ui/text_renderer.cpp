@@ -103,17 +103,28 @@ FontAtlas::FontAtlas(const std::string& font_path, int font_size_px) : font_size
 			1  // opengl_fillrule: 1 for OpenGL (bottom-left origin)
 		);
 		
-		// Extract normalized UV coordinates (stbtt_GetBakedQuad returns normalized coords)
-		float uv_x = quad.s0;
-		float uv_y = quad.t0;
-		float uv_w = quad.s1 - quad.s0;
-		float uv_h = quad.t1 - quad.t0;
+		// stbtt_GetBakedQuad returns texture coordinates in PIXEL units - normalize them
+		// Note: Flip V coordinates for OpenGL's Y-up texture coordinate system
+		float s0 = quad.s0 / static_cast<float>(atlas_width_);
+		float t0 = quad.t0 / static_cast<float>(atlas_height_);
+		float s1 = quad.s1 / static_cast<float>(atlas_width_);
+		float t1 = quad.t1 / static_cast<float>(atlas_height_);
+		
+		// Flip T (V) coordinates: OpenGL textures have origin at bottom-left
+		t0 = 1.0f - t0;
+		t1 = 1.0f - t1;
+		
+		// Convert to Rectangle format (x, y, width, height)
+		float uv_x = s0;
+		float uv_y = t1;  // Use the flipped t1 as the starting point (it's now smaller after flip)
+		float uv_w = s1 - s0;
+		float uv_h = t0 - t1;  // Height is now t0 - t1 (both flipped)
 		
 		// Get metrics from bakedchar
 		const stbtt_bakedchar& bc = baked_data.baked_chars[i];
 		
 		GlyphMetrics metrics;
-		// Use UV coordinates directly from stbtt_GetBakedQuad (already normalized and flipped for OpenGL)
+		// Use normalized UV coordinates from stbtt_GetBakedQuad
 		metrics.atlas_rect = batch_renderer::Rectangle(uv_x, uv_y, uv_w, uv_h);
 		metrics.bearing = batch_renderer::Vector2(bc.xoff, bc.yoff);
 		metrics.advance = bc.xadvance;

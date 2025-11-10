@@ -5,12 +5,12 @@ module;
 #include <memory>
 #include <unordered_map>
 #include <vector>
+#include <spdlog/spdlog.h>
 #ifdef __EMSCRIPTEN__
 #include <GLES3/gl3.h>
 #else
 #include <glad/glad.h>
 #endif
-#include <iostream>
 
 module engine.rendering;
 
@@ -51,7 +51,7 @@ namespace engine::rendering {
         if (!vertex_compiled) {
             char log[512];
             glGetShaderInfoLog(vertex_shader, 512, nullptr, log);
-            std::cerr << "Vertex shader compilation failed: " << log << std::endl;
+            spdlog::error("Vertex shader compilation failed: {}", log);
             glDeleteShader(vertex_shader);
             pimpl_->valid = false;
             return false;
@@ -67,7 +67,7 @@ namespace engine::rendering {
         if (!fragment_compiled) {
             char log[512];
             glGetShaderInfoLog(fragment_shader, 512, nullptr, log);
-            std::cerr << "Fragment shader compilation failed: " << log << std::endl;
+            spdlog::error("Fragment shader compilation failed: {}", log);
             glDeleteShader(vertex_shader);
             glDeleteShader(fragment_shader);
             pimpl_->valid = false;
@@ -84,7 +84,7 @@ namespace engine::rendering {
         if (!linked) {
             char log[512];
             glGetProgramInfoLog(program, 512, nullptr, log);
-            std::cerr << "Shader program linking failed: " << log << std::endl;
+            spdlog::error("Shader program linking failed: {}", log);
             glDeleteShader(vertex_shader);
             glDeleteShader(fragment_shader);
             glDeleteProgram(program);
@@ -111,8 +111,12 @@ namespace engine::rendering {
         if (!pimpl_->uniform_locations.contains(name)) {
             location = glGetUniformLocation(pimpl_->program, name.c_str());
             pimpl_->uniform_locations[name] = location;
+        } else {
+            location = pimpl_->uniform_locations[name];
         }
-        glUniform1i(location, value);
+        if (location != -1) {
+            glUniform1i(location, value);
+        }
     }
 
     void Shader::SetUniform(const std::string &name, float value) const {
@@ -120,8 +124,12 @@ namespace engine::rendering {
         if (!pimpl_->uniform_locations.contains(name)) {
             location = glGetUniformLocation(pimpl_->program, name.c_str());
             pimpl_->uniform_locations[name] = location;
+        } else {
+            location = pimpl_->uniform_locations[name];
         }
-        glUniform1f(location, value);
+        if (location != -1) {
+            glUniform1f(location, value);
+        }
     }
 
     void Shader::SetUniform(const std::string &name, const Vec2 &value) const {
@@ -129,8 +137,12 @@ namespace engine::rendering {
         if (!pimpl_->uniform_locations.contains(name)) {
             location = glGetUniformLocation(pimpl_->program, name.c_str());
             pimpl_->uniform_locations[name] = location;
+        } else {
+            location = pimpl_->uniform_locations[name];
         }
-        glUniform2fv(location, 1, &value[0]);
+        if (location != -1) {
+            glUniform2fv(location, 1, &value[0]);
+        }
     }
 
     void Shader::SetUniform(const std::string &name, const Vec3 &value) const {
@@ -138,8 +150,12 @@ namespace engine::rendering {
         if (!pimpl_->uniform_locations.contains(name)) {
             location = glGetUniformLocation(pimpl_->program, name.c_str());
             pimpl_->uniform_locations[name] = location;
+        } else {
+            location = pimpl_->uniform_locations[name];
         }
-        glUniform3fv(location, 1, &value[0]);
+        if (location != -1) {
+            glUniform3fv(location, 1, &value[0]);
+        }
     }
 
     void Shader::SetUniform(const std::string &name, const Vec4 &value) const {
@@ -147,8 +163,12 @@ namespace engine::rendering {
         if (!pimpl_->uniform_locations.contains(name)) {
             location = glGetUniformLocation(pimpl_->program, name.c_str());
             pimpl_->uniform_locations[name] = location;
+        } else {
+            location = pimpl_->uniform_locations[name];
         }
-        glUniform4fv(location, 1, &value[0]);
+        if (location != -1) {
+            glUniform4fv(location, 1, &value[0]);
+        }
     }
 
     void Shader::SetUniform(const std::string &name, const Mat3 &value) const {
@@ -195,7 +215,7 @@ namespace engine::rendering {
         if (pimpl_->valid) {
             glUseProgram(pimpl_->program);
         } else {
-            std::cerr << "Shader program is not valid!" << std::endl;
+            spdlog::error("Shader program is not valid!");
         }
     }
 
@@ -248,7 +268,7 @@ namespace engine::rendering {
         if (!vertex_src_opt || !fragment_src_opt) {
             return INVALID_SHADER;
         }
-        std::cout << "Loaded shader sources: " << vertex_path << ", " << fragment_path << std::endl;
+        spdlog::debug("Loaded shader sources: {}, {}", vertex_path.string(), fragment_path.string());
         return LoadShaderFromString(name, *vertex_src_opt, *fragment_src_opt);
     }
 

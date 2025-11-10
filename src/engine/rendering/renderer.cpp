@@ -1,9 +1,9 @@
 ﻿// Rendering renderer implementation stub
 module;
 
-#include <iostream>
 #include <memory>
 #include <string>
+#include <spdlog/spdlog.h>
 #ifdef __EMSCRIPTEN__
 #include <GLES3/gl3.h>
 #else
@@ -17,6 +17,21 @@ import :mesh;
 import engine.components;
 
 namespace engine::rendering {
+    // GL error checking helper
+    static void CheckGLError(const char* context) {
+        GLenum err;
+        while ((err = glGetError()) != GL_NO_ERROR) {
+            const char* error_str = "Unknown";
+            switch (err) {
+                case GL_INVALID_ENUM: error_str = "INVALID_ENUM"; break;
+                case GL_INVALID_VALUE: error_str = "INVALID_VALUE"; break;
+                case GL_INVALID_OPERATION: error_str = "INVALID_OPERATION"; break;
+                case GL_OUT_OF_MEMORY: error_str = "OUT_OF_MEMORY"; break;
+                case GL_INVALID_FRAMEBUFFER_OPERATION: error_str = "INVALID_FRAMEBUFFER_OPERATION"; break;
+            }
+            spdlog::error("[GL ERROR] {}: {} (0x{:x})", context, error_str, err);
+        }
+    }
     // Renderer implementation
     struct Renderer::Impl {
         bool initialized = false;
@@ -239,24 +254,67 @@ void main() {
         // Get shader
         const Shader &shader = pimpl_->shader_manager.GetShader(command.shader);
         if (!shader.IsValid()) {
+            spdlog::error("[UI Batch] Invalid shader");
             return;
         }
 
+        // Save GL state
+        GLboolean depth_test_enabled = glIsEnabled(GL_DEPTH_TEST);
+        GLboolean cull_face_enabled = glIsEnabled(GL_CULL_FACE);
+        
+        // Disable depth test and face culling for UI rendering
+        glDisable(GL_DEPTH_TEST);
+        glDisable(GL_CULL_FACE);
+
         // Use the UI batch shader
         shader.Use();
+        CheckGLError("After shader.Use()");
 
         // Set projection matrix
         shader.SetUniform("u_Projection", command.projection);
+        CheckGLError("After setting u_Projection");
 
         // Bind textures to their slots
+        // Important: In WebGL/GLES, all sampler uniforms must have valid textures bound
         int tex_samplers[UI_BATCH_MAX_TEXTURE_SLOTS] = {0, 1, 2, 3, 4, 5, 6, 7};
+        
+        // First, bind all requested textures
         for (size_t i = 0; i < command.texture_count; ++i) {
             glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(i));
-            glBindTexture(GL_TEXTURE_2D, command.texture_ids[i]);
+            
+            // Get the GL texture handle from our texture manager
+            auto* gl_tex = GetGLTexture(command.texture_ids[i]);
+            if (gl_tex) {
+                glBindTexture(GL_TEXTURE_2D, gl_tex->handle);
+            } else {
+                spdlog::error("[UI Batch] Invalid texture ID: {} at slot {}", command.texture_ids[i], i);
+                // Bind white texture as fallback
+                if (i == 0 && command.texture_count > 0) {
+                    auto* first_tex = GetGLTexture(command.texture_ids[0]);
+                    if (first_tex) {
+                        glBindTexture(GL_TEXTURE_2D, first_tex->handle);
+                    }
+                }
+            }
         }
+        
+        // For unused texture slots, bind the first texture to prevent WebGL errors
+        // (WebGL requires all sampler uniforms to have valid textures)
+        if (command.texture_count > 0) {
+            auto* first_tex = GetGLTexture(command.texture_ids[0]);
+            if (first_tex) {
+                for (size_t i = command.texture_count; i < UI_BATCH_MAX_TEXTURE_SLOTS; ++i) {
+                    glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(i));
+                    glBindTexture(GL_TEXTURE_2D, first_tex->handle);
+                }
+            }
+        }
+        
+        CheckGLError("After binding textures");
 
         // Set texture sampler array uniform
         shader.SetUniformArray("u_Textures", tex_samplers, UI_BATCH_MAX_TEXTURE_SLOTS);
+        CheckGLError("After setting u_Textures array");
 
         // Apply scissor if active
         if (command.enable_scissor) {
@@ -267,30 +325,36 @@ void main() {
                 command.scissor_width,
                 command.scissor_height
             );
+            CheckGLError("After setting scissor");
         }
 
         // Upload vertex and index data
         glBindVertexArray(command.vao);
+        CheckGLError("After binding VAO");
 
         glBindBuffer(GL_ARRAY_BUFFER, command.vbo);
         glBufferSubData(GL_ARRAY_BUFFER, 0,
                         command.vertex_data_size,
                         command.vertex_data);
+        CheckGLError("After uploading vertex data");
 
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, command.ebo);
         glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0,
                         command.index_data_size,
                         command.index_data);
+        CheckGLError("After uploading index data");
 
         // Enable blending for transparency
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        CheckGLError("After setting blend mode");
 
         // Draw the batch
         glDrawElements(GL_TRIANGLES,
                        static_cast<GLsizei>(command.index_count),
                        GL_UNSIGNED_INT,
                        nullptr);
+        CheckGLError("After glDrawElements");
 
         // Disable blending
         glDisable(GL_BLEND);
@@ -301,6 +365,14 @@ void main() {
         }
 
         glBindVertexArray(0);
+        
+        // Restore GL state
+        if (depth_test_enabled) {
+            glEnable(GL_DEPTH_TEST);
+        }
+        if (cull_face_enabled) {
+            glEnable(GL_CULL_FACE);
+        }
 
         pimpl_->draw_call_count++;
         pimpl_->triangle_count += command.index_count / 3;

@@ -8,6 +8,7 @@ module;
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include <spdlog/spdlog.h>
 #ifdef __EMSCRIPTEN__
 #include <GLES3/gl3.h>
 #else
@@ -75,6 +76,12 @@ void BatchRenderer::Initialize() {
 		platform::fs::Path shader_dir = "shaders";
 		state_->ui_shader =
 				shader_mgr.LoadShader("ui_batch", shader_dir / "ui_batch.vert", shader_dir / "ui_batch.frag");
+		
+		if (state_->ui_shader == rendering::INVALID_SHADER) {
+			spdlog::error("[BatchRenderer] Failed to load UI batch shader!");
+		} else {
+			spdlog::info("[BatchRenderer] UI batch shader loaded successfully (ID: {})", state_->ui_shader);
+		}
 
 		// Create 1x1 white texture for untextured draws
 		std::vector<uint8_t> white_pixel = {255, 255, 255, 255};
@@ -86,6 +93,12 @@ void BatchRenderer::Initialize() {
 		tex_info.parameters = {.generate_mipmaps = false};
 
 		state_->white_texture_id = texture_mgr.CreateTexture("ui_white_pixel", tex_info);
+		
+		if (state_->white_texture_id == rendering::INVALID_TEXTURE) {
+			spdlog::error("[BatchRenderer] Failed to create white texture!");
+		} else {
+			spdlog::info("[BatchRenderer] White texture created (ID: {})", state_->white_texture_id);
+		}
 
 		// Create OpenGL vertex array and buffers
 		glGenVertexArrays(1, &state_->vao);
@@ -120,6 +133,12 @@ void BatchRenderer::Initialize() {
 				3, 1, GL_FLOAT, GL_FALSE, sizeof(Vertex), reinterpret_cast<void*>(offsetof(Vertex, tex_index)));
 
 		glBindVertexArray(0);
+
+		// Check for GL errors during initialization
+		GLenum err = glGetError();
+		if (err != GL_NO_ERROR) {
+			spdlog::error("[BatchRenderer] OpenGL error during initialization: 0x{:x}", err);
+		}
 
 		state_->initialized = true;
 	}
@@ -614,6 +633,12 @@ void BatchRenderer::FlushBatch() {
 	uint32_t texture_ids[MAX_TEXTURE_SLOTS] = {0};
 	for (const auto& [texture_id, slot] : state_->texture_slots) {
 		texture_ids[slot] = texture_id;
+		
+		// Validate texture
+		auto* gl_tex = rendering::GetGLTexture(texture_id);
+		if (!gl_tex) {
+			spdlog::warn("[BatchRenderer] Invalid texture ID {} in slot {}", texture_id, slot);
+		}
 	}
 
 	// Apply scissor if active

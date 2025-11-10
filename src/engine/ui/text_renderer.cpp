@@ -85,25 +85,36 @@ FontAtlas::FontAtlas(const std::string& font_path, int font_size_px) : font_size
 	}
 
 	// Convert baked char data to our GlyphMetrics format
+	// Use stbtt_GetBakedQuad to get proper texture coordinates
 	for (int i = 0; i < 224; ++i) {
 		const uint32_t codepoint = 32 + i;
+		
+		// Get quad with proper texture coordinates using stbtt_GetBakedQuad
+		// This function handles coordinate system conversions for us
+		float x = 0, y = 0;  // Dummy position, we only care about UV coords
+		stbtt_aligned_quad quad;
+		stbtt_GetBakedQuad(
+			baked_data.baked_chars,
+			atlas_width_,
+			atlas_height_,
+			i,  // char_index (0-based from first_char)
+			&x, &y,  // position (modified by function, we don't use)
+			&quad,
+			1  // opengl_fillrule: 1 for OpenGL (bottom-left origin)
+		);
+		
+		// Extract normalized UV coordinates (stbtt_GetBakedQuad returns normalized coords)
+		float uv_x = quad.s0;
+		float uv_y = quad.t0;
+		float uv_w = quad.s1 - quad.s0;
+		float uv_h = quad.t1 - quad.t0;
+		
+		// Get metrics from bakedchar
 		const stbtt_bakedchar& bc = baked_data.baked_chars[i];
 		
-		// Get UV coordinates from baked char
-		// Note: stb_truetype's baked coords are in pixels, need to normalize
-		float uv_x = bc.x0 / static_cast<float>(atlas_width_);
-		float uv_y = bc.y0 / static_cast<float>(atlas_height_);
-		float uv_w = (bc.x1 - bc.x0) / static_cast<float>(atlas_width_);
-		float uv_h = (bc.y1 - bc.y0) / static_cast<float>(atlas_height_);
-		
 		GlyphMetrics metrics;
-		// Flip V coordinates for OpenGL (1.0 - v)
-		metrics.atlas_rect = batch_renderer::Rectangle(
-			uv_x, 
-			1.0f - uv_y - uv_h,  // Flip: start from bottom
-			uv_w, 
-			uv_h
-		);
+		// Use UV coordinates directly from stbtt_GetBakedQuad (already normalized and flipped for OpenGL)
+		metrics.atlas_rect = batch_renderer::Rectangle(uv_x, uv_y, uv_w, uv_h);
 		metrics.bearing = batch_renderer::Vector2(bc.xoff, bc.yoff);
 		metrics.advance = bc.xadvance;
 		metrics.size = batch_renderer::Vector2(bc.x1 - bc.x0, bc.y1 - bc.y0);

@@ -610,7 +610,6 @@ void BatchRenderer::FlushBatch() {
 	// Get renderer
 	auto& renderer = rendering::GetRenderer();
 
-
 	// Prepare texture IDs array for the command
 	uint32_t texture_ids[MAX_TEXTURE_SLOTS] = {0};
 	for (const auto& [texture_id, slot] : state_->texture_slots) {
@@ -619,7 +618,6 @@ void BatchRenderer::FlushBatch() {
 
 	// Apply scissor if active
 	const bool use_scissor = state_->current_scissor.IsValid();
-
 
 	// Create UI batch render command
 	rendering::UIBatchRenderCommand command{};
@@ -638,8 +636,8 @@ void BatchRenderer::FlushBatch() {
 	command.enable_scissor = use_scissor;
 	if (use_scissor) {
 		command.scissor_x = static_cast<int>(state_->current_scissor.x);
-	command.scissor_y = static_cast<int>(state_->current_scissor.y);
-	command.scissor_width = static_cast<int>(state_->current_scissor.width);
+		command.scissor_y = static_cast<int>(state_->current_scissor.y);
+		command.scissor_width = static_cast<int>(state_->current_scissor.width);
 		command.scissor_height = static_cast<int>(state_->current_scissor.height);
 	}
 

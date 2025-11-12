@@ -210,6 +210,9 @@ manager.UpdateRegionBounds(button_handle, Rectangle{100, 150, 150, 40});
 
 // Remove context menu
 manager.UnregisterRegion(context_menu_handle);
+
+// Handles remain valid across all operations - they are stable IDs
+// You can store handles and use them later without worrying about invalidation
 ```
 
 ### 5. Scroll Event Handling

@@ -1,5 +1,6 @@
 module;
 
+#include <unordered_map>
 #include <vector>
 #include <functional>
 #include <algorithm>
@@ -30,7 +31,7 @@ export namespace engine::ui {
      * MouseEventManager manager;
      * 
      * // Register modal dialog (highest priority)
-     * manager.RegisterRegion(
+     * auto modal_handle = manager.RegisterRegion(
      *     Rectangle{100, 100, 300, 200},
      *     [](const MouseEvent& event) {
      *         // Handle modal events
@@ -40,7 +41,7 @@ export namespace engine::ui {
      * );
      * 
      * // Register button (normal priority)
-     * manager.RegisterRegion(
+     * auto button_handle = manager.RegisterRegion(
      *     Rectangle{150, 150, 100, 40},
      *     [](const MouseEvent& event) {
      *         if (event.left_pressed) {
@@ -51,6 +52,9 @@ export namespace engine::ui {
      *     },
      *     50  // Normal priority
      * );
+     * 
+     * // Handles remain valid across registrations and dispatches
+     * manager.UpdateRegionBounds(button_handle, Rectangle{150, 200, 100, 40});
      * 
      * // Dispatch event (calls handlers in priority order)
      * MouseEvent event{200, 170, false, false, true, false};
@@ -71,6 +75,7 @@ export namespace engine::ui {
          * @brief Registered event region with handler and priority
          */
         struct EventRegion {
+            size_t id{0};               ///< Unique stable identifier
             Rectangle bounds;           ///< Hit-test bounds (screen space)
             EventHandler handler;       ///< Callback to invoke
             int priority{0};            ///< Higher priority = called first
@@ -79,12 +84,12 @@ export namespace engine::ui {
             
             EventRegion() = default;
             
-            EventRegion(const Rectangle& bounds, EventHandler handler, int priority = 0, void* user_data = nullptr)
-                : bounds(bounds), handler(std::move(handler)), priority(priority), user_data(user_data) {}
+            EventRegion(size_t id, const Rectangle& bounds, EventHandler handler, int priority = 0, void* user_data = nullptr)
+                : id(id), bounds(bounds), handler(std::move(handler)), priority(priority), user_data(user_data) {}
         };
         
         /**
-         * @brief Handle type for managing registered regions
+         * @brief Handle type for managing registered regions (stable across operations)
          */
         using RegionHandle = size_t;
         static constexpr RegionHandle INVALID_HANDLE = static_cast<size_t>(-1);
@@ -96,29 +101,39 @@ export namespace engine::ui {
          * @param handler Callback to invoke when event occurs in region
          * @param priority Higher priority handlers are called first (default: 0)
          * @param user_data Optional user data for identification
-         * @return Handle for later unregistration or modification
+         * @return Stable handle for later unregistration or modification
          */
         RegionHandle RegisterRegion(const Rectangle& bounds, EventHandler handler, 
                                     int priority = 0, void* user_data = nullptr) {
-            EventRegion region{bounds, std::move(handler), priority, user_data};
-            regions_.push_back(std::move(region));
+            // Generate unique ID
+            RegionHandle handle = next_id_++;
             
-            // Sort by priority (descending)
-            SortRegions();
+            // Create region with stable ID
+            EventRegion region{handle, bounds, std::move(handler), priority, user_data};
             
-            // Return handle (index after sorting)
-            return regions_.size() - 1;
+            // Store in map for stable access
+            regions_[handle] = std::move(region);
+            
+            // Mark as needing resort
+            needs_sort_ = true;
+            
+            return handle;
         }
         
         /**
          * @brief Unregister a region by handle
          * 
          * @param handle Handle returned from RegisterRegion()
+         * @return true if region was found and removed
          */
-        void UnregisterRegion(RegionHandle handle) {
-            if (handle < regions_.size()) {
-                regions_.erase(regions_.begin() + handle);
+        bool UnregisterRegion(RegionHandle handle) {
+            auto it = regions_.find(handle);
+            if (it != regions_.end()) {
+                regions_.erase(it);
+                needs_sort_ = true;
+                return true;
             }
+            return false;
         }
         
         /**
@@ -129,17 +144,17 @@ export namespace engine::ui {
          */
         size_t UnregisterByUserData(void* user_data) {
             size_t count = 0;
-            regions_.erase(
-                std::remove_if(regions_.begin(), regions_.end(),
-                    [user_data, &count](const EventRegion& region) {
-                        if (region.user_data == user_data) {
-                            ++count;
-                            return true;
-                        }
-                        return false;
-                    }),
-                regions_.end()
-            );
+            for (auto it = regions_.begin(); it != regions_.end(); ) {
+                if (it->second.user_data == user_data) {
+                    it = regions_.erase(it);
+                    ++count;
+                } else {
+                    ++it;
+                }
+            }
+            if (count > 0) {
+                needs_sort_ = true;
+            }
             return count;
         }
         
@@ -148,11 +163,15 @@ export namespace engine::ui {
          * 
          * @param handle Handle of region to update
          * @param new_bounds New bounds rectangle
+         * @return true if region was found and updated
          */
-        void UpdateRegionBounds(RegionHandle handle, const Rectangle& new_bounds) {
-            if (handle < regions_.size()) {
-                regions_[handle].bounds = new_bounds;
+        bool UpdateRegionBounds(RegionHandle handle, const Rectangle& new_bounds) {
+            auto it = regions_.find(handle);
+            if (it != regions_.end()) {
+                it->second.bounds = new_bounds;
+                return true;
             }
+            return false;
         }
         
         /**
@@ -160,18 +179,22 @@ export namespace engine::ui {
          * 
          * @param handle Handle of region to update
          * @param enabled Enable state
+         * @return true if region was found and updated
          */
-        void SetRegionEnabled(RegionHandle handle, bool enabled) {
-            if (handle < regions_.size()) {
-                regions_[handle].enabled = enabled;
+        bool SetRegionEnabled(RegionHandle handle, bool enabled) {
+            auto it = regions_.find(handle);
+            if (it != regions_.end()) {
+                it->second.enabled = enabled;
+                return true;
             }
+            return false;
         }
         
         /**
          * @brief Dispatch mouse event to registered regions
          * 
          * Algorithm:
-         * 1. Sort regions by priority (highest first)
+         * 1. Build sorted list of regions by priority (if needed)
          * 2. For each region (in priority order):
          *    - Check if event position is within bounds
          *    - If yes, call handler
@@ -181,11 +204,19 @@ export namespace engine::ui {
          * @return true if any handler consumed the event
          */
         bool DispatchEvent(const MouseEvent& event) {
-            // Sort by priority before dispatch (in case priorities changed)
-            SortRegions();
+            // Build sorted list if needed
+            if (needs_sort_) {
+                BuildSortedList();
+            }
             
             // Dispatch to regions in priority order
-            for (auto& region : regions_) {
+            for (size_t handle : sorted_handles_) {
+                auto it = regions_.find(handle);
+                if (it == regions_.end()) {
+                    continue;  // Region was removed
+                }
+                
+                const auto& region = it->second;
                 if (!region.enabled) {
                     continue;
                 }
@@ -207,6 +238,8 @@ export namespace engine::ui {
          */
         void Clear() {
             regions_.clear();
+            sorted_handles_.clear();
+            needs_sort_ = false;
         }
         
         /**
@@ -218,23 +251,38 @@ export namespace engine::ui {
         
         /**
          * @brief Get region by handle (for inspection/debugging)
+         * @return Pointer to region, or nullptr if handle is invalid
          */
         const EventRegion* GetRegion(RegionHandle handle) const {
-            if (handle < regions_.size()) {
-                return &regions_[handle];
+            auto it = regions_.find(handle);
+            if (it != regions_.end()) {
+                return &it->second;
             }
             return nullptr;
         }
         
     private:
         /**
-         * @brief Sort regions by priority (descending)
+         * @brief Build sorted list of region handles by priority
          */
-        void SortRegions() {
-            std::sort(regions_.begin(), regions_.end(),
-                [](const EventRegion& a, const EventRegion& b) {
-                    return a.priority > b.priority;  // Descending
+        void BuildSortedList() {
+            sorted_handles_.clear();
+            sorted_handles_.reserve(regions_.size());
+            
+            // Collect handles
+            for (const auto& pair : regions_) {
+                sorted_handles_.push_back(pair.first);
+            }
+            
+            // Sort by priority (descending)
+            std::sort(sorted_handles_.begin(), sorted_handles_.end(),
+                [this](RegionHandle a, RegionHandle b) {
+                    const auto& region_a = regions_.at(a);
+                    const auto& region_b = regions_.at(b);
+                    return region_a.priority > region_b.priority;  // Descending
                 });
+            
+            needs_sort_ = false;
         }
         
         /**
@@ -245,6 +293,9 @@ export namespace engine::ui {
                    y >= rect.y && y <= rect.y + rect.height;
         }
         
-        std::vector<EventRegion> regions_;
+        std::unordered_map<RegionHandle, EventRegion> regions_;  ///< Map of stable ID to region
+        std::vector<RegionHandle> sorted_handles_;               ///< Cached sorted list of handles
+        RegionHandle next_id_{0};                                ///< Next unique ID to assign
+        bool needs_sort_{false};                                 ///< Flag indicating sort is needed
     };
 }

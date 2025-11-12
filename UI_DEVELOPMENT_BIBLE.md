@@ -846,6 +846,7 @@ manager.UnregisterRegion(button_handle);
 - **Dynamic updates**: Update bounds, enable/disable regions at runtime
 - **User data tagging**: Bulk unregister by user data pointer
 - **Event consumption**: First handler returning `true` stops propagation
+- **Stable handles**: Handles remain valid across all operations (registration, dispatch, updates)
 
 ---
 

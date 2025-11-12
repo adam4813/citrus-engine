@@ -34,6 +34,7 @@ markdown_extensions:
 nav:
   - Home: index.md
   - Tilemap System: tilemap-system.md
+  - UI Mouse Events: ui_mouse_events_guide.md
   - API Reference:
     - Overview: api/index.md
 

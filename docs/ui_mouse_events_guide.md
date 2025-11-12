@@ -408,6 +408,6 @@ void GameLoop() {
 
 ## See Also
 
-- [UI_DEVELOPMENT_BIBLE.md](../UI_DEVELOPMENT_BIBLE.md) - Comprehensive UI architecture guide
+- [UI_DEVELOPMENT_BIBLE.md](https://github.com/adam4813/citrus-engine/blob/main/UI_DEVELOPMENT_BIBLE.md) - Comprehensive UI architecture guide
 - [issue #38](https://github.com/adam4813/citrus-engine/issues/38) - UI component implementation roadmap
 - [towerforge reference](https://github.com/adam4813/towerforge) - Original implementation inspiration

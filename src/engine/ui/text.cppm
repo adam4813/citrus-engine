@@ -244,22 +244,13 @@ export namespace engine::ui {
         
         glyphs_ = text_renderer::TextLayout::Layout(text_, *font_, options);
         
-        // Calculate bounds from glyphs
-        if (glyphs_.empty()) {
-            width_ = 0.0f;
-            height_ = font_->GetLineHeight();
-        } else {
-            // Find rightmost glyph position + width
-            float max_x = 0.0f;
-            for (const auto& glyph : glyphs_) {
-                if (glyph.metrics) {
-                    float glyph_right = glyph.position.x + glyph.metrics->size.x;
-                    max_x = std::max(max_x, glyph_right);
-                }
-            }
-            width_ = max_x;
-            height_ = font_->GetLineHeight();
-        }
+        // Use MeasureText to get proper bounds (respects newlines)
+        batch_renderer::Rectangle bounds = text_renderer::TextLayout::MeasureText(
+            text_, *font_, 0.0f  // No wrapping
+        );
+        
+        width_ = bounds.width;
+        height_ = bounds.height;
     }
 
     inline void Text::Render() const {

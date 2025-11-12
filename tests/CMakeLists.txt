@@ -25,3 +25,8 @@ add_engine_test(ui_color_test
     ui_color_test.cpp
 )
 
+# Add UI text test
+add_engine_test(ui_text_test
+    ui_text_test.cpp
+)
+

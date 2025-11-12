@@ -724,30 +724,128 @@ public:
 ### Event Types
 
 #### 1. Mouse Events
+
+**Implementation Status**: ✅ Fully Implemented
+
+The citrus-engine UI mouse event system provides cross-platform mouse interaction with bubble-down propagation.
+
 ```cpp
 struct MouseEvent {
     float x, y;                   // Screen coordinates
-    bool left_button_down;
-    bool right_button_down;
-    bool left_button_clicked;     // Just pressed this frame
-    bool right_button_clicked;
-    float scroll_delta;
+    
+    bool left_down;               // Left button currently held
+    bool right_down;              // Right button currently held
+    bool middle_down;             // Middle button currently held
+    
+    bool left_pressed;            // Left button just pressed this frame
+    bool right_pressed;           // Right button just pressed this frame
+    bool middle_pressed;          // Middle button just pressed this frame
+    
+    bool left_released;           // Left button just released this frame
+    bool right_released;          // Right button just released this frame
+    bool middle_released;         // Middle button just released this frame
+    
+    float scroll_delta;           // Vertical scroll (positive = up)
 };
 
 class UIElement : public IMouseInteractive {
 public:
-    // Override to handle events
+    // Override to handle events (return true to consume)
     virtual bool OnHover(const MouseEvent& event) { return false; }
     virtual bool OnClick(const MouseEvent& event) { return false; }
     virtual bool OnDrag(const MouseEvent& event) { return false; }
     virtual bool OnScroll(const MouseEvent& event) { return false; }
     
-    // Propagate to children (bubble-down)
+    // Propagate to children (bubble-down, reverse order)
     bool ProcessMouseEvent(const MouseEvent& event);
+    
+    // Hit testing
+    bool Contains(float x, float y) const;
 };
 ```
 
-**Event Propagation**: Bubble-down (parent → child). First child to return `true` consumes the event.
+**Event Propagation**: Bubble-down (parent → children → parent). Children are checked in reverse order (last added = top-most). First handler to return `true` consumes the event and stops propagation.
+
+**Usage Example**:
+```cpp
+class MyButton : public UIElement {
+public:
+    MyButton(float x, float y, float w, float h) 
+        : UIElement(x, y, w, h) {}
+    
+    bool OnClick(const MouseEvent& event) override {
+        if (!Contains(event.x, event.y)) {
+            return false;  // Not our business
+        }
+        
+        if (event.left_pressed) {
+            // Handle left click
+            if (callback_) callback_();
+            return true;  // Event consumed
+        }
+        
+        return false;  // Let others handle
+    }
+    
+    void SetCallback(std::function<void()> cb) {
+        callback_ = cb;
+    }
+    
+private:
+    std::function<void()> callback_;
+};
+```
+
+**MouseEventManager** (Priority-Based Region Handling):
+
+For advanced use cases, use `MouseEventManager` to register regions with priorities:
+
+```cpp
+MouseEventManager manager;
+
+// Register modal dialog (high priority blocks lower layers)
+auto modal_handle = manager.RegisterRegion(
+    Rectangle{100, 100, 400, 300},
+    [this](const MouseEvent& event) {
+        HandleModalEvent(event);
+        return true;  // Block all events when visible
+    },
+    100  // High priority
+);
+
+// Register button (normal priority)
+auto button_handle = manager.RegisterRegion(
+    Rectangle{150, 150, 100, 40},
+    [this](const MouseEvent& event) {
+        if (event.left_pressed) {
+            HandleButtonClick();
+            return true;
+        }
+        return false;
+    },
+    50  // Normal priority
+);
+
+// Dispatch event
+MouseEvent event{200, 175, false, false, true, false};
+bool handled = manager.DispatchEvent(event);
+
+// Update region bounds dynamically (for animations)
+manager.UpdateRegionBounds(button_handle, Rectangle{150, 200, 100, 40});
+
+// Disable region temporarily
+manager.SetRegionEnabled(modal_handle, false);
+
+// Unregister when done
+manager.UnregisterRegion(button_handle);
+```
+
+**Key Features**:
+- **Priority-based dispatch**: Higher priority handlers called first
+- **Hit-test regions**: Only handlers in bounds receive events
+- **Dynamic updates**: Update bounds, enable/disable regions at runtime
+- **User data tagging**: Bulk unregister by user data pointer
+- **Event consumption**: First handler returning `true` stops propagation
 
 ---
 

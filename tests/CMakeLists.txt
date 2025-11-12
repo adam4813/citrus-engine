@@ -15,3 +15,8 @@ add_engine_test(renderer_test
     renderer_test.cpp
 )
 
+# Add UI mouse event test
+add_engine_test(ui_mouse_event_test
+    ui_mouse_event_test.cpp
+)
+

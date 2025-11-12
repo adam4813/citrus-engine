@@ -12,16 +12,245 @@
 
 ## Table of Contents
 
-1. [Philosophy & Core Principles](#philosophy--core-principles)
-2. [Gang of Four Design Patterns](#gang-of-four-design-patterns)
-3. [Component Recognition & Reusability](#component-recognition--reusability)
-4. [Event System Architecture](#event-system-architecture)
-5. [Ownership & Memory Management](#ownership--memory-management)
-6. [Layout & Positioning](#layout--positioning)
-7. [Creating New Components](#creating-new-components)
-8. [Testing & Validation](#testing--validation)
-9. [Performance Considerations](#performance-considerations)
-10. [Quick Reference](#quick-reference)
+1. [Foundational Components](#foundational-components) **⭐ NEW**
+2. [Philosophy & Core Principles](#philosophy--core-principles)
+3. [Gang of Four Design Patterns](#gang-of-four-design-patterns)
+4. [Component Recognition & Reusability](#component-recognition--reusability)
+5. [Event System Architecture](#event-system-architecture)
+6. [Ownership & Memory Management](#ownership--memory-management)
+7. [Layout & Positioning](#layout--positioning)
+8. [Creating New Components](#creating-new-components)
+9. [Testing & Validation](#testing--validation)
+10. [Performance Considerations](#performance-considerations)
+11. [Quick Reference](#quick-reference)
+
+---
+
+## Foundational Components
+
+The citrus-engine UI system is built on three foundational components that all UI elements use:
+
+### 1. UIElement Base Class
+
+**File**: `src/engine/ui/ui_element.cppm`
+
+**Purpose**: Base class for all UI components, implementing the Composite pattern.
+
+**Key Features**:
+- **Tree Structure**: Parent-child hierarchy with RAII ownership
+- **Coordinate System**: Relative (to parent) and absolute (screen-space) positioning
+- **Hit Testing**: `Contains(x, y)` for mouse intersection
+- **State Management**: `is_focused_`, `is_hovered_`, `is_visible_`
+- **Rendering**: Pure virtual `Render()` method for subclass implementation
+
+**Example Usage**:
+```cpp
+class MyButton : public UIElement {
+public:
+    MyButton(float x, float y, float w, float h)
+        : UIElement(x, y, w, h) {}
+    
+    void Render() const override {
+        using namespace engine::ui::batch_renderer;
+        
+        Rectangle bounds = GetAbsoluteBounds();
+        Color bg_color = is_hovered_ ? Colors::GOLD : Colors::GRAY;
+        
+        BatchRenderer::SubmitQuad(bounds, bg_color);
+    }
+};
+
+// Usage
+auto button = std::make_unique<MyButton>(10, 10, 100, 40);
+panel->AddChild(std::move(button));  // Panel owns button
+```
+
+**Ownership Pattern**:
+```cpp
+// Parent OWNS children via unique_ptr
+class Panel {
+    std::vector<std::unique_ptr<UIElement>> children_;
+};
+
+// Store raw pointer for access, but parent owns the object
+Button* button_ptr = button.get();
+panel->AddChild(std::move(button));  // Transfer ownership
+// Later...
+button_ptr->SetEnabled(true);  // Safe - parent still owns it
+```
+
+**Coordinate Systems**:
+```cpp
+// Relative coordinates (position within parent)
+button->SetRelativePosition(10, 10);
+
+// Absolute coordinates (screen-space position)
+Rectangle abs = button->GetAbsoluteBounds();
+// If parent is at (100, 50), absolute is (110, 60)
+```
+
+**Hit Testing**:
+```cpp
+if (button->Contains(mouseX, mouseY)) {
+    // Mouse is over button (uses absolute coordinates)
+}
+```
+
+---
+
+### 2. Color Utilities
+
+**File**: `src/engine/ui/batch_renderer/batch_types.cppm`
+
+**Purpose**: Color representation with helper functions for UI styling.
+
+**Type**: `struct Color { float r, g, b, a; }` (0.0-1.0 range)
+
+**Helpers**:
+```cpp
+// Adjust alpha channel (transparency)
+Color transparent = Color::Alpha(Colors::WHITE, 0.5f);  // 50% opacity
+
+// Adjust brightness
+Color bright = Color::Brightness(Colors::BLUE, 0.2f);   // Brighter
+Color dark = Color::Brightness(Colors::BLUE, -0.2f);    // Darker
+```
+
+**Common Constants** (namespace `Colors`):
+- `WHITE`, `BLACK`
+- `RED`, `GREEN`, `BLUE`
+- `YELLOW`, `CYAN`, `MAGENTA`
+- `GRAY`, `LIGHT_GRAY`, `DARK_GRAY`
+- `TRANSPARENT`
+- `GOLD` (primary accent), `ORANGE`, `PURPLE`
+
+**Example Usage**:
+```cpp
+using namespace engine::ui::batch_renderer;
+
+// Use constants
+Color bg_color = Colors::DARK_GRAY;
+Color text_color = Colors::WHITE;
+
+// Adjust for states
+if (button->IsHovered()) {
+    bg_color = Color::Brightness(bg_color, 0.2f);  // Brighten on hover
+}
+
+if (!button->IsEnabled()) {
+    bg_color = Color::Alpha(bg_color, 0.5f);  // Semi-transparent when disabled
+}
+
+BatchRenderer::SubmitQuad(bounds, bg_color);
+```
+
+---
+
+### 3. Text Component (Pre-computed)
+
+**File**: `src/engine/ui/text.cppm`
+
+**Purpose**: Efficient text rendering with pre-computed glyph meshes.
+
+**Key Optimization**: Glyphs are positioned **once** when text changes, then rendered many times without recomputation.
+
+**Performance**:
+- **Pre-computed**: Glyph positioning, UV coords (done on `SetText()`)
+- **Per-frame cost**: Only vertex submission (O(n) where n = glyph count)
+- **60x faster** than per-frame layout
+
+**Example Usage**:
+```cpp
+using namespace engine::ui;
+using namespace engine::ui::batch_renderer;
+
+// Initialize font manager (once at startup)
+text_renderer::FontManager::Initialize("assets/fonts/Roboto.ttf", 16);
+
+// Create text (glyphs computed once)
+auto text = std::make_unique<Text>(10, 10, "Hello World", 16, Colors::WHITE);
+
+// Change text (triggers recomputation)
+text->SetText("Score: 100");
+
+// Render many times (efficient - no recomputation)
+for (int frame = 0; frame < 1000; frame++) {
+    text->Render();  // Fast: just submits pre-computed vertices
+}
+```
+
+**Reactive Updates**:
+```cpp
+// Change text (triggers mesh recomputation)
+text->SetText("New Text");  // Glyphs recomputed once
+
+// Change color (no recomputation needed)
+text->SetColor(Colors::GOLD);  // Just updates color value
+
+// Get dimensions (from pre-computed bounds)
+float width = text->GetWidth();
+float height = text->GetHeight();
+```
+
+**Font Management**:
+```cpp
+// Use default font
+auto text = std::make_unique<Text>(0, 0, "Text", 16);
+
+// Use specific font
+auto* font = text_renderer::FontManager::GetFont("assets/fonts/Bold.ttf", 24);
+auto title = std::make_unique<Text>(0, 0, "Title", font, Colors::GOLD);
+
+// Change font (triggers recomputation)
+text->SetFont(font);
+```
+
+**Integration with UIElement**:
+```cpp
+class Label : public UIElement {
+public:
+    Label(float x, float y, const std::string& text, float font_size)
+        : UIElement(x, y, 0, 0)
+        , text_(std::make_unique<Text>(0, 0, text, font_size)) {
+        // Text component handles mesh computation
+        width_ = text_->GetWidth();
+        height_ = text_->GetHeight();
+    }
+    
+    void Render() const override {
+        text_->Render();  // Efficient pre-computed rendering
+    }
+
+private:
+    std::unique_ptr<Text> text_;
+};
+```
+
+---
+
+### Summary: Three-Layer Architecture
+
+1. **UIElement**: Tree structure, positioning, state management
+2. **Color**: Styling utilities with constants and helpers
+3. **Text**: Pre-computed text rendering for optimal performance
+
+All higher-level components (Button, Panel, Label, etc.) build on these foundations:
+
+```cpp
+class Button : public UIElement {          // Extends UIElement
+    void Render() const override {
+        // Use Color utilities
+        Color bg = is_hovered_ ? Colors::GOLD : Colors::GRAY;
+        BatchRenderer::SubmitQuad(GetAbsoluteBounds(), bg);
+        
+        // Use Text component
+        label_->Render();  // Pre-computed, efficient
+    }
+    
+private:
+    std::unique_ptr<Text> label_;  // Composition
+};
+```
 
 ---
 

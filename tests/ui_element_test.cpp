@@ -166,7 +166,7 @@ TEST_F(UIElementTest, Contains_PointInside_ReturnsTrue) {
     
     EXPECT_TRUE(element->Contains(150, 125));  // Inside
     EXPECT_TRUE(element->Contains(100, 100));  // Top-left corner
-    EXPECT_TRUE(element->Contains(300, 250));  // Bottom-right corner
+    EXPECT_TRUE(element->Contains(299, 249));  // Near bottom-right corner (inside)
 }
 
 TEST_F(UIElementTest, Contains_PointOutside_ReturnsFalse) {
@@ -177,6 +177,8 @@ TEST_F(UIElementTest, Contains_PointOutside_ReturnsFalse) {
     EXPECT_FALSE(element->Contains(150, 300));  // Below
     EXPECT_FALSE(element->Contains(99, 100));   // Just outside left
     EXPECT_FALSE(element->Contains(301, 100));  // Just outside right
+    EXPECT_FALSE(element->Contains(300, 125));  // On right edge (half-open interval)
+    EXPECT_FALSE(element->Contains(150, 250));  // On bottom edge (half-open interval)
 }
 
 TEST_F(UIElementTest, Contains_WithParent_UsesAbsolutePosition) {

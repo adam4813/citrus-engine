@@ -4,6 +4,7 @@ module;
 #include <memory>
 #include <functional>
 #include <algorithm>
+#include <cstdio>
 
 export module engine.ui:elements.slider;
 

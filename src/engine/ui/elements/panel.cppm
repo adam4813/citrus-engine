@@ -2,6 +2,7 @@ module;
 
 #include <memory>
 #include <string>
+#include <algorithm>
 
 export module engine.ui:elements.panel;
 

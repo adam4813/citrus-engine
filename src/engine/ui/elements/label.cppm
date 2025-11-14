@@ -81,7 +81,7 @@ export namespace engine::ui::elements {
             , text_element_(nullptr) {
             
             // Create text element (pre-computed rendering)
-            text_element_ = std::make_unique<Text>(0, 0, text_, font_size_, color);
+            text_element_ = std::make_unique<Text>(0, 0, text, font_size_, color);
             
             // Auto-size to text bounds
             UpdateSize();

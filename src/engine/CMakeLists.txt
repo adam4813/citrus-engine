@@ -61,7 +61,6 @@ target_sources(engine-core
     scripting/scripting_backend.cppm
     scripting/scripting_system.cppm
     ui/ui.cppm
-    ui/renderer.cppm
     ui/types.cppm
     ui/text_renderer.cppm
     ui/ui_element.cppm
@@ -69,6 +68,8 @@ target_sources(engine-core
     ui/batch_renderer.cppm
     ui/batch_renderer/batch_types.cppm
     ui/batch_renderer/batch_renderer.cppm
+    ui/elements/image.cppm
+    ui/elements/elements.cppm
     engine.cppm  # Main module last - depends on others
 )
 
@@ -118,7 +119,6 @@ target_sources(engine-core PRIVATE
     scripting/angelscript_backend.cpp
     scripting/scripting_factory.cpp
 
-    ui/renderer.cpp
     ui/text_renderer.cpp
     ui/batch_renderer/batch_renderer.cpp
 

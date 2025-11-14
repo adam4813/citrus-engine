@@ -70,7 +70,13 @@ target_sources(engine-core
     ui/batch_renderer.cppm
     ui/batch_renderer/batch_types.cppm
     ui/batch_renderer/batch_renderer.cppm
-    ui/elements/image.cppm
+    ui/elements/panel.cppm
+    ui/elements/button.cppm
+    ui/elements/label.cppm
+    ui/elements/slider.cppm
+    ui/elements/checkbox.cppm
+    ui/elements/confirmation_dialog.cppm
+    ui/elements/image_element.cppm
     ui/elements/elements.cppm
     engine.cppm  # Main module last - depends on others
 )

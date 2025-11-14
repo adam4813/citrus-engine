@@ -222,6 +222,78 @@ export namespace engine::ui {
          */
         bool IsVisible() const { return is_visible_; }
 
+        // === Event Callbacks (Observer Pattern) ===
+
+        /**
+         * @brief Callback type for mouse click events
+         * 
+         * Receives the mouse event that triggered the click.
+         * Return true to consume the event and stop propagation.
+         */
+        using ClickCallback = std::function<bool(const MouseEvent&)>;
+
+        /**
+         * @brief Callback type for mouse hover events
+         * 
+         * Receives the mouse event for hover state.
+         * Return true to consume the event and stop propagation.
+         */
+        using HoverCallback = std::function<bool(const MouseEvent&)>;
+
+        /**
+         * @brief Callback type for mouse drag events
+         * 
+         * Receives the mouse event while dragging.
+         * Return true to consume the event and stop propagation.
+         */
+        using DragCallback = std::function<bool(const MouseEvent&)>;
+
+        /**
+         * @brief Callback type for mouse scroll events
+         * 
+         * Receives the mouse event with scroll delta.
+         * Return true to consume the event and stop propagation.
+         */
+        using ScrollCallback = std::function<bool(const MouseEvent&)>;
+
+        /**
+         * @brief Set callback for click events
+         * 
+         * The callback is invoked before the virtual OnClick() method.
+         * Allows composition-based event handling without subclassing.
+         * 
+         * @param callback Function to call on click (can be nullptr to clear)
+         * 
+         * @code
+         * button->SetClickCallback([this](const MouseEvent& event) {
+         *     if (event.left_pressed) {
+         *         ExecuteAction();
+         *         return true;  // Event consumed
+         *     }
+         *     return false;
+         * });
+         * @endcode
+         */
+        void SetClickCallback(ClickCallback callback) { click_callback_ = std::move(callback); }
+
+        /**
+         * @brief Set callback for hover events
+         * @param callback Function to call on hover (can be nullptr to clear)
+         */
+        void SetHoverCallback(HoverCallback callback) { hover_callback_ = std::move(callback); }
+
+        /**
+         * @brief Set callback for drag events
+         * @param callback Function to call on drag (can be nullptr to clear)
+         */
+        void SetDragCallback(DragCallback callback) { drag_callback_ = std::move(callback); }
+
+        /**
+         * @brief Set callback for scroll events
+         * @param callback Function to call on scroll (can be nullptr to clear)
+         */
+        void SetScrollCallback(ScrollCallback callback) { scroll_callback_ = std::move(callback); }
+
         // === Rendering (Template Method Pattern) ===
 
         /**
@@ -287,25 +359,46 @@ export namespace engine::ui {
             is_hovered_ = true;
             
             // Try event handlers in order of specificity
+            // Callbacks are checked first, then virtual methods
             if (event.left_pressed || event.right_pressed || event.middle_pressed) {
+                // Try callback first
+                if (click_callback_ && click_callback_(event)) {
+                    return true;
+                }
+                // Then virtual method
                 if (OnClick(event)) {
                     return true;
                 }
             }
             
             if (event.scroll_delta != 0.0f) {
+                // Try callback first
+                if (scroll_callback_ && scroll_callback_(event)) {
+                    return true;
+                }
+                // Then virtual method
                 if (OnScroll(event)) {
                     return true;
                 }
             }
             
             if (event.left_down || event.right_down || event.middle_down) {
+                // Try callback first
+                if (drag_callback_ && drag_callback_(event)) {
+                    return true;
+                }
+                // Then virtual method
                 if (OnDrag(event)) {
                     return true;
                 }
             }
             
-            // Always call OnHover if mouse is over element
+            // Always call hover last
+            // Try callback first
+            if (hover_callback_ && hover_callback_(event)) {
+                return true;
+            }
+            // Then virtual method
             return OnHover(event);
         }
 
@@ -331,6 +424,28 @@ export namespace engine::ui {
          */
         virtual bool OnClick(const MouseEvent& event) { return false; }
 
+        /**
+         * @brief Handle mouse drag (stub)
+         * 
+         * Called when mouse is dragged with button held.
+         * Currently returns false (not implemented).
+         * 
+         * @param event Mouse event data
+         * @return true if event was consumed, false otherwise
+         */
+        virtual bool OnDrag(const MouseEvent& event) { return false; }
+
+        /**
+         * @brief Handle mouse scroll (stub)
+         * 
+         * Called when scroll wheel is used within element bounds.
+         * Currently returns false (not implemented).
+         * 
+         * @param event Mouse event data
+         * @return true if event was consumed, false otherwise
+         */
+        virtual bool OnScroll(const MouseEvent& event) { return false; }
+
     protected:
         // Subclasses can construct with initial bounds
         UIElement(float x, float y, float width, float height)
@@ -348,6 +463,12 @@ export namespace engine::ui {
         bool is_focused_ = false;
         bool is_hovered_ = false;
         bool is_visible_ = true;
+
+        // Event callbacks (optional, for composition-based event handling)
+        ClickCallback click_callback_;
+        HoverCallback hover_callback_;
+        DragCallback drag_callback_;
+        ScrollCallback scroll_callback_;
 
         // Tree structure
         UIElement* parent_ = nullptr;  ///< Non-owning pointer to parent
@@ -390,8 +511,8 @@ export namespace engine::ui {
 
     inline bool UIElement::Contains(float x, float y) const {
         const batch_renderer::Rectangle bounds = GetAbsoluteBounds();
-        return x >= bounds.x && x < bounds.x + bounds.width &&
-               y >= bounds.y && y < bounds.y + bounds.height;
+        return x >= bounds.x && x <= bounds.x + bounds.width &&
+               y >= bounds.y && y <= bounds.y + bounds.height;
     }
 
 } // namespace engine::ui

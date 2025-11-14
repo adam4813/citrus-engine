@@ -503,3 +503,118 @@ TEST_F(UIMouseEventTest, IntegrationUIElementAndManager) {
     EXPECT_TRUE(handled);
     EXPECT_EQ(element_ptr->click_count_, 1);
 }
+
+// ============================================================================
+// Callback Tests
+// ============================================================================
+
+TEST_F(UIMouseEventTest, CallbackClickEvent) {
+    TestUIElement element{100.0f, 100.0f, 200.0f, 100.0f};
+    
+    int callback_invoked = 0;
+    element.SetClickCallback([&callback_invoked](const MouseEvent& event) {
+        if (event.left_pressed) {
+            callback_invoked++;
+            return true;  // Consume event
+        }
+        return false;
+    });
+    
+    MouseEvent event{150.0f, 150.0f, false, false, true, false};
+    bool handled = element.ProcessMouseEvent(event);
+    
+    EXPECT_TRUE(handled);
+    EXPECT_EQ(callback_invoked, 1);
+}
+
+TEST_F(UIMouseEventTest, CallbackBeforeVirtualMethod) {
+    auto element = std::make_unique<CountingUIElement>(100.0f, 100.0f, 200.0f, 100.0f);
+    CountingUIElement* element_ptr = element.get();
+    
+    int callback_invoked = 0;
+    element_ptr->SetClickCallback([&callback_invoked](const MouseEvent& event) {
+        if (event.left_pressed) {
+            callback_invoked++;
+            return true;  // Consume event
+        }
+        return false;
+    });
+    
+    MouseEvent event{150.0f, 150.0f, false, false, true, false};
+    bool handled = element_ptr->ProcessMouseEvent(event);
+    
+    // Callback should be invoked and consume event
+    EXPECT_TRUE(handled);
+    EXPECT_EQ(callback_invoked, 1);
+    // Virtual method should NOT be called because callback consumed
+    EXPECT_EQ(element_ptr->click_count_, 0);
+}
+
+TEST_F(UIMouseEventTest, VirtualMethodCalledWhenCallbackDoesNotConsume) {
+    auto element = std::make_unique<CountingUIElement>(100.0f, 100.0f, 200.0f, 100.0f);
+    CountingUIElement* element_ptr = element.get();
+    
+    int callback_invoked = 0;
+    element_ptr->SetClickCallback([&callback_invoked](const MouseEvent& event) {
+        callback_invoked++;
+        return false;  // Don't consume - let virtual method handle
+    });
+    
+    MouseEvent event{150.0f, 150.0f, false, false, true, false};
+    bool handled = element_ptr->ProcessMouseEvent(event);
+    
+    // Both callback and virtual method should be invoked
+    EXPECT_EQ(callback_invoked, 1);
+    EXPECT_EQ(element_ptr->click_count_, 1);
+}
+
+TEST_F(UIMouseEventTest, CallbackHoverEvent) {
+    TestUIElement element{100.0f, 100.0f, 200.0f, 100.0f};
+    
+    int hover_count = 0;
+    element.SetHoverCallback([&hover_count](const MouseEvent&) {
+        hover_count++;
+        return false;  // Don't consume hover
+    });
+    
+    MouseEvent event{150.0f, 150.0f};
+    element.ProcessMouseEvent(event);
+    
+    EXPECT_EQ(hover_count, 1);
+    EXPECT_TRUE(element.IsHovered());
+}
+
+TEST_F(UIMouseEventTest, CallbackDragEvent) {
+    TestUIElement element{100.0f, 100.0f, 200.0f, 100.0f};
+    
+    int drag_count = 0;
+    element.SetDragCallback([&drag_count](const MouseEvent& event) {
+        if (event.left_down) {
+            drag_count++;
+            return true;
+        }
+        return false;
+    });
+    
+    MouseEvent event{150.0f, 150.0f, true, false};  // left_down = true
+    bool handled = element.ProcessMouseEvent(event);
+    
+    EXPECT_TRUE(handled);
+    EXPECT_EQ(drag_count, 1);
+}
+
+TEST_F(UIMouseEventTest, CallbackScrollEvent) {
+    TestUIElement element{100.0f, 100.0f, 200.0f, 100.0f};
+    
+    float total_scroll = 0.0f;
+    element.SetScrollCallback([&total_scroll](const MouseEvent& event) {
+        total_scroll += event.scroll_delta;
+        return true;
+    });
+    
+    MouseEvent event{150.0f, 150.0f, false, false, false, false, 5.0f};
+    bool handled = element.ProcessMouseEvent(event);
+    
+    EXPECT_TRUE(handled);
+    EXPECT_FLOAT_EQ(total_scroll, 5.0f);
+}

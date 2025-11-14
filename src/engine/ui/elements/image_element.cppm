@@ -2,7 +2,7 @@ module;
 
 #include <memory>
 
-export module engine.ui:elements;
+export module engine.ui:elements.image;
 
 import :ui_element;
 import :uitypes;

@@ -15,6 +15,11 @@ add_engine_test(renderer_test
     renderer_test.cpp
 )
 
+# Add UI mouse event test
+add_engine_test(ui_mouse_event_test
+    ui_mouse_event_test.cpp
+)
+
 # Add UI element test
 add_engine_test(ui_element_test
     ui_element_test.cpp
@@ -29,4 +34,3 @@ add_engine_test(ui_color_test
 add_engine_test(ui_text_test
     ui_text_test.cpp
 )
-

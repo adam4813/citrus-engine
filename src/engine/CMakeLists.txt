@@ -63,6 +63,8 @@ target_sources(engine-core
     ui/ui.cppm
     ui/types.cppm
     ui/text_renderer.cppm
+    ui/mouse_event.cppm
+    ui/mouse_event_manager.cppm
     ui/ui_element.cppm
     ui/text.cppm
     ui/batch_renderer.cppm

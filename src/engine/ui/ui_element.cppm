@@ -2,231 +2,268 @@ module;
 
 #include <memory>
 #include <vector>
+#include <functional>
 #include <algorithm>
 
 export module engine.ui:ui_element;
 
-import :mouse_event;
 import engine.ui.batch_renderer;
+import :mouse_event;
 
 export namespace engine::ui {
-    using namespace batch_renderer;
-    
     /**
      * @brief Base class for all UI elements
      * 
-     * Implements the Composite pattern for hierarchical UI structure.
-     * Provides:
-     * - Parent-child relationships
-     * - Coordinate space transformations (relative → absolute)
-     * - Hit testing for mouse interaction
-     * - Bubble-down event propagation
-     * - Template method for rendering
+     * UIElement implements the Composite pattern (UI_DEVELOPMENT_BIBLE.md §2.1),
+     * allowing elements to form tree structures. It provides:
      * 
-     * Design Pattern: Composite + Template Method
+     * - **Tree Structure**: Parent-child hierarchy management
+     * - **Bounds Calculation**: Relative and absolute positioning
+     * - **Hit Testing**: Mouse intersection detection
+     * - **State Management**: Focus, hover, visibility flags
+     * - **Event Handling**: Stub handlers for mouse events (to be implemented later)
      * 
-     * @example
-     * ```cpp
-     * class Button : public UIElement {
-     * public:
-     *     void Render() const override {
-     *         auto bounds = GetAbsoluteBounds();
-     *         BatchRenderer::SubmitQuad(bounds, background_color_);
-     *     }
-     *     
-     *     bool OnClick(const MouseEvent& event) override {
-     *         if (Contains(event.x, event.y)) {
-     *             if (callback_) callback_();
-     *             return true;  // Event consumed
-     *         }
-     *         return false;
-     *     }
-     * };
-     * ```
+     * **Usage Pattern (Declarative + Reactive):**
+     * @code
+     * // Build once (declarative)
+     * auto panel = std::make_unique<Panel>(0, 0, 200, 100);
+     * auto button = std::make_unique<Button>(10, 10, 80, 30, "Click");
+     * button->SetClickCallback([](){ // react to event
+     * });
+     * panel->AddChild(std::move(button));
+     * 
+     * // Render many times (no per-frame rebuilding)
+     * panel->Render();
+     * @endcode
+     * 
+     * **Coordinate Systems:**
+     * - **Relative**: Position relative to parent (stored in relative_x_, relative_y_)
+     * - **Absolute**: Screen-space position (computed via GetAbsoluteBounds())
+     * 
+     * **Ownership:**
+     * - Parent OWNS children via std::unique_ptr
+     * - Children store non-owning raw pointer to parent
+     * - Safe because children never outlive parent
+     * 
+     * @see UI_DEVELOPMENT_BIBLE.md for complete patterns and best practices
      */
-    class UIElement : public IMouseInteractive {
+    class UIElement {
     public:
         virtual ~UIElement() = default;
-        
-        // ========================================================================
-        // Composite Pattern - Hierarchy Management
-        // ========================================================================
-        
+
+        // === Tree Structure (Composite Pattern) ===
+
         /**
          * @brief Add a child element
          * 
-         * Transfers ownership of the child to this element.
-         * Sets the child's parent pointer to this.
+         * Transfers ownership of child to this element. Sets this as the child's parent.
          * 
-         * @param child Unique pointer to child element
-         */
-        void AddChild(std::unique_ptr<UIElement> child) {
-            if (child) {
-                child->parent_ = this;
-                children_.push_back(std::move(child));
-            }
-        }
-        
-        /**
-         * @brief Remove a child element by pointer
+         * @param child Child element to add (ownership transferred)
          * 
-         * @param child Raw pointer to child to remove
+         * @code
+         * auto panel = std::make_unique<Panel>(0, 0, 200, 100);
+         * auto button = std::make_unique<Button>(10, 10, 80, 30, "Click");
+         * panel->AddChild(std::move(button));
+         * @endcode
          */
-        void RemoveChild(UIElement* child) {
-            children_.erase(
-                std::remove_if(children_.begin(), children_.end(),
-                    [child](const std::unique_ptr<UIElement>& elem) {
-                        return elem.get() == child;
-                    }),
-                children_.end()
-            );
-        }
-        
+        void AddChild(std::unique_ptr<UIElement> child);
+
         /**
-         * @brief Get parent element (nullptr if root)
+         * @brief Remove a child element
+         * 
+         * Searches for child by pointer and removes it, destroying the child.
+         * 
+         * @param child Pointer to child to remove (must be a direct child)
+         * 
+         * @code
+         * Button* btn_ptr = button.get();
+         * panel->AddChild(std::move(button));
+         * // Later...
+         * panel->RemoveChild(btn_ptr);  // Destroys the button
+         * @endcode
+         */
+        void RemoveChild(UIElement* child);
+
+        /**
+         * @brief Set parent element
+         * 
+         * Sets the parent pointer. Typically called automatically by AddChild().
+         * 
+         * @param parent Parent element (non-owning pointer)
+         */
+        void SetParent(UIElement* parent) { parent_ = parent; }
+
+        /**
+         * @brief Get parent element
+         * @return Pointer to parent, or nullptr if root element
          */
         UIElement* GetParent() const { return parent_; }
-        
+
         /**
-         * @brief Get children vector
+         * @brief Get all children
+         * @return Reference to children vector (read-only)
          */
-        const std::vector<std::unique_ptr<UIElement>>& GetChildren() const { 
-            return children_; 
-        }
-        
-        // ========================================================================
-        // Coordinate Space Transformations
-        // ========================================================================
-        
+        const std::vector<std::unique_ptr<UIElement>>& GetChildren() const { return children_; }
+
+        // === Bounds Calculation ===
+
         /**
-         * @brief Get absolute screen-space bounds
+         * @brief Get absolute bounds in screen space
          * 
-         * Walks up the parent chain to calculate absolute position.
-         * Cached during rendering for performance.
+         * Walks up the parent chain to compute screen-space position.
+         * This is the position where the element is actually rendered.
          * 
-         * @return Rectangle in screen coordinates
+         * @return Rectangle in absolute screen coordinates
+         * 
+         * @code
+         * // Panel at (100, 50), button at relative (10, 10)
+         * auto abs_bounds = button->GetAbsoluteBounds();
+         * // abs_bounds.x = 110, abs_bounds.y = 60
+         * @endcode
+         * 
+         * @see UI_DEVELOPMENT_BIBLE.md §9 for coordinate system details
          */
-        Rectangle GetAbsoluteBounds() const {
-            Rectangle bounds = GetRelativeBounds();
-            
-            // Walk up parent chain
-            const UIElement* current = parent_;
-            while (current != nullptr) {
-                Rectangle parent_bounds = current->GetRelativeBounds();
-                bounds.x += parent_bounds.x;
-                bounds.y += parent_bounds.y;
-                current = current->parent_;
-            }
-            
-            return bounds;
-        }
-        
+        batch_renderer::Rectangle GetAbsoluteBounds() const;
+
         /**
-         * @brief Get relative bounds (relative to parent)
+         * @brief Get relative bounds (position relative to parent)
+         * @return Rectangle with relative position and size
          */
-        Rectangle GetRelativeBounds() const {
-            return Rectangle{relative_x_, relative_y_, width_, height_};
+        batch_renderer::Rectangle GetRelativeBounds() const {
+            return {relative_x_, relative_y_, width_, height_};
         }
-        
+
         /**
-         * @brief Set relative position (relative to parent)
+         * @brief Set relative position (within parent)
+         * @param x X coordinate relative to parent
+         * @param y Y coordinate relative to parent
          */
         void SetRelativePosition(float x, float y) {
             relative_x_ = x;
             relative_y_ = y;
         }
-        
+
         /**
-         * @brief Set size (width, height)
+         * @brief Set element size
+         * @param width Element width in pixels
+         * @param height Element height in pixels
          */
         void SetSize(float width, float height) {
             width_ = width;
             height_ = height;
         }
-        
+
         /**
-         * @brief Get width
+         * @brief Get element width
+         * @return Width in pixels
          */
         float GetWidth() const { return width_; }
-        
+
         /**
-         * @brief Get height
+         * @brief Get element height
+         * @return Height in pixels
          */
         float GetHeight() const { return height_; }
-        
-        // ========================================================================
-        // Hit Testing
-        // ========================================================================
-        
+
+        // === Hit Testing ===
+
         /**
-         * @brief Test if a point is within this element's bounds
+         * @brief Check if a point is within this element's bounds
          * 
-         * Uses absolute coordinates for hit testing.
+         * Uses absolute bounds for hit testing.
          * 
-         * @param x Screen-space X coordinate
-         * @param y Screen-space Y coordinate
-         * @return true if point is within bounds
+         * @param x Screen X coordinate
+         * @param y Screen Y coordinate
+         * @return true if point is inside bounds, false otherwise
+         * 
+         * @code
+         * if (button->Contains(mouseX, mouseY)) {
+         *     // Mouse is over button
+         * }
+         * @endcode
          */
-        bool Contains(float x, float y) const {
-            Rectangle bounds = GetAbsoluteBounds();
-            return x >= bounds.x && x <= bounds.x + bounds.width &&
-                   y >= bounds.y && y <= bounds.y + bounds.height;
-        }
-        
-        // ========================================================================
-        // State Management
-        // ========================================================================
-        
+        bool Contains(float x, float y) const;
+
+        // === State Management ===
+
         /**
-         * @brief Check if element has keyboard focus
-         */
-        bool IsFocused() const { return is_focused_; }
-        
-        /**
-         * @brief Set focus state
+         * @brief Set focused state
+         * @param focused True to focus, false to unfocus
          */
         void SetFocused(bool focused) { is_focused_ = focused; }
-        
+
         /**
-         * @brief Check if mouse is hovering over element
+         * @brief Check if element is focused
+         * @return true if focused, false otherwise
          */
-        bool IsHovered() const { return is_hovered_; }
-        
+        bool IsFocused() const { return is_focused_; }
+
         /**
-         * @brief Set hover state (usually called by event system)
+         * @brief Set hovered state
+         * @param hovered True if mouse is over element
          */
         void SetHovered(bool hovered) { is_hovered_ = hovered; }
-        
+
         /**
-         * @brief Check if element is visible
+         * @brief Check if element is hovered
+         * @return true if hovered, false otherwise
          */
-        bool IsVisible() const { return is_visible_; }
-        
+        bool IsHovered() const { return is_hovered_; }
+
         /**
          * @brief Set visibility
+         * @param visible True to show, false to hide
          */
         void SetVisible(bool visible) { is_visible_ = visible; }
-        
-        // ========================================================================
-        // Event Propagation (Bubble-Down)
-        // ========================================================================
-        
+
         /**
-         * @brief Process mouse event with bubble-down propagation
-         * 
-         * Algorithm:
-         * 1. Check if event is within bounds
-         * 2. Propagate to children (reverse order, top-most first)
-         * 3. If no child consumed event, call own handlers
-         * 4. Return true if event was consumed
-         * 
-         * Pattern: Chain of Responsibility with bubble-down
-         * 
-         * @param event Mouse event to process
-         * @return true if event was consumed (stops further propagation)
+         * @brief Check if element is visible
+         * @return true if visible, false otherwise
          */
-        bool ProcessMouseEvent(const MouseEvent& event) {
-            if (!is_visible_) {
+        bool IsVisible() const { return is_visible_; }
+
+        // === Rendering (Template Method Pattern) ===
+
+        /**
+         * @brief Render this element and its children
+         * 
+         * Pure virtual function that subclasses must implement.
+         * Should submit vertices via BatchRenderer and recursively
+         * render children.
+         * 
+         * @code
+         * void MyElement::Render() const override {
+         *     using namespace engine::ui::batch_renderer;
+         *     
+         *     // Render self
+         *     BatchRenderer::SubmitQuad(GetAbsoluteBounds(), color_);
+         *     
+         *     // Render children
+         *     for (const auto& child : GetChildren()) {
+         *         child->Render();
+         *     }
+         * }
+         * @endcode
+         * 
+         * @see UI_DEVELOPMENT_BIBLE.md §2.3 for Template Method pattern
+         */
+        virtual void Render() const = 0;
+
+        // === Event Handlers (Stub - No Implementation Yet) ===
+        // These will be implemented in future phases when mouse event
+        // system is integrated. For now, they return false (event not handled).
+
+        /**
+         * @brief Process mouse event (stub)
+         * 
+         * Called to handle mouse input. Currently returns false (not implemented).
+         * Will be implemented in future phases.
+         * 
+         * @param event Mouse event data
+         * @return true if event was consumed, false otherwise
+         */
+        virtual bool ProcessMouseEvent(const MouseEvent& event) {
+          if (!is_visible_) {
                 return false;
             }
             
@@ -271,53 +308,90 @@ export namespace engine::ui {
             // Always call OnHover if mouse is over element
             return OnHover(event);
         }
-        
-        // ========================================================================
-        // Template Method - Rendering
-        // ========================================================================
-        
+
         /**
-         * @brief Render this element and all children
+         * @brief Handle mouse hover (stub)
          * 
-         * Template method pattern - override in derived classes.
-         * Call UIElement::Render() to render children.
+         * Called when mouse enters/exits element bounds.
+         * Currently returns false (not implemented).
+         * 
+         * @param event Mouse event data
+         * @return true if event was consumed, false otherwise
          */
-        virtual void Render() const {
-            if (!is_visible_) {
-                return;
-            }
-            
-            // Render children
-            for (const auto& child : children_) {
-                child->Render();
-            }
+        virtual bool OnHover(const MouseEvent& event) { return false; }
+
+        /**
+         * @brief Handle mouse click (stub)
+         * 
+         * Called when mouse button is clicked within element bounds.
+         * Currently returns false (not implemented).
+         * 
+         * @param event Mouse event data
+         * @return true if event was consumed, false otherwise
+         */
+        virtual bool OnClick(const MouseEvent& event) { return false; }
+
+    protected:
+        // Subclasses can construct with initial bounds
+        UIElement(float x, float y, float width, float height)
+            : relative_x_(x), relative_y_(y), width_(width), height_(height) {}
+
+        // Position relative to parent
+        float relative_x_ = 0.0f;
+        float relative_y_ = 0.0f;
+        
+        // Element size
+        float width_ = 0.0f;
+        float height_ = 0.0f;
+
+        // State flags
+        bool is_focused_ = false;
+        bool is_hovered_ = false;
+        bool is_visible_ = true;
+
+        // Tree structure
+        UIElement* parent_ = nullptr;  ///< Non-owning pointer to parent
+        std::vector<std::unique_ptr<UIElement>> children_;  ///< Owned children
+    };
+
+    // === Implementation ===
+
+    inline void UIElement::AddChild(std::unique_ptr<UIElement> child) {
+        if (child) {
+            child->SetParent(this);
+            children_.push_back(std::move(child));
+        }
+    }
+
+    inline void UIElement::RemoveChild(UIElement* child) {
+        children_.erase(
+            std::remove_if(children_.begin(), children_.end(),
+                [child](const std::unique_ptr<UIElement>& elem) {
+                    return elem.get() == child;
+                }),
+            children_.end()
+        );
+    }
+
+    inline batch_renderer::Rectangle UIElement::GetAbsoluteBounds() const {
+        batch_renderer::Rectangle bounds = GetRelativeBounds();
+        
+        // Walk up parent chain to accumulate absolute position
+        const UIElement* current_parent = parent_;
+        while (current_parent != nullptr) {
+            const batch_renderer::Rectangle parent_bounds = current_parent->GetRelativeBounds();
+            bounds.x += parent_bounds.x;
+            bounds.y += parent_bounds.y;
+            current_parent = current_parent->parent_;
         }
         
-    protected:
-        /**
-         * @brief Constructor for derived classes
-         * 
-         * @param x Relative X position
-         * @param y Relative Y position
-         * @param width Width
-         * @param height Height
-         */
-        UIElement(float x = 0.0f, float y = 0.0f, float width = 0.0f, float height = 0.0f)
-            : relative_x_(x), relative_y_(y), width_(width), height_(height) {}
-        
-        // Position and size (relative to parent)
-        float relative_x_{0.0f};
-        float relative_y_{0.0f};
-        float width_{0.0f};
-        float height_{0.0f};
-        
-        // State flags
-        bool is_focused_{false};
-        bool is_hovered_{false};
-        bool is_visible_{true};
-        
-        // Hierarchy
-        UIElement* parent_{nullptr};  // Non-owning pointer
-        std::vector<std::unique_ptr<UIElement>> children_;  // Owning
-    };
-}
+        return bounds;
+    }
+
+    inline bool UIElement::Contains(float x, float y) const {
+        const batch_renderer::Rectangle bounds = GetAbsoluteBounds();
+        return x >= bounds.x && x < bounds.x + bounds.width &&
+               y >= bounds.y && y < bounds.y + bounds.height;
+    }
+
+} // namespace engine::ui

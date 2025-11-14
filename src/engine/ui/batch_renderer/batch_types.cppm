@@ -13,12 +13,58 @@ export namespace engine::ui::batch_renderer {
     struct Color {
         float r, g, b, a;
 
-        Color() : r(1.0f), g(1.0f), b(1.0f), a(1.0f) {
+        constexpr Color() : r(1.0f), g(1.0f), b(1.0f), a(1.0f) {
         }
 
-        Color(float r, float g, float b, float a = 1.0f) : r(r), g(g), b(b), a(a) {
+        constexpr Color(float r, float g, float b, float a = 1.0f) : r(r), g(g), b(b), a(a) {
+        }
+
+        /**
+         * @brief Create a color with modified alpha channel
+         * @param color Base color
+         * @param alpha New alpha value (0.0-1.0)
+         * @return Color with new alpha, preserving RGB
+         */
+        static Color Alpha(const Color& color, float alpha) {
+            return Color(color.r, color.g, color.b, std::clamp(alpha, 0.0f, 1.0f));
+        }
+
+        /**
+         * @brief Create a color with adjusted brightness
+         * @param color Base color
+         * @param factor Brightness adjustment (-1.0 to 1.0, where 0 = no change)
+         * @return Color with adjusted RGB values, clamped to [0, 1]
+         */
+        static Color Brightness(const Color& color, float factor) {
+            return Color(
+                std::clamp(color.r + factor, 0.0f, 1.0f),
+                std::clamp(color.g + factor, 0.0f, 1.0f),
+                std::clamp(color.b + factor, 0.0f, 1.0f),
+                color.a
+            );
         }
     };
+
+    // Common color constants
+    namespace Colors {
+        constexpr Color WHITE{1.0f, 1.0f, 1.0f, 1.0f};
+        constexpr Color BLACK{0.0f, 0.0f, 0.0f, 1.0f};
+        constexpr Color RED{1.0f, 0.0f, 0.0f, 1.0f};
+        constexpr Color GREEN{0.0f, 1.0f, 0.0f, 1.0f};
+        constexpr Color BLUE{0.0f, 0.0f, 1.0f, 1.0f};
+        constexpr Color YELLOW{1.0f, 1.0f, 0.0f, 1.0f};
+        constexpr Color CYAN{0.0f, 1.0f, 1.0f, 1.0f};
+        constexpr Color MAGENTA{1.0f, 0.0f, 1.0f, 1.0f};
+        constexpr Color GRAY{0.5f, 0.5f, 0.5f, 1.0f};
+        constexpr Color LIGHT_GRAY{0.7f, 0.7f, 0.7f, 1.0f};
+        constexpr Color DARK_GRAY{0.3f, 0.3f, 0.3f, 1.0f};
+        constexpr Color TRANSPARENT{0.0f, 0.0f, 0.0f, 0.0f};
+        
+        // UI theme colors
+        constexpr Color GOLD{1.0f, 0.84f, 0.0f, 1.0f};  // Primary accent
+        constexpr Color ORANGE{1.0f, 0.65f, 0.0f, 1.0f};
+        constexpr Color PURPLE{0.5f, 0.0f, 0.5f, 1.0f};
+    }
 
     /**
      * @brief Vertex layout for batched rendering

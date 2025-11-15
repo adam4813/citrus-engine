@@ -105,7 +105,7 @@ TEST_F(SliderTest, OnClick_LeftPressed_TriggersCallback) {
 	});
 
 	// Click at middle of slider (should be ~50% of range)
-	MouseEvent event{110, 25, false, false, true, true, 0.0f};
+	MouseEvent event{100, 25, false, false, true, true, 0.0f};
 	slider->OnClick(event);
 
 	EXPECT_TRUE(callback_triggered);

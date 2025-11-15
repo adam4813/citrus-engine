@@ -508,7 +508,7 @@ inline batch_renderer::Rectangle UIElement::GetAbsoluteBounds() const {
 
 inline bool UIElement::Contains(float x, float y) const {
 	const batch_renderer::Rectangle bounds = GetAbsoluteBounds();
-	return x >= bounds.x && x <= bounds.x + bounds.width && y >= bounds.y && y <= bounds.y + bounds.height;
+	return x >= bounds.x && x < bounds.x + bounds.width && y >= bounds.y && y < bounds.y + bounds.height;
 }
 
 } // namespace engine::ui

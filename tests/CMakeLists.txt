@@ -34,3 +34,33 @@ add_engine_test(ui_color_test
 add_engine_test(ui_text_test
     ui_text_test.cpp
 )
+
+# Add UI Panel component test
+add_engine_test(ui_panel_test
+    ui_panel_test.cpp
+)
+
+# Add UI Button component test
+add_engine_test(ui_button_test
+    ui_button_test.cpp
+)
+
+# Add UI Label component test
+add_engine_test(ui_label_test
+    ui_label_test.cpp
+)
+
+# Add UI Slider component test
+add_engine_test(ui_slider_test
+    ui_slider_test.cpp
+)
+
+# Add UI Checkbox component test
+add_engine_test(ui_checkbox_test
+    ui_checkbox_test.cpp
+)
+
+# Add UI ConfirmationDialog component test
+add_engine_test(ui_confirmation_dialog_test
+    ui_confirmation_dialog_test.cpp
+)

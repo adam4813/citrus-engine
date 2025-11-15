@@ -177,6 +177,20 @@ Rebuild the examples application and your scene will automatically appear in the
 - Provide helpful UI with controls and debug information
 - Test on both native and WASM builds
 
+## Development Utilities
+
+### UI Debug Visualizer
+
+The examples include a `UIDebugVisualizer` utility (see `examples/include/ui_debug_visualizer.h`) for visualizing UI element bounds and hierarchy during development. This tool helps debug layout issues without modifying your UI code.
+
+Features:
+- Renders colored outlines around UI elements
+- Shows element type names
+- Visualizes hierarchy depth
+- ImGui controls for customization
+
+See the header file documentation for complete usage instructions.
+
 ## Asset Management
 
 Example assets are stored in `examples/assets/`:

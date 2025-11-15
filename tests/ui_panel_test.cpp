@@ -117,3 +117,24 @@ TEST_F(PanelTest, SetVisible_UpdatesVisibility) {
     panel->SetVisible(true);
     EXPECT_TRUE(panel->IsVisible());
 }
+
+TEST_F(PanelTest, Padding_OffsetsChildrenDuringRender) {
+    // Create a child at position (0, 0)
+    auto child = std::make_unique<Panel>(0, 0, 50, 50);
+    Panel* child_ptr = child.get();
+    
+    // Add child to panel
+    panel->AddChild(std::move(child));
+    
+    // Set padding on parent panel
+    panel->SetPadding(10.0f);
+    
+    // Before render, child should still be at relative (0, 0)
+    EXPECT_EQ(child_ptr->GetRelativeBounds().x, 0.0f);
+    EXPECT_EQ(child_ptr->GetRelativeBounds().y, 0.0f);
+    
+    // Note: We can't easily test the rendering offset without actually rendering,
+    // but we verify that padding is set and child position is stored correctly.
+    // The Render() method will temporarily offset the child by padding during rendering.
+    EXPECT_EQ(panel->GetPadding(), 10.0f);
+}

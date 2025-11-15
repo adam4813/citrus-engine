@@ -3,6 +3,8 @@ module;
 #include <memory>
 #include <string>
 #include <algorithm>
+#include <vector>
+#include <utility>
 
 export module engine.ui:elements.panel;
 
@@ -183,25 +185,24 @@ export namespace engine::ui::elements {
         /**
          * @brief Set padding (insets children from edges)
          * 
-         * Padding is applied to all sides equally and affects the scissor clipping
-         * region for children. **Important**: Padding does NOT automatically offset
-         * child positions. Children positioned at (0, 0) will render at the panel's
-         * edge, not accounting for padding.
+         * Padding is applied to all sides equally and automatically offsets children's
+         * positions during rendering. Children positioned at (0, 0) will render at
+         * (padding, padding) relative to the panel's top-left corner.
          * 
-         * The padding only affects:
+         * The padding affects:
          * - The scissor clipping rectangle (content outside padding is clipped)
-         * - Visual spacing (children can be manually positioned with padding in mind)
+         * - Children's rendered positions (automatically offset by padding amount)
          * 
-         * This design allows flexible layouts where developers can choose whether to
-         * position children relative to padding or use absolute positioning within the panel.
+         * This provides intuitive layout behavior similar to CSS padding, where children
+         * are automatically inset from the panel edges.
          * 
          * @param padding Padding in pixels
          * 
          * @code
          * panel->SetPadding(10.0f);  // 10px padding on all sides
          * 
-         * // Manual child positioning accounting for padding:
-         * auto child = std::make_unique<Button>(10, 10, 100, 30, "OK");  // 10px from edges
+         * // Child positioned at (0, 0) will render at (10, 10):
+         * auto child = std::make_unique<Button>(0, 0, 100, 30, "OK");
          * panel->AddChild(std::move(child));
          * @endcode
          */
@@ -251,11 +252,13 @@ export namespace engine::ui::elements {
          * 1. Background quad (with opacity)
          * 2. Border lines (if border_width > 0)
          * 3. Push scissor (if clip_children_ is true)
-         * 4. Render children (recursively)
-         * 5. Pop scissor
+         * 4. Apply padding offset to children positions
+         * 5. Render children (recursively)
+         * 6. Restore children positions
+         * 7. Pop scissor
          * 
          * Children are clipped to panel bounds via scissor test.
-         * Padding affects scissor region.
+         * Padding automatically offsets children from panel edges.
          * 
          * @code
          * panel->Render();  // Renders panel and all children
@@ -304,9 +307,31 @@ export namespace engine::ui::elements {
                 BatchRenderer::PushScissor(scissor);
             }
 
+            // Apply padding offset to children for rendering
+            // Store original positions to restore after rendering
+            std::vector<std::pair<float, float>> original_positions;
+            if (padding_ > 0.0f) {
+                original_positions.reserve(GetChildren().size());
+                for (const auto& child : GetChildren()) {
+                    const auto child_bounds = child->GetRelativeBounds();
+                    original_positions.emplace_back(child_bounds.x, child_bounds.y);
+                    // Offset child position by padding
+                    child->SetRelativePosition(child_bounds.x + padding_, child_bounds.y + padding_);
+                }
+            }
+
             // Render children
             for (const auto& child : GetChildren()) {
                 child->Render();
+            }
+
+            // Restore original positions
+            if (padding_ > 0.0f) {
+                size_t i = 0;
+                for (const auto& child : GetChildren()) {
+                    child->SetRelativePosition(original_positions[i].first, original_positions[i].second);
+                    ++i;
+                }
             }
 
             // Pop scissor

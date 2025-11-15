@@ -6,10 +6,12 @@ export module engine.ui:elements.image;
 
 import :ui_element;
 import :uitypes;
-import glm;
+import engine.ui.batch_renderer;
 
 export namespace engine::ui::elements {
-using namespace engine::rendering;
+
+using rendering::Sprite;
+
 /**
 	 * @brief UI Image element - renders a sprite within a UIElement
 	 *
@@ -65,38 +67,34 @@ public:
 		 * Children are rendered regardless of whether a sprite is present.
 		 */
 	void Render() const override {
+		using namespace engine::ui::batch_renderer;
 
 		// Skip if not visible
 		if (!IsVisible()) {
 			return;
 		}
 
-		// Render sprite if present
+		// Render sprite if present using BatchRenderer (UI coordinate system)
 		if (sprite_) {
 			const auto bounds = GetAbsoluteBounds();
 
-			// Create sprite command with UIElement bounds
-			SpriteRenderCommand command;
-			command.texture = sprite_->texture;
-			command.position = glm::vec2(bounds.x, bounds.y);
-			command.size = glm::vec2(bounds.width, bounds.height);
-			command.rotation = sprite_->rotation;
-			command.color = sprite_->color;
-			command.texture_offset = sprite_->texture_offset;
-			command.texture_scale = sprite_->texture_scale;
-			command.layer = sprite_->layer;
+			// Use BatchRenderer::SubmitQuad with texture instead of world sprite system
+			// This keeps everything in UI coordinate space (top-left origin)
+			const Rectangle uv_rect{
+					sprite_->texture_offset.x,
+					sprite_->texture_offset.y,
+					sprite_->texture_scale.x,
+					sprite_->texture_scale.y};
 
-			// Apply UI-specific transformations
-			if (sprite_->flip_x) {
-				command.texture_scale.x *= -1.0f;
-			}
-			if (sprite_->flip_y) {
-				command.texture_scale.y *= -1.0f;
-			}
+			// Convert rendering::Color (glm::vec4) to ui::batch_renderer::Color
+			const Color ui_color{sprite_->color.r, sprite_->color.g, sprite_->color.b, sprite_->color.a};
 
-			// Submit to renderer
-			auto& renderer = GetRenderer();
-			renderer.SubmitSprite(command);
+			BatchRenderer::SubmitQuad(
+					bounds, // Screen-space rectangle (UI coords)
+					ui_color, // Tint color (converted to UI color type)
+					uv_rect, // Texture coordinates
+					sprite_->texture // Texture ID
+			);
 		}
 
 		// Always render children, even if no sprite

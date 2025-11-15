@@ -120,10 +120,7 @@ public:
 		 *
 		 * @param font_size New font size in pixels
 		 */
-	void SetFontSize(float font_size) {
-		if (!font_) {
-			return;
-		}
+	void SetFontSize(const float font_size) {
 		font_ = text_renderer::FontManager::GetFont(
 				"", // Empty path = use default font path
 				static_cast<int>(font_size));
@@ -132,6 +129,7 @@ public:
 		if (!font_ || !font_->IsValid()) {
 			font_ = text_renderer::FontManager::GetDefaultFont();
 		}
+
 		ComputeMesh();
 	}
 

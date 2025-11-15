@@ -85,7 +85,7 @@ TEST_F(PanelTest, SetClipChildren_UpdatesClipping) {
     EXPECT_TRUE(panel->GetClipChildren());
 }
 
-TEST_F(PanelTest, AddChild_ChildBecomesPart OfPanel) {
+TEST_F(PanelTest, AddChild_ChildBecomesPartOfPanel) {
     auto child_panel = std::make_unique<Panel>(10, 10, 50, 50);
     Panel* child_ptr = child_panel.get();
     

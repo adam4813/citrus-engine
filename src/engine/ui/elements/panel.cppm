@@ -183,15 +183,26 @@ export namespace engine::ui::elements {
         /**
          * @brief Set padding (insets children from edges)
          * 
-         * Padding is applied to all sides equally.
+         * Padding is applied to all sides equally and affects the scissor clipping
+         * region for children. **Important**: Padding does NOT automatically offset
+         * child positions. Children positioned at (0, 0) will render at the panel's
+         * edge, not accounting for padding.
+         * 
+         * The padding only affects:
+         * - The scissor clipping rectangle (content outside padding is clipped)
+         * - Visual spacing (children can be manually positioned with padding in mind)
+         * 
+         * This design allows flexible layouts where developers can choose whether to
+         * position children relative to padding or use absolute positioning within the panel.
          * 
          * @param padding Padding in pixels
          * 
          * @code
          * panel->SetPadding(10.0f);  // 10px padding on all sides
          * 
-         * // Children positioned relative to padding:
-         * // If child is at (0, 0), it renders at (10, 10) with padding=10
+         * // Manual child positioning accounting for padding:
+         * auto child = std::make_unique<Button>(10, 10, 100, 30, "OK");  // 10px from edges
+         * panel->AddChild(std::move(child));
          * @endcode
          */
         void SetPadding(float padding) {

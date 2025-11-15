@@ -247,12 +247,14 @@ export namespace engine::ui::elements {
 
             // Render semi-transparent overlay (covers entire screen)
             // This visually indicates modal state
+            // TODO: Replace hardcoded dimensions with actual viewport/window size from window manager.
+            // For now, use a large rectangle to attempt fullscreen coverage.
             const batch_renderer::Color overlay_color = 
                 batch_renderer::Color::Alpha(batch_renderer::Colors::BLACK, 0.5f);
             
-            // Get screen dimensions for overlay
-            // Note: In a real implementation, you'd get these from a window/viewport manager
-            // For now, use a large rectangle to cover the screen
+            // Note: This uses a large rectangle (10000x10000) as a workaround since
+            // there's no window/viewport manager integration yet. In production,
+            // this should query actual screen dimensions.
             const Rectangle overlay_rect{0, 0, 10000, 10000};  // Effectively fullscreen
             BatchRenderer::SubmitQuad(overlay_rect, overlay_color);
 
@@ -347,12 +349,14 @@ export namespace engine::ui::elements {
         /**
          * @brief Center dialog on screen
          * 
-         * Note: In a real implementation, you'd get screen dimensions from
-         * a window/viewport manager. For now, assume a fixed screen size.
+         * TODO: Replace hardcoded screen dimensions with actual values from window/viewport manager.
+         * 
+         * Currently uses hardcoded 1920x1080 dimensions, which will cause misalignment
+         * on different screen sizes. This should be updated to query actual screen dimensions
+         * from a window manager or use parent-relative positioning for proper centering.
          */
         void CenterOnScreen() {
-            // TODO: Get actual screen dimensions from window manager
-            // For now, assume 1920x1080 screen
+            // FIXME: Hardcoded screen dimensions - will not work on non-1080p displays
             const float screen_width = 1920.0f;
             const float screen_height = 1080.0f;
             

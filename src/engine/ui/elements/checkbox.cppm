@@ -65,6 +65,11 @@ export namespace engine::ui::elements {
          * Checkbox size is fixed (based on font size), but width extends
          * to accommodate label text.
          * 
+         * **Design Note**: The label Text element is not added as a child via AddChild().
+         * Instead, it's managed internally and rendered directly in Render(). This design
+         * allows the label to be positioned relative to the checkbox without participating
+         * in the normal UI tree traversal, simplifying layout calculations.
+         * 
          * @param x X position relative to parent
          * @param y Y position relative to parent
          * @param label Optional text label (empty for no label)
@@ -93,6 +98,7 @@ export namespace engine::ui::elements {
             , toggle_callback_(nullptr) {
             
             // Create label element if text provided
+            // Note: Not added as a child - rendered directly in Render() method
             if (!label.empty()) {
                 label_element_ = std::make_unique<Text>(box_size_ + label_spacing_, 0, 
                                                         label, font_size_, label_color_);

@@ -159,6 +159,11 @@ public:
          *
          * Label is displayed to the left of the slider.
          *
+         * **Design Note**: The label Text element is not added as a child via AddChild().
+         * Instead, it's managed internally and rendered directly in Render(). This
+         * approach is used because the label is positioned outside the slider's bounds
+         * (to the left) and doesn't need to participate in normal UI tree traversal.
+         *
          * @param label Label text (empty to hide)
          *
          * @code

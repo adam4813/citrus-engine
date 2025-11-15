@@ -33,7 +33,7 @@ TEST_F(SliderTest, Constructor_SetsMinMax) {
     EXPECT_EQ(slider->GetMaxValue(), 100.0f);
 }
 
-TEST_F(SliderTest, Constructor_ClampsToinitialValue) {
+TEST_F(SliderTest, Constructor_ClampsToInitialValue) {
     // Create slider with initial value outside range
     auto slider2 = std::make_unique<Slider>(10, 10, 200, 30, 0.0f, 100.0f, 150.0f);
     EXPECT_EQ(slider2->GetValue(), 100.0f);  // Clamped to max

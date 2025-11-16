@@ -16,7 +16,7 @@ export namespace engine::ui::batch_renderer {
         constexpr Color() : r(1.0f), g(1.0f), b(1.0f), a(1.0f) {
         }
 
-        constexpr Color(float r, float g, float b, float a = 1.0f) : r(r), g(g), b(b), a(a) {
+        constexpr Color(const float r, const float g, const float b, const float a = 1.0f) : r(r), g(g), b(b), a(a) {
         }
 
         /**
@@ -25,7 +25,7 @@ export namespace engine::ui::batch_renderer {
          * @param alpha New alpha value (0.0-1.0)
          * @return Color with new alpha, preserving RGB
          */
-        static Color Alpha(const Color& color, float alpha) {
+        static Color Alpha(const Color& color, const float alpha) {
             return Color(color.r, color.g, color.b, std::clamp(alpha, 0.0f, 1.0f));
         }
 
@@ -35,7 +35,7 @@ export namespace engine::ui::batch_renderer {
          * @param factor Brightness adjustment (-1.0 to 1.0, where 0 = no change)
          * @return Color with adjusted RGB values, clamped to [0, 1]
          */
-        static Color Brightness(const Color& color, float factor) {
+        static Color Brightness(const Color& color, const float factor) {
             return Color(
                 std::clamp(color.r + factor, 0.0f, 1.0f),
                 std::clamp(color.g + factor, 0.0f, 1.0f),
@@ -92,7 +92,7 @@ export namespace engine::ui::batch_renderer {
         Vector2() : x(0), y(0) {
         }
 
-        Vector2(float x, float y) : x(x), y(y) {
+        Vector2(const float x, const float y) : x(x), y(y) {
         }
     };
 
@@ -155,7 +155,7 @@ export namespace engine::ui::batch_renderer {
         Rectangle() : x(0), y(0), width(0), height(0) {
         }
 
-        Rectangle(float x, float y, float w, float h) : x(x), y(y), width(w), height(h) {
+        Rectangle(const float x, const float y, const float w, const float h) : x(x), y(y), width(w), height(h) {
         }
     };
 

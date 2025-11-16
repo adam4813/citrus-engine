@@ -9,7 +9,7 @@ module;
 export module engine.ui:elements.slider;
 
 import :ui_element;
-import :text;
+import :elements.text;
 import :mouse_event;
 import engine.ui.batch_renderer;
 
@@ -79,19 +79,17 @@ public:
          * auto volume = std::make_unique<Slider>(10, 50, 200, 30, 0.0f, 100.0f, 75.0f);
          * @endcode
          */
-	Slider(float x, float y, float width, float height, float min_value, float max_value, float initial_value = 0.0f) :
+	Slider(const float x,
+		   const float y,
+		   const float width,
+		   const float height,
+		   const float min_value,
+		   const float max_value,
+		   const float initial_value = 0.0f) :
 			UIElement(x, y, width, height), min_value_(min_value), max_value_(max_value),
-			current_value_(std::clamp(initial_value, min_value, max_value)),
-			track_color_(batch_renderer::Colors::DARK_GRAY), fill_color_(batch_renderer::Colors::GOLD),
-			thumb_color_(batch_renderer::Colors::WHITE), label_color_(batch_renderer::Colors::WHITE),
-			is_dragging_(false), show_value_(false), label_font_size_(14.0f), value_font_size_(12.0f),
-			label_element_(nullptr), value_element_(nullptr), value_changed_callback_(nullptr) {
+			current_value_(std::clamp(initial_value, min_value, max_value)), thumb_radius_(height * 0.5f) {}
 
-		// Thumb size is proportional to slider height
-		thumb_radius_ = height * 0.5f;
-	}
-
-	virtual ~Slider() = default;
+	~Slider() override = default;
 
 	// === Value Configuration ===
 
@@ -108,7 +106,7 @@ public:
          * slider->SetValue(volume_);  // Sync from external state
          * @endcode
          */
-	void SetValue(float value) {
+	void SetValue(const float value) {
 		const float new_value = std::clamp(value, min_value_, max_value_);
 		if (new_value != current_value_) {
 			current_value_ = new_value;
@@ -126,7 +124,7 @@ public:
          * @brief Set minimum value
          * @param min_value Minimum value (left side)
          */
-	void SetMinValue(float min_value) {
+	void SetMinValue(const float min_value) {
 		min_value_ = min_value;
 		current_value_ = std::clamp(current_value_, min_value_, max_value_);
 	}
@@ -141,7 +139,7 @@ public:
          * @brief Set maximum value
          * @param max_value Maximum value (right side)
          */
-	void SetMaxValue(float max_value) {
+	void SetMaxValue(const float max_value) {
 		max_value_ = max_value;
 		current_value_ = std::clamp(current_value_, min_value_, max_value_);
 	}
@@ -205,7 +203,7 @@ public:
          * slider->SetValue(75.0f);  // Shows "75.0" next to slider
          * @endcode
          */
-	void SetShowValue(bool show) {
+	void SetShowValue(const bool show) {
 		show_value_ = show;
 		if (show && !value_element_) {
 			UpdateValueDisplay();
@@ -375,7 +373,7 @@ private:
          *
          * @param mouse_x Mouse X coordinate in screen space
          */
-	void UpdateValueFromMouse(float mouse_x) {
+	void UpdateValueFromMouse(const float mouse_x) {
 		const batch_renderer::Rectangle bounds = GetAbsoluteBounds();
 
 		// Calculate normalized position (0.0 - 1.0)
@@ -383,9 +381,7 @@ private:
 		normalized = std::clamp(normalized, 0.0f, 1.0f);
 
 		// Convert to value in range
-		const float new_value = min_value_ + normalized * (max_value_ - min_value_);
-
-		if (new_value != current_value_) {
+		if (const float new_value = min_value_ + normalized * (max_value_ - min_value_); new_value != current_value_) {
 			current_value_ = new_value;
 			UpdateValueDisplay();
 
@@ -424,7 +420,7 @@ private:
 	/**
          * @brief Update label position (left of slider)
          */
-	void UpdateLabelPosition() {
+	void UpdateLabelPosition() const {
 		if (!label_element_) {
 			return;
 		}
@@ -439,7 +435,7 @@ private:
 	/**
          * @brief Update value position (right of slider)
          */
-	void UpdateValuePosition() {
+	void UpdateValuePosition() const {
 		if (!value_element_) {
 			return;
 		}
@@ -456,27 +452,27 @@ private:
 	float current_value_;
 
 	// Appearance
-	batch_renderer::Color track_color_;
-	batch_renderer::Color fill_color_;
-	batch_renderer::Color thumb_color_;
-	batch_renderer::Color label_color_;
+	batch_renderer::Color track_color_{batch_renderer::Colors::DARK_GRAY};
+	batch_renderer::Color fill_color_{batch_renderer::Colors::GOLD};
+	batch_renderer::Color thumb_color_{batch_renderer::Colors::WHITE};
+	batch_renderer::Color label_color_{batch_renderer::Colors::WHITE};
 	float thumb_radius_;
 
 	// State
-	bool is_dragging_;
+	bool is_dragging_{false};
 
 	// Display options
-	bool show_value_;
+	bool show_value_{false};
 	std::string label_text_;
-	float label_font_size_;
-	float value_font_size_;
+	float label_font_size_{14.0f};
+	float value_font_size_{12.0f};
 
 	// Text elements (composition)
-	std::unique_ptr<Text> label_element_;
-	std::unique_ptr<Text> value_element_;
+	std::unique_ptr<Text> label_element_{nullptr};
+	std::unique_ptr<Text> value_element_{nullptr};
 
 	// Callbacks
-	ValueChangedCallback value_changed_callback_;
+	ValueChangedCallback value_changed_callback_{nullptr};
 };
 
 } // namespace engine::ui::elements

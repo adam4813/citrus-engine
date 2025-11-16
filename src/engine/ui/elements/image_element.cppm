@@ -44,7 +44,7 @@ public:
 		 * @param width Image width
 		 * @param height Image height
 		 */
-	Image(float x, float y, float width, float height) : UIElement(x, y, width, height) {}
+	Image(const float x, const float y, const float width, const float height) : UIElement(x, y, width, height) {}
 
 	~Image() override = default;
 

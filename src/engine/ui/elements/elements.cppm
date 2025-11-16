@@ -8,3 +8,4 @@ export import :elements.slider;
 export import :elements.checkbox;
 export import :elements.confirmation_dialog;
 export import :elements.image;
+export import :elements.text;

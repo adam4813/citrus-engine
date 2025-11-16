@@ -4,13 +4,13 @@ module;
 #include <string>
 #include <vector>
 
-export module engine.ui:text;
+export module engine.ui:elements.text;
 
 import :ui_element;
 import engine.ui.batch_renderer;
 import :text_renderer;
 
-export namespace engine::ui {
+export namespace engine::ui::elements {
 /**
      * @brief Pre-computed text rendering component
      *
@@ -120,18 +120,7 @@ public:
 		 *
 		 * @param font_size New font size in pixels
 		 */
-	void SetFontSize(const float font_size) {
-		font_ = text_renderer::FontManager::GetFont(
-				"", // Empty path = use default font path
-				static_cast<int>(font_size));
-
-		// If that failed, try default font
-		if (!font_ || !font_->IsValid()) {
-			font_ = text_renderer::FontManager::GetDefaultFont();
-		}
-
-		ComputeMesh();
-	}
+	void SetFontSize(const float font_size);
 
 	/**
          * @brief Set font (triggers glyph recomputation)
@@ -198,14 +187,18 @@ private:
 
 	std::string text_; ///< Text content
 	batch_renderer::Color color_; ///< Text color
-	text_renderer::FontAtlas* font_; ///< Font atlas (non-owning)
+	text_renderer::FontAtlas* font_{nullptr}; ///< Font atlas (non-owning)
 	std::vector<text_renderer::PositionedGlyph> glyphs_; ///< Pre-computed glyph positions
 };
 
 // === Implementation ===
 
-inline Text::Text(float x, float y, const std::string& text, float font_size, const batch_renderer::Color& color) :
-		UIElement(x, y, 0, 0), text_(text), color_(color), font_(nullptr) {
+inline Text::Text(
+		const float x,
+		const float y,
+		const std::string& text,
+		const float font_size,
+		const batch_renderer::Color& color) : UIElement(x, y, 0, 0), text_(text), color_(color) {
 
 	// Get default font at requested size
 	font_ = text_renderer::FontManager::GetFont(
@@ -221,8 +214,11 @@ inline Text::Text(float x, float y, const std::string& text, float font_size, co
 }
 
 inline Text::Text(
-		float x, float y, const std::string& text, text_renderer::FontAtlas* font, const batch_renderer::Color& color) :
-		UIElement(x, y, 0, 0), text_(text), color_(color), font_(font) {
+		const float x,
+		const float y,
+		const std::string& text,
+		text_renderer::FontAtlas* font,
+		const batch_renderer::Color& color) : UIElement(x, y, 0, 0), text_(text), color_(color), font_(font) {
 
 	ComputeMesh();
 }
@@ -239,6 +235,19 @@ inline void Text::SetFont(text_renderer::FontAtlas* font) {
 		font_ = font;
 		ComputeMesh();
 	}
+}
+
+inline void Text::SetFontSize(const float font_size) {
+	font_ = text_renderer::FontManager::GetFont(
+			"", // Empty path = use default font path
+			static_cast<int>(font_size));
+
+	// If that failed, try default font
+	if (!font_ || !font_->IsValid()) {
+		font_ = text_renderer::FontManager::GetDefaultFont();
+	}
+
+	ComputeMesh();
 }
 
 inline void Text::ComputeMesh() {
@@ -297,4 +306,4 @@ inline void Text::Render() const {
 	}
 }
 
-} // namespace engine::ui
+} // namespace engine::ui::elements

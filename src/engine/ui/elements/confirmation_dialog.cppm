@@ -229,16 +229,15 @@ public:
 			return;
 		}
 
+		uint32_t screen_width = 10000;
+		uint32_t screen_height = 10000;
+		BatchRenderer::GetViewportSize(screen_width, screen_height);
+		const Rectangle overlay_rect{0, 0, static_cast<float>(screen_width), static_cast<float>(screen_height)};
+
 		// Render semi-transparent overlay (covers entire screen)
 		// This visually indicates modal state
-		// TODO: Replace hardcoded dimensions with actual viewport/window size from window manager.
-		// For now, use a large rectangle to attempt fullscreen coverage.
 		const Color overlay_color = Color::Alpha(Colors::BLACK, 0.5f);
 
-		// Note: This uses a large rectangle (10000x10000) as a workaround since
-		// there's no window/viewport manager integration yet. In production,
-		// this should query actual screen dimensions.
-		const Rectangle overlay_rect{0, 0, 10000, 10000}; // Effectively fullscreen
 		BatchRenderer::SubmitQuad(overlay_rect, overlay_color);
 
 		// Render panel (background, border, contents)
@@ -325,16 +324,11 @@ private:
 	/**
          * @brief Center dialog on screen
          *
-         * TODO: Replace hardcoded screen dimensions with actual values from window/viewport manager.
-         *
-         * Currently uses hardcoded 1920x1080 dimensions, which will cause misalignment
-         * on different screen sizes. This should be updated to query actual screen dimensions
-         * from a window manager or use parent-relative positioning for proper centering.
          */
 	void CenterOnScreen() {
-		// FIXME: Hardcoded screen dimensions - will not work on non-1080p displays
-		constexpr float screen_width = 1920.0f;
-		constexpr float screen_height = 1080.0f;
+		uint32_t screen_width = 10000;
+		uint32_t screen_height = 10000;
+		batch_renderer::BatchRenderer::GetViewportSize(screen_width, screen_height);
 
 		const float x = (screen_width - width_) * 0.5f;
 		const float y = (screen_height - height_) * 0.5f;

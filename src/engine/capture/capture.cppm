@@ -7,6 +7,82 @@ module;
 
 export module engine.capture;
 
+/**
+ * @file capture.cppm
+ * @brief Screenshot and GIF recording system for Citrus Engine
+ * 
+ * This module provides functionality for capturing screenshots and recording
+ * GIF animations from the current framebuffer.
+ * 
+ * @section Usage Examples
+ * 
+ * **Screenshot Example:**
+ * @code
+ * auto& capture = engine::capture::GetCaptureManager();
+ * 
+ * // Simple screenshot (PNG, auto-named)
+ * capture.Screenshot();
+ * 
+ * // Custom name and format
+ * capture.Screenshot("my_screenshot", ImageFormat::JPEG);
+ * 
+ * // Full control
+ * ScreenshotOptions opts;
+ * opts.format = ImageFormat::PNG;
+ * opts.quality = 95;
+ * opts.include_alpha = true;
+ * capture.Screenshot("high_quality", opts);
+ * @endcode
+ * 
+ * **GIF Recording Example:**
+ * @code
+ * auto& capture = engine::capture::GetCaptureManager();
+ * 
+ * // Start recording at 30 FPS, half resolution
+ * capture.GifStart(30, 0.5f);
+ * 
+ * // In your main loop, capture frames
+ * while (recording) {
+ *     // ... render scene ...
+ *     capture.CaptureFrame();  // Call once per frame
+ * }
+ * 
+ * // Stop and save
+ * capture.GifEnd();
+ * capture.GifSave("my_animation");
+ * 
+ * // Or cancel if needed
+ * capture.GifCancel();
+ * @endcode
+ * 
+ * **UI Integration Example:**
+ * @code
+ * // In your UI code (not Dear ImGui - use your engine's UI system)
+ * auto& capture = engine::capture::GetCaptureManager();
+ * 
+ * if (ui.ButtonClicked("Screenshot")) {
+ *     capture.Screenshot();
+ * }
+ * 
+ * if (!capture.IsGifRecording()) {
+ *     if (ui.ButtonClicked("Start Recording")) {
+ *         capture.GifStart(30, 0.5f);
+ *     }
+ * } else {
+ *     auto status = capture.GifGetStatus();
+ *     ui.Label("Recording: " + std::to_string(status.frame_count) + " frames");
+ *     
+ *     if (ui.ButtonClicked("Stop & Save")) {
+ *         capture.GifEnd();
+ *         capture.GifSave();
+ *     }
+ *     if (ui.ButtonClicked("Cancel")) {
+ *         capture.GifCancel();
+ *     }
+ * }
+ * @endcode
+ */
+
 export namespace engine::capture {
 
 /**

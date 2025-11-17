@@ -13,16 +13,17 @@
 ## Table of Contents
 
 1. [Foundational Components](#foundational-components) **⭐ NEW**
-2. [Philosophy & Core Principles](#philosophy--core-principles)
-3. [Gang of Four Design Patterns](#gang-of-four-design-patterns)
-4. [Component Recognition & Reusability](#component-recognition--reusability)
-5. [Event System Architecture](#event-system-architecture)
-6. [Ownership & Memory Management](#ownership--memory-management)
-7. [Layout & Positioning](#layout--positioning)
-8. [Creating New Components](#creating-new-components)
-9. [Testing & Validation](#testing--validation)
-10. [Performance Considerations](#performance-considerations)
-11. [Quick Reference](#quick-reference)
+2. [UITheme System](#uitheme-system) **⭐ NEW**
+3. [Philosophy & Core Principles](#philosophy--core-principles)
+4. [Gang of Four Design Patterns](#gang-of-four-design-patterns)
+5. [Component Recognition & Reusability](#component-recognition--reusability)
+6. [Event System Architecture](#event-system-architecture)
+7. [Ownership & Memory Management](#ownership--memory-management)
+8. [Layout & Positioning](#layout--positioning)
+9. [Creating New Components](#creating-new-components)
+10. [Testing & Validation](#testing--validation)
+11. [Performance Considerations](#performance-considerations)
+12. [Quick Reference](#quick-reference)
 
 ---
 
@@ -251,6 +252,314 @@ private:
     std::unique_ptr<Text> label_;  // Composition
 };
 ```
+
+---
+
+## UITheme System
+
+**File**: `src/engine/ui/batch_renderer/batch_types.cppm`
+
+**Purpose**: Centralized styling constants for consistent UI appearance across all components.
+
+The UITheme system provides comprehensive styling constants for colors, spacing, fonts, and borders. Components should use these constants instead of hard-coded values to maintain visual consistency and enable theme switching.
+
+### Color Palettes
+
+**Primary Colors** - Accent colors for interactive elements:
+```cpp
+using namespace engine::ui::batch_renderer;
+
+// Primary action color (gold accent)
+Color primary = UITheme::Primary::NORMAL;       // Default state
+Color hover = UITheme::Primary::HOVER;          // Mouse over (brighter)
+Color active = UITheme::Primary::ACTIVE;        // Pressed/active (darker)
+Color disabled = UITheme::Primary::DISABLED;    // Disabled (semi-transparent)
+```
+
+**Background Colors** - For panels, buttons, and inputs:
+```cpp
+// Panel backgrounds
+Color panel_bg = UITheme::Background::PANEL;         // Standard panel
+Color panel_dark = UITheme::Background::PANEL_DARK;  // Darker variant
+
+// Button backgrounds
+Color button_bg = UITheme::Background::BUTTON;
+Color button_hover = UITheme::Background::BUTTON_HOVER;
+Color button_active = UITheme::Background::BUTTON_ACTIVE;
+
+// Input fields
+Color input_bg = UITheme::Background::INPUT;
+Color disabled_bg = UITheme::Background::DISABLED;
+```
+
+**Text Colors** - For labels, headings, and content:
+```cpp
+// Text hierarchy
+Color primary_text = UITheme::Text::PRIMARY;      // Main content (white)
+Color secondary_text = UITheme::Text::SECONDARY;  // Less important (light gray)
+Color disabled_text = UITheme::Text::DISABLED;    // Disabled state
+
+// Semantic colors
+Color accent_text = UITheme::Text::ACCENT;        // Highlights (gold)
+Color error_text = UITheme::Text::ERROR;          // Errors (red)
+Color success_text = UITheme::Text::SUCCESS;      // Success (green)
+Color warning_text = UITheme::Text::WARNING;      // Warnings (orange)
+```
+
+**Border Colors** - For outlines and focus states:
+```cpp
+Color default_border = UITheme::Border::DEFAULT;
+Color hover_border = UITheme::Border::HOVER;
+Color focus_border = UITheme::Border::FOCUS;      // Gold accent for focus
+Color disabled_border = UITheme::Border::DISABLED;
+Color error_border = UITheme::Border::ERROR;
+```
+
+**State Colors** - For selection and interaction feedback:
+```cpp
+Color selected = UITheme::State::SELECTED;        // Gold for selected items
+Color checked = UITheme::State::CHECKED;          // Green for checkboxes
+Color unchecked = UITheme::State::UNCHECKED;      // Gray for unchecked
+Color hover_overlay = UITheme::State::HOVER_OVERLAY;  // Semi-transparent white
+Color press_overlay = UITheme::State::PRESS_OVERLAY;  // Semi-transparent black
+```
+
+### Spacing & Padding
+
+**Spacing** - Space between elements:
+```cpp
+float none = UITheme::Spacing::NONE;      // 0px
+float tiny = UITheme::Spacing::TINY;      // 2px
+float small = UITheme::Spacing::SMALL;    // 4px
+float medium = UITheme::Spacing::MEDIUM;  // 8px
+float large = UITheme::Spacing::LARGE;    // 12px
+float xl = UITheme::Spacing::XL;          // 16px
+float xxl = UITheme::Spacing::XXL;        // 24px
+float huge = UITheme::Spacing::HUGE;      // 32px
+```
+
+**Padding** - Space inside elements:
+```cpp
+// Component-specific padding
+float btn_h = UITheme::Padding::BUTTON_HORIZONTAL;  // 16px
+float btn_v = UITheme::Padding::BUTTON_VERTICAL;    // 8px
+float panel_h = UITheme::Padding::PANEL_HORIZONTAL; // 12px
+float panel_v = UITheme::Padding::PANEL_VERTICAL;   // 12px
+float input_h = UITheme::Padding::INPUT_HORIZONTAL; // 8px
+float input_v = UITheme::Padding::INPUT_VERTICAL;   // 6px
+
+// Generic padding
+float small = UITheme::Padding::SMALL;    // 4px
+float medium = UITheme::Padding::MEDIUM;  // 8px
+float large = UITheme::Padding::LARGE;    // 12px
+```
+
+### Font Sizes
+
+```cpp
+float tiny = UITheme::FontSize::TINY;        // 10px
+float small = UITheme::FontSize::SMALL;      // 12px
+float normal = UITheme::FontSize::NORMAL;    // 14px (body text)
+float medium = UITheme::FontSize::MEDIUM;    // 16px
+float large = UITheme::FontSize::LARGE;      // 18px
+float xl = UITheme::FontSize::XL;            // 20px
+float xxl = UITheme::FontSize::XXL;          // 24px
+
+// Headings
+float h1 = UITheme::FontSize::HEADING_1;     // 32px
+float h2 = UITheme::FontSize::HEADING_2;     // 28px
+float h3 = UITheme::FontSize::HEADING_3;     // 24px
+```
+
+### Borders
+
+**Border Sizes**:
+```cpp
+float none = UITheme::BorderSize::NONE;      // 0px
+float thin = UITheme::BorderSize::THIN;      // 1px
+float medium = UITheme::BorderSize::MEDIUM;  // 2px
+float thick = UITheme::BorderSize::THICK;    // 3px
+```
+
+**Border Radius**:
+```cpp
+float none = UITheme::BorderRadius::NONE;    // 0px (sharp corners)
+float small = UITheme::BorderRadius::SMALL;  // 2px
+float medium = UITheme::BorderRadius::MEDIUM;// 4px
+float large = UITheme::BorderRadius::LARGE;  // 8px
+float round = UITheme::BorderRadius::ROUND;  // 999px (fully rounded)
+```
+
+### Component-Specific Constants
+
+**Button**:
+```cpp
+float min_width = UITheme::Button::MIN_WIDTH;     // 80px
+float min_height = UITheme::Button::MIN_HEIGHT;   // 32px
+float default_height = UITheme::Button::DEFAULT_HEIGHT; // 36px
+```
+
+**Panel**:
+```cpp
+float min_width = UITheme::Panel::MIN_WIDTH;      // 100px
+float min_height = UITheme::Panel::MIN_HEIGHT;    // 100px
+```
+
+**Slider**:
+```cpp
+float track_height = UITheme::Slider::TRACK_HEIGHT;   // 4px
+float thumb_size = UITheme::Slider::THUMB_SIZE;       // 16px
+float min_width = UITheme::Slider::MIN_WIDTH;         // 100px
+```
+
+**Checkbox**:
+```cpp
+float size = UITheme::Checkbox::SIZE;                      // 20px
+float checkmark_thickness = UITheme::Checkbox::CHECK_MARK_THICKNESS; // 2px
+```
+
+**Input**:
+```cpp
+float min_width = UITheme::Input::MIN_WIDTH;          // 120px
+float default_height = UITheme::Input::DEFAULT_HEIGHT; // 32px
+```
+
+### Animation Constants
+
+```cpp
+float fast = UITheme::Animation::FAST;       // 0.1s (100ms)
+float normal = UITheme::Animation::NORMAL;   // 0.2s (200ms)
+float slow = UITheme::Animation::SLOW;       // 0.3s (300ms)
+```
+
+### Layer Constants (Z-Index)
+
+```cpp
+int background = UITheme::Layer::BACKGROUND;        // 0
+int content = UITheme::Layer::CONTENT;              // 10
+int overlay = UITheme::Layer::OVERLAY;              // 20
+int modal = UITheme::Layer::MODAL;                  // 30
+int tooltip = UITheme::Layer::TOOLTIP;              // 40
+int notification = UITheme::Layer::NOTIFICATION;    // 50
+```
+
+### Usage Examples
+
+**Styling a Button**:
+```cpp
+auto button = std::make_unique<Button>(
+    x, y, 
+    UITheme::Button::MIN_WIDTH, 
+    UITheme::Button::DEFAULT_HEIGHT,
+    "Click Me"
+);
+button->SetNormalColor(UITheme::Background::BUTTON);
+button->SetHoverColor(UITheme::Background::BUTTON_HOVER);
+button->SetPressedColor(UITheme::Background::BUTTON_ACTIVE);
+button->SetTextColor(UITheme::Text::PRIMARY);
+button->SetFontSize(UITheme::FontSize::NORMAL);
+```
+
+**Styling a Panel**:
+```cpp
+auto panel = std::make_unique<Panel>(
+    x, y, 
+    400.0f, 300.0f
+);
+panel->SetBackgroundColor(UITheme::Background::PANEL);
+panel->SetBorderColor(UITheme::Border::DEFAULT);
+panel->SetPadding(
+    UITheme::Padding::PANEL_HORIZONTAL,
+    UITheme::Padding::PANEL_VERTICAL
+);
+```
+
+**Layout with Spacing**:
+```cpp
+// Vertical layout with spacing
+float y = UITheme::Spacing::LARGE;
+
+for (auto& item : items) {
+    auto widget = CreateWidget(x, y, width, height);
+    container->AddChild(std::move(widget));
+    y += height + UITheme::Spacing::MEDIUM;  // Consistent spacing
+}
+```
+
+**Text Hierarchy**:
+```cpp
+// Title
+auto title = std::make_unique<Text>(
+    x, y, "Settings",
+    UITheme::FontSize::HEADING_1,
+    UITheme::Text::ACCENT
+);
+
+// Subtitle
+auto subtitle = std::make_unique<Text>(
+    x, y + UITheme::FontSize::HEADING_1 + UITheme::Spacing::SMALL,
+    "Configure your preferences",
+    UITheme::FontSize::NORMAL,
+    UITheme::Text::SECONDARY
+);
+```
+
+**Semantic Colors**:
+```cpp
+// Error message
+auto error_label = std::make_unique<Label>(
+    x, y,
+    "Connection failed",
+    UITheme::FontSize::NORMAL
+);
+error_label->SetTextColor(UITheme::Text::ERROR);
+
+// Success message
+auto success_label = std::make_unique<Label>(
+    x, y,
+    "Saved successfully",
+    UITheme::FontSize::NORMAL
+);
+success_label->SetTextColor(UITheme::Text::SUCCESS);
+```
+
+### Benefits of UITheme
+
+1. **Consistency** - All components use the same styling values
+2. **Maintainability** - Change theme in one place, affects entire UI
+3. **Readability** - Semantic names instead of magic numbers
+4. **Accessibility** - Ensures minimum sizes for touch targets
+5. **Future-proofing** - Easy to add dark mode, high contrast, etc.
+
+### Best Practices
+
+**DO**:
+- ✅ Use UITheme constants for all sizing and color values
+- ✅ Use semantic color names (Primary, Secondary, Error, Success)
+- ✅ Respect minimum sizes for accessibility (Button::MIN_HEIGHT, etc.)
+- ✅ Use consistent spacing between elements
+- ✅ Use the font size hierarchy for text importance
+
+**DON'T**:
+- ❌ Hard-code pixel values (use UITheme constants instead)
+- ❌ Hard-code RGB colors (use UITheme color palettes)
+- ❌ Create buttons smaller than MIN_WIDTH/MIN_HEIGHT
+- ❌ Use arbitrary spacing values (use Spacing constants)
+- ❌ Mix font sizes randomly (follow the hierarchy)
+
+### Testing
+
+The UITheme system has comprehensive tests in `tests/ui_theme_test.cpp`:
+- Color palette validation (brightness, alpha, semantic meanings)
+- Spacing and padding ordering and values
+- Font size hierarchy and readability
+- Border size constants
+- Component-specific constants
+- Animation duration reasonableness
+- Layer ordering for z-index
+- Usage examples and integration tests
+
+See `examples/src/ui_showcase_scene.cpp` for a complete demonstration of UITheme usage across all components.
 
 ---
 

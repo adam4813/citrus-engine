@@ -25,7 +25,7 @@ export namespace engine::ui::batch_renderer {
          * @param alpha New alpha value (0.0-1.0)
          * @return Color with new alpha, preserving RGB
          */
-        static Color Alpha(const Color& color, const float alpha) {
+        static constexpr Color Alpha(const Color& color, const float alpha) {
             return Color(color.r, color.g, color.b, std::clamp(alpha, 0.0f, 1.0f));
         }
 
@@ -35,7 +35,7 @@ export namespace engine::ui::batch_renderer {
          * @param factor Brightness adjustment (-1.0 to 1.0, where 0 = no change)
          * @return Color with adjusted RGB values, clamped to [0, 1]
          */
-        static Color Brightness(const Color& color, const float factor) {
+        static constexpr Color Brightness(const Color& color, const float factor) {
             return Color(
                 std::clamp(color.r + factor, 0.0f, 1.0f),
                 std::clamp(color.g + factor, 0.0f, 1.0f),
@@ -64,6 +64,198 @@ export namespace engine::ui::batch_renderer {
         constexpr Color GOLD{1.0f, 0.84f, 0.0f, 1.0f};  // Primary accent
         constexpr Color ORANGE{1.0f, 0.65f, 0.0f, 1.0f};
         constexpr Color PURPLE{0.5f, 0.0f, 0.5f, 1.0f};
+    }
+
+    /**
+     * @brief UI Theme constants for consistent styling across components
+     * 
+     * Provides centralized theme values for colors, spacing, fonts, and borders.
+     * Components should use these constants to maintain visual consistency.
+     */
+    namespace UITheme {
+        // ============================================================================
+        // Color Palette
+        // ============================================================================
+        
+        // Primary colors
+        namespace Primary {
+            constexpr Color NORMAL = Colors::GOLD;
+            constexpr Color HOVER = Color::Brightness(Colors::GOLD, 0.15f);
+            constexpr Color ACTIVE = Color::Brightness(Colors::GOLD, -0.15f);
+            constexpr Color DISABLED = Color::Alpha(Colors::GOLD, 0.5f);
+        }
+        
+        // Background colors
+        namespace Background {
+            constexpr Color PANEL = Colors::DARK_GRAY;
+            constexpr Color PANEL_DARK = Color::Brightness(Colors::DARK_GRAY, -0.1f);
+            constexpr Color BUTTON = Colors::GRAY;
+            constexpr Color BUTTON_HOVER = Color::Brightness(Colors::GRAY, 0.1f);
+            constexpr Color BUTTON_ACTIVE = Color::Brightness(Colors::GRAY, -0.1f);
+            constexpr Color INPUT = Color::Brightness(Colors::DARK_GRAY, -0.05f);
+            constexpr Color DISABLED = Color::Brightness(Colors::DARK_GRAY, -0.15f);
+        }
+        
+        // Text colors
+        namespace Text {
+            constexpr Color PRIMARY = Colors::WHITE;
+            constexpr Color SECONDARY = Colors::LIGHT_GRAY;
+            constexpr Color DISABLED = Color::Alpha(Colors::WHITE, 0.5f);
+            constexpr Color ACCENT = Colors::GOLD;
+            constexpr Color ERROR = Colors::RED;
+            constexpr Color SUCCESS = Colors::GREEN;
+            constexpr Color WARNING = Colors::ORANGE;
+        }
+        
+        // Border colors
+        namespace Border {
+            constexpr Color DEFAULT = Colors::GRAY;
+            constexpr Color HOVER = Colors::LIGHT_GRAY;
+            constexpr Color FOCUS = Colors::GOLD;
+            constexpr Color DISABLED = Color::Alpha(Colors::GRAY, 0.5f);
+            constexpr Color ERROR = Colors::RED;
+        }
+        
+        // State colors
+        namespace State {
+            constexpr Color SELECTED = Colors::GOLD;
+            constexpr Color CHECKED = Colors::GREEN;
+            constexpr Color UNCHECKED = Colors::GRAY;
+            constexpr Color HOVER_OVERLAY = Color::Alpha(Colors::WHITE, 0.1f);
+            constexpr Color PRESS_OVERLAY = Color::Alpha(Colors::BLACK, 0.1f);
+        }
+        
+        // ============================================================================
+        // Spacing Constants
+        // ============================================================================
+        
+        namespace Spacing {
+            constexpr float NONE = 0.0f;
+            constexpr float TINY = 2.0f;
+            constexpr float SMALL = 4.0f;
+            constexpr float MEDIUM = 8.0f;
+            constexpr float LARGE = 12.0f;
+            constexpr float XL = 16.0f;
+            constexpr float XXL = 24.0f;
+            constexpr float HUGE = 32.0f;
+        }
+        
+        // ============================================================================
+        // Padding Constants
+        // ============================================================================
+        
+        namespace Padding {
+            // Button padding
+            constexpr float BUTTON_HORIZONTAL = 16.0f;
+            constexpr float BUTTON_VERTICAL = 8.0f;
+            
+            // Panel padding
+            constexpr float PANEL_HORIZONTAL = 12.0f;
+            constexpr float PANEL_VERTICAL = 12.0f;
+            
+            // Input padding
+            constexpr float INPUT_HORIZONTAL = 8.0f;
+            constexpr float INPUT_VERTICAL = 6.0f;
+            
+            // Label padding
+            constexpr float LABEL_HORIZONTAL = 4.0f;
+            constexpr float LABEL_VERTICAL = 4.0f;
+            
+            // Generic padding levels
+            constexpr float SMALL = 4.0f;
+            constexpr float MEDIUM = 8.0f;
+            constexpr float LARGE = 12.0f;
+        }
+        
+        // ============================================================================
+        // Font Size Constants
+        // ============================================================================
+        
+        namespace FontSize {
+            constexpr float TINY = 10.0f;
+            constexpr float SMALL = 12.0f;
+            constexpr float NORMAL = 14.0f;
+            constexpr float MEDIUM = 16.0f;
+            constexpr float LARGE = 18.0f;
+            constexpr float XL = 20.0f;
+            constexpr float XXL = 24.0f;
+            constexpr float HEADING_1 = 32.0f;
+            constexpr float HEADING_2 = 28.0f;
+            constexpr float HEADING_3 = 24.0f;
+        }
+        
+        // ============================================================================
+        // Border Constants
+        // ============================================================================
+        
+        namespace BorderSize {
+            constexpr float NONE = 0.0f;
+            constexpr float THIN = 1.0f;
+            constexpr float MEDIUM = 2.0f;
+            constexpr float THICK = 3.0f;
+        }
+        
+        namespace BorderRadius {
+            constexpr float NONE = 0.0f;
+            constexpr float SMALL = 2.0f;
+            constexpr float MEDIUM = 4.0f;
+            constexpr float LARGE = 8.0f;
+            constexpr float ROUND = 999.0f;  // Fully rounded (for pills/circles)
+        }
+        
+        // ============================================================================
+        // Component-Specific Constants
+        // ============================================================================
+        
+        namespace Button {
+            constexpr float MIN_WIDTH = 80.0f;
+            constexpr float MIN_HEIGHT = 32.0f;
+            constexpr float DEFAULT_HEIGHT = 36.0f;
+        }
+        
+        namespace Panel {
+            constexpr float MIN_WIDTH = 100.0f;
+            constexpr float MIN_HEIGHT = 100.0f;
+        }
+        
+        namespace Slider {
+            constexpr float TRACK_HEIGHT = 4.0f;
+            constexpr float THUMB_SIZE = 16.0f;
+            constexpr float MIN_WIDTH = 100.0f;
+        }
+        
+        namespace Checkbox {
+            constexpr float SIZE = 20.0f;
+            constexpr float CHECK_MARK_THICKNESS = 2.0f;
+        }
+        
+        namespace Input {
+            constexpr float MIN_WIDTH = 120.0f;
+            constexpr float DEFAULT_HEIGHT = 32.0f;
+        }
+        
+        // ============================================================================
+        // Animation Constants
+        // ============================================================================
+        
+        namespace Animation {
+            constexpr float FAST = 0.1f;     // 100ms
+            constexpr float NORMAL = 0.2f;   // 200ms
+            constexpr float SLOW = 0.3f;     // 300ms
+        }
+        
+        // ============================================================================
+        // Z-Index / Layer Constants
+        // ============================================================================
+        
+        namespace Layer {
+            constexpr int BACKGROUND = 0;
+            constexpr int CONTENT = 10;
+            constexpr int OVERLAY = 20;
+            constexpr int MODAL = 30;
+            constexpr int TOOLTIP = 40;
+            constexpr int NOTIFICATION = 50;
+        }
     }
 
     /**

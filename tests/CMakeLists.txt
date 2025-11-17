@@ -64,3 +64,8 @@ add_engine_test(ui_checkbox_test
 add_engine_test(ui_confirmation_dialog_test
     ui_confirmation_dialog_test.cpp
 )
+
+# Add UI Theme test
+add_engine_test(ui_theme_test
+    ui_theme_test.cpp
+)

@@ -139,6 +139,20 @@ void main_loop() {
 	// Update active scene
 	g_app_state->scene_switcher.Update(g_app_state->engine, delta_time);
 
+	// Handle capture operations
+	// Note: Screenshots and GIF recording are accessible via the Capture menu
+	// Manual capture can also be done programmatically using the capture API:
+	// auto& capture = engine::capture::GetCaptureManager();
+	// capture.Screenshot();
+	// capture.GifStart();
+	// etc.
+	
+	// Capture frame for GIF if recording
+	auto& capture = engine::capture::GetCaptureManager();
+	if (capture.IsGifRecording()) {
+		capture.CaptureFrame();
+	}
+
 	// Begin rendering
 	if (g_app_state->engine.renderer) {
 		g_app_state->engine.renderer->BeginFrame();

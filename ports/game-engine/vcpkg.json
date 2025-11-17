@@ -1,7 +1,7 @@
 {
   "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg.schema.json",
   "name": "game-engine",
-  "version": "0.0.26",
+  "version": "0.0.27",
   "description": "Citrus Engine - Modern C++20 game engine with native and WebAssembly support",
   "homepage": "https://github.com/adam4813/citrus-engine",
   "license": "MIT",

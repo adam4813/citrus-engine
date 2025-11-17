@@ -40,7 +40,7 @@ private:
 	float image_width_ = 256.0f;
 	float image_height_ = 256.0f;
 	bool show_logo_ = true;
-	
+
 	// Debug visualizer
 	UIDebugVisualizer ui_debugger_;
 
@@ -93,7 +93,7 @@ public:
 		logo_image_->AddChild(std::move(icon_image_));
 
 		// Create text label as another child
-		std::unique_ptr<engine::ui::Text> label_text_ = std::make_unique<engine::ui::Text>(
+		std::unique_ptr<engine::ui::elements::Text> label_text_ = std::make_unique<engine::ui::elements::Text>(
 				10.0f, // Relative to logo image
 				image_height_ + 10.0f,
 				"Logo Image",
@@ -155,7 +155,7 @@ public:
 
 		BatchRenderer::SubmitText(
 				"Children move with the parent image (relative positioning)", 10.0f, 60.0f, 16, Colors::LIGHT_GRAY);
-		
+
 		// Render debug overlay (after normal UI, so it appears on top)
 		if (logo_image_) {
 			ui_debugger_.RenderDebugOverlay(logo_image_.get());
@@ -203,7 +203,7 @@ public:
 				"image->SetSprite(sprite);\n"
 				"image->AddChild(std::move(child));\n"
 				"image->Render();  // Renders sprite + children");
-		
+
 		ImGui::Separator();
 		ImGui::Text("Debug Visualizer:");
 		ui_debugger_.RenderImGuiControls();

@@ -5,10 +5,10 @@ module;
 #include <cstdint>
 #include <memory>
 #include <optional>
+#include <spdlog/spdlog.h>
 #include <string>
 #include <unordered_map>
 #include <vector>
-#include <spdlog/spdlog.h>
 #ifdef __EMSCRIPTEN__
 #include <GLES3/gl3.h>
 #else
@@ -76,10 +76,11 @@ void BatchRenderer::Initialize() {
 		platform::fs::Path shader_dir = "shaders";
 		state_->ui_shader =
 				shader_mgr.LoadShader("ui_batch", shader_dir / "ui_batch.vert", shader_dir / "ui_batch.frag");
-		
+
 		if (state_->ui_shader == rendering::INVALID_SHADER) {
 			spdlog::error("[BatchRenderer] Failed to load UI batch shader!");
-		} else {
+		}
+		else {
 			spdlog::info("[BatchRenderer] UI batch shader loaded successfully (ID: {})", state_->ui_shader);
 		}
 
@@ -93,10 +94,11 @@ void BatchRenderer::Initialize() {
 		tex_info.parameters = {.generate_mipmaps = false};
 
 		state_->white_texture_id = texture_mgr.CreateTexture("ui_white_pixel", tex_info);
-		
+
 		if (state_->white_texture_id == rendering::INVALID_TEXTURE) {
 			spdlog::error("[BatchRenderer] Failed to create white texture!");
-		} else {
+		}
+		else {
 			spdlog::info("[BatchRenderer] White texture created (ID: {})", state_->white_texture_id);
 		}
 
@@ -249,6 +251,11 @@ void BatchRenderer::PopScissor() {
 }
 
 ScissorRect BatchRenderer::GetCurrentScissor() { return state_ ? state_->current_scissor : ScissorRect(); }
+
+void BatchRenderer::GetViewportSize(uint32_t& width, uint32_t& height) {
+	width = state_ ? state_->screen_width : 0;
+	height = state_ ? state_->screen_height : 0;
+}
 
 void BatchRenderer::SubmitQuad(
 		const Rectangle& rect, const Color& color, const std::optional<Rectangle>& uv_coords, uint32_t texture_id) {
@@ -633,7 +640,7 @@ void BatchRenderer::FlushBatch() {
 	uint32_t texture_ids[MAX_TEXTURE_SLOTS] = {0};
 	for (const auto& [texture_id, slot] : state_->texture_slots) {
 		texture_ids[slot] = texture_id;
-		
+
 		// Validate texture
 		auto* gl_tex = rendering::GetGLTexture(texture_id);
 		if (!gl_tex) {

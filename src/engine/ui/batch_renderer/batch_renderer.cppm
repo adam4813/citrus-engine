@@ -92,6 +92,14 @@ public:
 	static ScissorRect GetCurrentScissor();
 
 	/**
+		 * @brief Get current viewport size
+		 *
+		 * @param width Output width in pixels
+		 * @param height Output height in pixels
+		 */
+	static void GetViewportSize(uint32_t& width, uint32_t& height);
+
+	/**
          * @brief Submit a quad (filled rectangle)
          *
          * @param rect Screen-space rectangle

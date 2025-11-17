@@ -24,6 +24,7 @@ export import engine.os;
 export import engine.input;
 export import engine.scripting;
 export import engine.ui;
+export import engine.capture;
 
 // Main engine namespace
 export namespace engine {

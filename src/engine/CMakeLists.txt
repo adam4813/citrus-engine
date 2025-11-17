@@ -60,6 +60,7 @@ target_sources(engine-core
     scene/scene.cppm
     scripting/scripting_backend.cppm
     scripting/scripting_system.cppm
+    capture/capture.cppm
     ui/ui.cppm
     ui/types.cppm
     ui/text_renderer.cppm
@@ -127,6 +128,9 @@ target_sources(engine-core PRIVATE
     scripting/angelscript_backend.cpp
     scripting/scripting_factory.cpp
 
+    # Capture module implementation
+    capture/capture.cpp
+
     ui/text_renderer.cpp
     ui/batch_renderer/batch_renderer.cpp
 
@@ -141,6 +145,7 @@ target_include_directories(engine-core
     $<INSTALL_INTERFACE:include>
     PRIVATE
     ${STB_INCLUDE_DIRS}
+    ${CMAKE_CURRENT_SOURCE_DIR}/capture
 )
 
 # Engine dependencies

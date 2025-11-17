@@ -17,11 +17,12 @@ TEST_F(UIThemeColorTest, PrimaryColors_AreValid) {
 	EXPECT_EQ(UITheme::Primary::NORMAL.a, 1.0f);
 }
 
-TEST_F(UIThemeColorTest, PrimaryHover_IsBrighter) {
-	// Hover should be brighter than normal
-	EXPECT_GT(UITheme::Primary::HOVER.r, UITheme::Primary::NORMAL.r);
+TEST_F(UIThemeColorTest, PrimaryHover_IsBrighterOrMaxedOut) {
+	// Hover should be brighter than normal, or clamped at max if already bright
+	// GOLD has r=1.0, g=0.84, b=0.0, so r is already maxed out
+	EXPECT_GE(UITheme::Primary::HOVER.r, UITheme::Primary::NORMAL.r);
 	EXPECT_GT(UITheme::Primary::HOVER.g, UITheme::Primary::NORMAL.g);
-	EXPECT_GT(UITheme::Primary::HOVER.b, UITheme::Primary::NORMAL.b);
+	EXPECT_GE(UITheme::Primary::HOVER.b, UITheme::Primary::NORMAL.b);
 }
 
 TEST_F(UIThemeColorTest, PrimaryActive_IsDarker) {

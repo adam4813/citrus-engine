@@ -238,8 +238,9 @@ public:
 			UITheme::Button::DEFAULT_HEIGHT,
 			"Primary"
 		);
-		primary_button->SetBackgroundColor(UITheme::Primary::NORMAL);
+		primary_button->SetNormalColor(UITheme::Primary::NORMAL);
 		primary_button->SetHoverColor(UITheme::Primary::HOVER);
+		primary_button->SetPressedColor(UITheme::Primary::ACTIVE);
 		primary_button->SetClickCallback([this](const MouseEvent& event) {
 			show_confirmation_ = true;
 			confirm_dialog_->Show();
@@ -541,7 +542,7 @@ public:
 		root_panel_->AddChild(std::move(nested_panel_section_));
 	}
 	
-	void Update(float delta_time) override {
+	void Update(engine::Engine& engine, float delta_time) override {
 		// Update slider value labels reactively
 		if (slider_value_label_) {
 			char buffer[64];
@@ -567,7 +568,7 @@ public:
 		}
 	}
 	
-	void Render() override {
+	void Render(engine::Engine& engine) override {
 		using namespace engine::ui::batch_renderer;
 		
 		BatchRenderer::BeginFrame();
@@ -585,37 +586,37 @@ public:
 		BatchRenderer::EndFrame();
 	}
 	
-	void HandleInput(const engine::input::InputState& input) override {
-		using namespace engine::ui;
+	void RenderUI(engine::Engine& engine) override {
+		ImGui::Begin("UI Showcase Controls");
 		
-		MouseEvent mouse_event{
-			static_cast<float>(input.mouse_x),
-			static_cast<float>(input.mouse_y),
-			input.mouse_left_down,
-			input.mouse_right_down,
-			input.mouse_middle_down,
-			input.mouse_left_pressed,
-			input.mouse_right_pressed,
-			input.mouse_middle_pressed,
-			input.mouse_left_released,
-			input.mouse_right_released,
-			input.mouse_middle_released,
-			input.mouse_scroll_delta
-		};
+		ImGui::Text("Interactive UI Demonstration");
+		ImGui::Separator();
 		
-		// Process events (confirmation dialog has priority if visible)
-		bool event_handled = false;
+		ImGui::Text("Features:");
+		ImGui::BulletText("UITheme styling constants");
+		ImGui::BulletText("All UI components (Button, Checkbox, Slider, etc.)");
+		ImGui::BulletText("Event callbacks and reactive updates");
+		ImGui::BulletText("Composition and layout patterns");
 		
-		if (show_confirmation_ && confirm_dialog_) {
-			event_handled = confirm_dialog_->ProcessMouseEvent(mouse_event);
+		ImGui::Separator();
+		
+		ImGui::Text("Button clicks: %d", button_click_count_);
+		ImGui::Text("Volume: %.0f%%", volume_value_ * 100.0f);
+		ImGui::Text("Brightness: %.0f%%", brightness_value_ * 100.0f);
+		
+		if (ImGui::Button("Reset Counters")) {
+			button_click_count_ = 0;
 		}
 		
-		if (!event_handled && root_panel_) {
-			root_panel_->ProcessMouseEvent(mouse_event);
+		if (ImGui::Button("Show Confirmation Dialog")) {
+			show_confirmation_ = true;
+			confirm_dialog_->Show();
 		}
+		
+		ImGui::End();
 	}
 	
-	void Shutdown() override {
+	void Shutdown(engine::Engine& engine) override {
 		std::cout << "UIShowcaseScene: Shutting down..." << std::endl;
 		
 		// Cleanup UI

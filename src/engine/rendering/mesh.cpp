@@ -5,6 +5,7 @@ module;
 #include <unordered_map>
 #include <vector>
 #include <span>
+#include <cmath>
 #ifdef __EMSCRIPTEN__
 #include <GLES3/gl3.h>
 #else
@@ -160,8 +161,88 @@ namespace engine::rendering {
     }
 
     MeshId MeshManager::CreateSphere(float radius, uint32_t segments) {
-        // TODO: Create procedural sphere mesh
-        return INVALID_MESH;
+        std::vector<Vertex> vertices;
+        std::vector<uint32_t> indices;
+
+        const uint32_t rings = segments;
+        const uint32_t sectors = segments;
+
+        constexpr float PI = 3.14159265359f;
+
+        // Top pole - single vertex
+        Vertex top_pole;
+        top_pole.position = Vec3(0, radius, 0);
+        top_pole.normal = Vec3(0, 1, 0);
+        top_pole.tex_coords = Vec2(0.5f, 0.0f);
+        vertices.push_back(top_pole);
+
+        // Generate middle rings (exclude poles)
+        for (uint32_t ring = 1; ring < rings; ++ring) {
+            const float phi = PI * static_cast<float>(ring) / static_cast<float>(rings);
+            const float y = radius * std::cos(phi);
+            const float ring_radius = radius * std::sin(phi);
+
+            for (uint32_t sector = 0; sector <= sectors; ++sector) {
+                const float theta = 2.0f * PI * static_cast<float>(sector) / static_cast<float>(sectors);
+                const float x = ring_radius * std::cos(theta);
+                const float z = ring_radius * std::sin(theta);
+
+                Vertex vertex;
+                vertex.position = Vec3(x, y, z);
+                vertex.normal = glm::normalize(Vec3(x, y, z));
+                vertex.tex_coords = Vec2(
+                    static_cast<float>(sector) / static_cast<float>(sectors),
+                    static_cast<float>(ring) / static_cast<float>(rings)
+                );
+
+                vertices.push_back(vertex);
+            }
+        }
+
+        // Bottom pole - single vertex
+        Vertex bottom_pole;
+        bottom_pole.position = Vec3(0, -radius, 0);
+        bottom_pole.normal = Vec3(0, -1, 0);
+        bottom_pole.tex_coords = Vec2(0.5f, 1.0f);
+        vertices.push_back(bottom_pole);
+
+        // Generate indices for top cap (triangle fan from top pole)
+        for (uint32_t sector = 0; sector < sectors; ++sector) {
+            indices.push_back(0); // top pole
+            indices.push_back(1 + sector + 1);
+            indices.push_back(1 + sector);
+        }
+
+        // Generate indices for middle rings
+        for (uint32_t ring = 0; ring < rings - 2; ++ring) {
+            for (uint32_t sector = 0; sector < sectors; ++sector) {
+                const uint32_t current = 1 + ring * (sectors + 1) + sector;
+                const uint32_t next = current + sectors + 1;
+
+                indices.push_back(current);
+                indices.push_back(current + 1);
+                indices.push_back(next);
+
+                indices.push_back(current + 1);
+                indices.push_back(next + 1);
+                indices.push_back(next);
+            }
+        }
+
+        // Generate indices for bottom cap (triangle fan from bottom pole)
+        const uint32_t bottom_pole_index = static_cast<uint32_t>(vertices.size()) - 1;
+        const uint32_t last_ring_start = 1 + (rings - 2) * (sectors + 1);
+        for (uint32_t sector = 0; sector < sectors; ++sector) {
+            indices.push_back(bottom_pole_index);
+            indices.push_back(last_ring_start + sector);
+            indices.push_back(last_ring_start + sector + 1);
+        }
+
+        MeshCreateInfo info;
+        info.vertices = vertices;
+        info.indices = indices;
+
+        return CreateMesh(info);
     }
 
     void MeshManager::UpdateMesh(MeshId id, std::span<const Vertex> vertices, std::span<const uint32_t> indices) {

@@ -171,9 +171,7 @@ public:
 			// Update width
 			width_ = box_size_ + label_spacing_ + label_element_->GetWidth();
 
-			// Center label vertically
-			const float label_y = (box_size_ - label_element_->GetHeight()) * 0.5f;
-			label_element_->SetRelativePosition(box_size_ + label_spacing_, label_y);
+			UpdateLabelPosition();
 		}
 		else {
 			label_element_.reset();

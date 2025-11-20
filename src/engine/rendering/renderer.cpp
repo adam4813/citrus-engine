@@ -184,7 +184,13 @@ void Renderer::SubmitRenderCommand(const RenderCommand& command) const {
 			case RenderFlag::DepthTest: glEnable(GL_DEPTH_TEST); break;
 			case RenderFlag::Blend: glEnable(GL_BLEND); break;
 			case RenderFlag::CullFace: glEnable(GL_CULL_FACE); break;
-			case RenderFlag::Wireframe: glPolygonMode(GL_FRONT_AND_BACK, GL_LINE); break;
+			case RenderFlag::Wireframe:
+#ifdef __EMSCRIPTEN__
+// Not available in WebGL/GLES3, skip or find an alternative
+#else
+    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+#endif
+    		break;
 			case RenderFlag::DepthMask: glDepthMask(GL_TRUE); break;
 			default: break;
 			}
@@ -194,7 +200,13 @@ void Renderer::SubmitRenderCommand(const RenderCommand& command) const {
 			case RenderFlag::DepthTest: glDisable(GL_DEPTH_TEST); break;
 			case RenderFlag::Blend: glDisable(GL_BLEND); break;
 			case RenderFlag::CullFace: glDisable(GL_CULL_FACE); break;
-			case RenderFlag::Wireframe: glPolygonMode(GL_FRONT_AND_BACK, GL_FILL); break;
+			case RenderFlag::Wireframe:
+#ifdef __EMSCRIPTEN__
+// Not available in WebGL/GLES3, skip or find an alternative
+#else
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+#endif
+    		break;
 			case RenderFlag::DepthMask: glDepthMask(GL_FALSE); break;
 			default: break;
 			}
@@ -212,7 +224,13 @@ void Renderer::SubmitRenderCommand(const RenderCommand& command) const {
 			case RenderFlag::DepthTest: glEnable(GL_DEPTH_TEST); break;
 			case RenderFlag::Blend: glEnable(GL_BLEND); break;
 			case RenderFlag::CullFace: glEnable(GL_CULL_FACE); break;
-			case RenderFlag::Wireframe: glPolygonMode(GL_FRONT_AND_BACK, GL_LINE); break;
+			case RenderFlag::Wireframe:
+#ifdef __EMSCRIPTEN__
+// Not available in WebGL/GLES3, skip or find an alternative
+#else
+    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+#endif
+    		break;
 			case RenderFlag::DepthMask: glDepthMask(GL_TRUE); break;
 			default: break;
 			}
@@ -222,7 +240,13 @@ void Renderer::SubmitRenderCommand(const RenderCommand& command) const {
 			case RenderFlag::DepthTest: glDisable(GL_DEPTH_TEST); break;
 			case RenderFlag::Blend: glDisable(GL_BLEND); break;
 			case RenderFlag::CullFace: glDisable(GL_CULL_FACE); break;
-			case RenderFlag::Wireframe: glPolygonMode(GL_FRONT_AND_BACK, GL_FILL); break;
+			case RenderFlag::Wireframe:
+#ifdef __EMSCRIPTEN__
+// Not available in WebGL/GLES3, skip or find an alternative
+#else
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+#endif
+    		break;
 			case RenderFlag::DepthMask: glDepthMask(GL_FALSE); break;
 			default: break;
 			}

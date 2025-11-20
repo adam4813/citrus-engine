@@ -2,6 +2,7 @@ module;
 
 #include <cstddef>
 #include <cstdint>
+#include <vector>
 
 export module engine.rendering:types;
 
@@ -42,13 +43,30 @@ constexpr MeshId INVALID_MESH = 0;
 constexpr MaterialId INVALID_MATERIAL = 0;
 constexpr RenderTargetId INVALID_RENDER_TARGET = 0;
 
+enum class RenderFlag : uint32_t {
+	DepthTest = 1 << 0,
+	Blend = 1 << 1,
+	CullFace = 1 << 2,
+	Wireframe = 1 << 3,
+	StencilTest = 1 << 4,
+	ScissorTest = 1 << 5,
+	DepthMask = 1 << 6
+};
+
+struct RenderFlagStackEntry {
+	std::vector<RenderFlag> enable_flags;
+	std::vector<RenderFlag> disable_flags;
+};
+
 struct RenderCommand {
 	MeshId mesh;
 	ShaderId shader;
 	MaterialId material;
 	Mat4 transform;
 	Color tint = colors::white;
+	std::vector<RenderFlagStackEntry> render_state_stack;
 	int layer = 0;
+	glm::mat4 camera_view;
 };
 
 struct SpriteRenderCommand {
@@ -89,8 +107,10 @@ struct UIBatchRenderCommand {
 struct Renderable {
 	MeshId mesh{0};
 	MaterialId material{0};
+	ShaderId shader{0};
 	bool visible{true};
 	uint32_t render_layer{0};
+	std::vector<RenderFlagStackEntry> render_state_stack;
 	float alpha{1.0F};
 };
 

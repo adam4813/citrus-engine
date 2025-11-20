@@ -37,6 +37,29 @@ export namespace engine::input {
         bool just_released = false;
     };
 
+    // Mouse button enum
+    enum class MouseButton : uint8_t {
+        LEFT = 0,
+        RIGHT = 1,
+        MIDDLE = 2
+    };
+
+    // Mouse state struct
+    struct MouseState {
+        float x = 0.0f;
+        float y = 0.0f;
+        bool left_down = false;
+        bool right_down = false;
+        bool middle_down = false;
+        bool left_pressed = false;
+        bool right_pressed = false;
+        bool middle_pressed = false;
+        bool left_released = false;
+        bool right_released = false;
+        bool middle_released = false;
+        float scroll_delta = 0.0f;
+    };
+
     // Handler signature
     using KeyEventHandler = std::function<void(const KeyEvent &)>;
 
@@ -50,7 +73,7 @@ export namespace engine::input {
         // Poll input events (call once per frame, main thread)
         void PollEvents();
 
-        // Polling API
+        // Keyboard polling API
         [[nodiscard]] bool IsKeyPressed(KeyCode key);
 
         [[nodiscard]] bool IsKeyJustPressed(KeyCode key);
@@ -58,6 +81,19 @@ export namespace engine::input {
         [[nodiscard]] bool IsKeyJustReleased(KeyCode key);
 
         [[nodiscard]] KeyState GetKeyState(KeyCode key);
+
+        // Mouse polling API
+        [[nodiscard]] MouseState GetMouseState();
+        
+        [[nodiscard]] float GetMouseX();
+        
+        [[nodiscard]] float GetMouseY();
+        
+        [[nodiscard]] bool IsMouseButtonDown(MouseButton button);
+        
+        [[nodiscard]] bool IsMouseButtonPressed(MouseButton button);
+        
+        [[nodiscard]] bool IsMouseButtonReleased(MouseButton button);
 
         // Event registration
         // Per-key handler

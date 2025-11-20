@@ -2,11 +2,10 @@
 #include "scene_registry.h"
 #include "ui_debug_visualizer.h"
 
+#include <imgui.h>
 #include <iostream>
 #include <memory>
 #include <string>
-
-#include <imgui.h>
 
 import glm;
 import engine;
@@ -14,6 +13,7 @@ import engine;
 using namespace engine::ui;
 using namespace engine::ui::elements;
 using namespace engine::ui::batch_renderer;
+using namespace engine::input;
 
 /**
  * @brief Comprehensive UI showcase demonstrating all ported components
@@ -435,6 +435,27 @@ public:
 	}
 
 	void Update(engine::Engine& engine, float delta_time) override {
+		// ====================================================================
+		// Process Mouse Input
+		// ====================================================================
+
+		// Get mouse state from input system and convert to UI event
+		const MouseEvent mouse_event(Input::GetMouseState());
+
+		// Dispatch mouse event to UI elements
+		if (root_panel_) {
+			root_panel_->ProcessMouseEvent(mouse_event);
+		}
+
+		// Dispatch to confirmation dialog if visible
+		if (show_confirmation_ && confirm_dialog_) {
+			confirm_dialog_->ProcessMouseEvent(mouse_event);
+		}
+
+		// ====================================================================
+		// Update UI State (Reactive)
+		// ====================================================================
+
 		// Update slider value labels reactively
 		if (slider_value_label_) {
 			char buffer[64];

@@ -15,6 +15,11 @@ namespace engine::input {
         std::unordered_map<KeyCode, std::vector<KeyEventHandler> > key_handlers;
         std::vector<KeyEventHandler> global_handlers;
         std::unordered_map<KeyCode, KeyState> key_states;
+        
+        // Mouse state tracking
+        MouseState mouse_state;
+        MouseState prev_mouse_state;
+        
         const std::unordered_map<int, KeyCode> GLFW_TO_KEYCODE = {
             {GLFW_KEY_W, KeyCode::W}, {GLFW_KEY_A, KeyCode::A}, {GLFW_KEY_S, KeyCode::S}, {GLFW_KEY_D, KeyCode::D},
             {GLFW_KEY_UP, KeyCode::UP}, {GLFW_KEY_DOWN, KeyCode::DOWN}, {GLFW_KEY_LEFT, KeyCode::LEFT},
@@ -69,12 +74,47 @@ namespace engine::input {
 
     void Input::PollEvents() {
         if (!initialized) { return; }
+        
+        GLFWwindow *window = glfwGetCurrentContext();
+        if (!window) { return; }
+        
         glfwPollEvents();
+        
         std::lock_guard lock(event_mutex);
+        
+        // Clear just_pressed/just_released for keys
         for (auto &state: key_states | std::views::values) {
             state.just_pressed = false;
             state.just_released = false;
         }
+        
+        // Update mouse state
+        prev_mouse_state = mouse_state;
+        
+        // Get mouse position
+        double mouse_x, mouse_y;
+        glfwGetCursorPos(window, &mouse_x, &mouse_y);
+        mouse_state.x = static_cast<float>(mouse_x);
+        mouse_state.y = static_cast<float>(mouse_y);
+        
+        // Get mouse button states
+        bool left_down = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS;
+        bool right_down = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS;
+        bool middle_down = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_MIDDLE) == GLFW_PRESS;
+        
+        // Detect press/release events
+        mouse_state.left_down = left_down;
+        mouse_state.right_down = right_down;
+        mouse_state.middle_down = middle_down;
+        mouse_state.left_pressed = left_down && !prev_mouse_state.left_down;
+        mouse_state.right_pressed = right_down && !prev_mouse_state.right_down;
+        mouse_state.middle_pressed = middle_down && !prev_mouse_state.middle_down;
+        mouse_state.left_released = !left_down && prev_mouse_state.left_down;
+        mouse_state.right_released = !right_down && prev_mouse_state.right_down;
+        mouse_state.middle_released = !middle_down && prev_mouse_state.middle_down;
+        
+        // Reset scroll delta (would be set by callback)
+        mouse_state.scroll_delta = 0.0f;
     }
 
     bool Input::IsKeyPressed(const KeyCode key) {
@@ -99,6 +139,51 @@ namespace engine::input {
         std::lock_guard lock(event_mutex);
         const auto it = key_states.find(key);
         return it != key_states.end() ? it->second : KeyState{};
+    }
+
+    MouseState Input::GetMouseState() {
+        std::lock_guard lock(event_mutex);
+        return mouse_state;
+    }
+
+    float Input::GetMouseX() {
+        std::lock_guard lock(event_mutex);
+        return mouse_state.x;
+    }
+
+    float Input::GetMouseY() {
+        std::lock_guard lock(event_mutex);
+        return mouse_state.y;
+    }
+
+    bool Input::IsMouseButtonDown(const MouseButton button) {
+        std::lock_guard lock(event_mutex);
+        switch (button) {
+            case MouseButton::LEFT: return mouse_state.left_down;
+            case MouseButton::RIGHT: return mouse_state.right_down;
+            case MouseButton::MIDDLE: return mouse_state.middle_down;
+            default: return false;
+        }
+    }
+
+    bool Input::IsMouseButtonPressed(const MouseButton button) {
+        std::lock_guard lock(event_mutex);
+        switch (button) {
+            case MouseButton::LEFT: return mouse_state.left_pressed;
+            case MouseButton::RIGHT: return mouse_state.right_pressed;
+            case MouseButton::MIDDLE: return mouse_state.middle_pressed;
+            default: return false;
+        }
+    }
+
+    bool Input::IsMouseButtonReleased(const MouseButton button) {
+        std::lock_guard lock(event_mutex);
+        switch (button) {
+            case MouseButton::LEFT: return mouse_state.left_released;
+            case MouseButton::RIGHT: return mouse_state.right_released;
+            case MouseButton::MIDDLE: return mouse_state.middle_released;
+            default: return false;
+        }
     }
 
     void Input::RegisterKeyHandler(const KeyCode key, KeyEventHandler handler) {

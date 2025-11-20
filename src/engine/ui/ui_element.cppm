@@ -123,7 +123,7 @@ public:
          *
          * @see UI_DEVELOPMENT_BIBLE.md §9 for coordinate system details
          */
-	batch_renderer::Rectangle GetAbsoluteBounds() const;
+	virtual batch_renderer::Rectangle GetAbsoluteBounds() const;
 
 	/**
          * @brief Get relative bounds (position relative to parent)

@@ -212,6 +212,41 @@ public:
          */
 	bool GetClipChildren() const { return clip_children_; }
 
+	// === Bounds Calculation Override ===
+
+	/**
+         * @brief Get absolute position with padding applied
+         *
+         * Overrides base implementation to apply this element's padding to
+         * the bounds. This ensures that children positioned at (0,0) will
+         * render at (padding, padding) relative to the panel's top-left corner.
+         *
+         * Note: This modifies the panel's own absolute bounds by adding padding.
+         * The panel's background/border are rendered using the base bounds (before padding).
+         *
+         * @return Rectangle in absolute screen coordinates with padding applied
+         */
+	batch_renderer::Rectangle GetAbsoluteBounds() const override {
+		batch_renderer::Rectangle bounds = GetRelativeBounds();
+
+		// Walk up parent chain to accumulate absolute position
+		const UIElement* current_parent = GetParent();
+		while (current_parent != nullptr) {
+			const batch_renderer::Rectangle parent_bounds = current_parent->GetRelativeBounds();
+			bounds.x += parent_bounds.x;
+			bounds.y += parent_bounds.y;
+			current_parent = current_parent->GetParent();
+		}
+
+		// Apply padding to bounds for children rendering
+		bounds.x += padding_;
+		bounds.y += padding_;
+		bounds.width -= padding_ * 2.0f;
+		bounds.height -= padding_ * 2.0f;
+
+		return bounds;
+	}
+
 	// === Rendering ===
 
 	/**
@@ -221,13 +256,10 @@ public:
          * 1. Background quad (with opacity)
          * 2. Border lines (if border_width > 0)
          * 3. Push scissor (if clip_children_ is true)
-         * 4. Apply padding offset to children positions
-         * 5. Render children (recursively)
-         * 6. Restore children positions
-         * 7. Pop scissor
+         * 4. Render children (recursively) - padding is applied via GetAbsoluteBounds()
+         * 5. Pop scissor
          *
          * Children are clipped to panel bounds via scissor test.
-         * Padding automatically offsets children from panel edges.
          *
          * @code
          * panel->Render();  // Renders panel and all children
@@ -241,19 +273,27 @@ public:
 			return;
 		}
 
-		const Rectangle bounds = GetAbsoluteBounds();
+		// Get absolute content bounds (with padding already applied)
+		const Rectangle content_bounds = GetAbsoluteBounds();
+
+		// Un-apply padding to get actual panel bounds for background/border
+		const Rectangle absolute_bounds = {
+				content_bounds.x - padding_,
+				content_bounds.y - padding_,
+				content_bounds.width + padding_ * 2.0f,
+				content_bounds.height + padding_ * 2.0f};
 
 		// Render background
-		Color bg_color = Color::Alpha(background_color_, opacity_);
-		BatchRenderer::SubmitQuad(bounds, bg_color);
+		const Color bg_color = Color::Alpha(background_color_, opacity_);
+		BatchRenderer::SubmitQuad(absolute_bounds, bg_color);
 
 		// Render border if width > 0
 		if (border_width_ > 0.0f) {
 			const Color border_color = Color::Alpha(border_color_, opacity_);
-			const float x = bounds.x;
-			const float y = bounds.y;
-			const float w = bounds.width;
-			const float h = bounds.height;
+			const float x = absolute_bounds.x;
+			const float y = absolute_bounds.y;
+			const float w = absolute_bounds.width;
+			const float h = absolute_bounds.height;
 
 			// Top edge
 			BatchRenderer::SubmitLine(x, y, x + w, y, border_width_, border_color);
@@ -267,39 +307,13 @@ public:
 
 		// Push scissor for children (if clipping enabled)
 		if (clip_children_) {
-			const ScissorRect scissor{
-					bounds.x + padding_,
-					bounds.y + padding_,
-					bounds.width - padding_ * 2.0f,
-					bounds.height - padding_ * 2.0f};
+			const ScissorRect scissor{content_bounds.x, content_bounds.y, content_bounds.width, content_bounds.height};
 			BatchRenderer::PushScissor(scissor);
 		}
 
-		// Apply padding offset to children for rendering
-		// Store original positions to restore after rendering
-		std::vector<std::pair<float, float>> original_positions;
-		if (padding_ > 0.0f) {
-			original_positions.reserve(GetChildren().size());
-			for (const auto& child : GetChildren()) {
-				const auto child_bounds = child->GetRelativeBounds();
-				original_positions.emplace_back(child_bounds.x, child_bounds.y);
-				// Offset child position by padding
-				child->SetRelativePosition(child_bounds.x + padding_, child_bounds.y + padding_);
-			}
-		}
-
-		// Render children
+		// Render children (padding is applied via GetAbsoluteBounds() override)
 		for (const auto& child : GetChildren()) {
 			child->Render();
-		}
-
-		// Restore original positions
-		if (padding_ > 0.0f) {
-			size_t i = 0;
-			for (const auto& child : GetChildren()) {
-				child->SetRelativePosition(original_positions[i].first, original_positions[i].second);
-				++i;
-			}
 		}
 
 		// Pop scissor

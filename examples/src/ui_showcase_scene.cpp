@@ -1,5 +1,6 @@
 #include "example_scene.h"
 #include "scene_registry.h"
+#include "ui_debug_visualizer.h"
 
 #include <iostream>
 #include <memory>
@@ -60,6 +61,9 @@ private:
 
 	// Confirmation dialog
 	std::unique_ptr<ConfirmationDialog> confirm_dialog_;
+
+	// Debug visualizer
+	UIDebugVisualizer ui_debugger_;
 
 	// ========================================================================
 	// State
@@ -468,11 +472,13 @@ public:
 		// Render main UI
 		if (root_panel_) {
 			root_panel_->Render();
+			ui_debugger_.RenderDebugOverlay(root_panel_.get());
 		}
 
 		// Render confirmation dialog on top
 		if (show_confirmation_ && confirm_dialog_) {
 			confirm_dialog_->Render();
+			ui_debugger_.RenderDebugOverlay(confirm_dialog_.get());
 		}
 
 		BatchRenderer::EndFrame();
@@ -504,6 +510,10 @@ public:
 			show_confirmation_ = true;
 			confirm_dialog_->Show();
 		}
+
+		ImGui::Separator();
+		ImGui::Text("Debug Visualizer:");
+		ui_debugger_.RenderImGuiControls();
 
 		ImGui::End();
 	}

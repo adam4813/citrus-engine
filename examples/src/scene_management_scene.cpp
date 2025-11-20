@@ -4,6 +4,7 @@
 import engine;
 import glm;
 
+#include <flecs.h>
 #include <imgui.h>
 #include <iostream>
 #include <string>
@@ -25,10 +26,11 @@ import glm;
  * - Scene hierarchy with parent-child relationships
  */
 class SceneManagementScene : public examples::ExampleScene {
+private:
+	flecs::entity camera_entity_;
+
 public:
-	const char* GetName() const override { 
-		return "Scene Management"; 
-	}
+	const char* GetName() const override { return "Scene Management"; }
 
 	const char* GetDescription() const override {
 		return "Demonstrates scene creation, transitions, and lifecycle management";
@@ -58,16 +60,23 @@ public:
 		scene_manager.SetActiveScene(scene_a_id_);
 		current_scene_id_ = scene_a_id_;
 
-		std::cout << "SceneManagementScene: Created " << scene_manager.GetSceneCount() 
-		          << " scenes" << std::endl;
+		std::cout << "SceneManagementScene: Created " << scene_manager.GetSceneCount() << " scenes" << std::endl;
+
+		auto& ecs = engine.ecs;
+		camera_entity_ = ecs.CreateEntity("MainCamera");
+		camera_entity_.set<engine::components::Transform>({{0.0f, 0.0f, 5.0f}});
+		camera_entity_.set<engine::components::Camera>({.target = {0.0f, 0.0f, 4.0f}});
+		ecs.SetActiveCamera(camera_entity_);
 	}
 
 	void Shutdown(engine::Engine& engine) override {
 		std::cout << "SceneManagementScene: Shutdown" << std::endl;
 
+		camera_entity_.destruct();
+
 		// Clean up all created scenes
 		auto& scene_manager = engine::scene::GetSceneManager();
-		
+
 		if (scene_a_id_ != engine::scene::INVALID_SCENE) {
 			scene_manager.DestroyScene(scene_a_id_);
 		}
@@ -93,7 +102,7 @@ public:
 	void Render(engine::Engine& engine) override {
 		// Render current scene entities
 		auto& scene_manager = engine::scene::GetSceneManager();
-		
+
 		if (current_scene_id_ == engine::scene::INVALID_SCENE) {
 			return;
 		}
@@ -105,7 +114,7 @@ public:
 
 		// Get all entities in the current scene and render debug information
 		auto entities = scene->GetAllEntities();
-		
+
 		// For this example, we just demonstrate the scene management
 		// In a real game, rendering would be handled by the rendering system
 	}
@@ -114,7 +123,7 @@ public:
 		auto& scene_manager = engine::scene::GetSceneManager();
 
 		ImGui::Begin("Scene Management Example");
-		
+
 		ImGui::Text("This example demonstrates the engine's scene management system.");
 		ImGui::Separator();
 
@@ -132,7 +141,7 @@ public:
 				ImGui::Text("Current Scene: %s", scene->GetName().c_str());
 				ImGui::Text("Active: %s", scene->IsActive() ? "Yes" : "No");
 				ImGui::Text("Loaded: %s", scene->IsLoaded() ? "Yes" : "No");
-				
+
 				auto entities = scene->GetAllEntities();
 				ImGui::Text("Entities in Scene: %zu", entities.size());
 			}
@@ -142,7 +151,7 @@ public:
 
 		// Scene transition controls
 		ImGui::Text("Scene Transitions:");
-		
+
 		if (ImGui::Button("Switch to Scene A")) {
 			SwitchToScene(scene_manager, scene_a_id_, "Scene A");
 		}
@@ -159,7 +168,7 @@ public:
 
 		// Scene lifecycle controls
 		ImGui::Text("Scene Lifecycle:");
-		
+
 		if (current_scene_id_ != engine::scene::INVALID_SCENE) {
 			auto* scene = scene_manager.TryGetScene(current_scene_id_);
 			if (scene) {
@@ -168,7 +177,8 @@ public:
 					scene->SetLoaded(!is_loaded);
 					if (!is_loaded) {
 						scene->LoadAssets();
-					} else {
+					}
+					else {
 						scene->UnloadAssets();
 					}
 				}
@@ -183,14 +193,15 @@ public:
 			if (scene) {
 				ImGui::Text("Scene Entities:");
 				auto entities = scene->GetAllEntities();
-				
+
 				if (ImGui::BeginChild("EntityList", ImVec2(0, 150), true)) {
 					for (const auto& entity : entities) {
 						if (entity.is_valid()) {
 							const char* name = entity.name();
-							ImGui::BulletText("%s (ID: %llu)", 
-								name ? name : "<unnamed>", 
-								static_cast<unsigned long long>(entity.id()));
+							ImGui::BulletText(
+									"%s (ID: %llu)",
+									name ? name : "<unnamed>",
+									static_cast<unsigned long long>(entity.id()));
 						}
 					}
 				}
@@ -202,16 +213,15 @@ public:
 
 		// Instructions
 		ImGui::TextWrapped(
-			"This example demonstrates:\n"
-			"- Creating multiple scenes using SceneManager\n"
-			"- Switching between scenes\n"
-			"- Scene activation and deactivation\n"
-			"- Entity management within scenes\n"
-			"- Scene lifecycle (load/unload)\n"
-			"\n"
-			"Use the buttons above to switch between scenes and observe "
-			"how the scene manager handles transitions."
-		);
+				"This example demonstrates:\n"
+				"- Creating multiple scenes using SceneManager\n"
+				"- Switching between scenes\n"
+				"- Scene activation and deactivation\n"
+				"- Entity management within scenes\n"
+				"- Scene lifecycle (load/unload)\n"
+				"\n"
+				"Use the buttons above to switch between scenes and observe "
+				"how the scene manager handles transitions.");
 
 		ImGui::End();
 	}
@@ -256,9 +266,8 @@ private:
 		scene.SetLoaded(true);
 	}
 
-	void SwitchToScene(engine::scene::SceneManager& scene_manager, 
-	                   engine::scene::SceneId scene_id, 
-	                   const char* scene_name) {
+	void
+	SwitchToScene(engine::scene::SceneManager& scene_manager, engine::scene::SceneId scene_id, const char* scene_name) {
 		if (scene_id == engine::scene::INVALID_SCENE) {
 			std::cerr << "Cannot switch to invalid scene" << std::endl;
 			return;
@@ -277,5 +286,5 @@ private:
 };
 
 // Register the scene
-REGISTER_EXAMPLE_SCENE(SceneManagementScene, "Scene Management", 
-                       "Demonstrates scene creation, transitions, and lifecycle management");
+REGISTER_EXAMPLE_SCENE(
+		SceneManagementScene, "Scene Management", "Demonstrates scene creation, transitions, and lifecycle management");

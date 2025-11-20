@@ -123,7 +123,7 @@ public:
          *
          * @see UI_DEVELOPMENT_BIBLE.md §9 for coordinate system details
          */
-	virtual batch_renderer::Rectangle GetAbsoluteBounds() const;
+	batch_renderer::Rectangle GetAbsoluteBounds() const;
 
 	/**
          * @brief Get relative bounds (position relative to parent)
@@ -449,6 +449,36 @@ protected:
 	UIElement(float x, float y, float width, float height) :
 			relative_x_(x), relative_y_(y), width_(width), height_(height) {}
 
+	/**
+         * @brief Get content bounds (area where children are positioned)
+         *
+         * By default, returns the same as GetRelativeBounds(). Container elements
+         * like Panel can override this to account for padding/margins.
+         *
+         * This is used internally when positioning children within this element.
+         *
+         * @return Rectangle representing the content area in parent-relative coordinates
+         */
+	virtual batch_renderer::Rectangle GetContentBounds() const { return GetRelativeBounds(); }
+
+	/**
+         * @brief Get absolute content bounds (where children are positioned in screen space)
+         *
+         * Walks up the parent chain using GetContentBounds() to compute the absolute
+         * position of this element's content area. This is where children at (0,0)
+         * will actually be positioned.
+         *
+         * @return Rectangle in absolute screen coordinates representing content area
+         */
+	batch_renderer::Rectangle GetAbsoluteContentBounds() const;
+
+	/**
+	 * @brief Get absolute content bounds of the bounds of the parent element
+	 *
+	 * @return Rectangle in absolute screen coordinates representing content area of the parent
+	 */
+	batch_renderer::Rectangle GetAbsoluteParentContentBounds() const;
+
 	// Position relative to parent
 	float relative_x_ = 0.0f;
 	float relative_y_ = 0.0f;
@@ -492,14 +522,33 @@ inline void UIElement::RemoveChild(UIElement* child) {
 }
 
 inline batch_renderer::Rectangle UIElement::GetAbsoluteBounds() const {
-	batch_renderer::Rectangle bounds = GetRelativeBounds();
+	const batch_renderer::Rectangle bounds = GetRelativeBounds();
+	const batch_renderer::Rectangle parents_bounds = GetAbsoluteParentContentBounds();
 
-	// Walk up parent chain to accumulate absolute position
+	return {bounds.x + parents_bounds.x,
+			bounds.y + parents_bounds.y,
+			bounds.width - parents_bounds.width,
+			bounds.height - parents_bounds.height};
+}
+
+inline batch_renderer::Rectangle UIElement::GetAbsoluteContentBounds() const {
+	const batch_renderer::Rectangle bounds = GetContentBounds();
+	const batch_renderer::Rectangle parents_bounds = GetAbsoluteParentContentBounds();
+
+	return {bounds.x + parents_bounds.x,
+			bounds.y + parents_bounds.y,
+			bounds.width - parents_bounds.width,
+			bounds.height - parents_bounds.height};
+}
+
+inline batch_renderer::Rectangle UIElement::GetAbsoluteParentContentBounds() const {
+	batch_renderer::Rectangle bounds{0.0f, 0.0f, 0.0f, 0.0f};
+
 	const UIElement* current_parent = parent_;
 	while (current_parent != nullptr) {
-		const batch_renderer::Rectangle parent_bounds = current_parent->GetRelativeBounds();
-		bounds.x += parent_bounds.x;
-		bounds.y += parent_bounds.y;
+		const batch_renderer::Rectangle parent_content_bounds = current_parent->GetContentBounds();
+		bounds.x += parent_content_bounds.x;
+		bounds.y += parent_content_bounds.y;
 		current_parent = current_parent->parent_;
 	}
 

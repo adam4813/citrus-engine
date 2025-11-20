@@ -212,41 +212,6 @@ public:
          */
 	bool GetClipChildren() const { return clip_children_; }
 
-	// === Bounds Calculation Override ===
-
-	/**
-         * @brief Get absolute position with padding applied
-         *
-         * Overrides base implementation to apply this element's padding to
-         * the bounds. This ensures that children positioned at (0,0) will
-         * render at (padding, padding) relative to the panel's top-left corner.
-         *
-         * Note: This modifies the panel's own absolute bounds by adding padding.
-         * The panel's background/border are rendered using the base bounds (before padding).
-         *
-         * @return Rectangle in absolute screen coordinates with padding applied
-         */
-	batch_renderer::Rectangle GetAbsoluteBounds() const override {
-		batch_renderer::Rectangle bounds = GetRelativeBounds();
-
-		// Walk up parent chain to accumulate absolute position
-		const UIElement* current_parent = GetParent();
-		while (current_parent != nullptr) {
-			const batch_renderer::Rectangle parent_bounds = current_parent->GetRelativeBounds();
-			bounds.x += parent_bounds.x;
-			bounds.y += parent_bounds.y;
-			current_parent = current_parent->GetParent();
-		}
-
-		// Apply padding to bounds for children rendering
-		bounds.x += padding_;
-		bounds.y += padding_;
-		bounds.width -= padding_ * 2.0f;
-		bounds.height -= padding_ * 2.0f;
-
-		return bounds;
-	}
-
 	// === Rendering ===
 
 	/**
@@ -273,15 +238,8 @@ public:
 			return;
 		}
 
-		// Get absolute content bounds (with padding already applied)
-		const Rectangle content_bounds = GetAbsoluteBounds();
-
-		// Un-apply padding to get actual panel bounds for background/border
-		const Rectangle absolute_bounds = {
-				content_bounds.x - padding_,
-				content_bounds.y - padding_,
-				content_bounds.width + padding_ * 2.0f,
-				content_bounds.height + padding_ * 2.0f};
+		// Get actual panel bounds (element itself, not content area)
+		const Rectangle absolute_bounds = GetAbsoluteBounds();
 
 		// Render background
 		const Color bg_color = Color::Alpha(background_color_, opacity_);
@@ -305,13 +263,16 @@ public:
 			BatchRenderer::SubmitLine(x, y + h, x, y, border_width_, border_color);
 		}
 
+		// Get content bounds for scissor clipping
+		const Rectangle content_bounds = GetAbsoluteContentBounds();
+
 		// Push scissor for children (if clipping enabled)
 		if (clip_children_) {
 			const ScissorRect scissor{content_bounds.x, content_bounds.y, content_bounds.width, content_bounds.height};
 			BatchRenderer::PushScissor(scissor);
 		}
 
-		// Render children (padding is applied via GetAbsoluteBounds() override)
+		// Render children (they use GetAbsoluteBounds which accounts for parent padding)
 		for (const auto& child : GetChildren()) {
 			child->Render();
 		}
@@ -320,6 +281,30 @@ public:
 		if (clip_children_) {
 			BatchRenderer::PopScissor();
 		}
+	}
+
+protected:
+	// === Bounds Calculation Override ===
+
+	/**
+		 * @brief Get content bounds with padding applied
+		 *
+		 * Overrides base implementation to apply this panel's padding to
+		 * the bounds. This ensures that children positioned at (0,0) will
+		 * render at (padding, padding) relative to the panel's top-left corner.
+		 *
+		 * @return Rectangle representing content area (relative bounds with padding applied)
+		 */
+	batch_renderer::Rectangle GetContentBounds() const override {
+		batch_renderer::Rectangle bounds = GetRelativeBounds();
+
+		// Apply padding to create content area
+		bounds.x += padding_;
+		bounds.y += padding_;
+		bounds.width -= padding_ * 2.0f;
+		bounds.height -= padding_ * 2.0f;
+
+		return bounds;
 	}
 
 private:

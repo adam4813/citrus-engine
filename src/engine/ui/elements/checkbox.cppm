@@ -99,9 +99,7 @@ public:
 			// Extend width to include label
 			width_ = box_size_ + label_spacing_ + label_element_->GetWidth();
 
-			// Center label vertically with box
-			const float label_y = (box_size_ - label_element_->GetHeight()) * 0.5f;
-			label_element_->SetRelativePosition(box_size_ + label_spacing_, label_y);
+			UpdateLabelPosition();
 		}
 	}
 
@@ -378,6 +376,7 @@ public:
 
 		// Render label
 		if (label_element_) {
+			UpdateLabelPosition();
 			label_element_->Render();
 		}
 
@@ -388,6 +387,16 @@ public:
 	}
 
 private:
+	void UpdateLabelPosition() const {
+		using namespace batch_renderer;
+		if (label_element_) {
+
+			const Rectangle bounds = GetAbsoluteBounds();
+			const float label_y = (box_size_ - label_element_->GetHeight()) * 0.5f;
+			label_element_->SetRelativePosition(bounds.x + box_size_ + label_spacing_, bounds.y + label_y);
+		}
+	}
+
 	bool is_checked_;
 	float box_size_;
 	std::string label_text_;

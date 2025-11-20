@@ -314,7 +314,7 @@ private:
 	float border_width_{0.0f};
 	float padding_{0.0f};
 	float opacity_{1.0f};
-	bool clip_children_{true};
+	bool clip_children_{false};
 };
 
 } // namespace engine::ui::elements

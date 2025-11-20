@@ -335,6 +335,7 @@ public:
 
 		// Render label (pre-computed, centered)
 		if (text_element_) {
+			UpdateTextPosition();
 			text_element_->Render();
 		}
 
@@ -352,9 +353,13 @@ private:
          * Centers text horizontally and vertically within button bounds.
          */
 	void UpdateTextPosition() const {
+		using namespace batch_renderer;
+
 		if (!text_element_) {
 			return;
 		}
+
+		const Rectangle bounds = GetAbsoluteBounds();
 
 		// Center text within button
 		const float text_width = text_element_->GetWidth();
@@ -363,7 +368,7 @@ private:
 		const float text_x = (width_ - text_width) * 0.5f;
 		const float text_y = (height_ - text_height) * 0.5f;
 
-		text_element_->SetRelativePosition(text_x, text_y);
+		text_element_->SetRelativePosition(bounds.x + text_x, bounds.y + text_y);
 	}
 
 	std::string label_;

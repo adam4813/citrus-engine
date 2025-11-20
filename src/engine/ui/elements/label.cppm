@@ -236,6 +236,7 @@ public:
 
 		// Render text (pre-computed, efficient)
 		if (text_element_) {
+			UpdateTextPosition();
 			text_element_->Render();
 		}
 
@@ -278,6 +279,7 @@ private:
          * Aligns text within label bounds.
          */
 	void UpdateTextPosition() const {
+		using namespace batch_renderer;
 		if (!text_element_) {
 			return;
 		}
@@ -292,7 +294,9 @@ private:
 		case Alignment::Right: text_x = width_ - text_width; break;
 		}
 
-		text_element_->SetRelativePosition(text_x, 0.0f);
+		const Rectangle bounds = GetAbsoluteBounds();
+
+		text_element_->SetRelativePosition(bounds.x + text_x, bounds.y + 0.0f);
 	}
 
 	std::string text_content_;

@@ -188,9 +188,9 @@ void Renderer::SubmitRenderCommand(const RenderCommand& command) const {
 #ifdef __EMSCRIPTEN__
 // Not available in WebGL/GLES3, skip or find an alternative
 #else
-    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+				glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 #endif
-    		break;
+				break;
 			case RenderFlag::DepthMask: glDepthMask(GL_TRUE); break;
 			default: break;
 			}
@@ -204,9 +204,9 @@ void Renderer::SubmitRenderCommand(const RenderCommand& command) const {
 #ifdef __EMSCRIPTEN__
 // Not available in WebGL/GLES3, skip or find an alternative
 #else
-    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+				glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 #endif
-    		break;
+				break;
 			case RenderFlag::DepthMask: glDepthMask(GL_FALSE); break;
 			default: break;
 			}
@@ -228,9 +228,9 @@ void Renderer::SubmitRenderCommand(const RenderCommand& command) const {
 #ifdef __EMSCRIPTEN__
 // Not available in WebGL/GLES3, skip or find an alternative
 #else
-    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+				glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 #endif
-    		break;
+				break;
 			case RenderFlag::DepthMask: glDepthMask(GL_TRUE); break;
 			default: break;
 			}
@@ -244,9 +244,9 @@ void Renderer::SubmitRenderCommand(const RenderCommand& command) const {
 #ifdef __EMSCRIPTEN__
 // Not available in WebGL/GLES3, skip or find an alternative
 #else
-    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+				glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 #endif
-    		break;
+				break;
 			case RenderFlag::DepthMask: glDepthMask(GL_FALSE); break;
 			default: break;
 			}

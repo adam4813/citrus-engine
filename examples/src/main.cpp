@@ -25,7 +25,25 @@ import engine;
 // =============================================================================
 
 class HelloScene : public examples::ExampleScene {
+private:
 	uint32_t font_texture_id = 0;
+	flecs::entity camera_entity;
+
+	void CreateMainCamera(engine::ecs::ECSWorld& ecs) {
+		camera_entity = ecs.CreateEntity("MainCamera");
+
+		// Position camera at (0, 0, -1) looking towards the origin for the example scenes
+		camera_entity.set<engine::components::Transform>({{0.0f, 0.0f, -1.0f}});
+		camera_entity.set<engine::components::Camera>(
+				{.target = {0.0f, 0.0f, 0.0f}, // Look at the origin
+				 .up = {0.0f, 1.0f, 0.0f},
+				 .fov = 60.0f,
+				 .aspect_ratio = static_cast<float>(800) / static_cast<float>(600),
+				 .near_plane = 0.1f,
+				 .far_plane = 100.0f,
+				 .dirty = true});
+		ecs.SetActiveCamera(camera_entity);
+	}
 
 public:
 	const char* GetName() const override { return "Hello World"; }
@@ -37,9 +55,11 @@ public:
 		engine::ui::text_renderer::FontManager::Initialize("fonts/Kenney Future.ttf", 16);
 		engine::ui::batch_renderer::BatchRenderer::Initialize();
 		font_texture_id = engine::ui::text_renderer::FontManager::GetDefaultFont()->GetTextureId();
+		CreateMainCamera(engine.ecs);
 	}
 
 	void Shutdown(engine::Engine& engine) override {
+		camera_entity.destruct();
 		engine::ui::batch_renderer::BatchRenderer::Shutdown();
 		engine::ui::text_renderer::FontManager::Shutdown();
 		std::cout << "HelloScene shutdown" << std::endl;
@@ -93,22 +113,6 @@ struct AppState {
 // Global app state for main loop
 static AppState* g_app_state = nullptr;
 
-void CreateMainCamera(engine::ecs::ECSWorld& ecs) {
-	const flecs::entity camera_entity = ecs.CreateEntity("MainCamera");
-
-	// Position camera at (0, 0, -1) looking towards the origin for the example scenes
-	camera_entity.set<engine::components::Transform>({{0.0f, 0.0f, -1.0f}});
-	camera_entity.set<engine::components::Camera>(
-			{.target = {0.0f, 0.0f, 0.0f}, // Look at the origin
-			 .up = {0.0f, 1.0f, 0.0f},
-			 .fov = 60.0f,
-			 .aspect_ratio = static_cast<float>(800) / static_cast<float>(600),
-			 .near_plane = 0.1f,
-			 .far_plane = 100.0f,
-			 .dirty = true});
-	ecs.SetActiveCamera(camera_entity);
-}
-
 // =============================================================================
 // Main Loop
 // =============================================================================
@@ -133,16 +137,18 @@ void main_loop() {
 		return;
 	}
 
-	// Update engine
-	g_app_state->engine.Update(delta_time);
+	if (g_app_state->engine.renderer) {
+		g_app_state->engine.renderer->BeginFrame();
+	}
 
 	// Update active scene
 	g_app_state->scene_switcher.Update(g_app_state->engine, delta_time);
 
+	// Update engine
+	g_app_state->engine.Update(delta_time);
+
 	// Begin rendering
 	if (g_app_state->engine.renderer) {
-		g_app_state->engine.renderer->BeginFrame();
-
 		// Render active scene
 		g_app_state->scene_switcher.Render(g_app_state->engine);
 
@@ -205,8 +211,6 @@ int main(int argc, char* argv[]) {
 
 	// Initialize timing
 	app_state.last_frame_time = static_cast<float>(glfwGetTime());
-
-	CreateMainCamera(app_state.engine.ecs);
 
 	std::cout << "Starting main loop..." << std::endl;
 

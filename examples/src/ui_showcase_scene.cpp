@@ -553,6 +553,7 @@ public:
 
 		// Shutdown renderer
 		engine::ui::batch_renderer::BatchRenderer::Shutdown();
+		engine::ui::text_renderer::FontManager::Shutdown();
 
 		std::cout << "UIShowcaseScene: Shutdown complete" << std::endl;
 	}

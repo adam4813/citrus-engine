@@ -4,8 +4,8 @@
 #include <glad/glad.h>
 #define GLFW_INCLUDE_NONE
 #else
-#include <emscripten/emscripten.h>
 #include <GLES3/gl3.h>
+#include <emscripten/emscripten.h>
 #endif
 
 #include <imgui.h>
@@ -14,59 +14,60 @@
 
 class DebugUi {
 private:
-    bool wireframe_enabled_ = false;
+	bool wireframe_enabled_ = false;
 
 public:
-    void Init(GLFWwindow *window) {
-        // Setup Dear ImGui context
-        IMGUI_CHECKVERSION();
-        ImGui::CreateContext();
-        ImGuiIO &io = ImGui::GetIO();
-        io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard; // Enable Keyboard Controls
-        io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad; // Enable Gamepad Controls
+	void Init(GLFWwindow* window) {
+		// Setup Dear ImGui context
+		IMGUI_CHECKVERSION();
+		ImGui::CreateContext();
+		ImGuiIO& io = ImGui::GetIO();
+		io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard; // Enable Keyboard Controls
+		io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad; // Enable Gamepad Controls
 
-        // Setup Platform/Renderer backends
-        ImGui_ImplGlfw_InitForOpenGL(window, true);
-        ImGui_ImplOpenGL3_Init();
-    }
+		// Setup Platform/Renderer backends
+		ImGui_ImplGlfw_InitForOpenGL(window, true);
+		ImGui_ImplOpenGL3_Init();
+	}
 
-    void BeginFrame() {
-        ImGui_ImplOpenGL3_NewFrame();
-        ImGui_ImplGlfw_NewFrame();
-        ImGui::NewFrame();
+	void BeginFrame() {
+		ImGui_ImplOpenGL3_NewFrame();
+		ImGui_ImplGlfw_NewFrame();
+		ImGui::NewFrame();
 
-        // Debug menu with wireframe toggle
-        if (ImGui::BeginMainMenuBar()) {
-            if (ImGui::BeginMenu("Debug")) {
-                if (ImGui::MenuItem("Wireframe Mode", nullptr, &wireframe_enabled_)) {
+		// Debug menu with wireframe toggle
+		if (ImGui::BeginMainMenuBar()) {
+			if (ImGui::BeginMenu("Debug")) {
+				if (ImGui::MenuItem("Wireframe Mode", nullptr, &wireframe_enabled_)) {
 #ifndef __EMSCRIPTEN__
-                    // Desktop OpenGL supports polygon mode
-                    if (wireframe_enabled_) {
-                        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-                    } else {
-                        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-                    }
+					// Desktop OpenGL supports polygon mode
+					if (wireframe_enabled_) {
+						glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+					}
+					else {
+						glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+					}
 #else
-                    // WebGL doesn't support glPolygonMode - this is a no-op
-                    // Would need alternative implementation (geometry shader or manual line drawing)
+					// WebGL doesn't support glPolygonMode - this is a no-op
+					// Would need alternative implementation (geometry shader or manual line drawing)
 #endif
-                }
-                ImGui::EndMenu();
-            }
-            ImGui::EndMainMenuBar();
-        }
-    }
+				}
+				ImGui::EndMenu();
+			}
+			ImGui::EndMainMenuBar();
+		}
+	}
 
-    void EndFrame() {
-        ImGui::Render();
-        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-    }
+	void EndFrame() {
+		ImGui::Render();
+		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+	}
 
-    void Shutdown() {
-        ImGui_ImplOpenGL3_Shutdown();
-        ImGui_ImplGlfw_Shutdown();
-        ImGui::DestroyContext();
-    }
+	void Shutdown() {
+		ImGui_ImplOpenGL3_Shutdown();
+		ImGui_ImplGlfw_Shutdown();
+		ImGui::DestroyContext();
+	}
 
-    bool IsWireframeEnabled() const { return wireframe_enabled_; }
+	bool IsWireframeEnabled() const { return wireframe_enabled_; }
 };

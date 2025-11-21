@@ -26,6 +26,12 @@ public:
         , scene_(std::move(scene)) {
     }
 
+    ~EngineSceneAdapter() {
+        if (scene_) {
+            scene_->Shutdown(engine_);
+        }
+    };
+
     void OnInitialize() {
         if (scene_) {
             scene_->Initialize(engine_);

@@ -7,6 +7,7 @@ export module engine.ui:elements.image;
 import :ui_element;
 import :uitypes;
 import engine.ui.batch_renderer;
+import engine.rendering;
 
 export namespace engine::ui::elements {
 

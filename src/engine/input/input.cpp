@@ -19,7 +19,11 @@ namespace engine::input {
             {GLFW_KEY_W, KeyCode::W}, {GLFW_KEY_A, KeyCode::A}, {GLFW_KEY_S, KeyCode::S}, {GLFW_KEY_D, KeyCode::D},
             {GLFW_KEY_UP, KeyCode::UP}, {GLFW_KEY_DOWN, KeyCode::DOWN}, {GLFW_KEY_LEFT, KeyCode::LEFT},
             {GLFW_KEY_RIGHT, KeyCode::RIGHT},
-            {GLFW_KEY_ESCAPE, KeyCode::ESCAPE}, {GLFW_KEY_SPACE, KeyCode::SPACE}, {GLFW_KEY_ENTER, KeyCode::ENTER}
+            {GLFW_KEY_ESCAPE, KeyCode::ESCAPE}, {GLFW_KEY_SPACE, KeyCode::SPACE}, {GLFW_KEY_ENTER, KeyCode::ENTER},
+            {GLFW_KEY_F1, KeyCode::F1}, {GLFW_KEY_F2, KeyCode::F2}, {GLFW_KEY_F3, KeyCode::F3}, 
+            {GLFW_KEY_F4, KeyCode::F4}, {GLFW_KEY_F5, KeyCode::F5}, {GLFW_KEY_F6, KeyCode::F6},
+            {GLFW_KEY_F7, KeyCode::F7}, {GLFW_KEY_F8, KeyCode::F8}, {GLFW_KEY_F9, KeyCode::F9},
+            {GLFW_KEY_F10, KeyCode::F10}, {GLFW_KEY_F11, KeyCode::F11}, {GLFW_KEY_F12, KeyCode::F12}
         };
         std::atomic initialized{false};
 

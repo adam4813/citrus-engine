@@ -64,3 +64,8 @@ add_engine_test(ui_checkbox_test
 add_engine_test(ui_confirmation_dialog_test
     ui_confirmation_dialog_test.cpp
 )
+
+# Add Capture system test
+add_engine_test(capture_test
+    capture_test.cpp
+)

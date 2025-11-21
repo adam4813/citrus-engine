@@ -335,7 +335,6 @@ float medium = UITheme::Spacing::MEDIUM;  // 8px
 float large = UITheme::Spacing::LARGE;    // 12px
 float xl = UITheme::Spacing::XL;          // 16px
 float xxl = UITheme::Spacing::XXL;        // 24px
-float huge = UITheme::Spacing::HUGE;      // 32px
 ```
 
 **Padding** - Space inside elements:

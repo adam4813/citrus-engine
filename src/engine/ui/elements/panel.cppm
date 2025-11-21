@@ -221,13 +221,10 @@ public:
          * 1. Background quad (with opacity)
          * 2. Border lines (if border_width > 0)
          * 3. Push scissor (if clip_children_ is true)
-         * 4. Apply padding offset to children positions
-         * 5. Render children (recursively)
-         * 6. Restore children positions
-         * 7. Pop scissor
+         * 4. Render children (recursively) - padding is applied via GetAbsoluteBounds()
+         * 5. Pop scissor
          *
          * Children are clipped to panel bounds via scissor test.
-         * Padding automatically offsets children from panel edges.
          *
          * @code
          * panel->Render();  // Renders panel and all children
@@ -241,19 +238,20 @@ public:
 			return;
 		}
 
-		const Rectangle bounds = GetAbsoluteBounds();
+		// Get actual panel bounds (element itself, not content area)
+		const Rectangle absolute_bounds = GetAbsoluteBounds();
 
 		// Render background
-		Color bg_color = Color::Alpha(background_color_, opacity_);
-		BatchRenderer::SubmitQuad(bounds, bg_color);
+		const Color bg_color = Color::Alpha(background_color_, opacity_);
+		BatchRenderer::SubmitQuad(absolute_bounds, bg_color);
 
 		// Render border if width > 0
 		if (border_width_ > 0.0f) {
 			const Color border_color = Color::Alpha(border_color_, opacity_);
-			const float x = bounds.x;
-			const float y = bounds.y;
-			const float w = bounds.width;
-			const float h = bounds.height;
+			const float x = absolute_bounds.x;
+			const float y = absolute_bounds.y;
+			const float w = absolute_bounds.width;
+			const float h = absolute_bounds.height;
 
 			// Top edge
 			BatchRenderer::SubmitLine(x, y, x + w, y, border_width_, border_color);
@@ -265,41 +263,18 @@ public:
 			BatchRenderer::SubmitLine(x, y + h, x, y, border_width_, border_color);
 		}
 
+		// Get content bounds for scissor clipping
+		const Rectangle content_bounds = GetAbsoluteContentBounds();
+
 		// Push scissor for children (if clipping enabled)
 		if (clip_children_) {
-			const ScissorRect scissor{
-					bounds.x + padding_,
-					bounds.y + padding_,
-					bounds.width - padding_ * 2.0f,
-					bounds.height - padding_ * 2.0f};
+			const ScissorRect scissor{content_bounds.x, content_bounds.y, content_bounds.width, content_bounds.height};
 			BatchRenderer::PushScissor(scissor);
 		}
 
-		// Apply padding offset to children for rendering
-		// Store original positions to restore after rendering
-		std::vector<std::pair<float, float>> original_positions;
-		if (padding_ > 0.0f) {
-			original_positions.reserve(GetChildren().size());
-			for (const auto& child : GetChildren()) {
-				const auto child_bounds = child->GetRelativeBounds();
-				original_positions.emplace_back(child_bounds.x, child_bounds.y);
-				// Offset child position by padding
-				child->SetRelativePosition(child_bounds.x + padding_, child_bounds.y + padding_);
-			}
-		}
-
-		// Render children
+		// Render children (they use GetAbsoluteBounds which accounts for parent padding)
 		for (const auto& child : GetChildren()) {
 			child->Render();
-		}
-
-		// Restore original positions
-		if (padding_ > 0.0f) {
-			size_t i = 0;
-			for (const auto& child : GetChildren()) {
-				child->SetRelativePosition(original_positions[i].first, original_positions[i].second);
-				++i;
-			}
 		}
 
 		// Pop scissor
@@ -308,13 +283,37 @@ public:
 		}
 	}
 
+protected:
+	// === Bounds Calculation Override ===
+
+	/**
+		 * @brief Get content bounds with padding applied
+		 *
+		 * Overrides base implementation to apply this panel's padding to
+		 * the bounds. This ensures that children positioned at (0,0) will
+		 * render at (padding, padding) relative to the panel's top-left corner.
+		 *
+		 * @return Rectangle representing content area (relative bounds with padding applied)
+		 */
+	batch_renderer::Rectangle GetContentBounds() const override {
+		batch_renderer::Rectangle bounds = GetRelativeBounds();
+
+		// Apply padding to create content area
+		bounds.x += padding_;
+		bounds.y += padding_;
+		bounds.width -= padding_ * 2.0f;
+		bounds.height -= padding_ * 2.0f;
+
+		return bounds;
+	}
+
 private:
 	batch_renderer::Color background_color_{batch_renderer::Colors::DARK_GRAY};
 	batch_renderer::Color border_color_{batch_renderer::Colors::LIGHT_GRAY};
 	float border_width_{0.0f};
 	float padding_{0.0f};
 	float opacity_{1.0f};
-	bool clip_children_{true};
+	bool clip_children_{false};
 };
 
 } // namespace engine::ui::elements

@@ -10,6 +10,11 @@ add_engine_test(scripting_test
     scripting_test.cpp
 )
 
+# Add input mouse test
+add_engine_test(input_mouse_test
+    input_mouse_test.cpp
+)
+
 # Add renderer test
 add_engine_test(renderer_test
     renderer_test.cpp
@@ -63,4 +68,9 @@ add_engine_test(ui_checkbox_test
 # Add UI ConfirmationDialog component test
 add_engine_test(ui_confirmation_dialog_test
     ui_confirmation_dialog_test.cpp
+)
+
+# Add UI Theme test
+add_engine_test(ui_theme_test
+    ui_theme_test.cpp
 )

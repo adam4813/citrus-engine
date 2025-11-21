@@ -61,7 +61,7 @@ public:
          *
          * @param x X position relative to parent
          * @param y Y position relative to parent
-         * @param text UTF-8 encoded text string
+         * @param text_content UTF-8 encoded text string
          * @param font_size Font size in pixels (default: 16)
          * @param color Text color (default: white)
          *
@@ -72,14 +72,16 @@ public:
          */
 	Label(const float x,
 		  const float y,
-		  const std::string& text,
+		  const std::string& text_content,
 		  const float font_size = 16.0f,
 		  const batch_renderer::Color& color = batch_renderer::Colors::WHITE) :
 			UIElement(x, y, 0, 0), // Width/height set after text creation
-			text_content_(text), font_size_(font_size), text_color_(color) {
+			text_content_(text_content), font_size_(font_size), text_color_(color) {
 
-		// Create text element (pre-computed rendering)
-		text_element_ = std::make_unique<Text>(0, 0, text, font_size_, color);
+		// Create text element as child (composition pattern)
+		auto text = std::make_unique<Text>(0, 0, text_content, font_size_, color);
+		text_element_ = text.get(); // Store raw pointer for updates
+		AddChild(std::move(text));
 
 		// Auto-size to text bounds
 		UpdateSize();
@@ -234,12 +236,10 @@ public:
 			return;
 		}
 
-		// Render text (pre-computed, efficient)
-		if (text_element_) {
-			text_element_->Render();
-		}
+		// Update text position before children render
+		UpdateTextPosition();
 
-		// Render children (if any)
+		// Render children (text element renders itself)
 		for (const auto& child : GetChildren()) {
 			child->Render();
 		}
@@ -278,6 +278,7 @@ private:
          * Aligns text within label bounds.
          */
 	void UpdateTextPosition() const {
+		using namespace batch_renderer;
 		if (!text_element_) {
 			return;
 		}
@@ -292,6 +293,7 @@ private:
 		case Alignment::Right: text_x = width_ - text_width; break;
 		}
 
+		// Set relative position (child is positioned relative to parent)
 		text_element_->SetRelativePosition(text_x, 0.0f);
 	}
 
@@ -301,8 +303,8 @@ private:
 	Alignment alignment_{Alignment::Left};
 	float max_width_{0.0f};
 
-	// Text rendering (composition pattern)
-	std::unique_ptr<Text> text_element_{nullptr};
+	// Text child (raw pointer for updates, owned by children_ vector)
+	Text* text_element_{nullptr};
 };
 
 } // namespace engine::ui::elements

@@ -1,5 +1,7 @@
 export module engine.ui:mouse_event;
 
+import engine.input;
+
 export namespace engine::ui {
     /**
      * @brief Mouse event structure for UI interaction
@@ -65,6 +67,20 @@ export namespace engine::ui {
             , left_down(left_down), right_down(right_down)
             , left_pressed(left_pressed), right_pressed(right_pressed)
             , scroll_delta(scroll) {}
+        
+        /**
+         * @brief Construct mouse event from input system's MouseState
+         * 
+         * Convenience function to convert engine input state to UI event format.
+         * 
+         * @param state MouseState from engine::input::Input::GetMouseState()
+         */
+        explicit MouseEvent(const engine::input::MouseState& state)
+            : x(state.x), y(state.y)
+            , left_down(state.left_down), right_down(state.right_down), middle_down(state.middle_down)
+            , left_pressed(state.left_pressed), right_pressed(state.right_pressed), middle_pressed(state.middle_pressed)
+            , left_released(state.left_released), right_released(state.right_released), middle_released(state.middle_released)
+            , scroll_delta(state.scroll_delta) {}
     };
 
     /**

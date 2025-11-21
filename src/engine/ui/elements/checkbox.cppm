@@ -65,8 +65,6 @@ public:
          * Checkbox size is fixed (based on font size), but width extends
          * to accommodate label text.
          *
-          * 
-*
          * @param x X position relative to parent
          * @param y Y position relative to parent
          * @param label Optional text label (empty for no label)

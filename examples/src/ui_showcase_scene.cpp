@@ -32,35 +32,25 @@ private:
 	// UI Components
 	// ========================================================================
 
-	// Main container panel
+	// Root UI elements
 	std::unique_ptr<Panel> root_panel_;
+	std::unique_ptr<ConfirmationDialog> confirm_dialog_;
 
 	// Button demonstrations
-	std::unique_ptr<Panel> button_section_;
+	Text* button_click_count_text_ = nullptr;
 	Button* normal_button_ = nullptr;
 	Button* disabled_button_ = nullptr;
 	Button* primary_button_ = nullptr;
 
 	// Checkbox demonstrations
-	std::unique_ptr<Panel> checkbox_section_;
 	Checkbox* checkbox_1_ = nullptr;
 	Checkbox* checkbox_2_ = nullptr;
 	Checkbox* checkbox_3_ = nullptr;
 
 	// Slider demonstrations
-	std::unique_ptr<Panel> slider_section_;
 	Slider* slider_volume_ = nullptr;
 	Slider* slider_brightness_ = nullptr;
 	Label* slider_value_label_ = nullptr;
-
-	// Label and Text demonstrations
-	std::unique_ptr<Panel> text_section_;
-
-	// Panel nesting demonstration
-	std::unique_ptr<Panel> nested_panel_section_;
-
-	// Confirmation dialog
-	std::unique_ptr<ConfirmationDialog> confirm_dialog_;
 
 	// Debug visualizer
 	UIDebugVisualizer ui_debugger_;
@@ -185,13 +175,13 @@ public:
 	}
 
 	void BuildButtonSection(float y) {
-		button_section_ = std::make_unique<Panel>(UITheme::Padding::PANEL_HORIZONTAL, y, 660.0f, 100.0f);
-		button_section_->SetBackgroundColor(UITheme::Background::PANEL_DARK);
-		button_section_->SetPadding(UITheme::Padding::MEDIUM);
+		auto button_section = std::make_unique<Panel>(UITheme::Padding::PANEL_HORIZONTAL, y, 660.0f, 100.0f);
+		button_section->SetBackgroundColor(UITheme::Background::PANEL_DARK);
+		button_section->SetPadding(UITheme::Padding::MEDIUM);
 
 		// Section title
 		auto section_title = std::make_unique<Text>(0, 0, "Buttons", UITheme::FontSize::LARGE, UITheme::Text::PRIMARY);
-		button_section_->AddChild(std::move(section_title));
+		button_section->AddChild(std::move(section_title));
 
 		// Normal button
 		auto normal_button = std::make_unique<Button>(
@@ -203,10 +193,11 @@ public:
 		normal_button->SetClickCallback([this](const MouseEvent& event) {
 			button_click_count_++;
 			std::cout << "Button clicked! Count: " << button_click_count_ << std::endl;
+			UpdateButtonClickLabel();
 			return true;
 		});
 		normal_button_ = normal_button.get();
-		button_section_->AddChild(std::move(normal_button));
+		button_section->AddChild(std::move(normal_button));
 
 		// Primary button (styled with accent color)
 		auto primary_button = std::make_unique<Button>(
@@ -224,7 +215,7 @@ public:
 			return true;
 		});
 		primary_button_ = primary_button.get();
-		button_section_->AddChild(std::move(primary_button));
+		button_section->AddChild(std::move(primary_button));
 
 		// Disabled button
 		auto disabled_button = std::make_unique<Button>(
@@ -235,7 +226,7 @@ public:
 				"Disabled");
 		disabled_button->SetEnabled(false);
 		disabled_button_ = disabled_button.get();
-		button_section_->AddChild(std::move(disabled_button));
+		button_section->AddChild(std::move(disabled_button));
 
 		// Click counter label
 		auto click_label = std::make_unique<Text>(
@@ -244,20 +235,21 @@ public:
 				"Clicks: 0",
 				UITheme::FontSize::NORMAL,
 				UITheme::Text::SECONDARY);
-		button_section_->AddChild(std::move(click_label));
+		button_click_count_text_ = click_label.get();
+		button_section->AddChild(std::move(click_label));
 
-		root_panel_->AddChild(std::move(button_section_));
+		root_panel_->AddChild(std::move(button_section));
 	}
 
 	void BuildCheckboxSection(float y) {
-		checkbox_section_ = std::make_unique<Panel>(UITheme::Padding::PANEL_HORIZONTAL, y, 660.0f, 100.0f);
-		checkbox_section_->SetBackgroundColor(UITheme::Background::PANEL_DARK);
-		checkbox_section_->SetPadding(UITheme::Padding::MEDIUM);
+		auto checkbox_section = std::make_unique<Panel>(UITheme::Padding::PANEL_HORIZONTAL, y, 660.0f, 100.0f);
+		checkbox_section->SetBackgroundColor(UITheme::Background::PANEL_DARK);
+		checkbox_section->SetPadding(UITheme::Padding::MEDIUM);
 
 		// Section title
 		auto section_title =
 				std::make_unique<Text>(0, 0, "Checkboxes", UITheme::FontSize::LARGE, UITheme::Text::PRIMARY);
-		checkbox_section_->AddChild(std::move(section_title));
+		checkbox_section->AddChild(std::move(section_title));
 
 		// Checkbox 1
 		auto checkbox1 =
@@ -265,7 +257,7 @@ public:
 		checkbox1->SetToggleCallback(
 				[](bool checked) { std::cout << "Feature A: " << (checked ? "Enabled" : "Disabled") << std::endl; });
 		checkbox_1_ = checkbox1.get();
-		checkbox_section_->AddChild(std::move(checkbox1));
+		checkbox_section->AddChild(std::move(checkbox1));
 
 		// Checkbox 2 (initially checked)
 		auto checkbox2 = std::make_unique<Checkbox>(
@@ -274,7 +266,7 @@ public:
 		checkbox2->SetToggleCallback(
 				[](bool checked) { std::cout << "Feature B: " << (checked ? "Enabled" : "Disabled") << std::endl; });
 		checkbox_2_ = checkbox2.get();
-		checkbox_section_->AddChild(std::move(checkbox2));
+		checkbox_section->AddChild(std::move(checkbox2));
 
 		// Checkbox 3
 		auto checkbox3 = std::make_unique<Checkbox>(
@@ -282,19 +274,19 @@ public:
 		checkbox3->SetToggleCallback(
 				[](bool checked) { std::cout << "Advanced Options: " << (checked ? "Shown" : "Hidden") << std::endl; });
 		checkbox_3_ = checkbox3.get();
-		checkbox_section_->AddChild(std::move(checkbox3));
+		checkbox_section->AddChild(std::move(checkbox3));
 
-		root_panel_->AddChild(std::move(checkbox_section_));
+		root_panel_->AddChild(std::move(checkbox_section));
 	}
 
 	void BuildSliderSection(float y) {
-		slider_section_ = std::make_unique<Panel>(UITheme::Padding::PANEL_HORIZONTAL, y, 660.0f, 100.0f);
-		slider_section_->SetBackgroundColor(UITheme::Background::PANEL_DARK);
-		slider_section_->SetPadding(UITheme::Padding::MEDIUM);
+		auto slider_section = std::make_unique<Panel>(UITheme::Padding::PANEL_HORIZONTAL, y, 660.0f, 100.0f);
+		slider_section->SetBackgroundColor(UITheme::Background::PANEL_DARK);
+		slider_section->SetPadding(UITheme::Padding::MEDIUM);
 
 		// Section title
 		auto section_title = std::make_unique<Text>(0, 0, "Sliders", UITheme::FontSize::LARGE, UITheme::Text::PRIMARY);
-		slider_section_->AddChild(std::move(section_title));
+		slider_section->AddChild(std::move(section_title));
 
 		// Volume slider label
 		auto volume_label = std::make_unique<Text>(
@@ -303,7 +295,7 @@ public:
 				"Volume",
 				UITheme::FontSize::NORMAL,
 				UITheme::Text::SECONDARY);
-		slider_section_->AddChild(std::move(volume_label));
+		slider_section->AddChild(std::move(volume_label));
 
 		// Volume slider
 		auto volume_slider = std::make_unique<Slider>(
@@ -312,9 +304,10 @@ public:
 		volume_slider->SetValueChangedCallback([this](float value) {
 			volume_value_ = value;
 			std::cout << "Volume: " << (value * 100.0f) << "%" << std::endl;
+			UpdateSliderValueLabel();
 		});
 		slider_volume_ = volume_slider.get();
-		slider_section_->AddChild(std::move(volume_slider));
+		slider_section->AddChild(std::move(volume_slider));
 
 		// Brightness slider label
 		auto brightness_label = std::make_unique<Text>(
@@ -323,7 +316,7 @@ public:
 				"Brightness",
 				UITheme::FontSize::NORMAL,
 				UITheme::Text::SECONDARY);
-		slider_section_->AddChild(std::move(brightness_label));
+		slider_section->AddChild(std::move(brightness_label));
 
 		// Brightness slider
 		auto brightness_slider = std::make_unique<Slider>(
@@ -332,9 +325,10 @@ public:
 		brightness_slider->SetValueChangedCallback([this](float value) {
 			brightness_value_ = value;
 			std::cout << "Brightness: " << (value * 100.0f) << "%" << std::endl;
+			UpdateSliderValueLabel();
 		});
 		slider_brightness_ = brightness_slider.get();
-		slider_section_->AddChild(std::move(brightness_slider));
+		slider_section->AddChild(std::move(brightness_slider));
 
 		// Value display label
 		auto value_label = std::make_unique<Label>(
@@ -343,20 +337,41 @@ public:
 				"Volume: 50% | Brightness: 75%",
 				UITheme::FontSize::SMALL);
 		slider_value_label_ = value_label.get();
-		slider_section_->AddChild(std::move(value_label));
+		slider_section->AddChild(std::move(value_label));
 
-		root_panel_->AddChild(std::move(slider_section_));
+		root_panel_->AddChild(std::move(slider_section));
+	}
+
+	void UpdateButtonClickLabel() const {
+		if (button_click_count_text_) {
+			char buffer[32];
+			snprintf(buffer, sizeof(buffer), "Clicks: %d", button_click_count_);
+			button_click_count_text_->SetText(buffer);
+		}
+	}
+
+	void UpdateSliderValueLabel() const {
+		if (slider_value_label_) {
+			char buffer[128];
+			snprintf(
+					buffer,
+					sizeof(buffer),
+					"Volume: %.0f%% | Brightness: %.0f%%",
+					volume_value_ * 100.0f,
+					brightness_value_ * 100.0f);
+			slider_value_label_->SetText(buffer);
+		}
 	}
 
 	void BuildTextSection(float y) {
-		text_section_ = std::make_unique<Panel>(UITheme::Padding::PANEL_HORIZONTAL, y, 660.0f, 60.0f);
-		text_section_->SetBackgroundColor(UITheme::Background::PANEL_DARK);
-		text_section_->SetPadding(UITheme::Padding::MEDIUM);
+		auto text_section = std::make_unique<Panel>(UITheme::Padding::PANEL_HORIZONTAL, y, 660.0f, 60.0f);
+		text_section->SetBackgroundColor(UITheme::Background::PANEL_DARK);
+		text_section->SetPadding(UITheme::Padding::MEDIUM);
 
 		// Section title
 		auto section_title =
 				std::make_unique<Text>(0, 0, "Text & Labels", UITheme::FontSize::LARGE, UITheme::Text::PRIMARY);
-		text_section_->AddChild(std::move(section_title));
+		text_section->AddChild(std::move(section_title));
 
 		// Various text styles
 		auto normal_text = std::make_unique<Text>(
@@ -365,7 +380,7 @@ public:
 				"Normal Text",
 				UITheme::FontSize::NORMAL,
 				UITheme::Text::PRIMARY);
-		text_section_->AddChild(std::move(normal_text));
+		text_section->AddChild(std::move(normal_text));
 
 		auto secondary_text = std::make_unique<Text>(
 				120.0f,
@@ -373,7 +388,7 @@ public:
 				"Secondary Text",
 				UITheme::FontSize::NORMAL,
 				UITheme::Text::SECONDARY);
-		text_section_->AddChild(std::move(secondary_text));
+		text_section->AddChild(std::move(secondary_text));
 
 		auto accent_text = std::make_unique<Text>(
 				260.0f,
@@ -381,7 +396,7 @@ public:
 				"Accent Text",
 				UITheme::FontSize::NORMAL,
 				UITheme::Text::ACCENT);
-		text_section_->AddChild(std::move(accent_text));
+		text_section->AddChild(std::move(accent_text));
 
 		auto error_text = std::make_unique<Text>(
 				380.0f,
@@ -389,7 +404,7 @@ public:
 				"Error",
 				UITheme::FontSize::NORMAL,
 				UITheme::Text::ERROR);
-		text_section_->AddChild(std::move(error_text));
+		text_section->AddChild(std::move(error_text));
 
 		auto success_text = std::make_unique<Text>(
 				460.0f,
@@ -397,20 +412,20 @@ public:
 				"Success",
 				UITheme::FontSize::NORMAL,
 				UITheme::Text::SUCCESS);
-		text_section_->AddChild(std::move(success_text));
+		text_section->AddChild(std::move(success_text));
 
-		root_panel_->AddChild(std::move(text_section_));
+		root_panel_->AddChild(std::move(text_section));
 	}
 
 	void BuildNestedPanelSection(float y) {
-		nested_panel_section_ = std::make_unique<Panel>(UITheme::Padding::PANEL_HORIZONTAL, y, 660.0f, 80.0f);
-		nested_panel_section_->SetBackgroundColor(UITheme::Background::PANEL_DARK);
-		nested_panel_section_->SetPadding(UITheme::Padding::MEDIUM);
+		auto nested_panel_section = std::make_unique<Panel>(UITheme::Padding::PANEL_HORIZONTAL, y, 660.0f, 80.0f);
+		nested_panel_section->SetBackgroundColor(UITheme::Background::PANEL_DARK);
+		nested_panel_section->SetPadding(UITheme::Padding::MEDIUM);
 
 		// Section title
 		auto section_title = std::make_unique<Text>(
 				0, 0, "Nested Panels (Composition)", UITheme::FontSize::LARGE, UITheme::Text::PRIMARY);
-		nested_panel_section_->AddChild(std::move(section_title));
+		nested_panel_section->AddChild(std::move(section_title));
 
 		// Create nested panels
 		auto nested_panel_1 =
@@ -420,7 +435,7 @@ public:
 
 		auto nested_label_1 = std::make_unique<Label>(0, 0, "Nested Panel 1", UITheme::FontSize::SMALL);
 		nested_panel_1->AddChild(std::move(nested_label_1));
-		nested_panel_section_->AddChild(std::move(nested_panel_1));
+		nested_panel_section->AddChild(std::move(nested_panel_1));
 
 		auto nested_panel_2 =
 				std::make_unique<Panel>(170.0f, UITheme::FontSize::LARGE + UITheme::Spacing::MEDIUM, 150.0f, 40.0f);
@@ -429,59 +444,20 @@ public:
 
 		auto nested_label_2 = std::make_unique<Label>(0, 0, "Nested Panel 2", UITheme::FontSize::SMALL);
 		nested_panel_2->AddChild(std::move(nested_label_2));
-		nested_panel_section_->AddChild(std::move(nested_panel_2));
+		nested_panel_section->AddChild(std::move(nested_panel_2));
 
-		root_panel_->AddChild(std::move(nested_panel_section_));
+		root_panel_->AddChild(std::move(nested_panel_section));
 	}
 
 	void Update(engine::Engine& engine, float delta_time) override {
-		// ====================================================================
-		// Process Mouse Input
-		// ====================================================================
-
-		// Get mouse state from input system and convert to UI event
 		const MouseEvent mouse_event(Input::GetMouseState());
 
-		// Dispatch mouse event to UI elements
+		if (show_confirmation_ && confirm_dialog_ && confirm_dialog_->ProcessMouseEvent(mouse_event)) {
+			return;
+		}
+
 		if (root_panel_) {
 			root_panel_->ProcessMouseEvent(mouse_event);
-		}
-
-		// Dispatch to confirmation dialog if visible
-		if (show_confirmation_ && confirm_dialog_) {
-			confirm_dialog_->ProcessMouseEvent(mouse_event);
-		}
-
-		// ====================================================================
-		// Update UI State (Reactive)
-		// ====================================================================
-
-		// Update slider value labels reactively
-		if (slider_value_label_) {
-			char buffer[64];
-			snprintf(
-					buffer,
-					sizeof(buffer),
-					"Volume: %.0f%% | Brightness: %.0f%%",
-					volume_value_ * 100.0f,
-					brightness_value_ * 100.0f);
-			slider_value_label_->SetText(buffer);
-		}
-
-		// Update button click count label
-		if (button_section_) {
-			// Find the click label (last text child)
-			auto& children = button_section_->GetChildren();
-			for (auto& child : children) {
-				if (auto* text = dynamic_cast<Text*>(child.get())) {
-					if (text->GetRelativeBounds().x > 400.0f) {
-						char buffer[32];
-						snprintf(buffer, sizeof(buffer), "Clicks: %d", button_click_count_);
-						text->SetText(buffer);
-						break;
-					}
-				}
-			}
 		}
 	}
 
@@ -525,6 +501,7 @@ public:
 
 		if (ImGui::Button("Reset Counters")) {
 			button_click_count_ = 0;
+			UpdateButtonClickLabel();
 		}
 
 		if (ImGui::Button("Show Confirmation Dialog")) {
@@ -544,11 +521,6 @@ public:
 
 		// Cleanup UI
 		root_panel_.reset();
-		button_section_.reset();
-		checkbox_section_.reset();
-		slider_section_.reset();
-		text_section_.reset();
-		nested_panel_section_.reset();
 		confirm_dialog_.reset();
 
 		// Shutdown renderer

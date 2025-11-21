@@ -75,8 +75,11 @@ public:
 		   const std::string& label,
 		   const float font_size = 16.0f) : UIElement(x, y, width, height), label_(label), font_size_(font_size) {
 
-		// Create text element for label (pre-computed rendering)
-		text_element_ = std::make_unique<Text>(0, 0, label_, font_size_, text_color_);
+		// Create text element as child (composition pattern)
+		auto text = std::make_unique<Text>(0, 0, label_, font_size_, text_color_);
+		text_element_ = text.get(); // Store raw pointer for updates
+		AddChild(std::move(text));
+		
 		UpdateTextPosition();
 	}
 
@@ -333,13 +336,10 @@ public:
 			BatchRenderer::SubmitLine(x, y + h, x, y, border_width_, border_color_);
 		}
 
-		// Render label (pre-computed, centered)
-		if (text_element_) {
-			UpdateTextPosition();
-			text_element_->Render();
-		}
+		// Update text position before children render
+		UpdateTextPosition();
 
-		// Render children (if any)
+		// Render children (text element renders itself)
 		for (const auto& child : GetChildren()) {
 			child->Render();
 		}
@@ -359,16 +359,14 @@ private:
 			return;
 		}
 
-		const Rectangle bounds = GetAbsoluteBounds();
-
-		// Center text within button
+		// Center text within button (relative positioning)
 		const float text_width = text_element_->GetWidth();
 		const float text_height = text_element_->GetHeight();
 
 		const float text_x = (width_ - text_width) * 0.5f;
 		const float text_y = (height_ - text_height) * 0.5f;
 
-		text_element_->SetRelativePosition(bounds.x + text_x, bounds.y + text_y);
+		text_element_->SetRelativePosition(text_x, text_y);
 	}
 
 	std::string label_;
@@ -387,8 +385,8 @@ private:
 	bool is_pressed_{false};
 	bool is_enabled_{true};
 
-	// Text rendering (composition pattern)
-	std::unique_ptr<Text> text_element_{nullptr};
+	// Text child (raw pointer for updates, owned by children_ vector)
+	Text* text_element_{nullptr};
 };
 
 } // namespace engine::ui::elements

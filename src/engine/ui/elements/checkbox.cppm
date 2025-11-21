@@ -65,11 +65,8 @@ public:
          * Checkbox size is fixed (based on font size), but width extends
          * to accommodate label text.
          *
-         * **Design Note**: The label Text element is not added as a child via AddChild().
-         * Instead, it's managed internally and rendered directly in Render(). This design
-         * allows the label to be positioned relative to the checkbox without participating
-         * in the normal UI tree traversal, simplifying layout calculations.
-         *
+          * 
+*
          * @param x X position relative to parent
          * @param y Y position relative to parent
          * @param label Optional text label (empty for no label)
@@ -91,10 +88,11 @@ public:
 			UIElement(x, y, font_size * 1.5f, font_size * 1.5f), // Square box
 			is_checked_(initial_checked), box_size_(font_size * 1.5f), label_text_(label), font_size_(font_size) {
 
-		// Create label element if text provided
-		// Note: Not added as a child - rendered directly in Render() method
+		// Create label element as child (composition pattern)
 		if (!label.empty()) {
-			label_element_ = std::make_unique<Text>(box_size_ + label_spacing_, 0, label, font_size_, label_color_);
+			auto text = std::make_unique<Text>(0, 0, label, font_size_, label_color_);
+			label_element_ = text.get(); // Store raw pointer for updates
+			AddChild(std::move(text));
 
 			// Extend width to include label
 			width_ = box_size_ + label_spacing_ + label_element_->GetWidth();
@@ -162,7 +160,10 @@ public:
 
 		if (!label.empty()) {
 			if (!label_element_) {
-				label_element_ = std::make_unique<Text>(box_size_ + label_spacing_, 0, label, font_size_, label_color_);
+				// Create new label as child
+				auto text = std::make_unique<Text>(0, 0, label, font_size_, label_color_);
+				label_element_ = text.get();
+				AddChild(std::move(text));
 			}
 			else {
 				label_element_->SetText(label);
@@ -174,7 +175,11 @@ public:
 			UpdateLabelPosition();
 		}
 		else {
-			label_element_.reset();
+			// Remove label child
+			if (label_element_) {
+				RemoveChild(label_element_);
+				label_element_ = nullptr;
+			}
 			width_ = box_size_;
 		}
 	}
@@ -372,13 +377,10 @@ public:
 					focus_color_);
 		}
 
-		// Render label
-		if (label_element_) {
-			UpdateLabelPosition();
-			label_element_->Render();
-		}
+		// Update label position before children render
+		UpdateLabelPosition();
 
-		// Render children
+		// Render children (label element renders itself)
 		for (const auto& child : GetChildren()) {
 			child->Render();
 		}
@@ -388,10 +390,10 @@ private:
 	void UpdateLabelPosition() const {
 		using namespace batch_renderer;
 		if (label_element_) {
-
-			const Rectangle bounds = GetAbsoluteBounds();
+			// Position label relative to checkbox (accounting for box size and spacing)
+			const float label_x = box_size_ + label_spacing_;
 			const float label_y = (box_size_ - label_element_->GetHeight()) * 0.5f;
-			label_element_->SetRelativePosition(bounds.x + box_size_ + label_spacing_, bounds.y + label_y);
+			label_element_->SetRelativePosition(label_x, label_y);
 		}
 	}
 
@@ -407,8 +409,8 @@ private:
 	batch_renderer::Color focus_color_{batch_renderer::Colors::GOLD};
 	float label_spacing_{8.0f};
 
-	// Text element (composition)
-	std::unique_ptr<Text> label_element_{nullptr};
+	// Label child (raw pointer for updates, owned by children_ vector)
+	Text* label_element_{nullptr};
 
 	// Callback
 	ToggleCallback toggle_callback_{nullptr};

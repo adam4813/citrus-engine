@@ -488,15 +488,18 @@ void BatchRenderer::SubmitText(
 		return; // Font manager not initialized
 	}
 
-	text_renderer::FontAtlas* font = default_font;
+	const text_renderer::FontAtlas* font = default_font;
 
 	// If a different size is requested, try to load it
 	// Note: This only works if the default font is already loaded
 	// For more flexibility, users should use FontManager directly
-	if (font_size > 0 && font_size != default_font->GetFontSize()) {
+	if (font_size > 0 && font_size != font->GetFontSize()) {
 		// We can't get the font path from the default font, so just use default size
 		// This parameter is kept for API compatibility but currently limited
-		font = default_font;
+		font = text_renderer::FontManager::GetFont(text_renderer::FontManager::GetDefaultFontPath(), font_size);
+		if (!font || !font->IsValid()) {
+			font = default_font; // Fallback to default font
+		}
 	}
 
 	// Layout text (simple single-line layout)
@@ -529,9 +532,21 @@ void BatchRenderer::SubmitTextRect(
 	}
 
 	// Get default font from font manager
-	auto* font = text_renderer::FontManager::GetDefaultFont();
+	const auto* font = text_renderer::FontManager::GetDefaultFont();
 	if (!font || !font->IsValid()) {
 		return; // Font not loaded
+	}
+
+	// If a different size is requested, try to load it
+	// Note: This only works if the default font is already loaded
+	// For more flexibility, users should use FontManager directly
+	if (font_size > 0 && font_size != font->GetFontSize()) {
+		// We can't get the font path from the default font, so just use default size
+		// This parameter is kept for API compatibility but currently limited
+		font = text_renderer::FontManager::GetFont(text_renderer::FontManager::GetDefaultFontPath(), font_size);
+		if (!font || !font->IsValid()) {
+			font = text_renderer::FontManager::GetDefaultFont(); // Fallback to default font
+		}
 	}
 
 	// Layout text with wrapping and alignment

@@ -202,8 +202,7 @@ inline Text::Text(
 
 	// Get default font at requested size
 	font_ = text_renderer::FontManager::GetFont(
-			"", // Empty path = use default font path
-			static_cast<int>(font_size));
+			text_renderer::FontManager::GetDefaultFontPath(), static_cast<int>(font_size));
 
 	// If that failed, try default font
 	if (!font_ || !font_->IsValid()) {
@@ -239,8 +238,7 @@ inline void Text::SetFont(text_renderer::FontAtlas* font) {
 
 inline void Text::SetFontSize(const float font_size) {
 	font_ = text_renderer::FontManager::GetFont(
-			"", // Empty path = use default font path
-			static_cast<int>(font_size));
+			text_renderer::FontManager::GetDefaultFontPath(), static_cast<int>(font_size));
 
 	// If that failed, try default font
 	if (!font_ || !font_->IsValid()) {

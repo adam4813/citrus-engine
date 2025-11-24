@@ -3,7 +3,7 @@
 include(CMakeFindDependencyMacro)
 
 # Expose installed assets directory for consumers
-set(GAME_ENGINE_ASSETS_DIR "${PACKAGE_PREFIX_DIR}/share/game-engine/assets")
+set(CITRUS_ENGINE_ASSETS_INSTALL_DIR "${PACKAGE_PREFIX_DIR}/share/citrus-engine/assets")
 
 # Disable C++ extensions to ensure portability for GNU and Clang
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -25,19 +25,19 @@ endif()
 # Include the appropriate exported targets based on platform
 if(EMSCRIPTEN)
     # Look for WASM-specific targets
-    if(EXISTS "${CMAKE_CURRENT_LIST_DIR}/game-engine-targets-wasm.cmake")
-        include("${CMAKE_CURRENT_LIST_DIR}/game-engine-targets-wasm.cmake")
+    if(EXISTS "${CMAKE_CURRENT_LIST_DIR}/citrus-engine-targets-wasm.cmake")
+        include("${CMAKE_CURRENT_LIST_DIR}/citrus-engine-targets-wasm.cmake")
     else()
         # Fallback to generic targets
-        include("${CMAKE_CURRENT_LIST_DIR}/game-engine-targets.cmake")
+        include("${CMAKE_CURRENT_LIST_DIR}/citrus-engine-targets.cmake")
     endif()
 else()
     # Look for native-specific targets
-    if(EXISTS "${CMAKE_CURRENT_LIST_DIR}/game-engine-targets-native.cmake")
-        include("${CMAKE_CURRENT_LIST_DIR}/game-engine-targets-native.cmake")
+    if(EXISTS "${CMAKE_CURRENT_LIST_DIR}/citrus-engine-targets-native.cmake")
+        include("${CMAKE_CURRENT_LIST_DIR}/citrus-engine-targets-native.cmake")
     else()
         # Fallback to generic targets
-        include("${CMAKE_CURRENT_LIST_DIR}/game-engine-targets.cmake")
+        include("${CMAKE_CURRENT_LIST_DIR}/citrus-engine-targets.cmake")
     endif()
 endif()
 
@@ -68,4 +68,4 @@ function(setup_asset_preload target_name assets_dir)
     endif()
 endfunction()
 
-check_required_components(game-engine)
+check_required_components(citrus-engine)

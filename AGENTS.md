@@ -8,11 +8,13 @@
 
 ## ⚠️ MANDATORY FIRST STEPS - READ THIS BEFORE ANY ACTION ⚠️
 
-**CRITICAL**: Follow these steps IN ORDER before attempting ANY build or code work. Skipping steps will cause build failures.
+**CRITICAL**: Follow these steps IN ORDER before attempting ANY build or code work. Skipping steps will cause build
+failures.
 
 ### Complete Setup Checklist
 
 **For Linux Native Builds:**
+
 1. ✅ Install system dependencies (X11, OpenGL, Clang-18, ninja-build)
 2. ✅ Clone and bootstrap vcpkg
 3. ✅ Set VCPKG_ROOT environment variable
@@ -21,6 +23,7 @@
 6. ✅ Build
 
 **For Web/Emscripten Builds:**
+
 1. ✅ Install Emscripten SDK (emsdk)
 2. ✅ Activate emsdk environment
 3. ✅ Clone and bootstrap vcpkg
@@ -33,6 +36,7 @@
 ### Step 1: Install System Dependencies
 
 **Linux (Native Build)**:
+
 ```bash
 # Install ALL dependencies in one command
 sudo apt-get update && sudo apt-get install -y \
@@ -51,6 +55,7 @@ sudo apt-get update && sudo apt-get install -y \
 ```
 
 **What these are for**:
+
 - `build-essential` - GCC and build tools
 - `cmake` - Build system generator (3.28+ required)
 - `ninja-build` - Fast build tool (required by CMake presets)
@@ -60,6 +65,7 @@ sudo apt-get update && sudo apt-get install -y \
 - `libgl1-mesa-dev`, `libglu1-mesa-dev` - OpenGL libraries
 
 **Linux (Web/Emscripten Build)**:
+
 ```bash
 # Install Emscripten SDK
 cd /opt  # or /tmp for temporary install
@@ -73,7 +79,8 @@ source ./emsdk_env.sh  # REQUIRED: Sets CC/CXX to emcc/em++
 emcc --version  # Should show version 4.0.x or later
 ```
 
-**Windows/macOS**: 
+**Windows/macOS**:
+
 - Windows: Install Visual Studio 2022 with C++ tools OR Clang-18+
 - macOS: Install Xcode Command Line Tools and Clang-18+ (via Homebrew)
 
@@ -104,6 +111,7 @@ vcpkg\bootstrap-vcpkg.bat       # Windows
 ### Step 3: Set Environment Variables
 
 **Linux/macOS Native**:
+
 ```bash
 # Set these EVERY TIME in your shell session
 export VCPKG_ROOT=/home/user/vcpkg  # Adjust path
@@ -116,6 +124,7 @@ $CC --version       # Should show clang-18.x
 ```
 
 **Linux/macOS Web**:
+
 ```bash
 # Activate Emscripten (sets CC/CXX automatically)
 source /opt/emsdk/emsdk_env.sh  # Adjust path
@@ -129,6 +138,7 @@ echo $VCPKG_ROOT    # Should show path
 ```
 
 **Windows**:
+
 ```cmd
 set VCPKG_ROOT=C:\path\to\vcpkg
 ```
@@ -140,18 +150,21 @@ set VCPKG_ROOT=C:\path\to\vcpkg
 **IMPORTANT**: Only run configure once unless you need to reconfigure.
 
 **Native Build (Linux)**:
+
 ```bash
 cd citrus-engine
 cmake --preset cli-native -DVCPKG_TARGET_TRIPLET=x64-linux
 ```
 
 **Native Build (Windows)**:
+
 ```cmd
 cd citrus-engine
 cmake --preset cli-native -DVCPKG_TARGET_TRIPLET=x64-windows
 ```
 
 **Web Build (Emscripten)**:
+
 ```bash
 cd citrus-engine
 cmake --preset cli-native -DVCPKG_TARGET_TRIPLET=wasm32-emscripten
@@ -184,7 +197,8 @@ cmake --build --preset cli-native-release --parallel 4
 
 ### Automated Setup for GitHub Copilot
 
-**GitHub Copilot users**: The repository includes an automated setup workflow at `.github/workflows/copilot-setup-steps.yml` that runs automatically when Copilot starts. This workflow:
+**GitHub Copilot users**: The repository includes an automated setup workflow at
+`.github/workflows/copilot-setup-steps.yml` that runs automatically when Copilot starts. This workflow:
 
 - Installs system dependencies (Linux: X11, OpenGL, build tools)
 - Configures Clang-18 compiler
@@ -208,7 +222,8 @@ For GitHub Actions workflows, use the shared composite action to automate enviro
     clang-version: 18
 ```
 
-This composite action is used by both `build.yml` and `build-examples.yml` workflows to ensure consistent setup across all CI builds.
+This composite action is used by both `build.yml` and `build-examples.yml` workflows to ensure consistent setup across
+all CI builds.
 
 For other web-based coding environments (like Codespaces), you can also use `aminya/setup-cpp` directly:
 
@@ -287,6 +302,7 @@ documented patterns.
 **Rule of thumb**: If you're just going to tell the user about it anyway, don't create a file for it.
 
 **CRITICAL**: If the justification for creating documentation is NOT immediately obvious:
+
 1. **DO NOT create the file**
 2. **Explain your reasoning to the user first**
 3. **Wait for explicit approval**
@@ -324,34 +340,40 @@ documented patterns.
 3. **Optimize later** - Performance and size optimizations come after correctness is verified
 
 **Avoid:**
+
 - Premature optimization
 - Over-engineered solutions
 - Complex abstractions without proven need
 
 **Prefer:**
+
 - The simplest solution that works correctly
 - Clear, readable code over clever tricks
 - Straightforward implementations in first iterations
 
-**Example**: Use unpacked float colors (simple, debuggable) rather than packed uint32 colors (complex, harder to debug) until profiling proves the memory savings matter.
+**Example**: Use unpacked float colors (simple, debuggable) rather than packed uint32 colors (complex, harder to debug)
+until profiling proves the memory savings matter.
 
 ### Build Verification (REQUIRED)
 
 **Build/test MUST succeed before completing any task.**
 
 **Compiler Requirements**:
+
 - **Linux Native**: Clang-18 or later (required for C++20 modules)
 - **Windows Native**: MSVC 2022 or Clang-18+
 - **Web (Emscripten)**: Latest Emscripten SDK (3.1.40+)
 - **Note**: GCC has incomplete C++20 module support and may not work
 
 **System Dependencies (Linux Native only)**:
+
 ```bash
 sudo apt-get install -y libx11-dev libxrandr-dev libxinerama-dev \
   libxcursor-dev libxi-dev libgl1-mesa-dev clang-18
 ```
 
 **Emscripten Setup (Web builds)**:
+
 ```bash
 # Install Emscripten SDK (one time)
 cd /opt && git clone https://github.com/emscripten-core/emsdk.git
@@ -364,13 +386,13 @@ source /opt/emsdk/emsdk_env.sh
 Before completing any work:
 
 1. **Set compiler environment**:
-   
+
    **Linux Native**:
    ```bash
    export CC=clang-18
    export CXX=clang++-18
    ```
-   
+
    **Web/Emscripten**:
    ```bash
    source /opt/emsdk/emsdk_env.sh  # Sets CC/CXX to emcc/em++
@@ -397,6 +419,7 @@ Before completing any work:
 6. **Do not mark complete until build succeeds**
 
 **Known Issues**:
+
 - CMake 3.31+ requires `CMAKE_CXX_SCAN_FOR_MODULES=OFF` for C++20 modules
 - Some source files may be missing `#include <cstdint>` - add in module preambles
 - GCC support is limited due to incomplete C++20 module implementation
@@ -627,8 +650,8 @@ When given a task:
 **CRITICAL**: When adding a new dependency to the engine, you MUST update THREE files:
 
 1. **`vcpkg.json`** (root) - Main dependency list for the engine
-2. **`ports/game-engine/vcpkg.json`** - Overlay port dependency list (must match root vcpkg.json)
-3. **`cmake/game-engine-config.cmake.in`** - CMake config with `find_dependency()` calls
+2. **`ports/citrus-engine/vcpkg.json`** - Overlay port dependency list (must match root vcpkg.json)
+3. **`cmake/citrus-engine-config.cmake.in`** - CMake config with `find_dependency()` calls
 
 **Example**: Adding a library called "newlib"
 
@@ -636,33 +659,36 @@ When given a task:
 // 1. vcpkg.json (root)
 {
   "dependencies": [
-    "newlib",  // Add here
-    "flecs",
+    "newlib",
+    // Add here
+    "flecs"
     // ... other deps
   ]
 }
 
-// 2. ports/game-engine/vcpkg.json
+// 2. ports/citrus-engine/vcpkg.json
 {
   "dependencies": [
-    "newlib",  // Add here too
-    "flecs",
+    "newlib",
+    // Add here too
+    "flecs"
     // ... other deps
   ]
 }
 ```
 
 ```cmake
-# 3. cmake/game-engine-config.cmake.in
+# 3. cmake/citrus-engine-config.cmake.in
 find_dependency(newlib CONFIG)  # Add this
 find_dependency(flecs CONFIG)
 # ... other find_dependency calls
 ```
 
 **Why this is needed:**
+
 - vcpkg.json: Tells vcpkg what to install when building the engine standalone
-- ports/game-engine/vcpkg.json: Tells vcpkg what to install when building via the overlay port (used by examples)
-- game-engine-config.cmake.in: Tells CMake how to find the dependencies when someone uses the engine
+- ports/citrus-engine/vcpkg.json: Tells vcpkg what to install when building via the overlay port (used by examples)
+- citrus-engine-config.cmake.in: Tells CMake how to find the dependencies when someone uses the engine
 
 **Forgetting any of these will cause build failures** for consumers of the engine (like the examples).
 

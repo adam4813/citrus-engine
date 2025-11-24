@@ -165,7 +165,7 @@ cmake --build build/native --config Release
 cmake --install build/native --config Release
 
 # Run the demo 🎮
-./build/native/Release/game-engine-demo.exe
+./build/native/Release/citrus-engine-demo.exe
 ```
 
 #### 🌐 WebAssembly Build
@@ -181,8 +181,8 @@ cmake --build build/wasm --config Release
 cmake --install build/wasm --config Release
 
 # Run locally with built-in server 🌐
-cmake --build build/wasm --target serve-game-engine-demo
-# Navigate to http://localhost:8080/game-engine-demo.html
+cmake --build build/wasm --target serve-citrus-engine-demo
+# Navigate to http://localhost:8080/citrus-engine-demo.html
 ```
 
 ### 📦 Installing via vcpkg
@@ -191,17 +191,17 @@ Citrus Engine can be installed as a vcpkg port with all dependencies included:
 
 ```bash
 # Windows (static)
-vcpkg install game-engine:x64-windows-static --overlay-ports=ports
+vcpkg install citrus-engine:x64-windows-static --overlay-ports=ports
 
 # WebAssembly
-vcpkg install game-engine:wasm32-emscripten --overlay-ports=ports
+vcpkg install citrus-engine:wasm32-emscripten --overlay-ports=ports
 ```
 
 Use in your CMake project:
 
 ```cmake
-find_package(game-engine CONFIG REQUIRED)
-target_link_libraries(your-target PRIVATE game-engine::engine-core)
+find_package(citrus-engine CONFIG REQUIRED)
+target_link_libraries(your-target PRIVATE citrus-engine::engine-core)
 ```
 
 ---
@@ -219,7 +219,7 @@ Transform your game development with the power of citrus! Here's how to integrat
   "name": "your-awesome-game",
   "version": "1.0.0",
   "dependencies": [
-    "game-engine"
+    "citrus-engine"
   ],
   "overrides": [
     {
@@ -243,7 +243,7 @@ cmake_minimum_required(VERSION 3.20)
 project(your-awesome-game)
 
 # Find Citrus Engine 🍊
-find_package(game-engine CONFIG REQUIRED)
+find_package(citrus-engine CONFIG REQUIRED)
 
 # Create your executable
 add_executable(your-game
@@ -253,7 +253,7 @@ add_executable(your-game
 
 # Link to the engine 🔗
 target_link_libraries(your-game PRIVATE
-    game-engine::engine-core
+    citrus-engine::engine-core
 )
 
 setup_asset_preload(your-game ${CMAKE_CURRENT_SOURCE_DIR}/assets)
@@ -342,18 +342,19 @@ int main() {
 
 ## ⚠️ Important: Shader Vertex Layout Requirements
 
-When writing custom shaders for Citrus Engine, you **must** match the engine's vertex attribute layout. Mismatched layouts cause **silent rendering failures** (no errors, nothing renders).
+When writing custom shaders for Citrus Engine, you **must** match the engine's vertex attribute layout. Mismatched
+layouts cause **silent rendering failures** (no errors, nothing renders).
 
 ### 📋 Required Vertex Attribute Locations
 
 The engine uploads these 4 attributes to the GPU in this exact order:
 
-| Location | Type  | GLSL Declaration                      | C++ Field       |
-|----------|-------|---------------------------------------|-----------------|
-| **0**    | vec3  | `layout(location = 0) in vec3 aPos;`  | `position`      |
-| **1**    | vec3  | `layout(location = 1) in vec3 aNormal;` | `normal`      |
-| **2**    | vec2  | `layout(location = 2) in vec2 aTexCoord;` | `tex_coords` |
-| **3**    | vec4  | `layout(location = 3) in vec4 aColor;` | `color`        |
+| Location | Type | GLSL Declaration                          | C++ Field    |
+|----------|------|-------------------------------------------|--------------|
+| **0**    | vec3 | `layout(location = 0) in vec3 aPos;`      | `position`   |
+| **1**    | vec3 | `layout(location = 1) in vec3 aNormal;`   | `normal`     |
+| **2**    | vec2 | `layout(location = 2) in vec2 aTexCoord;` | `tex_coords` |
+| **3**    | vec4 | `layout(location = 3) in vec4 aColor;`    | `color`      |
 
 ### ✅ Correct Shader Example
 
@@ -386,7 +387,7 @@ You can use fewer attributes, **but location numbers must stay the same**:
 layout(location = 0) in vec3 aPos;
 // Skip location 1 (normal) - not used
 // Skip location 2 (texcoord) - not used
-layout(location = 3) in vec4 aColor;  // Must be location 3, not 1!
+layout(location = 3) in vec4 aColor;// Must be location 3, not 1!
 
 uniform mat4 u_MVP;
 out vec4 vColor;
@@ -400,25 +401,30 @@ void main() {
 ### ❌ Common Mistakes
 
 **WRONG - Renumbering locations:**
+
 ```glsl
 layout(location = 0) in vec3 aPos;
-layout(location = 1) in vec4 aColor;  // WRONG! Color is location 3
+layout(location = 1) in vec4 aColor;// WRONG! Color is location 3
 ```
 
 **WRONG - Wrong types:**
+
 ```glsl
-layout(location = 3) in vec3 aColor;  // WRONG! Color is vec4, not vec3
+layout(location = 3) in vec3 aColor;// WRONG! Color is vec4, not vec3
 ```
 
 ### 📚 Reference Shaders
 
 See working examples in `examples/assets/shaders/`:
+
 - `colored_2d.vert` - Simple 2D colored vertex shader
 - Additional shader examples (coming soon)
 
 ### 🔮 Future Improvement
 
-The Citrus Engine team is planning a shader-driven vertex layout system that will automatically adapt to any shader layout locations. This will eliminate silent failures and make shader development more flexible. Track progress in [issue #TBD].
+The Citrus Engine team is planning a shader-driven vertex layout system that will automatically adapt to any shader
+layout locations. This will eliminate silent failures and make shader development more flexible. Track progress
+in [issue #TBD].
 
 ### 🏗️ Building Your Project
 
@@ -556,10 +562,10 @@ Our current MVP demonstrates the power of Citrus Engine:
 
 ```bash
 # Quick rebuild and test
-cmake --build build/native --config Release && ./build/native/Release/game-engine-demo.exe
+cmake --build build/native --config Release && ./build/native/Release/citrus-engine-demo.exe
 
 # Test WASM build locally
-cmake --build build/wasm --target serve-game-engine-demo
+cmake --build build/wasm --target serve-citrus-engine-demo
 ```
 
 ### 🧪 Running Tests

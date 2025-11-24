@@ -8,7 +8,7 @@ project(
     LANGUAGES CXX)
 
 # Find the Citrus Engine via vcpkg (uses overlay port from ../ports)
-find_package(game-engine CONFIG REQUIRED)
+find_package(citrus-engine CONFIG REQUIRED)
 
 # Examples application
 add_executable(
@@ -27,7 +27,7 @@ target_include_directories(citrus-examples
                            PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 # Link to the engine (provides all dependencies transitively)
-target_link_libraries(citrus-examples PRIVATE game-engine::engine-core)
+target_link_libraries(citrus-examples PRIVATE citrus-engine::engine-core)
 
 # Setup asset handling
 setup_asset_preload(citrus-examples "${CMAKE_CURRENT_SOURCE_DIR}/assets")

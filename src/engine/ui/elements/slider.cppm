@@ -87,7 +87,8 @@ public:
 		   const float max_value,
 		   const float initial_value = 0.0f) :
 			UIElement(x, y, width, height), min_value_(min_value), max_value_(max_value),
-			current_value_(std::clamp(initial_value, min_value, max_value)), thumb_radius_(height * 0.5f) {}
+			current_value_(std::clamp(initial_value, min_value, max_value)), thumb_radius_(height * 0.5f),
+			track_width_(width), track_x_offset_(0.0f) {}
 
 	~Slider() override = default;
 
@@ -174,14 +175,18 @@ public:
 
 		if (!label.empty() && !label_element_) {
 			label_element_ = std::make_unique<Text>(0, 0, label, label_font_size_, label_color_);
+			label_element_->SetParent(this);
 			UpdateLabelPosition();
+			UpdateTrackWidth();
 		}
 		else if (label.empty() && label_element_) {
 			label_element_.reset();
+			UpdateTrackWidth();
 		}
 		else if (label_element_) {
 			label_element_->SetText(label);
 			UpdateLabelPosition();
+			UpdateTrackWidth();
 		}
 	}
 
@@ -207,9 +212,11 @@ public:
 		show_value_ = show;
 		if (show && !value_element_) {
 			UpdateValueDisplay();
+			UpdateTrackWidth();
 		}
 		else if (!show && value_element_) {
 			value_element_.reset();
+			UpdateTrackWidth();
 		}
 	}
 
@@ -331,18 +338,19 @@ public:
 		// Calculate track dimensions (centered vertically)
 		const float track_height = height_ * 0.2f;
 		const float track_y = bounds.y + (height_ - track_height) * 0.5f;
-		const Rectangle track_rect{bounds.x, track_y, width_, track_height};
+		const float track_x = bounds.x + track_x_offset_;
+		const Rectangle track_rect{track_x, track_y, track_width_, track_height};
 
 		// Render track (background)
 		BatchRenderer::SubmitQuad(track_rect, track_color_);
 
 		// Calculate thumb position
 		const float normalized_value = (current_value_ - min_value_) / (max_value_ - min_value_);
-		const float thumb_x = bounds.x + normalized_value * width_;
+		const float thumb_x = track_x + normalized_value * track_width_;
 		const float thumb_y = bounds.y + height_ * 0.5f;
 
 		// Render fill (progress from left to thumb)
-		const Rectangle fill_rect{bounds.x, track_y, thumb_x - bounds.x, track_height};
+		const Rectangle fill_rect{track_x, track_y, thumb_x - track_x, track_height};
 		BatchRenderer::SubmitQuad(fill_rect, fill_color_);
 
 		// Render thumb (circle)
@@ -377,7 +385,8 @@ private:
 		const batch_renderer::Rectangle bounds = GetAbsoluteBounds();
 
 		// Calculate normalized position (0.0 - 1.0)
-		float normalized = (mouse_x - bounds.x) / width_;
+		const float track_x = bounds.x + track_x_offset_;
+		float normalized = (mouse_x - track_x) / track_width_;
 		normalized = std::clamp(normalized, 0.0f, 1.0f);
 
 		// Convert to value in range
@@ -409,42 +418,66 @@ private:
 
 		if (!value_element_) {
 			value_element_ = std::make_unique<Text>(0, 0, value_str, value_font_size_, label_color_);
+			value_element_->SetParent(this);
 		}
 		else {
 			value_element_->SetText(value_str);
 		}
 
 		UpdateValuePosition();
+		UpdateTrackWidth();
 	}
 
 	/**
-         * @brief Update label position (left of slider)
+         * @brief Update label position (inside slider bounds, left side)
          */
 	void UpdateLabelPosition() const {
 		if (!label_element_) {
 			return;
 		}
 
-		// Position to the left of slider, vertically centered
+		// Position inside slider bounds, vertically centered
 		const float label_height = label_element_->GetHeight();
 		const float label_y = (height_ - label_height) * 0.5f;
 
-		label_element_->SetRelativePosition(-label_element_->GetWidth() - 10.0f, label_y);
+		label_element_->SetRelativePosition(0.0f, label_y);
 	}
 
 	/**
-         * @brief Update value position (right of slider)
+         * @brief Update value position (inside slider bounds, right side)
          */
 	void UpdateValuePosition() const {
 		if (!value_element_) {
 			return;
 		}
 
-		// Position to the right of slider, vertically centered
+		// Position inside slider bounds on right side, vertically centered
 		const float value_height = value_element_->GetHeight();
 		const float value_y = (height_ - value_height) * 0.5f;
+		const float value_x = width_ - value_element_->GetWidth();
 
-		value_element_->SetRelativePosition(width_ + 10.0f, value_y);
+		value_element_->SetRelativePosition(value_x, value_y);
+	}
+
+	/**
+         * @brief Update track width and offset based on label/value widths
+         */
+	void UpdateTrackWidth() {
+		constexpr float padding = 10.0f;
+		
+		float left_width = 0.0f;
+		float right_width = 0.0f;
+
+		if (label_element_) {
+			left_width = label_element_->GetWidth() + padding;
+		}
+
+		if (value_element_ && show_value_) {
+			right_width = value_element_->GetWidth() + padding;
+		}
+
+		track_x_offset_ = left_width;
+		track_width_ = width_ - left_width - right_width;
 	}
 
 	float min_value_;
@@ -470,6 +503,10 @@ private:
 	// Text elements (composition)
 	std::unique_ptr<Text> label_element_{nullptr};
 	std::unique_ptr<Text> value_element_{nullptr};
+
+	// Track layout
+	float track_width_;
+	float track_x_offset_;
 
 	// Callbacks
 	ValueChangedCallback value_changed_callback_{nullptr};

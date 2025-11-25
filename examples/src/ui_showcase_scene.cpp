@@ -288,19 +288,11 @@ public:
 		auto section_title = std::make_unique<Text>(0, 0, "Sliders", UITheme::FontSize::LARGE, UITheme::Text::PRIMARY);
 		slider_section->AddChild(std::move(section_title));
 
-		// Volume slider label
-		auto volume_label = std::make_unique<Text>(
-				0,
-				UITheme::FontSize::LARGE + UITheme::Spacing::MEDIUM,
-				"Volume",
-				UITheme::FontSize::NORMAL,
-				UITheme::Text::SECONDARY);
-		slider_section->AddChild(std::move(volume_label));
-
 		// Volume slider
 		auto volume_slider = std::make_unique<Slider>(
-				80.0f, UITheme::FontSize::LARGE + UITheme::Spacing::MEDIUM, 200.0f, 20.0f, 0.0f, 1.0f);
+				0, UITheme::FontSize::LARGE + UITheme::Spacing::MEDIUM, 280.0f, 20.0f, 0.0f, 1.0f);
 		volume_slider->SetValue(0.5f);
+		volume_slider->SetLabel("Volume");
 		volume_slider->SetValueChangedCallback([this](float value) {
 			volume_value_ = value;
 			std::cout << "Volume: " << (value * 100.0f) << "%" << std::endl;
@@ -309,24 +301,16 @@ public:
 		slider_volume_ = volume_slider.get();
 		slider_section->AddChild(std::move(volume_slider));
 
-		// Brightness slider label
-		auto brightness_label = std::make_unique<Text>(
-				320.0f,
-				UITheme::FontSize::LARGE + UITheme::Spacing::MEDIUM,
-				"Brightness",
-				UITheme::FontSize::NORMAL,
-				UITheme::Text::SECONDARY);
-		slider_section->AddChild(std::move(brightness_label));
-
 		// Brightness slider
 		auto brightness_slider = std::make_unique<Slider>(
-				420.0f, UITheme::FontSize::LARGE + UITheme::Spacing::MEDIUM, 200.0f, 20.0f, 0.0f, 1.0f);
+				300.0f, UITheme::FontSize::LARGE + UITheme::Spacing::MEDIUM, 280.0f, 20.0f, 0.0f, 1.0f);
 		brightness_slider->SetValue(0.75f);
 		brightness_slider->SetValueChangedCallback([this](float value) {
 			brightness_value_ = value;
 			std::cout << "Brightness: " << (value * 100.0f) << "%" << std::endl;
 			UpdateSliderValueLabel();
 		});
+		brightness_slider->SetLabel("Brightness");
 		slider_brightness_ = brightness_slider.get();
 		slider_section->AddChild(std::move(brightness_slider));
 

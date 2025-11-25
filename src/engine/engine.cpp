@@ -39,6 +39,11 @@ bool Engine::Init(const uint32_t window_width, const uint32_t window_height) {
 		return false;
 	}
 
+	// Set up framebuffer resize callback
+	os::OS::SetFrameBufferSizeCallback(window, [](GLFWwindow*, const int width, const int height) {
+		rendering::GetRenderer().SetWindowSize(static_cast<uint32_t>(width), static_cast<uint32_t>(height));
+	});
+
 	// Initialize scripting system with default language (Lua)
 	try {
 		scripting_system = std::make_unique<scripting::ScriptingSystem>();

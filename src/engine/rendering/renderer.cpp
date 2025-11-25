@@ -478,13 +478,19 @@ void Renderer::SetCamera(const components::Camera& camera) {
 
 void Renderer::SetClearColor(const Color& color) const { pimpl_->clear_color = color; }
 
-void Renderer::SetViewport(int x, int y, uint32_t width, uint32_t height) {
-	// TODO: Implement viewport setting
+void Renderer::SetViewport(const int x, const int y, const uint32_t width, const uint32_t height) {
+	glViewport(x, y, width, height);
 }
 
 void Renderer::GetFramebufferSize(uint32_t& width, uint32_t& height) const {
 	width = pimpl_->window_width;
 	height = pimpl_->window_height;
+}
+
+void Renderer::SetWindowSize(const uint32_t width, const uint32_t height) const {
+	pimpl_->window_width = width;
+	pimpl_->window_height = height;
+	SetViewport(0, 0, width, height);
 }
 
 uint32_t Renderer::GetDrawCallCount() const { return pimpl_->draw_call_count; }

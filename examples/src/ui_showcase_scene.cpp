@@ -63,6 +63,8 @@ private:
 	bool show_confirmation_ = false;
 	float volume_value_ = 0.5f;
 	float brightness_value_ = 0.75f;
+	float panel_width_ = 700.0f;
+	float panel_height_ = 700.0f;
 
 public:
 	const char* GetName() const override { return "UI Showcase"; }
@@ -89,7 +91,8 @@ public:
 		// Root Panel - Main Container
 		// ====================================================================
 
-		root_panel_ = std::make_unique<Panel>(UITheme::Spacing::LARGE, UITheme::Spacing::LARGE, 700.0f, 700.0f);
+		root_panel_ =
+				std::make_unique<Panel>(UITheme::Spacing::LARGE, UITheme::Spacing::LARGE, panel_width_, panel_height_);
 		root_panel_->SetRelativePosition(25, 50);
 		root_panel_->SetBackgroundColor(UITheme::Background::PANEL);
 		root_panel_->SetBorderColor(UITheme::Border::DEFAULT);
@@ -434,6 +437,9 @@ public:
 	}
 
 	void Update(engine::Engine& engine, float delta_time) override {
+		std::uint32_t screen_width;
+		std::uint32_t screen_height;
+		engine.renderer->GetFramebufferSize(screen_width, screen_height);
 		const MouseEvent mouse_event(Input::GetMouseState());
 
 		if (show_confirmation_ && confirm_dialog_ && confirm_dialog_->ProcessMouseEvent(mouse_event)) {
@@ -441,6 +447,8 @@ public:
 		}
 
 		if (root_panel_) {
+			root_panel_->SetRelativePosition(
+					screen_width * 0.5f - panel_width_ / 2.0F, screen_height * 0.5f - panel_height_ / 2.0F);
 			root_panel_->ProcessMouseEvent(mouse_event);
 		}
 	}

@@ -408,8 +408,12 @@ void Renderer::SubmitUIBatch(const UIBatchRenderCommand& command) const {
 
 	// Apply scissor if active
 	if (command.enable_scissor) {
+		// OpenGL scissor uses bottom-left origin, but UI uses top-left origin
 		glEnable(GL_SCISSOR_TEST);
-		glScissor(command.scissor_x, command.scissor_y, command.scissor_width, command.scissor_height);
+		glScissor(command.scissor_x,
+				  static_cast<int>(pimpl_->window_height) - command.scissor_y - command.scissor_height, // Flip Y
+				  command.scissor_width,
+				  command.scissor_height);
 		CheckGLError("After setting scissor");
 	}
 

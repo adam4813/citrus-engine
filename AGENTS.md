@@ -573,16 +573,25 @@ class PlayerEntity : public Entity {  // Avoid - use composition/ECS instead
 
 ### Pattern/API Documentation
 
-- `UI_DEVELOPMENT_BIBLE.md` - ImGui-based UI patterns and immediate mode GUI architecture
+**Internal References** (for AI agents implementing features):
+- `UI_DEVELOPMENT_BIBLE.md` - Internal patterns and architecture (being migrated to docs/)
 - `TESTING.md` - Test structure, priorities, best practices
-- Future: Additional API guides for engine subsystems
 
-These define **how to use the engine**. Read the relevant guide before working in that domain.
+**User-Facing Documentation** (in `docs/`):
+- Document new features and APIs here
+- Update `docs/index.md` to link new pages
+- Follow MkDocs format for site generation
+
+When adding new engine features:
+1. Add user documentation to `docs/` (how to use the feature)
+2. Update `docs/index.md` with links to new pages
+3. Update internal guides only for implementation patterns
 
 ### Source Structure
 
 - `src/` - Implementation files
-- `docs/` - User-facing documentation only
+- `docs/` - User-facing documentation (MkDocs site)
+- Root `.md` files - Internal agent references (AGENTS.md, TESTING.md, etc.)
 
 ---
 

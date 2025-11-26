@@ -14,7 +14,14 @@ Citrus Engine is a modern C++20 game engine featuring ECS architecture, cross-pl
 
 ## Documentation
 
-- [Tilemap System](tilemap-system.md) - 2D tile-based rendering documentation
+### UI System
+- [UI Component System](ui-components.md) - Layout, constraints, and scrolling
+- [UI Mouse Events Guide](ui_mouse_events_guide.md) - Mouse event handling
+
+### Rendering
+- [Tilemap System](tilemap-system.md) - 2D tile-based rendering
+
+### Reference
 - [API Reference](api/index.md) - Auto-generated API documentation from code
 
 ## Getting Started

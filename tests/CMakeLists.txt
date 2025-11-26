@@ -74,3 +74,8 @@ add_engine_test(ui_confirmation_dialog_test
 add_engine_test(ui_theme_test
     ui_theme_test.cpp
 )
+
+# Add physics system test
+add_engine_test(physics_test
+    physics_test.cpp
+)

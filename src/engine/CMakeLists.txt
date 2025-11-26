@@ -60,6 +60,9 @@ target_sources(engine-core
     scene/scene.cppm
     scripting/scripting_backend.cppm
     scripting/scripting_system.cppm
+    physics/physics_types.cppm
+    physics/physics_backend.cppm
+    physics/physics_system.cppm
     ui/ui.cppm
     ui/types.cppm
     ui/text_renderer.cppm
@@ -126,6 +129,12 @@ target_sources(engine-core PRIVATE
     scripting/lua_backend.cpp
     scripting/angelscript_backend.cpp
     scripting/scripting_factory.cpp
+
+    # Physics module implementation
+    physics/physics_factory.cpp
+    physics/jolt_backend.cpp
+    physics/bullet3_backend.cpp
+    physics/physx_backend.cpp
 
     ui/text_renderer.cpp
     ui/batch_renderer/batch_renderer.cpp

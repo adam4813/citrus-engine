@@ -19,7 +19,7 @@ export namespace engine::physics {
         JoltPhysics,
         Bullet3,
         PhysX,
-        Havok
+        Havok  // Note: Havok requires a commercial license
     };
 
     // Motion types for rigid bodies
@@ -232,9 +232,10 @@ export namespace engine::physics {
     // Transform for physics bodies
     struct PhysicsTransform {
         glm::vec3 position{0.0F, 0.0F, 0.0F};
-        glm::quat rotation{1.0F, 0.0F, 0.0F, 0.0F};
+        glm::quat rotation{1.0F, 0.0F, 0.0F, 0.0F}; // GLM quaternion order: (w, x, y, z)
 
         [[nodiscard]] glm::mat4 GetMatrix() const {
+            // Create rotation matrix and set translation in the last column
             glm::mat4 result = glm::mat4_cast(rotation);
             result[3] = glm::vec4(position, 1.0F);
             return result;

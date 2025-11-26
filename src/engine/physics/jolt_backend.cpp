@@ -232,10 +232,12 @@ namespace engine::physics {
 
         bool AddCollider(EntityId entity, const ColliderConfig& config) override {
             if (!initialized_) {
+                spdlog::error("[JoltPhysics] Cannot add collider - not initialized");
                 return false;
             }
 
             if (colliders_.contains(entity)) {
+                spdlog::warn("[JoltPhysics] Entity {} already has a collider", entity);
                 return false;
             }
 
@@ -315,7 +317,13 @@ namespace engine::physics {
         // === Character Controller ===
 
         bool AddCharacterController(EntityId entity, const CharacterControllerConfig& config) override {
-            if (!initialized_ || characters_.contains(entity)) {
+            if (!initialized_) {
+                spdlog::error("[JoltPhysics] Cannot add character controller - not initialized");
+                return false;
+            }
+
+            if (characters_.contains(entity)) {
+                spdlog::warn("[JoltPhysics] Entity {} already has a character controller", entity);
                 return false;
             }
 

@@ -171,6 +171,7 @@ export namespace engine::physics {
         }
 
         // Set rigid body transform
+        // Note: GLM quaternion constructor uses (w, x, y, z) ordering
         void SetTransform(EntityId entity, const glm::vec3& position, const glm::quat& rotation = glm::quat{1.0F, 0.0F, 0.0F, 0.0F}) {
             if (backend_) {
                 PhysicsTransform transform{position, rotation};

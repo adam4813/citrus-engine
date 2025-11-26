@@ -112,7 +112,13 @@ namespace engine::physics {
         // === Rigid Body Management ===
 
         bool AddRigidBody(EntityId entity, const RigidBodyConfig& config) override {
-            if (!initialized_ || rigid_bodies_.contains(entity)) {
+            if (!initialized_) {
+                spdlog::error("[PhysX] Cannot add rigid body - not initialized");
+                return false;
+            }
+
+            if (rigid_bodies_.contains(entity)) {
+                spdlog::warn("[PhysX] Entity {} already has a rigid body", entity);
                 return false;
             }
 
@@ -213,7 +219,13 @@ namespace engine::physics {
         // === Collider/Shape Management ===
 
         bool AddCollider(EntityId entity, const ColliderConfig& config) override {
-            if (!initialized_ || colliders_.contains(entity)) {
+            if (!initialized_) {
+                spdlog::error("[PhysX] Cannot add collider - not initialized");
+                return false;
+            }
+
+            if (colliders_.contains(entity)) {
+                spdlog::warn("[PhysX] Entity {} already has a collider", entity);
                 return false;
             }
 
@@ -286,7 +298,13 @@ namespace engine::physics {
         // === Character Controller ===
 
         bool AddCharacterController(EntityId entity, const CharacterControllerConfig& config) override {
-            if (!initialized_ || characters_.contains(entity)) {
+            if (!initialized_) {
+                spdlog::error("[PhysX] Cannot add character controller - not initialized");
+                return false;
+            }
+
+            if (characters_.contains(entity)) {
+                spdlog::warn("[PhysX] Entity {} already has a character controller", entity);
                 return false;
             }
 

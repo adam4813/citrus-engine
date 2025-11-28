@@ -246,36 +246,10 @@ public:
 	}
 
 	/**
-	 * @brief Create anchor centered horizontally with fixed top
-	 */
-	static Anchor CenterTopFixed(float top_margin = 0.0f) {
-		Anchor a;
-		a.SetTop(top_margin);
-		// No left/right - caller must position X manually
-		return a;
-	}
-
-	/**
-	 * @brief Create anchor centered horizontally with fixed bottom
-	 */
-	static Anchor CenterBottomFixed(float bottom_margin = 0.0f) {
-		Anchor a;
-		a.SetBottom(bottom_margin);
-		return a;
-	}
-
-	/**
 	 * @brief Get all anchor values for inspection/serialization
 	 * @return Tuple of (left, right, top, bottom) optional values
 	 */
 	auto GetValues() const { return std::make_tuple(left_, right_, top_, bottom_); }
-
-	/**
-	 * @brief Check if any anchor is set
-	 */
-	bool HasAnyAnchor() const {
-		return left_.has_value() || right_.has_value() || top_.has_value() || bottom_.has_value();
-	}
 
 private:
 	std::optional<float> left_;

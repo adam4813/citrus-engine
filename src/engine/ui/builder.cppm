@@ -43,19 +43,19 @@ public:
 
 	// === Position and Size ===
 
-	ContainerBuilder& Position(float x, float y) {
+	ContainerBuilder& Position(const float x, const float y) {
 		x_ = x;
 		y_ = y;
 		return *this;
 	}
 
-	ContainerBuilder& Size(float width, float height) {
+	ContainerBuilder& Size(const float width, const float height) {
 		width_ = width;
 		height_ = height;
 		return *this;
 	}
 
-	ContainerBuilder& Bounds(float x, float y, float width, float height) {
+	ContainerBuilder& Bounds(const float x, const float y, const float width, const float height) {
 		x_ = x;
 		y_ = y;
 		width_ = width;
@@ -65,7 +65,7 @@ public:
 
 	// === Panel Styling ===
 
-	ContainerBuilder& Padding(float padding) {
+	ContainerBuilder& Padding(const float padding) {
 		padding_ = padding;
 		return *this;
 	}
@@ -75,26 +75,25 @@ public:
 		return *this;
 	}
 
-	ContainerBuilder& Border(float width, const batch_renderer::Color& color = batch_renderer::Colors::GRAY) {
+	ContainerBuilder& Border(const float width, const batch_renderer::Color& color = batch_renderer::Colors::GRAY) {
 		border_width_ = width;
 		border_color_ = color;
 		return *this;
 	}
 
-	ContainerBuilder& Opacity(float opacity) {
+	ContainerBuilder& Opacity(const float opacity) {
 		opacity_ = opacity;
 		return *this;
 	}
 
-	ContainerBuilder& ClipChildren(bool clip = true) {
+	ContainerBuilder& ClipChildren(const bool clip = true) {
 		clip_children_ = clip;
 		return *this;
 	}
 
 	// === Layout Component ===
 
-	template <typename LayoutType, typename... Args>
-	ContainerBuilder& Layout(Args&&... args) {
+	template <typename LayoutType, typename... Args> ContainerBuilder& Layout(Args&&... args) {
 		layout_ = std::make_unique<LayoutType>(std::forward<Args>(args)...);
 		return *this;
 	}
@@ -118,19 +117,19 @@ public:
 		return *this;
 	}
 
-	ContainerBuilder& Fill(float margin = 0.0f) {
+	ContainerBuilder& Fill(const float margin = 0.0f) {
 		anchor_ = components::Anchor::Fill(margin);
 		has_constraints_ = true;
 		return *this;
 	}
 
-	ContainerBuilder& StretchHorizontal(float left = 0.0f, float right = 0.0f) {
+	ContainerBuilder& StretchHorizontal(const float left = 0.0f, const float right = 0.0f) {
 		anchor_ = components::Anchor::StretchHorizontal(left, right);
 		has_constraints_ = true;
 		return *this;
 	}
 
-	ContainerBuilder& StretchVertical(float top = 0.0f, float bottom = 0.0f) {
+	ContainerBuilder& StretchVertical(const float top = 0.0f, const float bottom = 0.0f) {
 		anchor_ = components::Anchor::StretchVertical(top, bottom);
 		has_constraints_ = true;
 		return *this;
@@ -138,7 +137,7 @@ public:
 
 	// === Scroll Component ===
 
-	ContainerBuilder& Scrollable(components::ScrollDirection direction = components::ScrollDirection::Vertical) {
+	ContainerBuilder& Scrollable(const components::ScrollDirection direction = components::ScrollDirection::Vertical) {
 		scroll_direction_ = direction;
 		scrollable_ = true;
 		return *this;

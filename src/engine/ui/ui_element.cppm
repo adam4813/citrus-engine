@@ -55,7 +55,7 @@ public:
 	 * @brief Called each frame to update component state
 	 * @param delta_time Time since last frame in seconds
 	 */
-	virtual void OnUpdate(float delta_time) {}
+	virtual void OnUpdate([[maybe_unused]] float delta_time) {}
 
 	/**
 	 * @brief Called during rendering, after the element renders itself
@@ -72,7 +72,7 @@ public:
 	 * @param event The mouse event
 	 * @return true if event was consumed, false to continue propagation
 	 */
-	virtual bool OnMouseEvent(const MouseEvent& event) { return false; }
+	virtual bool OnMouseEvent([[maybe_unused]] const MouseEvent& event) { return false; }
 
 	/**
 	 * @brief Get the owning element
@@ -336,7 +336,7 @@ public:
          * @param x X coordinate relative to parent
          * @param y Y coordinate relative to parent
          */
-	void SetRelativePosition(float x, float y) {
+	void SetRelativePosition(const float x, const float y) {
 		relative_x_ = x;
 		relative_y_ = y;
 	}
@@ -346,7 +346,7 @@ public:
          * @param width Element width in pixels
          * @param height Element height in pixels
          */
-	void SetSize(float width, float height) {
+	void SetSize(const float width, const float height) {
 		width_ = width;
 		height_ = height;
 	}
@@ -388,7 +388,7 @@ public:
          * @brief Set focused state
          * @param focused True to focus, false to unfocus
          */
-	void SetFocused(bool focused) { is_focused_ = focused; }
+	void SetFocused(const bool focused) { is_focused_ = focused; }
 
 	/**
          * @brief Check if element is focused
@@ -400,7 +400,7 @@ public:
          * @brief Set hovered state
          * @param hovered True if mouse is over element
          */
-	void SetHovered(bool hovered) { is_hovered_ = hovered; }
+	void SetHovered(const bool hovered) { is_hovered_ = hovered; }
 
 	/**
          * @brief Check if element is hovered
@@ -412,7 +412,7 @@ public:
          * @brief Set visibility
          * @param visible True to show, false to hide
          */
-	void SetVisible(bool visible) { is_visible_ = visible; }
+	void SetVisible(const bool visible) { is_visible_ = visible; }
 
 	/**
          * @brief Check if element is visible
@@ -614,7 +614,7 @@ public:
          * @param event Mouse event data
          * @return true if event was consumed, false otherwise
          */
-	virtual bool OnHover(const MouseEvent& event) { return false; }
+	virtual bool OnHover([[maybe_unused]] const MouseEvent& event) { return false; }
 
 	/**
          * @brief Handle mouse click (stub)
@@ -625,7 +625,7 @@ public:
          * @param event Mouse event data
          * @return true if event was consumed, false otherwise
          */
-	virtual bool OnClick(const MouseEvent& event) { return false; }
+	virtual bool OnClick([[maybe_unused]] const MouseEvent& event) { return false; }
 
 	/**
          * @brief Handle mouse drag (stub)
@@ -636,7 +636,7 @@ public:
          * @param event Mouse event data
          * @return true if event was consumed, false otherwise
          */
-	virtual bool OnDrag(const MouseEvent& event) { return false; }
+	virtual bool OnDrag([[maybe_unused]] const MouseEvent& event) { return false; }
 
 	/**
          * @brief Handle mouse scroll (stub)
@@ -647,7 +647,7 @@ public:
          * @param event Mouse event data
          * @return true if event was consumed, false otherwise
          */
-	virtual bool OnScroll(const MouseEvent& event) { return false; }
+	virtual bool OnScroll([[maybe_unused]] const MouseEvent& event) { return false; }
 
 	// === Component Management ===
 
@@ -698,14 +698,14 @@ public:
 	 * Call this each frame before rendering if components need updating.
 	 * Note: Layout and constraint components auto-update when dirty.
 	 */
-	void UpdateComponents(float delta_time = 0.0f) { components_.Update(delta_time); }
+	void UpdateComponents(const float delta_time = 0.0f) { components_.Update(delta_time); }
 
 	/**
 	 * @brief Recursively update components on this element and all children
 	 *
 	 * Call this on the root element to update the entire UI tree.
 	 */
-	void UpdateComponentsRecursive(float delta_time = 0.0f) {
+	void UpdateComponentsRecursive(const float delta_time = 0.0f) {
 		components_.Update(delta_time);
 		for (auto& child : children_) {
 			if (child) {
@@ -721,7 +721,7 @@ public:
 
 protected:
 	// Subclasses can construct with initial bounds
-	UIElement(float x, float y, float width, float height) :
+	UIElement(const float x, const float y, const float width, const float height) :
 			relative_x_(x), relative_y_(y), width_(width), height_(height) {}
 
 	/**
@@ -771,19 +771,14 @@ inline void UIElement::AddChild(std::unique_ptr<UIElement> child) {
 }
 
 inline void UIElement::RemoveChild(UIElement* child) {
-	children_.erase(
-			std::remove_if(
-					children_.begin(),
-					children_.end(),
-					[child](const std::unique_ptr<UIElement>& elem) { return elem.get() == child; }),
-			children_.end());
+	std::erase_if(children_, [child](const std::unique_ptr<UIElement>& elem) { return elem.get() == child; });
 }
 
 inline batch_renderer::Rectangle UIElement::GetAbsoluteBounds() const {
 	const batch_renderer::Rectangle bounds = GetRelativeBounds();
-	const batch_renderer::Rectangle parents_bounds = GetAbsoluteParentBounds();
+	const batch_renderer::Rectangle parent_bounds = GetAbsoluteParentBounds();
 
-	return {bounds.x + parents_bounds.x, bounds.y + parents_bounds.y, bounds.width, bounds.height};
+	return {bounds.x + parent_bounds.x, bounds.y + parent_bounds.y, bounds.width, bounds.height};
 }
 
 inline batch_renderer::Rectangle UIElement::GetAbsoluteParentBounds() const {
@@ -800,7 +795,7 @@ inline batch_renderer::Rectangle UIElement::GetAbsoluteParentBounds() const {
 	return bounds;
 }
 
-inline bool UIElement::Contains(float x, float y) const {
+inline bool UIElement::Contains(const float x, const float y) const {
 	const batch_renderer::Rectangle bounds = GetAbsoluteBounds();
 	return x >= bounds.x && x < bounds.x + bounds.width && y >= bounds.y && y < bounds.y + bounds.height;
 }

@@ -55,10 +55,10 @@ public:
 	 * @brief Set layout strategy (convenience for LayoutComponent)
 	 */
 	void SetLayout(std::unique_ptr<components::ILayout> layout) {
-		auto* comp = GetComponent<components::LayoutComponent>();
-		if (comp) {
+		if (auto* comp = GetComponent<components::LayoutComponent>()) {
 			comp->SetLayout(std::move(layout));
-		} else {
+		}
+		else {
 			AddComponent<components::LayoutComponent>(std::move(layout));
 		}
 	}
@@ -66,9 +66,9 @@ public:
 	/**
 	 * @brief Enable scrolling (convenience for ScrollComponent)
 	 */
-	components::ScrollComponent* EnableScrolling(components::ScrollDirection dir = components::ScrollDirection::Vertical) {
-		auto* existing = GetComponent<components::ScrollComponent>();
-		if (existing) {
+	components::ScrollComponent*
+	EnableScrolling(components::ScrollDirection dir = components::ScrollDirection::Vertical) {
+		if (auto* existing = GetComponent<components::ScrollComponent>()) {
 			existing->GetState().SetDirection(dir);
 			return existing;
 		}
@@ -81,55 +81,12 @@ public:
 	 * Call this each frame before rendering if components need updating.
 	 * Note: Layout and constraint components auto-update when dirty.
 	 */
-	void Update(float delta_time = 0.0f) { UpdateComponents(delta_time); }
+	void Update(const float delta_time = 0.0f) { UpdateComponents(delta_time); }
 
 	// === Rendering ===
 
 	void Render() const override {
-		using namespace batch_renderer;
-
-		if (!IsVisible()) {
-			return;
-		}
-
-		// Get absolute bounds for rendering
-		const Rectangle absolute_bounds = GetAbsoluteBounds();
-
-		// Render background
-		const Color bg_color = Color::Alpha(GetBackgroundColor(), GetOpacity());
-		BatchRenderer::SubmitQuad(absolute_bounds, bg_color);
-
-		// Render border if width > 0
-		if (GetBorderWidth() > 0.0f) {
-			const Color border_color = Color::Alpha(GetBorderColor(), GetOpacity());
-			const float x = absolute_bounds.x;
-			const float y = absolute_bounds.y;
-			const float w = absolute_bounds.width;
-			const float h = absolute_bounds.height;
-
-			BatchRenderer::SubmitLine(x, y, x + w, y, GetBorderWidth(), border_color);
-			BatchRenderer::SubmitLine(x + w, y, x + w, y + h, GetBorderWidth(), border_color);
-			BatchRenderer::SubmitLine(x + w, y + h, x, y + h, GetBorderWidth(), border_color);
-			BatchRenderer::SubmitLine(x, y + h, x, y, GetBorderWidth(), border_color);
-		}
-
-		// Push scissor for children
-		if (GetClipChildren()) {
-			BatchRenderer::PushScissor(
-					ScissorRect{absolute_bounds.x, absolute_bounds.y, absolute_bounds.width, absolute_bounds.height});
-		}
-
-		// Render children
-		for (const auto& child : GetChildren()) {
-			if (child) {
-				child->Render();
-			}
-		}
-
-		// Pop scissor
-		if (GetClipChildren()) {
-			BatchRenderer::PopScissor();
-		}
+		Panel::Render();
 
 		// Render component visuals (e.g., scrollbars)
 		RenderComponents();

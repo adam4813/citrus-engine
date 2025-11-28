@@ -14,6 +14,8 @@ import engine;
  * - **Bounds Visualization**: Renders colored outlines around each UI element
  * - **Type Labels**: Shows element type names above each element
  * - **Hierarchical Depth**: Color fades based on tree depth for visual hierarchy
+ * - **Element Selection**: Click elements to select them, highlighted with green border
+ * - **Click-to-Select**: Automatically sets up click handlers for element selection
  * - **No Code Pollution**: Separate from UIElement - keeps UI code clean
  * - **ImGui Controls**: Toggle options and adjust colors at runtime
  *
@@ -26,6 +28,9 @@ import engine;
  * UIDebugVisualizer ui_debugger;
  * ui_debugger.SetEnabled(true);  // Enable by default
  *
+ * // Setup click-to-select (call once after building UI)
+ * ui_debugger.SetupClickToSelect(my_ui_element.get());
+ *
  * // In your render loop:
  * BatchRenderer::BeginFrame();
  *
@@ -36,6 +41,18 @@ import engine;
  * ui_debugger.RenderDebugOverlay(my_ui_element.get());
  *
  * BatchRenderer::EndFrame();
+ * @endcode
+ *
+ * # Click-to-Select
+ *
+ * Enable element selection by clicking:
+ *
+ * @code{.cpp}
+ * // Setup once after UI is built
+ * ui_debugger.SetupClickToSelect(root_element.get());
+ *
+ * // In Update(), sync selection to your inspector:
+ * selected_element_ = const_cast<UIElement*>(ui_debugger.GetSelectedElement());
  * @endcode
  *
  * # ImGui Controls
@@ -57,6 +74,7 @@ import engine;
  * - Show bounds toggle
  * - Show labels toggle
  * - Color pickers for bounds, labels, and background
+ * - Selection info and clear button
  *
  * # Programmatic Control
  *
@@ -64,6 +82,11 @@ import engine;
  * // Toggle on/off
  * ui_debugger.ToggleEnabled();
  * ui_debugger.SetEnabled(false);
+ *
+ * // Selection control
+ * ui_debugger.SetSelectedElement(element);
+ * ui_debugger.ClearSelection();
+ * auto* selected = ui_debugger.GetSelectedElement();
  *
  * // Customize appearance
  * ui_debugger.SetShowLabels(true);
@@ -83,6 +106,7 @@ import engine;
  * 3. **Renders labels** using BatchRenderer::SubmitText()
  * 4. **Type detection** via C++ RTTI (typeid) - no virtual method needed
  * 5. **Depth-based fading** makes nested elements easier to distinguish
+ * 6. **Click handling** uses UIElement's SetClickCallback for selection
  *
  * # Type Name Detection
  *
@@ -110,12 +134,13 @@ import engine;
  *
  * # Example Integration
  *
- * See examples/src/ui_image_scene.cpp for a complete working example.
+ * See examples/src/ui_component_scene.cpp for a complete working example.
  *
  * @note This visualizer is meant for development/debugging only. Disable it in production builds for optimal performance.
  *
  * @see engine::ui::UIElement
  * @see engine::ui::batch_renderer::BatchRenderer
+ * @see UIElementInspector
  */
 class UIDebugVisualizer {
 private:
@@ -123,10 +148,15 @@ private:
 	bool show_labels_ = true;
 	bool show_bounds_ = true;
 
+	// Selection
+	const engine::ui::UIElement* selected_element_ = nullptr;
+
 	// Debug colors
 	engine::ui::batch_renderer::Color bounds_color_{1.0f, 0.0f, 1.0f, 1.0f}; // Magenta
 	engine::ui::batch_renderer::Color label_bg_color_{0.0f, 0.0f, 0.0f, 0.7f}; // Semi-transparent black
 	engine::ui::batch_renderer::Color label_text_color_{1.0f, 1.0f, 0.0f, 1.0f}; // Yellow
+	engine::ui::batch_renderer::Color selected_color_{0.0f, 1.0f, 0.0f, 1.0f}; // Green for selected
+	engine::ui::batch_renderer::Color selected_fill_color_{0.0f, 1.0f, 0.0f, 0.15f}; // Semi-transparent green fill
 
 	/**
 	 * @brief Recursively render debug overlay for element and its children
@@ -139,9 +169,28 @@ private:
 		}
 
 		const auto bounds = element->GetAbsoluteBounds();
+		const bool is_selected = (element == selected_element_);
+
+		// Render selection highlight (fill + thicker border)
+		if (is_selected) {
+			const float x = bounds.x;
+			const float y = bounds.y;
+			const float w = bounds.width;
+			const float h = bounds.height;
+			const float thickness = 2.0f;
+
+			// Semi-transparent fill
+			BatchRenderer::SubmitQuad(bounds, selected_fill_color_);
+
+			// Thicker green border
+			BatchRenderer::SubmitLine(x, y, x + w, y, thickness, selected_color_); // Top
+			BatchRenderer::SubmitLine(x + w, y, x + w, y + h, thickness, selected_color_); // Right
+			BatchRenderer::SubmitLine(x + w, y + h, x, y + h, thickness, selected_color_); // Bottom
+			BatchRenderer::SubmitLine(x, y + h, x, y, thickness, selected_color_); // Left
+		}
 
 		// Render bounds as outline (4 lines forming a rectangle)
-		if (show_bounds_) {
+		if (show_bounds_ && !is_selected) {
 			const float x = bounds.x;
 			const float y = bounds.y;
 			const float w = bounds.width;
@@ -282,6 +331,60 @@ public:
 	void SetBoundsColor(const engine::ui::batch_renderer::Color& color) { bounds_color_ = color; }
 
 	/**
+	 * @brief Set the currently selected element for highlighting
+	 */
+	void SetSelectedElement(const engine::ui::UIElement* element) { selected_element_ = element; }
+
+	/**
+	 * @brief Get the currently selected element
+	 */
+	const engine::ui::UIElement* GetSelectedElement() const { return selected_element_; }
+
+	/**
+	 * @brief Clear the current selection
+	 */
+	void ClearSelection() { selected_element_ = nullptr; }
+
+	/**
+	 * @brief Setup click-to-select on an element and all its children
+	 *
+	 * Recursively adds click callbacks to each element that will set it as selected.
+	 * Call once after building your UI hierarchy.
+	 *
+	 * @param root Root element to setup click handlers on
+	 *
+	 * @code
+	 * // After creating UI:
+	 * visualizer.SetupClickToSelect(root_panel.get());
+	 * @endcode
+	 */
+	void SetupClickToSelect(engine::ui::UIElement* root) {
+		if (!root)
+			return;
+
+		SetupClickToSelectRecursive(root);
+	}
+
+private:
+	void SetupClickToSelectRecursive(engine::ui::UIElement* element) {
+		if (!element)
+			return;
+
+		// Set click callback to select this element
+		element->SetClickCallback([this, element](const engine::ui::MouseEvent&) {
+			selected_element_ = element;
+			return true; // Consume the click
+		});
+
+		// Setup on all children
+		for (auto& child : element->GetChildren()) {
+			SetupClickToSelectRecursive(child.get());
+		}
+	}
+
+public:
+
+	/**
 	 * @brief Render debug overlay for UI element tree
 	 *
 	 * Call this AFTER rendering your normal UI, so debug overlay appears on top.
@@ -332,11 +435,22 @@ public:
 			ImGui::Text("Bounds Color:");
 			ImGui::ColorEdit4("##BoundsColor", &bounds_color_.r);
 
+			ImGui::Text("Selection Color:");
+			ImGui::ColorEdit4("##SelectionColor", &selected_color_.r);
+
 			ImGui::Text("Label Text Color:");
 			ImGui::ColorEdit4("##LabelTextColor", &label_text_color_.r);
 
 			ImGui::Text("Label Background:");
 			ImGui::ColorEdit4("##LabelBgColor", &label_bg_color_.r);
+
+			if (selected_element_) {
+				ImGui::Separator();
+				ImGui::Text("Selected: %s", GetElementTypeName(selected_element_).c_str());
+				if (ImGui::Button("Clear Selection")) {
+					selected_element_ = nullptr;
+				}
+			}
 
 			ImGui::Unindent();
 		}

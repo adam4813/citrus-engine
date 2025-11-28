@@ -2,6 +2,7 @@
 export module engine.ui:elements;
 
 export import :elements.panel;
+export import :elements.container;
 export import :elements.button;
 export import :elements.label;
 export import :elements.slider;

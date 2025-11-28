@@ -74,3 +74,18 @@ add_engine_test(ui_confirmation_dialog_test
 add_engine_test(ui_theme_test
     ui_theme_test.cpp
 )
+
+# Add UI Layout mixin test
+add_engine_test(ui_layout_test
+    ui_layout_test.cpp
+)
+
+# Add UI Anchoring mixin test
+add_engine_test(ui_anchoring_test
+    ui_anchoring_test.cpp
+)
+
+# Add UI Scroll mixin test
+add_engine_test(ui_scroll_test
+    ui_scroll_test.cpp
+)

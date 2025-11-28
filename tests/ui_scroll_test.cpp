@@ -151,7 +151,7 @@ TEST_F(ScrollStateTest, HandleScrollHorizontal) {
 	EXPECT_GT(scroll_.GetScrollX(), 0.0f);
 }
 
-TEST_F(ScrollStateTest, HandleScrollNoContentReturnsfalse) {
+TEST_F(ScrollStateTest, HandleScrollNoContentReturnsFalse) {
 	ScrollState s;
 	s.SetContentSize(100.0f, 100.0f);
 	s.SetViewportSize(200.0f, 200.0f);  // Content fits

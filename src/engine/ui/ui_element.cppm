@@ -151,7 +151,7 @@ public:
 	 * @brief Remove all components
 	 */
 	void Clear() {
-		for (auto& component : components_ | std::views::values) {
+		for (const auto& component : components_ | std::views::values) {
 			component->OnDetach();
 		}
 		components_.clear();
@@ -160,17 +160,17 @@ public:
 	/**
 	 * @brief Update all components
 	 */
-	void Update(float delta_time) {
-		for (auto& component : components_ | std::views::values) {
+	void Update(const float delta_time) {
+		for (const auto& component : components_ | std::views::values) {
 			component->OnUpdate(delta_time);
 		}
 	}
 
 	/**
-	 * @brief Update all components
+	 * @brief Marks all components as invalid
 	 */
 	void Invalidate() {
-		for (auto& component : components_ | std::views::values) {
+		for (const auto& component : components_ | std::views::values) {
 			component->OnInvalidate();
 		}
 	}
@@ -189,7 +189,7 @@ public:
 	 * @return true if any component consumed the event
 	 */
 	bool ProcessMouseEvent(const MouseEvent& event) {
-		for (auto& component : components_ | std::views::values) {
+		for (const auto& component : components_ | std::views::values) {
 			if (component->OnMouseEvent(event)) {
 				return true;
 			}

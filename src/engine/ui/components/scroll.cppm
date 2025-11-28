@@ -2,6 +2,7 @@ module;
 
 #include <algorithm>
 #include <cmath>
+#include <cstdint>
 
 export module engine.ui:components.scroll;
 
@@ -15,9 +16,9 @@ export namespace engine::ui::components {
  * @brief Scroll direction options
  */
 enum class ScrollDirection : uint8_t {
-	Vertical,   ///< Scroll up/down only
+	Vertical, ///< Scroll up/down only
 	Horizontal, ///< Scroll left/right only
-	Both        ///< Scroll in both directions
+	Both ///< Scroll in both directions
 };
 
 /**
@@ -201,30 +202,31 @@ public:
 		const float delta = -event.scroll_delta * scroll_speed_;
 
 		switch (direction_) {
-			case ScrollDirection::Vertical:
-				if (!CanScrollY()) {
-					return false;
-				}
+		case ScrollDirection::Vertical:
+			if (!CanScrollY()) {
+				return false;
+			}
+			ScrollBy(0.0f, delta);
+			return true;
+
+		case ScrollDirection::Horizontal:
+			if (!CanScrollX()) {
+				return false;
+			}
+			ScrollBy(delta, 0.0f);
+			return true;
+
+		case ScrollDirection::Both:
+			// Default to vertical scroll, horizontal with shift (future enhancement)
+			if (CanScrollY()) {
 				ScrollBy(0.0f, delta);
 				return true;
-
-			case ScrollDirection::Horizontal:
-				if (!CanScrollX()) {
-					return false;
-				}
+			}
+			else if (CanScrollX()) {
 				ScrollBy(delta, 0.0f);
 				return true;
-
-			case ScrollDirection::Both:
-				// Default to vertical scroll, horizontal with shift (future enhancement)
-				if (CanScrollY()) {
-					ScrollBy(0.0f, delta);
-					return true;
-				} else if (CanScrollX()) {
-					ScrollBy(delta, 0.0f);
-					return true;
-				}
-				return false;
+			}
+			return false;
 		}
 
 		return false;
@@ -274,9 +276,8 @@ public:
 	 * @param style Scrollbar style settings
 	 * @return Rectangle for the scrollbar thumb
 	 */
-	static batch_renderer::Rectangle CalculateVerticalThumb(const ScrollState& scroll,
-															const batch_renderer::Rectangle& viewport_bounds,
-															const ScrollbarStyle& style) {
+	static batch_renderer::Rectangle CalculateVerticalThumb(
+			const ScrollState& scroll, const batch_renderer::Rectangle& viewport_bounds, const ScrollbarStyle& style) {
 		if (!scroll.CanScrollY()) {
 			return {};
 		}
@@ -297,9 +298,8 @@ public:
 	/**
 	 * @brief Calculate horizontal scrollbar geometry
 	 */
-	static batch_renderer::Rectangle CalculateHorizontalThumb(const ScrollState& scroll,
-															  const batch_renderer::Rectangle& viewport_bounds,
-															  const ScrollbarStyle& style) {
+	static batch_renderer::Rectangle CalculateHorizontalThumb(
+			const ScrollState& scroll, const batch_renderer::Rectangle& viewport_bounds, const ScrollbarStyle& style) {
 		if (!scroll.CanScrollX()) {
 			return {};
 		}
@@ -320,8 +320,8 @@ public:
 	/**
 	 * @brief Calculate vertical track rectangle
 	 */
-	static batch_renderer::Rectangle CalculateVerticalTrack(const batch_renderer::Rectangle& viewport_bounds,
-															const ScrollbarStyle& style) {
+	static batch_renderer::Rectangle
+	CalculateVerticalTrack(const batch_renderer::Rectangle& viewport_bounds, const ScrollbarStyle& style) {
 		return batch_renderer::Rectangle{
 				viewport_bounds.x + viewport_bounds.width - style.width,
 				viewport_bounds.y,
@@ -332,8 +332,8 @@ public:
 	/**
 	 * @brief Calculate horizontal track rectangle
 	 */
-	static batch_renderer::Rectangle CalculateHorizontalTrack(const batch_renderer::Rectangle& viewport_bounds,
-															  const ScrollbarStyle& style) {
+	static batch_renderer::Rectangle
+	CalculateHorizontalTrack(const batch_renderer::Rectangle& viewport_bounds, const ScrollbarStyle& style) {
 		return batch_renderer::Rectangle{
 				viewport_bounds.x,
 				viewport_bounds.y + viewport_bounds.height - style.width,
@@ -355,9 +355,7 @@ public:
  */
 class ScrollComponent : public IUIComponent {
 public:
-	explicit ScrollComponent(ScrollDirection direction = ScrollDirection::Vertical) {
-		state_.SetDirection(direction);
-	}
+	explicit ScrollComponent(ScrollDirection direction = ScrollDirection::Vertical) { state_.SetDirection(direction); }
 
 	/**
 	 * @brief Get the scroll state for reading/modifying
@@ -426,15 +424,19 @@ public:
 
 		if (state_.CanScrollY()) {
 			if (style_.show_track) {
-				BatchRenderer::SubmitQuad(ScrollbarGeometry::CalculateVerticalTrack(viewport, style_), style_.track_color);
+				BatchRenderer::SubmitQuad(
+						ScrollbarGeometry::CalculateVerticalTrack(viewport, style_), style_.track_color);
 			}
-			BatchRenderer::SubmitQuad(ScrollbarGeometry::CalculateVerticalThumb(state_, viewport, style_), style_.thumb_color);
+			BatchRenderer::SubmitQuad(
+					ScrollbarGeometry::CalculateVerticalThumb(state_, viewport, style_), style_.thumb_color);
 		}
 		if (state_.CanScrollX()) {
 			if (style_.show_track) {
-				BatchRenderer::SubmitQuad(ScrollbarGeometry::CalculateHorizontalTrack(viewport, style_), style_.track_color);
+				BatchRenderer::SubmitQuad(
+						ScrollbarGeometry::CalculateHorizontalTrack(viewport, style_), style_.track_color);
 			}
-			BatchRenderer::SubmitQuad(ScrollbarGeometry::CalculateHorizontalThumb(state_, viewport, style_), style_.thumb_color);
+			BatchRenderer::SubmitQuad(
+					ScrollbarGeometry::CalculateHorizontalThumb(state_, viewport, style_), style_.thumb_color);
 		}
 	}
 

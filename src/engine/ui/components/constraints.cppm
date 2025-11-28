@@ -3,6 +3,7 @@ module;
 #include <algorithm>
 #include <cstdint>
 #include <optional>
+#include <tuple>
 
 export module engine.ui:components.constraints;
 
@@ -120,10 +121,12 @@ public:
 			// Stretch horizontally
 			x = *left_;
 			width = parent_bounds.width - *left_ - *right_;
-		} else if (left_.has_value()) {
+		}
+		else if (left_.has_value()) {
 			// Fixed from left
 			x = *left_;
-		} else if (right_.has_value()) {
+		}
+		else if (right_.has_value()) {
 			// Fixed from right
 			x = parent_bounds.width - width - *right_;
 		}
@@ -133,10 +136,12 @@ public:
 			// Stretch vertically
 			y = *top_;
 			height = parent_bounds.height - *top_ - *bottom_;
-		} else if (top_.has_value()) {
+		}
+		else if (top_.has_value()) {
 			// Fixed from top
 			y = *top_;
-		} else if (bottom_.has_value()) {
+		}
+		else if (bottom_.has_value()) {
 			// Fixed from bottom
 			y = parent_bounds.height - height - *bottom_;
 		}
@@ -152,7 +157,9 @@ public:
 	/**
 	 * @brief Check if any anchor is set
 	 */
-	bool HasAnchor() const { return left_.has_value() || right_.has_value() || top_.has_value() || bottom_.has_value(); }
+	bool HasAnchor() const {
+		return left_.has_value() || right_.has_value() || top_.has_value() || bottom_.has_value();
+	}
 
 	/**
 	 * @brief Clear all anchors
@@ -261,9 +268,7 @@ public:
 	 * @brief Get all anchor values for inspection/serialization
 	 * @return Tuple of (left, right, top, bottom) optional values
 	 */
-	auto GetValues() const {
-		return std::make_tuple(left_, right_, top_, bottom_);
-	}
+	auto GetValues() const { return std::make_tuple(left_, right_, top_, bottom_); }
 
 	/**
 	 * @brief Check if any anchor is set
@@ -283,11 +288,11 @@ private:
  * @brief Size constraint modes
  */
 enum class SizeMode : uint8_t {
-	Fixed,           ///< Fixed pixel size
-	Percentage,      ///< Percentage of parent size
-	MinContent,      ///< Use minimum content size
-	MaxContent,      ///< Use maximum content size
-	FitContent       ///< Fit content with optional min/max bounds
+	Fixed, ///< Fixed pixel size
+	Percentage, ///< Percentage of parent size
+	MinContent, ///< Use minimum content size
+	MaxContent, ///< Use maximum content size
+	FitContent ///< Fit content with optional min/max bounds
 };
 
 /**
@@ -323,8 +328,8 @@ public:
 	/**
 	 * @brief Set to use minimum content size with optional min/max bounds
 	 */
-	static SizeConstraint FitContent(std::optional<float> min_size = std::nullopt,
-									 std::optional<float> max_size = std::nullopt) {
+	static SizeConstraint
+	FitContent(std::optional<float> min_size = std::nullopt, std::optional<float> max_size = std::nullopt) {
 		SizeConstraint s;
 		s.mode_ = SizeMode::FitContent;
 		s.min_size_ = min_size;
@@ -342,17 +347,11 @@ public:
 		float result = content_size;
 
 		switch (mode_) {
-			case SizeMode::Fixed:
-				result = value_;
-				break;
-			case SizeMode::Percentage:
-				result = parent_size * value_;
-				break;
-			case SizeMode::MinContent:
-			case SizeMode::MaxContent:
-			case SizeMode::FitContent:
-				result = content_size;
-				break;
+		case SizeMode::Fixed: result = value_; break;
+		case SizeMode::Percentage: result = parent_size * value_; break;
+		case SizeMode::MinContent:
+		case SizeMode::MaxContent:
+		case SizeMode::FitContent: result = content_size; break;
 		}
 
 		// Apply min/max bounds
@@ -372,7 +371,7 @@ public:
 	void SetMaxSize(std::optional<float> max) { max_size_ = max; }
 
 private:
-	SizeMode mode_{SizeMode::FitContent};  // Default: preserve original size
+	SizeMode mode_{SizeMode::FitContent}; // Default: preserve original size
 	float value_{0.0f};
 	std::optional<float> min_size_;
 	std::optional<float> max_size_;

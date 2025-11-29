@@ -1589,16 +1589,76 @@ public:
 
 #### Progress Bar
 **Visual**: Horizontal bar showing completion percentage.  
-**Use Cases**: Loading, construction progress.
+**Use Cases**: Loading, construction progress, download indicators.
+**Implementation Status**: ✅ Implemented in `src/engine/ui/elements/progress_bar.cppm`
 
 ```cpp
-class ProgressBar : public UIElement {
-public:
-    ProgressBar(float width, float height);
-    void SetProgress(float percentage);  // 0.0 - 1.0
-    void SetLabel(const std::string& label);
-    void SetColor(Color color);
-};
+// Create progress bar
+auto progress = std::make_unique<ProgressBar>(10, 10, 200, 20, 0.0f);
+
+// Configure display
+progress->SetLabel("Loading");        // Label on left
+progress->SetShowPercentage(true);    // "75%" on right
+
+// Customize colors
+progress->SetTrackColor(Colors::DARK_GRAY);
+progress->SetFillColor(Colors::GOLD);
+progress->SetBorderWidth(1.0f);
+
+// Update progress (0.0 to 1.0)
+progress->SetProgress(0.75f);
+```
+
+---
+
+#### Tab Container
+**Visual**: Tab bar at top with switchable content panels.  
+**Use Cases**: Settings dialogs, multi-section menus.
+**Implementation Status**: ✅ Implemented in `src/engine/ui/elements/tab_container.cppm`
+
+```cpp
+// Create tab container
+auto tabs = std::make_unique<TabContainer>(10, 10, 400, 300);
+
+// Add tabs with content panels
+auto general_panel = std::make_unique<Panel>(0, 0, 380, 250);
+tabs->AddTab("General", std::move(general_panel));
+
+auto audio_panel = std::make_unique<Panel>(0, 0, 380, 250);
+tabs->AddTab("Audio", std::move(audio_panel));
+
+// Tab selection callback
+tabs->SetTabChangedCallback([](size_t index, const std::string& label) {
+    std::cout << "Tab changed to: " << label << std::endl;
+});
+
+// Programmatic tab selection
+tabs->SetActiveTab(1);  // Select "Audio" tab
+```
+
+---
+
+#### Tooltip Component
+**Visual**: Panel that appears on hover, following mouse position.  
+**Use Cases**: Contextual help, button descriptions.
+**Implementation Status**: ✅ Implemented in `src/engine/ui/components/tooltip.cppm`
+
+```cpp
+// Create a button with tooltip
+auto button = std::make_unique<Button>(10, 10, 100, 30, "Hover me");
+
+// Create tooltip content
+auto tip_panel = std::make_unique<Panel>(0, 0, 150, 40);
+tip_panel->SetBackgroundColor(UITheme::Background::PANEL_DARK);
+auto tip_label = std::make_unique<Label>(5, 5, "This is a tooltip!", 12);
+tip_panel->AddChild(std::move(tip_label));
+
+// Attach tooltip component
+auto* tooltip = button->AddComponent<TooltipComponent>(std::move(tip_panel));
+tooltip->SetOffset(10.0f, 15.0f);  // Offset from cursor
+
+// Tooltip automatically shows/hides on hover
+// Repositions to stay within window bounds
 ```
 
 ---

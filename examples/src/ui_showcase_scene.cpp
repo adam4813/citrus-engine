@@ -12,6 +12,7 @@ import engine;
 
 using namespace engine::ui;
 using namespace engine::ui::elements;
+using namespace engine::ui::components;
 using namespace engine::ui::batch_renderer;
 using namespace engine::input;
 
@@ -21,6 +22,7 @@ using namespace engine::input;
  * This scene demonstrates:
  * - UITheme constants usage
  * - All UI components (Button, Checkbox, Slider, Panel, Label, Text, Image, ConfirmationDialog)
+ * - New components (ProgressBar, TabContainer, Divider, TooltipComponent)
  * - Composition and layout patterns
  * - Event callbacks and reactive updates
  * - Declarative UI construction
@@ -52,6 +54,15 @@ private:
 	Slider* slider_brightness_ = nullptr;
 	Label* slider_value_label_ = nullptr;
 
+	// Progress bar demonstrations
+	ProgressBar* progress_bar_ = nullptr;
+
+	// Tab container demonstrations
+	TabContainer* tab_container_ = nullptr;
+
+	// Tooltip demonstrations
+	Button* tooltip_button_ = nullptr;
+
 	// Debug visualizer
 	UIDebugVisualizer ui_debugger_;
 
@@ -63,8 +74,9 @@ private:
 	bool show_confirmation_ = false;
 	float volume_value_ = 0.5f;
 	float brightness_value_ = 0.75f;
+	float progress_value_ = 0.0f;
 	float panel_width_ = 700.0f;
-	float panel_height_ = 700.0f;
+	float panel_height_ = 850.0f;
 
 public:
 	const char* GetName() const override { return "UI Showcase"; }
@@ -153,6 +165,20 @@ public:
 		// ====================================================================
 
 		BuildNestedPanelSection(current_y);
+		current_y += 100.0f;
+
+		// ====================================================================
+		// Progress Bar Section
+		// ====================================================================
+
+		BuildProgressBarSection(current_y);
+		current_y += 80.0f;
+
+		// ====================================================================
+		// Tab Container Section
+		// ====================================================================
+
+		BuildTabContainerSection(current_y);
 
 		// ====================================================================
 		// Confirmation Dialog (hidden initially)
@@ -199,7 +225,19 @@ public:
 			UpdateButtonClickLabel();
 			return true;
 		});
+
+		// Add tooltip to normal button
+		auto tooltip_content = std::make_unique<Panel>(0, 0, 160.0f, 35.0f);
+		tooltip_content->SetBackgroundColor(UITheme::Background::PANEL_DARK);
+		tooltip_content->SetBorderWidth(1.0f);
+		tooltip_content->SetBorderColor(UITheme::Border::DEFAULT);
+		auto tooltip_label = std::make_unique<Label>(8, 8, "Click to increment counter", UITheme::FontSize::SMALL);
+		tooltip_content->AddChild(std::move(tooltip_label));
+		auto* tooltip = normal_button->AddComponent<TooltipComponent>(std::move(tooltip_content));
+		tooltip->SetOffset(15.0f, 20.0f);
+
 		normal_button_ = normal_button.get();
+		tooltip_button_ = normal_button.get();
 		button_section->AddChild(std::move(normal_button));
 
 		// Primary button (styled with accent color)
@@ -436,13 +474,110 @@ public:
 		root_panel_->AddChild(std::move(nested_panel_section));
 	}
 
+	void BuildProgressBarSection(float y) {
+		auto progress_section = std::make_unique<Panel>(UITheme::Padding::PANEL_HORIZONTAL, y, 660.0f, 60.0f);
+		progress_section->SetBackgroundColor(UITheme::Background::PANEL_DARK);
+		progress_section->SetPadding(UITheme::Padding::MEDIUM);
+
+		// Section title
+		auto section_title =
+				std::make_unique<Text>(0, 0, "Progress Bar", UITheme::FontSize::LARGE, UITheme::Text::PRIMARY);
+		progress_section->AddChild(std::move(section_title));
+
+		// Progress bar with label and percentage
+		auto progress_bar = std::make_unique<ProgressBar>(
+				0, UITheme::FontSize::LARGE + UITheme::Spacing::MEDIUM, 400.0f, 20.0f, 0.0f);
+		progress_bar->SetLabel("Loading");
+		progress_bar->SetShowPercentage(true);
+		progress_bar->SetFillColor(UITheme::Primary::NORMAL);
+		progress_bar->SetBorderWidth(1.0f);
+		progress_bar_ = progress_bar.get();
+		progress_section->AddChild(std::move(progress_bar));
+
+		// Button to increment progress
+		auto increment_button = std::make_unique<Button>(
+				500.0f, UITheme::FontSize::LARGE + UITheme::Spacing::MEDIUM - 5.0f, 80.0f, 30.0f, "+10%");
+		increment_button->SetClickCallback([this](const MouseEvent& event) {
+			progress_value_ = std::min(1.0f, progress_value_ + 0.1f);
+			if (progress_bar_) {
+				progress_bar_->SetProgress(progress_value_);
+			}
+			return true;
+		});
+		progress_section->AddChild(std::move(increment_button));
+
+		// Reset button
+		auto reset_button = std::make_unique<Button>(
+				590.0f, UITheme::FontSize::LARGE + UITheme::Spacing::MEDIUM - 5.0f, 60.0f, 30.0f, "Reset");
+		reset_button->SetClickCallback([this](const MouseEvent& event) {
+			progress_value_ = 0.0f;
+			if (progress_bar_) {
+				progress_bar_->SetProgress(progress_value_);
+			}
+			return true;
+		});
+		progress_section->AddChild(std::move(reset_button));
+
+		root_panel_->AddChild(std::move(progress_section));
+	}
+
+	void BuildTabContainerSection(float y) {
+		auto tab_section = std::make_unique<Panel>(UITheme::Padding::PANEL_HORIZONTAL, y, 660.0f, 150.0f);
+		tab_section->SetBackgroundColor(UITheme::Background::PANEL_DARK);
+		tab_section->SetPadding(UITheme::Padding::MEDIUM);
+
+		// Section title
+		auto section_title =
+				std::make_unique<Text>(0, 0, "Tab Container", UITheme::FontSize::LARGE, UITheme::Text::PRIMARY);
+		tab_section->AddChild(std::move(section_title));
+
+		// Create tab container
+		auto tab_container =
+				std::make_unique<TabContainer>(0, UITheme::FontSize::LARGE + UITheme::Spacing::MEDIUM, 640.0f, 100.0f);
+
+		// Tab 1: General settings
+		auto general_panel = std::make_unique<Panel>(0, 0, 620.0f, 60.0f);
+		general_panel->SetBackgroundColor(UITheme::Background::PANEL);
+		auto general_label =
+				std::make_unique<Label>(10, 10, "General settings content goes here.", UITheme::FontSize::NORMAL);
+		general_panel->AddChild(std::move(general_label));
+		tab_container->AddTab("General", std::move(general_panel));
+
+		// Tab 2: Audio settings
+		auto audio_panel = std::make_unique<Panel>(0, 0, 620.0f, 60.0f);
+		audio_panel->SetBackgroundColor(UITheme::Background::PANEL);
+		auto audio_label =
+				std::make_unique<Label>(10, 10, "Audio settings: Volume, Effects, Music", UITheme::FontSize::NORMAL);
+		audio_panel->AddChild(std::move(audio_label));
+		tab_container->AddTab("Audio", std::move(audio_panel));
+
+		// Tab 3: Video settings
+		auto video_panel = std::make_unique<Panel>(0, 0, 620.0f, 60.0f);
+		video_panel->SetBackgroundColor(UITheme::Background::PANEL);
+		auto video_label = std::make_unique<Label>(
+				10, 10, "Video settings: Resolution, Quality, VSync", UITheme::FontSize::NORMAL);
+		video_panel->AddChild(std::move(video_label));
+		tab_container->AddTab("Video", std::move(video_panel));
+
+		tab_container->SetTabChangedCallback([](size_t index, const std::string& label) {
+			std::cout << "Tab changed to: " << label << " (index " << index << ")" << std::endl;
+		});
+
+		tab_container_ = tab_container.get();
+		tab_section->AddChild(std::move(tab_container));
+
+		root_panel_->AddChild(std::move(tab_section));
+	}
+
 	void Update(engine::Engine& engine, float delta_time) override {
 		std::uint32_t screen_width;
 		std::uint32_t screen_height;
 		engine.renderer->GetFramebufferSize(screen_width, screen_height);
 		const MouseEvent mouse_event(Input::GetMouseState());
 
-		if (show_confirmation_ && confirm_dialog_ && confirm_dialog_->ProcessMouseEvent(mouse_event)) {
+		if (show_confirmation_ && confirm_dialog_) {
+			confirm_dialog_->ProcessMouseEvent(mouse_event);
+			confirm_dialog_->UpdateComponentsRecursive(delta_time);
 			return;
 		}
 
@@ -450,6 +585,7 @@ public:
 			root_panel_->SetRelativePosition(
 					screen_width * 0.5f - panel_width_ / 2.0F, screen_height * 0.5f - panel_height_ / 2.0F);
 			root_panel_->ProcessMouseEvent(mouse_event);
+			root_panel_->UpdateComponentsRecursive(delta_time);
 		}
 	}
 
@@ -461,12 +597,14 @@ public:
 		// Render main UI
 		if (root_panel_) {
 			root_panel_->Render();
+			root_panel_->RenderComponentsRecursive();
 			ui_debugger_.RenderDebugOverlay(root_panel_.get());
 		}
 
 		// Render confirmation dialog on top
 		if (show_confirmation_ && confirm_dialog_) {
 			confirm_dialog_->Render();
+			confirm_dialog_->RenderComponentsRecursive();
 			ui_debugger_.RenderDebugOverlay(confirm_dialog_.get());
 		}
 
@@ -482,6 +620,7 @@ public:
 		ImGui::Text("Features:");
 		ImGui::BulletText("UITheme styling constants");
 		ImGui::BulletText("All UI components (Button, Checkbox, Slider, etc.)");
+		ImGui::BulletText("New: ProgressBar, TabContainer, TooltipComponent");
 		ImGui::BulletText("Event callbacks and reactive updates");
 		ImGui::BulletText("Composition and layout patterns");
 
@@ -490,10 +629,15 @@ public:
 		ImGui::Text("Button clicks: %d", button_click_count_);
 		ImGui::Text("Volume: %.0f%%", volume_value_ * 100.0f);
 		ImGui::Text("Brightness: %.0f%%", brightness_value_ * 100.0f);
+		ImGui::Text("Progress: %.0f%%", progress_value_ * 100.0f);
 
 		if (ImGui::Button("Reset Counters")) {
 			button_click_count_ = 0;
+			progress_value_ = 0.0f;
 			UpdateButtonClickLabel();
+			if (progress_bar_) {
+				progress_bar_->SetProgress(0.0f);
+			}
 		}
 
 		if (ImGui::Button("Show Confirmation Dialog")) {

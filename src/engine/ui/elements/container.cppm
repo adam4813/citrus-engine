@@ -90,15 +90,6 @@ public:
 	 * Note: Layout and constraint components auto-update when dirty.
 	 */
 	void Update(const float delta_time = 0.0f) { UpdateComponents(delta_time); }
-
-	// === Rendering ===
-
-	void Render() const override {
-		Panel::Render();
-
-		// Render component visuals (e.g., scrollbars)
-		RenderComponents();
-	}
 };
 
 } // namespace engine::ui::elements

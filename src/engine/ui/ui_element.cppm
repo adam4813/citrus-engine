@@ -719,6 +719,20 @@ public:
 	 */
 	void RenderComponents() const { components_.Render(); }
 
+	/**
+	 * @brief Recursively render components on this element and all children
+	 *
+	 * Call this on the root element to update the entire UI tree.
+	 */
+	void RenderComponentsRecursive() const {
+		components_.Render();
+		for (const auto& child : children_) {
+			if (child) {
+				child->RenderComponentsRecursive();
+			}
+		}
+	}
+
 protected:
 	// Subclasses can construct with initial bounds
 	UIElement(const float x, const float y, const float width, const float height) :

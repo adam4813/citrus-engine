@@ -64,6 +64,29 @@ public:
 	using ValueChangedCallback = std::function<void(float value)>;
 
 	/**
+         * @brief Construct slider for layout container (position determined by layout)
+         *
+         * Creates a slider with zero position (will be set by parent layout).
+         *
+         * @param width Slider width in pixels
+         * @param height Slider height in pixels
+         * @param min_value Minimum value (left side)
+         * @param max_value Maximum value (right side)
+         * @param initial_value Initial value (default: min_value)
+         *
+         * @code
+         * auto slider = std::make_unique<Slider>(200, 30, 0.0f, 100.0f);
+         * container->AddChild(std::move(slider));  // Layout sets position
+         * @endcode
+         */
+	Slider(const float width,
+		   const float height,
+		   const float min_value,
+		   const float max_value,
+		   const float initial_value = 0.0f) :
+			Slider(0, 0, width, height, min_value, max_value, initial_value) {}
+
+	/**
          * @brief Construct slider with range
          *
          * @param x X position relative to parent

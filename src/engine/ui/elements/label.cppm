@@ -55,6 +55,26 @@ public:
 	};
 
 	/**
+         * @brief Construct label for layout container (position determined by layout)
+         *
+         * Creates a label with zero position (will be set by parent layout).
+         * Label auto-sizes to fit text content.
+         *
+         * @param text_content UTF-8 encoded text string
+         * @param font_size Font size in pixels (default: 16)
+         * @param color Text color (default: white)
+         *
+         * @code
+         * auto label = std::make_unique<Label>("Score: 100");
+         * container->AddChild(std::move(label));  // Layout sets position
+         * @endcode
+         */
+	Label(const std::string& text_content,
+		  const float font_size = 16.0f,
+		  const batch_renderer::Color& color = batch_renderer::Colors::WHITE) :
+			Label(0, 0, text_content, font_size, color) {}
+
+	/**
          * @brief Construct label with text
          *
          * Label auto-sizes to fit text content. Use SetMaxWidth() to constrain.

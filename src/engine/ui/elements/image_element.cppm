@@ -39,6 +39,21 @@ using rendering::Sprite;
 class Image : public UIElement {
 public:
 	/**
+		 * @brief Default constructor for layout-managed images
+		 *
+		 * Creates an image with zero position and size. Use when the image
+		 * will be sized by a parent layout container.
+		 */
+	Image() = default;
+
+	/**
+		 * @brief Construct Image for layout container (position determined by layout)
+		 * @param width Image width
+		 * @param height Image height
+		 */
+	Image(const float width, const float height) : UIElement(0, 0, width, height) {}
+
+	/**
 		 * @brief Construct Image with bounds
 		 * @param x Relative X position
 		 * @param y Relative Y position

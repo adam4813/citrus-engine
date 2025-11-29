@@ -33,10 +33,17 @@ auto menu = ContainerBuilder()
     .ClipChildren()
     .Build();
 
-menu->AddChild(std::make_unique<Button>(0, 0, 100, 30, "Button 1"));
-menu->AddChild(std::make_unique<Button>(0, 0, 100, 30, "Button 2"));
+menu->AddChild(std::make_unique<Button>(100, 30, "Button 1"));
+menu->AddChild(std::make_unique<Button>(100, 30, "Button 2"));
 menu->Update();  // Apply layout
 ```
+
+**Note:** UI elements have layout-friendly constructors that omit position (position is set by the layout):
+- `Button(width, height, label)` - size and label only
+- `Label(text)` - text only (auto-sizes)
+- `Checkbox(label)` - label only
+- `Slider(width, height, min, max)` - size and range only
+- `Panel()`, `Container()`, `Image()` - default constructors
 
 ### Direct Component API
 
@@ -47,7 +54,7 @@ using namespace engine::ui::elements;
 using namespace engine::ui::components;
 
 // Add constraints to a button (anchor to top-right of parent)
-auto button = std::make_unique<Button>(0, 0, 30, 20, "X");
+auto button = std::make_unique<Button>(30, 20, "X");
 button->AddComponent<ConstraintComponent>(Anchor::TopRight(5.0f));
 panel->AddChild(std::move(button));
 

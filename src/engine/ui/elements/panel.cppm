@@ -55,6 +55,19 @@ export namespace engine::ui::elements {
 class Panel : public UIElement {
 public:
 	/**
+         * @brief Default constructor for layout-managed panels
+         *
+         * Creates a panel with zero position and size. Use when the panel
+         * will be sized by a parent layout container.
+         *
+         * @code
+         * auto panel = std::make_unique<Panel>();
+         * container->AddChild(std::move(panel));  // Layout sets position/size
+         * @endcode
+         */
+	Panel() = default;
+
+	/**
          * @brief Construct a panel with position and size
          *
          * @param x X position relative to parent

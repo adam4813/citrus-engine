@@ -47,6 +47,14 @@ export namespace engine::ui::elements {
  */
 class Container : public Panel {
 public:
+	/**
+	 * @brief Default constructor for layout-managed containers
+	 *
+	 * Creates a container with zero position and size. Use when the container
+	 * will be sized by a parent layout container.
+	 */
+	Container() = default;
+
 	Container(const float x, const float y, const float width, const float height) : Panel(x, y, width, height) {}
 
 	// === Convenience Methods (Container-specific) ===

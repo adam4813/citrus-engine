@@ -724,6 +724,9 @@ protected:
 	UIElement(const float x, const float y, const float width, const float height) :
 			relative_x_(x), relative_y_(y), width_(width), height_(height) {}
 
+	// Default constructor for layout-managed elements (position/size set by layout)
+	UIElement() = default;
+
 	/**
 	 * @brief Get absolute bounds of parent's content area
 	 *

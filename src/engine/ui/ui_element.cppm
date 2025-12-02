@@ -620,7 +620,7 @@ public:
 			}
 		}
 
-		if (event.scroll_delta != 0.0f) {
+		if (event.scroll_delta_x != 0.0f || event.scroll_delta_y != 0.0f) {
 			// Try callback first
 			if (scroll_callback_ && scroll_callback_(event)) {
 				return true;

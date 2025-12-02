@@ -41,7 +41,8 @@ export namespace engine::ui {
         bool right_released{false}; ///< Right button was just released this frame
         bool middle_released{false};///< Middle button was just released this frame
         
-        float scroll_delta{0.0f};   ///< Vertical scroll delta (positive = scroll up)
+        float scroll_delta_x{0.0f}; ///< Horizontal scroll delta (positive = scroll right)
+        float scroll_delta_y{0.0f}; ///< Vertical scroll delta (positive = scroll up)
         
         /**
          * @brief Default constructor - creates event at origin with no buttons pressed
@@ -57,16 +58,17 @@ export namespace engine::ui {
          * @param right_down Right button held state
          * @param left_pressed Left button just pressed
          * @param right_pressed Right button just pressed
-         * @param scroll Scroll wheel delta
+         * @param scroll_x Horizontal scroll wheel delta
+         * @param scroll_y Vertical scroll wheel delta
          */
         MouseEvent(float x, float y, 
                   bool left_down = false, bool right_down = false,
                   bool left_pressed = false, bool right_pressed = false,
-                  float scroll = 0.0f)
+                  float scroll_x = 0.0f, float scroll_y = 0.0f)
             : x(x), y(y)
             , left_down(left_down), right_down(right_down)
             , left_pressed(left_pressed), right_pressed(right_pressed)
-            , scroll_delta(scroll) {}
+            , scroll_delta_x(scroll_x), scroll_delta_y(scroll_y) {}
         
         /**
          * @brief Construct mouse event from input system's MouseState
@@ -80,7 +82,7 @@ export namespace engine::ui {
             , left_down(state.left_down), right_down(state.right_down), middle_down(state.middle_down)
             , left_pressed(state.left_pressed), right_pressed(state.right_pressed), middle_pressed(state.middle_pressed)
             , left_released(state.left_released), right_released(state.right_released), middle_released(state.middle_released)
-            , scroll_delta(state.scroll_delta) {}
+            , scroll_delta_x(state.scroll_delta_x), scroll_delta_y(state.scroll_delta_y) {}
     };
 
     /**

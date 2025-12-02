@@ -28,9 +28,10 @@ namespace engine::input {
         };
         std::atomic initialized{false};
 
-        void ScrollCallback([[maybe_unused]] GLFWwindow *window, [[maybe_unused]] double x_offset, double y_offset) {
+        void ScrollCallback([[maybe_unused]] GLFWwindow *window, double x_offset, double y_offset) {
             const std::lock_guard lock(event_mutex);
-            mouse_state.scroll_delta += static_cast<float>(y_offset);
+            mouse_state.scroll_delta_x += static_cast<float>(x_offset);
+            mouse_state.scroll_delta_y += static_cast<float>(y_offset);
         }
 
         void KeyCallback([[maybe_unused]] GLFWwindow *window, const int key, [[maybe_unused]] int key_code,
@@ -87,7 +88,8 @@ namespace engine::input {
         // Reset scroll delta before polling (callback will accumulate new values)
         {
             std::lock_guard lock(event_mutex);
-            mouse_state.scroll_delta = 0.0f;
+            mouse_state.scroll_delta_x = 0.0f;
+            mouse_state.scroll_delta_y = 0.0f;
         }
         
         glfwPollEvents();

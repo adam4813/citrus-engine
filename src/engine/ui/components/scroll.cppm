@@ -218,41 +218,42 @@ public:
 	 * @return true if scroll was handled (content can scroll in that direction)
 	 */
 	bool HandleScroll(const MouseEvent& event) {
-		if (event.scroll_delta == 0.0f) {
+		if (event.scroll_delta_x == 0.0f && event.scroll_delta_y == 0.0f) {
 			return false;
 		}
 
-		const float delta = -event.scroll_delta * scroll_speed_;
+		const float delta_x = -event.scroll_delta_x * scroll_speed_;
+		const float delta_y = -event.scroll_delta_y * scroll_speed_;
+		bool handled = false;
 
 		switch (direction_) {
 		case ScrollDirection::Vertical:
-			if (!CanScrollY()) {
-				return false;
+			if (CanScrollY() && event.scroll_delta_y != 0.0f) {
+				ScrollBy(0.0f, delta_y);
+				handled = true;
 			}
-			ScrollBy(0.0f, delta);
-			return true;
+			break;
 
 		case ScrollDirection::Horizontal:
-			if (!CanScrollX()) {
-				return false;
+			if (CanScrollX() && event.scroll_delta_x != 0.0f) {
+				ScrollBy(delta_x, 0.0f);
+				handled = true;
 			}
-			ScrollBy(delta, 0.0f);
-			return true;
+			break;
 
 		case ScrollDirection::Both:
-			// Default to vertical scroll, horizontal with shift (future enhancement)
-			if (CanScrollY()) {
-				ScrollBy(0.0f, delta);
-				return true;
+			if (CanScrollX() && event.scroll_delta_x != 0.0f) {
+				ScrollBy(delta_x, 0.0f);
+				handled = true;
 			}
-			else if (CanScrollX()) {
-				ScrollBy(delta, 0.0f);
-				return true;
+			if (CanScrollY() && event.scroll_delta_y != 0.0f) {
+				ScrollBy(0.0f, delta_y);
+				handled = true;
 			}
-			return false;
+			break;
 		}
 
-		return false;
+		return handled;
 	}
 
 private:

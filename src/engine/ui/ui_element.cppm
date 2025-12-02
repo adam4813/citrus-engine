@@ -285,6 +285,31 @@ public:
 	void RemoveChild(UIElement* child);
 
 	/**
+	 * @brief Remove and destroy all child elements
+	 *
+	 * Clears the children vector, destroying all owned child elements.
+	 * Since children are stored as unique_ptr, they are automatically
+	 * deallocated when cleared. After calling, GetChildren() returns
+	 * an empty vector.
+	 *
+	 * @note Any raw pointers to children become invalid after this call.
+	 *
+	 * Use when rebuilding dynamic content (lists, grids) rather than
+	 * removing children one by one.
+	 *
+	 * @code
+	 * // Clear old items before rebuilding
+	 * container->ClearChildren();
+	 *
+	 * // Add new children
+	 * for (const auto& item : items) {
+	 *     container->AddChild(CreateItem(item));
+	 * }
+	 * @endcode
+	 */
+	void ClearChildren();
+
+	/**
          * @brief Set parent element
          *
          * Sets the parent pointer. Typically called automatically by AddChild().
@@ -849,6 +874,10 @@ inline void UIElement::AddChild(std::unique_ptr<UIElement> child) {
 
 inline void UIElement::RemoveChild(UIElement* child) {
 	std::erase_if(children_, [child](const std::unique_ptr<UIElement>& elem) { return elem.get() == child; });
+}
+
+inline void UIElement::ClearChildren() {
+	children_.clear();
 }
 
 inline batch_renderer::Rectangle UIElement::GetAbsoluteBounds() const {

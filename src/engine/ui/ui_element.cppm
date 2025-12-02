@@ -332,6 +332,16 @@ public:
 	batch_renderer::Rectangle GetRelativeBounds() const { return {relative_x_, relative_y_, width_, height_}; }
 
 	/**
+	 * @brief Get the content area where children are placed
+	 *
+	 * Override in elements that have padding or insets. Children are
+	 * positioned relative to this area. Default returns full element bounds.
+	 *
+	 * @return Rectangle representing the content area (width/height only, position ignored)
+	 */
+	virtual batch_renderer::Rectangle GetContentArea() const { return {0.0f, 0.0f, width_, height_}; }
+
+	/**
          * @brief Set relative position (within parent)
          * @param x X coordinate relative to parent
          * @param y Y coordinate relative to parent
@@ -685,6 +695,18 @@ public:
          */
 	virtual bool OnScroll([[maybe_unused]] const MouseEvent& event) { return false; }
 
+	// === Content Offset (for scrollable containers) ===
+
+	/**
+	 * @brief Get content offset applied to children (e.g., scroll offset)
+	 *
+	 * Override in scrollable containers to offset children's positions.
+	 * Called by GetAbsoluteParentBounds() when walking the parent chain.
+	 *
+	 * @return Offset (x, y) to subtract from children's positions
+	 */
+	virtual std::pair<float, float> GetContentOffset() const { return {0.0f, 0.0f}; }
+
 	// === Component Management ===
 
 	/**
@@ -842,6 +864,12 @@ inline batch_renderer::Rectangle UIElement::GetAbsoluteParentBounds() const {
 		const batch_renderer::Rectangle parent_bounds = current_parent->GetRelativeBounds();
 		bounds.x += parent_bounds.x;
 		bounds.y += parent_bounds.y;
+
+		// Apply content offset (e.g., scroll offset from scrollable containers)
+		const auto [offset_x, offset_y] = current_parent->GetContentOffset();
+		bounds.x -= offset_x;
+		bounds.y -= offset_y;
+
 		current_parent = current_parent->parent_;
 	}
 

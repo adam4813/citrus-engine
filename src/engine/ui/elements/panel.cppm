@@ -205,6 +205,17 @@ public:
 	float GetPadding() const { return padding_; }
 
 	/**
+	 * @brief Get the content area (element bounds minus padding)
+	 *
+	 * Returns the area where children are placed, inset by padding.
+	 */
+	batch_renderer::Rectangle GetContentArea() const override {
+		const float content_width = width_ > padding_ * 2.0f ? width_ - padding_ * 2.0f : 0.0f;
+		const float content_height = height_ > padding_ * 2.0f ? height_ - padding_ * 2.0f : 0.0f;
+		return {padding_, padding_, content_width, content_height};
+	}
+
+	/**
          * @brief Enable/disable scissor clipping for children
          *
          * When enabled, children are clipped to panel bounds.

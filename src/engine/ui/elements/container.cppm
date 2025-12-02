@@ -57,6 +57,21 @@ public:
 
 	Container(const float x, const float y, const float width, const float height) : Panel(x, y, width, height) {}
 
+	// === Scroll Offset for Children ===
+
+	/**
+	 * @brief Get content offset from scroll component
+	 *
+	 * Children of this container will have their positions offset by
+	 * the current scroll amount.
+	 */
+	std::pair<float, float> GetContentOffset() const override {
+		if (const auto* scroll = GetComponent<components::ScrollComponent>()) {
+			return {scroll->GetState().GetScrollX(), scroll->GetState().GetScrollY()};
+		}
+		return {0.0f, 0.0f};
+	}
+
 	// === Convenience Methods (Container-specific) ===
 
 	/**

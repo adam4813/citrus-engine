@@ -352,6 +352,18 @@ public:
 	}
 
 	/**
+         * @brief Set element width
+         * @param width Element width in pixels
+         */
+	void SetWidth(const float width) { width_ = width; }
+
+	/**
+         * @brief Set element height
+         * @param height Element height in pixels
+         */
+	void SetHeight(const float height) { height_ = height; }
+
+	/**
          * @brief Get element width
          * @return Width in pixels
          */
@@ -362,6 +374,30 @@ public:
          * @return Height in pixels
          */
 	float GetHeight() const { return height_; }
+
+	/**
+         * @brief Get relative X position
+         * @return X coordinate relative to parent
+         */
+	float GetRelativeX() const { return relative_x_; }
+
+	/**
+         * @brief Get relative Y position
+         * @return Y coordinate relative to parent
+         */
+	float GetRelativeY() const { return relative_y_; }
+
+	/**
+         * @brief Set relative X position
+         * @param x X coordinate relative to parent
+         */
+	void SetRelativeX(const float x) { relative_x_ = x; }
+
+	/**
+         * @brief Set relative Y position
+         * @param y Y coordinate relative to parent
+         */
+	void SetRelativeY(const float y) { relative_y_ = y; }
 
 	// === Hit Testing ===
 

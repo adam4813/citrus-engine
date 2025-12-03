@@ -4,6 +4,7 @@
   "version": "0.0.1",
   "dependencies": [
     "angelscript",
+    "bullet3",
     "flecs",
     {
       "name": "glad",
@@ -19,6 +20,7 @@
         "opengl3-binding"
       ]
     },
+    "joltphysics",
     "lua",
     "nlohmann-json",
     "spdlog",

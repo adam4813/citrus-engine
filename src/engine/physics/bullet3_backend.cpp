@@ -37,7 +37,7 @@ namespace engine::physics {
             std::unique_ptr<btRigidBody> body;
             std::unique_ptr<btCollisionShape> shape;
             std::unique_ptr<btDefaultMotionState> motion_state;
-            std::unique_ptr<btTriangleMesh> mesh_data;  // Owned mesh data for btBvhTriangleMeshShape
+            std::vector<std::unique_ptr<btTriangleMesh>> mesh_data;  // Owned mesh data for btBvhTriangleMeshShape
             std::vector<std::unique_ptr<btCollisionShape>> child_shapes;  // Owned child shapes for btCompoundShape
             RigidBodyConfig config;
             bool ccd_enabled{false};
@@ -65,7 +65,7 @@ namespace engine::physics {
         // Result struct for shape creation (to properly manage memory)
         struct ShapeCreationResult {
             std::unique_ptr<btCollisionShape> shape;
-            std::unique_ptr<btTriangleMesh> mesh_data;
+            std::vector<std::unique_ptr<btTriangleMesh>> mesh_data;  // Vector to handle multiple meshes in compound shapes
             std::vector<std::unique_ptr<btCollisionShape>> child_shapes;
         };
 
@@ -112,19 +112,20 @@ namespace engine::physics {
                 case ShapeType::Mesh:
                     if (!config.vertices.empty() && !config.indices.empty()) {
                         // Create triangle mesh - we own the mesh data
-                        result.mesh_data = std::make_unique<btTriangleMesh>();
+                        auto meshData = std::make_unique<btTriangleMesh>();
                         for (size_t i = 0; i + 2 < config.indices.size(); i += 3) {
                             const auto& v0 = config.vertices[config.indices[i]];
                             const auto& v1 = config.vertices[config.indices[i + 1]];
                             const auto& v2 = config.vertices[config.indices[i + 2]];
-                            result.mesh_data->addTriangle(
+                            meshData->addTriangle(
                                 btVector3(v0.x, v0.y, v0.z),
                                 btVector3(v1.x, v1.y, v1.z),
                                 btVector3(v2.x, v2.y, v2.z)
                             );
                         }
                         // btBvhTriangleMeshShape does NOT take ownership - we keep mesh_data alive
-                        result.shape = std::make_unique<btBvhTriangleMeshShape>(result.mesh_data.get(), true);
+                        result.shape = std::make_unique<btBvhTriangleMeshShape>(meshData.get(), true);
+                        result.mesh_data.push_back(std::move(meshData));
                         return result;
                     }
                     break;
@@ -146,8 +147,8 @@ namespace engine::physics {
                             compound->addChildShape(localTrans, childResult.shape.get());
                             result.child_shapes.push_back(std::move(childResult.shape));
                             // Also take ownership of any nested mesh data or child shapes
-                            if (childResult.mesh_data) {
-                                result.mesh_data = std::move(childResult.mesh_data);
+                            for (auto& mesh : childResult.mesh_data) {
+                                result.mesh_data.push_back(std::move(mesh));
                             }
                             for (auto& nested : childResult.child_shapes) {
                                 result.child_shapes.push_back(std::move(nested));

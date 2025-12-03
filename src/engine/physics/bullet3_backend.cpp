@@ -54,6 +54,9 @@ namespace engine::physics {
         };
         std::unordered_map<EntityId, CharacterData> characters_;
 
+        // Ghost pair callback (owned by broadphase, but we track it for documentation)
+        btGhostPairCallback* ghost_pair_callback_{nullptr};
+
         // Collision callback
         CollisionCallback collision_callback_;
 
@@ -93,6 +96,7 @@ namespace engine::physics {
                 case ShapeType::Mesh:
                     if (!config.vertices.empty() && !config.indices.empty()) {
                         // Create triangle mesh
+                        // Note: btBvhTriangleMeshShape takes ownership of meshData when useQuantizedAabbCompression=true
                         auto meshData = new btTriangleMesh();
                         for (size_t i = 0; i + 2 < config.indices.size(); i += 3) {
                             const auto& v0 = config.vertices[config.indices[i]];
@@ -151,7 +155,9 @@ namespace engine::physics {
             broadphase_ = std::make_unique<btDbvtBroadphase>();
 
             // Add ghost object support for character controllers
-            broadphase_->getOverlappingPairCache()->setInternalGhostPairCallback(new btGhostPairCallback());
+            // Note: The broadphase's overlapping pair cache takes ownership of this callback
+            ghost_pair_callback_ = new btGhostPairCallback();
+            broadphase_->getOverlappingPairCache()->setInternalGhostPairCallback(ghost_pair_callback_);
 
             solver_ = std::make_unique<btSequentialImpulseConstraintSolver>();
 
@@ -801,6 +807,8 @@ namespace engine::physics {
         }
     };
 
+    // Factory function - uses raw new because C++ modules don't support make_unique
+    // for types defined in module implementation units
     std::unique_ptr<IPhysicsBackend> CreateBullet3Backend() {
         return std::unique_ptr<IPhysicsBackend>(new Bullet3Backend());
     }

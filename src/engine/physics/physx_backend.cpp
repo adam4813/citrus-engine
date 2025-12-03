@@ -376,7 +376,8 @@ namespace engine::physics {
         }
     };
 
-    // Factory helper function
+    // Factory function - uses raw new because C++ modules don't support make_unique
+    // for types defined in module implementation units
     std::unique_ptr<IPhysicsBackend> CreatePhysXBackend() {
         return std::unique_ptr<IPhysicsBackend>(new PhysXBackend());
     }

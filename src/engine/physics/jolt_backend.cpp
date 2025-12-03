@@ -321,7 +321,8 @@ namespace engine::physics {
             JPH::AssertFailed = JoltAssertFailedImpl;
 #endif
 
-            // Create factory
+            // Create factory - Jolt uses a global singleton pattern
+            // We allocate here and delete in Shutdown() to match Jolt's expected lifecycle
             JPH::Factory::sInstance = new JPH::Factory();
 
             // Register all physics types
@@ -859,6 +860,8 @@ namespace engine::physics {
         }
     };
 
+    // Factory function - uses raw new because C++ modules don't support make_unique
+    // for types defined in module implementation units
     std::unique_ptr<IPhysicsBackend> CreateJoltBackend() {
         return std::unique_ptr<IPhysicsBackend>(new JoltPhysicsBackend());
     }

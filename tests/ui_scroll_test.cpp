@@ -178,6 +178,48 @@ TEST_F(ScrollStateTest, ScrollSpeedAffectsScrollAmount) {
 	EXPECT_FLOAT_EQ(scroll_.GetScrollY(), 100.0f);
 }
 
+TEST_F(ScrollStateTest, HandleScrollBothAxes) {
+	scroll_.SetDirection(ScrollDirection::Both);
+
+	MouseEvent event;
+	event.scroll_delta_x = -1.0f;
+	event.scroll_delta_y = -2.0f;
+
+	bool handled = scroll_.HandleScroll(event);
+
+	EXPECT_TRUE(handled);
+	EXPECT_GT(scroll_.GetScrollX(), 0.0f);
+	EXPECT_GT(scroll_.GetScrollY(), 0.0f);
+}
+
+TEST_F(ScrollStateTest, HorizontalScrollIgnoresYDelta) {
+	scroll_.SetDirection(ScrollDirection::Horizontal);
+
+	MouseEvent event;
+	event.scroll_delta_x = 0.0f;
+	event.scroll_delta_y = -2.0f;  // Only Y delta
+
+	bool handled = scroll_.HandleScroll(event);
+
+	// Horizontal mode should not handle Y-only scroll
+	EXPECT_FALSE(handled);
+	EXPECT_FLOAT_EQ(scroll_.GetScrollX(), 0.0f);
+}
+
+TEST_F(ScrollStateTest, VerticalScrollIgnoresXDelta) {
+	scroll_.SetDirection(ScrollDirection::Vertical);
+
+	MouseEvent event;
+	event.scroll_delta_x = -2.0f;  // Only X delta
+	event.scroll_delta_y = 0.0f;
+
+	bool handled = scroll_.HandleScroll(event);
+
+	// Vertical mode should not handle X-only scroll
+	EXPECT_FALSE(handled);
+	EXPECT_FLOAT_EQ(scroll_.GetScrollY(), 0.0f);
+}
+
 // ========================================
 // ScrollDirection Tests
 // ========================================

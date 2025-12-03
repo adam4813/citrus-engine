@@ -1,7 +1,7 @@
 module;
 
 #include <algorithm>
-#include <cstdio>
+#include <format>
 #include <functional>
 #include <memory>
 #include <string>
@@ -321,9 +321,7 @@ private:
 		}
 
 		// Format percentage as string
-		char buffer[8];
-		snprintf(buffer, sizeof(buffer), "%.0f%%", progress_ * 100.0f);
-		const std::string percentage_str = buffer;
+		const std::string percentage_str = std::format("{:.0f}%", progress_ * 100.0f);
 
 		if (!percentage_element_) {
 			percentage_element_ = std::make_unique<Text>(0, 0, percentage_str, percentage_font_size_, label_color_);

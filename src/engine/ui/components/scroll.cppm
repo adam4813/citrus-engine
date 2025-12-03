@@ -134,22 +134,23 @@ public:
 	 *
 	 * When content doesn't start at (0,0), this allows scrolling to
 	 * reveal content that starts before the viewport origin.
+	 * Values are clamped to be <= 0 (negative scroll min means content starts before origin).
 	 */
 	void SetScrollMin(float min_x, float min_y) {
-		scroll_min_x_ = min_x;
-		scroll_min_y_ = min_y;
+		scroll_min_x_ = std::min(0.0f, min_x);
+		scroll_min_y_ = std::min(0.0f, min_y);
 		ClampScroll();
 	}
 
 	/**
 	 * @brief Get minimum horizontal scroll
 	 */
-	float GetMinScrollX() const { return std::min(0.0f, scroll_min_x_); }
+	float GetMinScrollX() const { return scroll_min_x_; }
 
 	/**
 	 * @brief Get minimum vertical scroll
 	 */
-	float GetMinScrollY() const { return std::min(0.0f, scroll_min_y_); }
+	float GetMinScrollY() const { return scroll_min_y_; }
 
 	/**
 	 * @brief Get maximum horizontal scroll
@@ -447,6 +448,13 @@ public:
 				max_x = std::max(max_x, bounds.x + bounds.width);
 				max_y = std::max(max_y, bounds.y + bounds.height);
 			}
+		}
+
+		// No visible children - reset to no scrollable content
+		if (!has_children) {
+			state_.SetContentSize(0.0f, 0.0f);
+			state_.SetScrollMin(0.0f, 0.0f);
+			return;
 		}
 
 		// Content size is from content area origin to max child bounds

@@ -261,7 +261,8 @@ private:
 			content_y = 0;
 		}
 
-		// Set position (content uses absolute positioning since it's not parented)
+		// Set position (content uses window-relative coordinates since it's not parented)
+		// Tooltip content is positioned independently to appear at correct screen location
 		content_->SetRelativePosition(content_x, content_y);
 	}
 

@@ -89,3 +89,8 @@ add_engine_test(ui_anchoring_test
 add_engine_test(ui_scroll_test
     ui_scroll_test.cpp
 )
+
+# Add UI Divider element test
+add_engine_test(ui_divider_test
+    ui_divider_test.cpp
+)

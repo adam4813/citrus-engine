@@ -183,13 +183,19 @@ TEST_F(PhysicsSystemTest, can_create_static_box) {
     PhysicsSystem physics(PhysicsEngineType::JoltPhysics);
     
     EntityId entity = 1;
-    glm::vec3 position{0.0F, 0.0F, 0.0F};
+    glm::vec3 position{2.0F, -1.0F, 3.0F};
     glm::vec3 half_extents{10.0F, 0.5F, 10.0F};
     
     bool created = physics.CreateStaticBox(entity, position, half_extents);
     EXPECT_TRUE(created);
     EXPECT_TRUE(physics.HasRigidBody(entity));
     EXPECT_TRUE(physics.HasCollider(entity));
+    
+    // Verify position was applied correctly
+    glm::vec3 retrieved_pos = physics.GetPosition(entity);
+    EXPECT_FLOAT_EQ(retrieved_pos.x, position.x);
+    EXPECT_FLOAT_EQ(retrieved_pos.y, position.y);
+    EXPECT_FLOAT_EQ(retrieved_pos.z, position.z);
 }
 
 // Test convenience method: CreateDynamicSphere
@@ -204,6 +210,12 @@ TEST_F(PhysicsSystemTest, can_create_dynamic_sphere) {
     EXPECT_TRUE(created);
     EXPECT_TRUE(physics.HasRigidBody(entity));
     EXPECT_TRUE(physics.HasCollider(entity));
+    
+    // Verify position was applied correctly
+    glm::vec3 retrieved_pos = physics.GetPosition(entity);
+    EXPECT_FLOAT_EQ(retrieved_pos.x, position.x);
+    EXPECT_FLOAT_EQ(retrieved_pos.y, position.y);
+    EXPECT_FLOAT_EQ(retrieved_pos.z, position.z);
 }
 
 // Test convenience method: CreateStaticSphere
@@ -211,13 +223,19 @@ TEST_F(PhysicsSystemTest, can_create_static_sphere) {
     PhysicsSystem physics(PhysicsEngineType::JoltPhysics);
     
     EntityId entity = 1;
-    glm::vec3 position{0.0F, 0.0F, 0.0F};
+    glm::vec3 position{3.0F, 0.0F, -2.0F};
     float radius = 1.0F;
     
     bool created = physics.CreateStaticSphere(entity, position, radius);
     EXPECT_TRUE(created);
     EXPECT_TRUE(physics.HasRigidBody(entity));
     EXPECT_TRUE(physics.HasCollider(entity));
+    
+    // Verify position was applied correctly
+    glm::vec3 retrieved_pos = physics.GetPosition(entity);
+    EXPECT_FLOAT_EQ(retrieved_pos.x, position.x);
+    EXPECT_FLOAT_EQ(retrieved_pos.y, position.y);
+    EXPECT_FLOAT_EQ(retrieved_pos.z, position.z);
 }
 
 // Test convenience method: CreateDynamicCapsule
@@ -233,6 +251,12 @@ TEST_F(PhysicsSystemTest, can_create_dynamic_capsule) {
     EXPECT_TRUE(created);
     EXPECT_TRUE(physics.HasRigidBody(entity));
     EXPECT_TRUE(physics.HasCollider(entity));
+    
+    // Verify position was applied correctly
+    glm::vec3 retrieved_pos = physics.GetPosition(entity);
+    EXPECT_FLOAT_EQ(retrieved_pos.x, position.x);
+    EXPECT_FLOAT_EQ(retrieved_pos.y, position.y);
+    EXPECT_FLOAT_EQ(retrieved_pos.z, position.z);
 }
 
 // Test convenience method: CreateStaticCapsule
@@ -240,7 +264,7 @@ TEST_F(PhysicsSystemTest, can_create_static_capsule) {
     PhysicsSystem physics(PhysicsEngineType::JoltPhysics);
     
     EntityId entity = 1;
-    glm::vec3 position{0.0F, 0.0F, 0.0F};
+    glm::vec3 position{-1.0F, 0.0F, 4.0F};
     float radius = 0.5F;
     float height = 2.0F;
     
@@ -248,6 +272,12 @@ TEST_F(PhysicsSystemTest, can_create_static_capsule) {
     EXPECT_TRUE(created);
     EXPECT_TRUE(physics.HasRigidBody(entity));
     EXPECT_TRUE(physics.HasCollider(entity));
+    
+    // Verify position was applied correctly
+    glm::vec3 retrieved_pos = physics.GetPosition(entity);
+    EXPECT_FLOAT_EQ(retrieved_pos.x, position.x);
+    EXPECT_FLOAT_EQ(retrieved_pos.y, position.y);
+    EXPECT_FLOAT_EQ(retrieved_pos.z, position.z);
 }
 
 // Test RemovePhysics removes all physics components

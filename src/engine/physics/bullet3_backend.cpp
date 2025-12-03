@@ -37,6 +37,8 @@ namespace engine::physics {
             std::unique_ptr<btRigidBody> body;
             std::unique_ptr<btCollisionShape> shape;
             std::unique_ptr<btDefaultMotionState> motion_state;
+            std::unique_ptr<btTriangleMesh> mesh_data;  // Owned mesh data for btBvhTriangleMeshShape
+            std::vector<std::unique_ptr<btCollisionShape>> child_shapes;  // Owned child shapes for btCompoundShape
             RigidBodyConfig config;
             bool ccd_enabled{false};
         };
@@ -60,28 +62,41 @@ namespace engine::physics {
         // Collision callback
         CollisionCallback collision_callback_;
 
+        // Result struct for shape creation (to properly manage memory)
+        struct ShapeCreationResult {
+            std::unique_ptr<btCollisionShape> shape;
+            std::unique_ptr<btTriangleMesh> mesh_data;
+            std::vector<std::unique_ptr<btCollisionShape>> child_shapes;
+        };
+
         // Helper to create Bullet shape from config
-        std::unique_ptr<btCollisionShape> CreateShape(const ShapeConfig& config) {
+        ShapeCreationResult CreateShape(const ShapeConfig& config) {
+            ShapeCreationResult result;
+            
             switch (config.type) {
                 case ShapeType::Box:
-                    return std::make_unique<btBoxShape>(btVector3(
+                    result.shape = std::make_unique<btBoxShape>(btVector3(
                         config.box_half_extents.x,
                         config.box_half_extents.y,
                         config.box_half_extents.z
                     ));
+                    return result;
 
                 case ShapeType::Sphere:
-                    return std::make_unique<btSphereShape>(config.sphere_radius);
+                    result.shape = std::make_unique<btSphereShape>(config.sphere_radius);
+                    return result;
 
                 case ShapeType::Capsule:
-                    return std::make_unique<btCapsuleShape>(config.capsule_radius, config.capsule_height);
+                    result.shape = std::make_unique<btCapsuleShape>(config.capsule_radius, config.capsule_height);
+                    return result;
 
                 case ShapeType::Cylinder:
-                    return std::make_unique<btCylinderShape>(btVector3(
+                    result.shape = std::make_unique<btCylinderShape>(btVector3(
                         config.cylinder_radius,
                         config.cylinder_height * 0.5F,
                         config.cylinder_radius
                     ));
+                    return result;
 
                 case ShapeType::ConvexHull:
                     if (!config.vertices.empty()) {
@@ -89,34 +104,36 @@ namespace engine::physics {
                         for (const auto& v : config.vertices) {
                             hull->addPoint(btVector3(v.x, v.y, v.z));
                         }
-                        return hull;
+                        result.shape = std::move(hull);
+                        return result;
                     }
                     break;
 
                 case ShapeType::Mesh:
                     if (!config.vertices.empty() && !config.indices.empty()) {
-                        // Create triangle mesh
-                        // Note: btBvhTriangleMeshShape takes ownership of meshData when useQuantizedAabbCompression=true
-                        auto meshData = new btTriangleMesh();
+                        // Create triangle mesh - we own the mesh data
+                        result.mesh_data = std::make_unique<btTriangleMesh>();
                         for (size_t i = 0; i + 2 < config.indices.size(); i += 3) {
                             const auto& v0 = config.vertices[config.indices[i]];
                             const auto& v1 = config.vertices[config.indices[i + 1]];
                             const auto& v2 = config.vertices[config.indices[i + 2]];
-                            meshData->addTriangle(
+                            result.mesh_data->addTriangle(
                                 btVector3(v0.x, v0.y, v0.z),
                                 btVector3(v1.x, v1.y, v1.z),
                                 btVector3(v2.x, v2.y, v2.z)
                             );
                         }
-                        return std::make_unique<btBvhTriangleMeshShape>(meshData, true);
+                        // btBvhTriangleMeshShape does NOT take ownership - we keep mesh_data alive
+                        result.shape = std::make_unique<btBvhTriangleMeshShape>(result.mesh_data.get(), true);
+                        return result;
                     }
                     break;
 
                 case ShapeType::Compound: {
                     auto compound = std::make_unique<btCompoundShape>();
                     for (size_t i = 0; i < config.children.size(); ++i) {
-                        auto childShape = CreateShape(config.children[i]);
-                        if (childShape) {
+                        auto childResult = CreateShape(config.children[i]);
+                        if (childResult.shape) {
                             glm::vec3 pos = i < config.child_positions.size() ?
                                            config.child_positions[i] : glm::vec3(0.0F);
                             glm::quat rot = i < config.child_rotations.size() ?
@@ -125,10 +142,20 @@ namespace engine::physics {
                             btTransform localTrans;
                             localTrans.setOrigin(btVector3(pos.x, pos.y, pos.z));
                             localTrans.setRotation(btQuaternion(rot.x, rot.y, rot.z, rot.w));
-                            compound->addChildShape(localTrans, childShape.release());
+                            // btCompoundShape does NOT take ownership - we store child shapes
+                            compound->addChildShape(localTrans, childResult.shape.get());
+                            result.child_shapes.push_back(std::move(childResult.shape));
+                            // Also take ownership of any nested mesh data or child shapes
+                            if (childResult.mesh_data) {
+                                result.mesh_data = std::move(childResult.mesh_data);
+                            }
+                            for (auto& nested : childResult.child_shapes) {
+                                result.child_shapes.push_back(std::move(nested));
+                            }
                         }
                     }
-                    return compound;
+                    result.shape = std::move(compound);
+                    return result;
                 }
 
                 default:
@@ -137,7 +164,8 @@ namespace engine::physics {
 
             // Default to box
             spdlog::warn("[Bullet3] Unknown shape type, defaulting to box");
-            return std::make_unique<btBoxShape>(btVector3(0.5F, 0.5F, 0.5F));
+            result.shape = std::make_unique<btBoxShape>(btVector3(0.5F, 0.5F, 0.5F));
+            return result;
         }
 
     public:
@@ -280,7 +308,10 @@ namespace engine::physics {
 
             // Create shape
             if (colliders_.contains(entity)) {
-                data.shape = CreateShape(colliders_[entity].shape);
+                auto shapeResult = CreateShape(colliders_[entity].shape);
+                data.shape = std::move(shapeResult.shape);
+                data.mesh_data = std::move(shapeResult.mesh_data);
+                data.child_shapes = std::move(shapeResult.child_shapes);
             } else {
                 data.shape = std::make_unique<btBoxShape>(btVector3(0.5F, 0.5F, 0.5F));
             }
@@ -483,8 +514,8 @@ namespace engine::physics {
             // Update existing body's shape if one exists
             auto it = rigid_bodies_.find(entity);
             if (it != rigid_bodies_.end()) {
-                auto newShape = CreateShape(config.shape);
-                if (newShape) {
+                auto shapeResult = CreateShape(config.shape);
+                if (shapeResult.shape) {
                     // Need to remove and re-add body with new shape
                     dynamics_world_->removeRigidBody(it->second.body.get());
 
@@ -492,12 +523,14 @@ namespace engine::physics {
                                    it->second.config.mass : 0.0F;
                     btVector3 inertia(0, 0, 0);
                     if (mass > 0) {
-                        newShape->calculateLocalInertia(mass, inertia);
+                        shapeResult.shape->calculateLocalInertia(mass, inertia);
                     }
 
-                    it->second.body->setCollisionShape(newShape.get());
+                    it->second.body->setCollisionShape(shapeResult.shape.get());
                     it->second.body->setMassProps(mass, inertia);
-                    it->second.shape = std::move(newShape);
+                    it->second.shape = std::move(shapeResult.shape);
+                    it->second.mesh_data = std::move(shapeResult.mesh_data);
+                    it->second.child_shapes = std::move(shapeResult.child_shapes);
 
                     dynamics_world_->addRigidBody(it->second.body.get());
                 }

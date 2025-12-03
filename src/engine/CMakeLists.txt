@@ -173,7 +173,9 @@ target_link_libraries(engine-core
     nlohmann_json::nlohmann_json
     imgui::imgui
     Jolt::Jolt
-    ${BULLET_LIBRARIES}
+    BulletDynamics
+    BulletCollision
+    LinearMath
     PRIVATE
     Angelscript::angelscript
     lua

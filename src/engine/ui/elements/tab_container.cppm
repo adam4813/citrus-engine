@@ -385,9 +385,7 @@ private:
 	 */
 	void RebuildTabButtons() {
 		// Clear existing buttons from tab bar
-		while (!tab_bar_panel_->GetChildren().empty()) {
-			tab_bar_panel_->RemoveChild(tab_bar_panel_->GetChildren().front().get());
-		}
+		tab_bar_panel_->ClearChildren();
 
 		if (tabs_.empty()) {
 			return;

@@ -84,6 +84,36 @@ TEST_F(UIElementTest, RemoveChild_NonExistentChildDoesNotCrash) {
     EXPECT_NO_THROW(parent->RemoveChild(orphan_ptr));
 }
 
+TEST_F(UIElementTest, ClearChildren_RemovesAllChildren) {
+    parent->AddChild(std::move(child1));
+    parent->AddChild(std::move(child2));
+    
+    EXPECT_EQ(parent->GetChildren().size(), 2);
+    
+    parent->ClearChildren();
+    
+    EXPECT_EQ(parent->GetChildren().size(), 0);
+}
+
+TEST_F(UIElementTest, ClearChildren_EmptyContainerDoesNotCrash) {
+    EXPECT_EQ(parent->GetChildren().size(), 0);
+    
+    // Should not crash when clearing empty container
+    EXPECT_NO_THROW(parent->ClearChildren());
+    
+    EXPECT_EQ(parent->GetChildren().size(), 0);
+}
+
+TEST_F(UIElementTest, ClearChildren_AllowsAddingNewChildren) {
+    parent->AddChild(std::move(child1));
+    parent->ClearChildren();
+    
+    // Should be able to add new children after clearing
+    parent->AddChild(std::move(child2));
+    
+    EXPECT_EQ(parent->GetChildren().size(), 1);
+}
+
 // === Bounds Calculation Tests ===
 
 TEST_F(UIElementTest, GetRelativeBounds_ReturnsCorrectBounds) {

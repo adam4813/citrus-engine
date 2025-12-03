@@ -131,7 +131,7 @@ TEST_F(ScrollStateTest, HandleScrollVertical) {
 	scroll_.SetDirection(ScrollDirection::Vertical);
 
 	MouseEvent event;
-	event.scroll_delta = -2.0f;  // Scroll down
+	event.scroll_delta_y = -2.0f;  // Scroll down
 
 	bool handled = scroll_.HandleScroll(event);
 
@@ -143,7 +143,7 @@ TEST_F(ScrollStateTest, HandleScrollHorizontal) {
 	scroll_.SetDirection(ScrollDirection::Horizontal);
 
 	MouseEvent event;
-	event.scroll_delta = -2.0f;
+	event.scroll_delta_x = -2.0f;
 
 	bool handled = scroll_.HandleScroll(event);
 
@@ -158,7 +158,7 @@ TEST_F(ScrollStateTest, HandleScrollNoContentReturnsFalse) {
 	s.SetDirection(ScrollDirection::Vertical);
 
 	MouseEvent event;
-	event.scroll_delta = -2.0f;
+	event.scroll_delta_y = -2.0f;
 
 	bool handled = s.HandleScroll(event);
 
@@ -170,7 +170,7 @@ TEST_F(ScrollStateTest, ScrollSpeedAffectsScrollAmount) {
 	scroll_.SetScrollSpeed(100.0f);
 
 	MouseEvent event;
-	event.scroll_delta = -1.0f;
+	event.scroll_delta_y = -1.0f;
 
 	scroll_.HandleScroll(event);
 

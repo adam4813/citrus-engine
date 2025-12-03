@@ -339,7 +339,7 @@ public:
 	 *
 	 * @return Rectangle representing the content area. The position fields indicate the offset
 	 *         from the element's origin to the start of the content area; children are positioned
-	 *         relative to this area. (See UI_DEVELOPMENT_BIBLE.md §9 for details.)
+	 *         relative to this area.
 	 */
 	virtual batch_renderer::Rectangle GetContentArea() const { return {0.0f, 0.0f, width_, height_}; }
 

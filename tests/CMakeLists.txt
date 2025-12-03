@@ -94,3 +94,18 @@ add_engine_test(ui_scroll_test
 add_engine_test(ui_divider_test
     ui_divider_test.cpp
 )
+
+# Add UI ProgressBar element test
+add_engine_test(ui_progress_bar_test
+    ui_progress_bar_test.cpp
+)
+
+# Add UI TabContainer element test
+add_engine_test(ui_tab_container_test
+    ui_tab_container_test.cpp
+)
+
+# Add UI Tooltip component test
+add_engine_test(ui_tooltip_test
+    ui_tooltip_test.cpp
+)

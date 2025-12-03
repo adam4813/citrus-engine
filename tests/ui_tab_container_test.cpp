@@ -141,3 +141,63 @@ TEST_F(TabContainerTest, LayoutConstructor_SetsZeroPosition) {
 	EXPECT_FLOAT_EQ(bounds.width, 400.0f);
 	EXPECT_FLOAT_EQ(bounds.height, 300.0f);
 }
+
+TEST_F(TabContainerTest, TabChangedCallback_TriggersOnFirstTabAdded) {
+	bool callback_triggered = false;
+	size_t callback_index = 99;
+	std::string callback_label;
+
+	tab_container->SetTabChangedCallback([&](size_t index, const std::string& label) {
+		callback_triggered = true;
+		callback_index = index;
+		callback_label = label;
+	});
+
+	auto panel = std::make_unique<Panel>(0, 0, 380, 250);
+	tab_container->AddTab("First Tab", std::move(panel));
+
+	EXPECT_TRUE(callback_triggered);
+	EXPECT_EQ(callback_index, 0);
+	EXPECT_EQ(callback_label, "First Tab");
+}
+
+TEST_F(TabContainerTest, SetActiveTab_IgnoresSameTabWithoutForce) {
+	auto panel1 = std::make_unique<Panel>(0, 0, 380, 250);
+	tab_container->AddTab("Tab 1", std::move(panel1));
+
+	int callback_count = 0;
+	tab_container->SetTabChangedCallback([&](size_t, const std::string&) { callback_count++; });
+
+	// First call counts (from AddTab setting first tab active)
+	// Reset counter after setup
+	callback_count = 0;
+
+	tab_container->SetActiveTab(0);  // Already active, should not trigger
+
+	EXPECT_EQ(callback_count, 0);
+}
+
+TEST_F(TabContainerTest, SetActiveTab_TriggersCallbackWithForce) {
+	auto panel1 = std::make_unique<Panel>(0, 0, 380, 250);
+	tab_container->AddTab("Tab 1", std::move(panel1));
+
+	int callback_count = 0;
+	tab_container->SetTabChangedCallback([&](size_t, const std::string&) { callback_count++; });
+
+	// Reset counter after setup
+	callback_count = 0;
+
+	tab_container->SetActiveTab(0, true);  // Force trigger even though already active
+
+	EXPECT_EQ(callback_count, 1);
+}
+
+TEST_F(TabContainerTest, GetContentHeight_ComputesDynamically) {
+	auto tabs = std::make_unique<TabContainer>(400, 300);
+
+	// Default tab bar height is 30, so content height should be 270
+	EXPECT_FLOAT_EQ(tabs->GetContentHeight(), 270.0f);
+
+	tabs->SetTabBarHeight(50.0f);
+	EXPECT_FLOAT_EQ(tabs->GetContentHeight(), 250.0f);
+}

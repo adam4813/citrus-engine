@@ -104,8 +104,7 @@ public:
 	 * auto tabs = std::make_unique<TabContainer>(10, 10, 400, 300);
 	 * @endcode
 	 */
-	TabContainer(const float x, const float y, const float width, const float height) :
-			UIElement(x, y, width, height), content_height_(height - 30.0f) {
+	TabContainer(const float x, const float y, const float width, const float height) : UIElement(x, y, width, height) {
 		// Create tab bar panel for button layout - added as child for proper hierarchy
 		auto tab_bar = std::make_unique<Panel>(0, 0, width, tab_bar_height_);
 		tab_bar->SetBackgroundColor(batch_renderer::UITheme::Background::PANEL_DARK);
@@ -113,7 +112,7 @@ public:
 		AddChild(std::move(tab_bar));
 
 		// Create content panel (sized to fill below tab bar) - added as child for proper hierarchy
-		auto content = std::make_unique<Panel>(0, tab_bar_height_, width, content_height_);
+		auto content = std::make_unique<Panel>(0, tab_bar_height_, width, GetContentHeight());
 		content->SetBackgroundColor(batch_renderer::UITheme::Background::PANEL);
 		content->SetClipChildren(true);
 		content_panel_ = content.get();
@@ -152,9 +151,12 @@ public:
 
 		tabs_.push_back(std::move(tab));
 
-		// Auto-select first tab
+		// Auto-select first tab and invoke callback
 		if (tabs_.size() == 1) {
 			active_tab_index_ = 0;
+			if (tab_changed_callback_) {
+				tab_changed_callback_(active_tab_index_, tabs_[active_tab_index_].label);
+			}
 		}
 
 		RebuildTabButtons();
@@ -220,14 +222,18 @@ public:
 	/**
 	 * @brief Set active tab by index
 	 *
+	 * If the requested tab is already active, the callback is not invoked unless `force` is true.
+	 *
 	 * @param index Index of tab to activate
+	 * @param force If true, triggers callback and updates tab even if already active (default: false)
 	 *
 	 * @code
-	 * tabs->SetActiveTab(0);  // Select first tab
+	 * tabs->SetActiveTab(0);         // Select first tab
+	 * tabs->SetActiveTab(0, true);   // Force callback for first tab
 	 * @endcode
 	 */
-	void SetActiveTab(const size_t index) {
-		if (index >= tabs_.size() || index == active_tab_index_) {
+	void SetActiveTab(const size_t index, const bool force = false) {
+		if (index >= tabs_.size() || (index == active_tab_index_ && !force)) {
 			return;
 		}
 
@@ -268,15 +274,20 @@ public:
 	// === Appearance Configuration ===
 
 	/**
+	 * @brief Get content area height (computed dynamically from container height minus tab bar)
+	 * @return Content height in pixels
+	 */
+	float GetContentHeight() const { return height_ - tab_bar_height_; }
+
+	/**
 	 * @brief Set tab bar height
 	 * @param height Tab bar height in pixels
 	 */
 	void SetTabBarHeight(const float height) {
 		tab_bar_height_ = height;
-		content_height_ = height_ - tab_bar_height_;
 		tab_bar_panel_->SetSize(width_, tab_bar_height_);
 		content_panel_->SetRelativePosition(0, tab_bar_height_);
-		content_panel_->SetSize(width_, content_height_);
+		content_panel_->SetSize(width_, GetContentHeight());
 		RebuildTabButtons();
 	}
 
@@ -443,7 +454,6 @@ private:
 	// Panel hierarchy (raw pointers - owned by children_ via AddChild)
 	Panel* tab_bar_panel_{nullptr};   // Contains tab Button elements
 	Panel* content_panel_{nullptr};   // Contains active tab content
-	float content_height_;
 
 	// Appearance
 	float tab_bar_height_{30.0f};

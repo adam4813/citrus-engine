@@ -364,21 +364,23 @@ private:
 		percentage_element_->SetRelativePosition(percentage_x, percentage_y);
 	}
 
+	/// Padding between label/percentage and progress bar (consistent with theme spacing)
+	static constexpr float LABEL_BAR_PADDING = 10.0f;
+
 	/**
 	 * @brief Update bar width and offset based on label/percentage widths
 	 */
 	void UpdateBarWidth() {
-		constexpr float padding = 10.0f;
 
 		float left_width = 0.0f;
 		float right_width = 0.0f;
 
 		if (label_element_) {
-			left_width = label_element_->GetWidth() + padding;
+			left_width = label_element_->GetWidth() + LABEL_BAR_PADDING;
 		}
 
 		if (percentage_element_ && show_percentage_) {
-			right_width = percentage_element_->GetWidth() + padding;
+			right_width = percentage_element_->GetWidth() + LABEL_BAR_PADDING;
 		}
 
 		bar_x_offset_ = left_width;

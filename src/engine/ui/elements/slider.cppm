@@ -72,7 +72,7 @@ public:
          * @param height Slider height in pixels
          * @param min_value Minimum value (left side)
          * @param max_value Maximum value (right side)
-         * @param initial_value Initial value (default: 0.0f)
+         * @param initial_value Initial slider value (default: 0.0f)
          *
          * @code
          * auto slider = std::make_unique<Slider>(200, 30, 0.0f, 100.0f);

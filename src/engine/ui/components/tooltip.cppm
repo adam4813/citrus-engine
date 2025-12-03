@@ -164,7 +164,10 @@ public:
 
 	void OnAttach(UIElement* owner) override {
 		IUIComponent::OnAttach(owner);
-		// Content is positioned independently, not parented to owner
+		// Content is positioned independently, not parented to owner.
+		// This is intentional: tooltips need window-relative positioning and must appear
+		// at the correct location regardless of UI hierarchy. The content is not added
+		// as a child for layout, and uses absolute window coordinates for positioning.
 	}
 
 	void OnDetach() override {
@@ -261,8 +264,9 @@ private:
 			content_y = 0;
 		}
 
-		// Set position (content uses window-relative coordinates since it's not parented)
-		// Tooltip content is positioned independently to appear at correct screen location
+		// Tooltip content uses absolute window-relative coordinates since it's not parented to any
+		// UI element. This is intentional: tooltips must appear at the correct screen location
+		// regardless of UI hierarchy, which requires bypassing normal parent-child positioning.
 		content_->SetRelativePosition(content_x, content_y);
 	}
 

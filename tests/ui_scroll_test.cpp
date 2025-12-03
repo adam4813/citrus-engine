@@ -151,6 +151,46 @@ TEST_F(ScrollStateTest, HandleScrollHorizontal) {
 	EXPECT_GT(scroll_.GetScrollX(), 0.0f);
 }
 
+TEST_F(ScrollStateTest, HorizontalScrollSpeedAffectsAmount) {
+	scroll_.SetDirection(ScrollDirection::Horizontal);
+	scroll_.SetScrollSpeed(50.0f);
+
+	MouseEvent event;
+	event.scroll_delta_x = -1.0f;
+
+	scroll_.HandleScroll(event);
+
+	// With speed 50, delta -1, scroll should increase by 50
+	EXPECT_FLOAT_EQ(scroll_.GetScrollX(), 50.0f);
+}
+
+TEST_F(ScrollStateTest, HorizontalScrollClampsToMax) {
+	scroll_.SetDirection(ScrollDirection::Horizontal);
+	scroll_.SetScrollSpeed(1000.0f);  // Large speed to exceed max
+
+	MouseEvent event;
+	event.scroll_delta_x = -1.0f;
+
+	scroll_.HandleScroll(event);
+
+	// Should clamp to max scroll (300.0f)
+	EXPECT_FLOAT_EQ(scroll_.GetScrollX(), scroll_.GetMaxScrollX());
+}
+
+TEST_F(ScrollStateTest, HorizontalScrollNoContentReturnsFalse) {
+	ScrollState s;
+	s.SetContentSize(100.0f, 100.0f);  // Content fits horizontally
+	s.SetViewportSize(200.0f, 200.0f);
+	s.SetDirection(ScrollDirection::Horizontal);
+
+	MouseEvent event;
+	event.scroll_delta_x = -2.0f;
+
+	bool handled = s.HandleScroll(event);
+
+	EXPECT_FALSE(handled);  // Can't scroll when content fits
+}
+
 TEST_F(ScrollStateTest, HandleScrollNoContentReturnsFalse) {
 	ScrollState s;
 	s.SetContentSize(100.0f, 100.0f);

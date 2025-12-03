@@ -85,7 +85,9 @@ namespace engine::input {
         GLFWwindow *window = glfwGetCurrentContext();
         if (!window) { return; }
         
-        // Reset scroll delta before polling (callback will accumulate new values)
+        // Reset scroll delta before polling. The scroll callback accumulates new values
+        // during glfwPollEvents() via +=, so resetting first ensures we only capture
+        // scroll events from the current frame.
         {
             std::lock_guard lock(event_mutex);
             mouse_state.scroll_delta_x = 0.0f;

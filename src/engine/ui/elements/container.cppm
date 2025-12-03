@@ -105,6 +105,16 @@ public:
 	 * Note: Layout and constraint components auto-update when dirty.
 	 */
 	void Update(const float delta_time = 0.0f) { UpdateComponents(delta_time); }
+
+	/**
+	 * @brief Render the container and its components
+	 *
+	 * Calls Panel::Render() to render children, then renders attached components (e.g., scrollbars).
+	 */
+	void Render() const override {
+		Panel::Render();
+		RenderComponents();
+	}
 };
 
 } // namespace engine::ui::elements

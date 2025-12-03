@@ -335,10 +335,11 @@ public:
 	 * @brief Get the content area where children are placed
 	 *
 	 * Override in elements that have padding or insets. Children are
-	 * positioned relative to this area. Default returns full element bounds.
+	 * positioned relative to this area.
 	 *
-	 * @return Rectangle where x/y indicate offset from element origin to content start,
-	 *         and width/height indicate the content area dimensions
+	 * @return Rectangle representing the content area. The position fields indicate the offset
+	 *         from the element's origin to the start of the content area; children are positioned
+	 *         relative to this area. (See UI_DEVELOPMENT_BIBLE.md §9 for details.)
 	 */
 	virtual batch_renderer::Rectangle GetContentArea() const { return {0.0f, 0.0f, width_, height_}; }
 

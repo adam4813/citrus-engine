@@ -802,7 +802,7 @@ namespace engine::physics {
     };
 
     std::unique_ptr<IPhysicsBackend> CreateBullet3Backend() {
-        return std::make_unique<Bullet3Backend>();
+        return std::unique_ptr<IPhysicsBackend>(new Bullet3Backend());
     }
 
 } // namespace engine::physics

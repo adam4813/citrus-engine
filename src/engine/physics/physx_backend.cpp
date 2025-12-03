@@ -378,7 +378,7 @@ namespace engine::physics {
 
     // Factory helper function
     std::unique_ptr<IPhysicsBackend> CreatePhysXBackend() {
-        return std::make_unique<PhysXBackend>();
+        return std::unique_ptr<IPhysicsBackend>(new PhysXBackend());
     }
 
 } // namespace engine::physics

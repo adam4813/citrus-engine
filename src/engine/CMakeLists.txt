@@ -172,11 +172,11 @@ target_link_libraries(engine-core
     spdlog::spdlog
     nlohmann_json::nlohmann_json
     imgui::imgui
+    Jolt::Jolt
+    ${BULLET_LIBRARIES}
     PRIVATE
     Angelscript::angelscript
     lua
-    Jolt::Jolt
-    ${BULLET_LIBRARIES}
 )
 
 if (EMSCRIPTEN)

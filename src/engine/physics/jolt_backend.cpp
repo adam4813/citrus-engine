@@ -189,7 +189,6 @@ namespace engine::physics {
 
         // Entity to body mapping
         std::unordered_map<EntityId, JPH::BodyID> entity_to_body_;
-        std::unordered_map<JPH::BodyID::Type, EntityId> body_to_entity_;
 
         // Collider storage (shapes are owned by bodies, but we track config)
         std::unordered_map<EntityId, ColliderConfig> colliders_;
@@ -377,7 +376,6 @@ namespace engine::physics {
                 bodyInterface.DestroyBody(bodyId);
             }
             entity_to_body_.clear();
-            body_to_entity_.clear();
             colliders_.clear();
 
             // Clear characters
@@ -499,7 +497,6 @@ namespace engine::physics {
             }
 
             entity_to_body_[entity] = bodyId;
-            body_to_entity_[bodyId.GetIndexAndSequenceNumber()] = entity;
 
             return true;
         }
@@ -510,7 +507,6 @@ namespace engine::physics {
                 auto& bodyInterface = physics_system_->GetBodyInterface();
                 bodyInterface.RemoveBody(it->second);
                 bodyInterface.DestroyBody(it->second);
-                body_to_entity_.erase(it->second.GetIndexAndSequenceNumber());
                 entity_to_body_.erase(it);
             }
         }
@@ -864,7 +860,7 @@ namespace engine::physics {
     };
 
     std::unique_ptr<IPhysicsBackend> CreateJoltBackend() {
-        return std::make_unique<JoltPhysicsBackend>();
+        return std::unique_ptr<IPhysicsBackend>(new JoltPhysicsBackend());
     }
 
 } // namespace engine::physics

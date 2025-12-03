@@ -18,14 +18,14 @@ protected:
 TEST_F(PhysicsSystemTest, can_initialize_jolt_backend) {
     PhysicsSystem physics(PhysicsEngineType::JoltPhysics);
     EXPECT_EQ(physics.GetEngineType(), PhysicsEngineType::JoltPhysics);
-    EXPECT_EQ(physics.GetEngineName(), "JoltPhysics (stub)");
+    EXPECT_EQ(physics.GetEngineName(), "JoltPhysics");
 }
 
 // Test initialization with Bullet3 backend
 TEST_F(PhysicsSystemTest, can_initialize_bullet3_backend) {
     PhysicsSystem physics(PhysicsEngineType::Bullet3);
     EXPECT_EQ(physics.GetEngineType(), PhysicsEngineType::Bullet3);
-    EXPECT_EQ(physics.GetEngineName(), "Bullet3 (stub)");
+    EXPECT_EQ(physics.GetEngineName(), "Bullet3");
 }
 
 // Test initialization with PhysX backend
@@ -201,6 +201,50 @@ TEST_F(PhysicsSystemTest, can_create_dynamic_sphere) {
     float radius = 0.5F;
     
     bool created = physics.CreateDynamicSphere(entity, position, radius, 1.0F);
+    EXPECT_TRUE(created);
+    EXPECT_TRUE(physics.HasRigidBody(entity));
+    EXPECT_TRUE(physics.HasCollider(entity));
+}
+
+// Test convenience method: CreateStaticSphere
+TEST_F(PhysicsSystemTest, can_create_static_sphere) {
+    PhysicsSystem physics(PhysicsEngineType::JoltPhysics);
+    
+    EntityId entity = 1;
+    glm::vec3 position{0.0F, 0.0F, 0.0F};
+    float radius = 1.0F;
+    
+    bool created = physics.CreateStaticSphere(entity, position, radius);
+    EXPECT_TRUE(created);
+    EXPECT_TRUE(physics.HasRigidBody(entity));
+    EXPECT_TRUE(physics.HasCollider(entity));
+}
+
+// Test convenience method: CreateDynamicCapsule
+TEST_F(PhysicsSystemTest, can_create_dynamic_capsule) {
+    PhysicsSystem physics(PhysicsEngineType::JoltPhysics);
+    
+    EntityId entity = 1;
+    glm::vec3 position{0.0F, 5.0F, 0.0F};
+    float radius = 0.3F;
+    float height = 1.5F;
+    
+    bool created = physics.CreateDynamicCapsule(entity, position, radius, height, 1.0F);
+    EXPECT_TRUE(created);
+    EXPECT_TRUE(physics.HasRigidBody(entity));
+    EXPECT_TRUE(physics.HasCollider(entity));
+}
+
+// Test convenience method: CreateStaticCapsule
+TEST_F(PhysicsSystemTest, can_create_static_capsule) {
+    PhysicsSystem physics(PhysicsEngineType::JoltPhysics);
+    
+    EntityId entity = 1;
+    glm::vec3 position{0.0F, 0.0F, 0.0F};
+    float radius = 0.5F;
+    float height = 2.0F;
+    
+    bool created = physics.CreateStaticCapsule(entity, position, radius, height);
     EXPECT_TRUE(created);
     EXPECT_TRUE(physics.HasRigidBody(entity));
     EXPECT_TRUE(physics.HasCollider(entity));

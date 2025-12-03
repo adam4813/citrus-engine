@@ -18,8 +18,7 @@ export namespace engine::physics {
     enum class PhysicsEngineType {
         JoltPhysics,
         Bullet3,
-        PhysX,
-        Havok  // Note: Havok requires a commercial license
+        PhysX
     };
 
     // Motion types for rigid bodies

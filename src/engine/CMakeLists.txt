@@ -160,6 +160,7 @@ target_include_directories(engine-core
     $<INSTALL_INTERFACE:include>
     PRIVATE
     ${STB_INCLUDE_DIRS}
+    ${BULLET_INCLUDE_DIRS}
 )
 
 # Engine dependencies
@@ -174,6 +175,8 @@ target_link_libraries(engine-core
     PRIVATE
     Angelscript::angelscript
     lua
+    Jolt::Jolt
+    ${BULLET_LIBRARIES}
 )
 
 if (EMSCRIPTEN)

@@ -22,8 +22,6 @@ namespace engine::physics {
                 return CreateBullet3Backend();
             case PhysicsEngineType::PhysX:
                 return CreatePhysXBackend();
-            case PhysicsEngineType::Havok:
-                throw std::runtime_error("Havok backend requires commercial license - not implemented");
             default:
                 throw std::runtime_error("Unknown physics engine type");
         }

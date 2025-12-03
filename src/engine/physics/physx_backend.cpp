@@ -14,14 +14,18 @@ module engine.physics;
 namespace engine::physics {
 
     // PhysX backend implementation (Adapter Pattern)
-    // This is a stub implementation - actual PhysX integration requires the NVIDIA PhysX SDK
+    // PhysX requires NVIDIA GPU SDK and special setup - this is a placeholder implementation
+    // To use the real PhysX SDK:
+    // 1. Download PhysX SDK from NVIDIA
+    // 2. Add to vcpkg or as external dependency
+    // 3. Implement actual PhysX calls similar to Jolt/Bullet backends
     class PhysXBackend : public IPhysicsBackend {
     private:
         PhysicsConfig config_{};
         bool initialized_{false};
         glm::vec3 gravity_{0.0F, -9.81F, 0.0F};
 
-        // Simulated rigid body storage
+        // Simulated rigid body storage (placeholder until real PhysX is integrated)
         struct RigidBodyData {
             RigidBodyConfig config{};
             PhysicsTransform transform{};
@@ -67,7 +71,8 @@ namespace engine::physics {
             // - Create PxScene with PxSceneDesc
             // - Setup CUDA context manager for GPU acceleration
 
-            spdlog::info("[PhysX] Initialized (stub implementation)");
+            spdlog::info("[PhysX] Initialized (stub - PhysX SDK not linked)");
+            spdlog::warn("[PhysX] For real PhysX support, integrate the NVIDIA PhysX SDK");
             initialized_ = true;
             return true;
         }
@@ -265,10 +270,12 @@ namespace engine::physics {
         // === Collision Queries ===
 
         [[nodiscard]] std::optional<CollisionInfo> CheckCollision(EntityId /*entity_a*/, EntityId /*entity_b*/) const override {
+            // Stub - no collision detection without real PhysX
             return std::nullopt;
         }
 
         [[nodiscard]] std::vector<CollisionInfo> GetAllCollisions(EntityId /*entity*/) const override {
+            // Stub - no collision detection without real PhysX
             return {};
         }
 
@@ -279,17 +286,19 @@ namespace engine::physics {
         // === Raycasting ===
 
         [[nodiscard]] std::optional<RaycastResult> Raycast(const Ray& /*ray*/) const override {
+            // Stub - no raycasting without real PhysX
             return std::nullopt;
         }
 
         [[nodiscard]] std::vector<RaycastResult> RaycastAll(const Ray& /*ray*/) const override {
+            // Stub - no raycasting without real PhysX
             return {};
         }
 
         // === Constraints/Joints ===
 
-        bool AddConstraint(EntityId /*entity_a*/, EntityId /*entity_b*/, const ConstraintConfig& /*config*/) override {
-            spdlog::info("[PhysX] AddConstraint (stub)");
+        bool AddConstraint(EntityId entity_a, EntityId entity_b, const ConstraintConfig& /*config*/) override {
+            spdlog::info("[PhysX] AddConstraint between {} and {} (stub)", entity_a, entity_b);
             return true;
         }
 
@@ -348,7 +357,7 @@ namespace engine::physics {
         }
 
         [[nodiscard]] bool SupportsFeature(const std::string& feature_name) const override {
-            // PhysX supports these features
+            // PhysX supports these features (when properly integrated)
             if (feature_name == "ccd") return true;
             if (feature_name == "convex_hull") return true;
             if (feature_name == "compound_shapes") return true;

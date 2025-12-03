@@ -62,12 +62,18 @@ export namespace engine::physics {
 
         // Get the engine name
         [[nodiscard]] std::string GetEngineName() const {
-            return backend_ ? backend_->GetEngineName() : "None";
+            if (backend_) {
+                return backend_->GetEngineName();
+            }
+            return "None";
         }
 
         // Check if a feature is supported
         [[nodiscard]] bool SupportsFeature(const std::string& feature_name) const {
-            return backend_ && backend_->SupportsFeature(feature_name);
+            if (backend_) {
+                return backend_->SupportsFeature(feature_name);
+            }
+            return false;
         }
 
         // Change the physics engine at runtime
@@ -118,7 +124,10 @@ export namespace engine::physics {
 
         // Get world gravity
         [[nodiscard]] glm::vec3 GetGravity() const {
-            return backend_ ? backend_->GetGravity() : glm::vec3{0.0F, -9.81F, 0.0F};
+            if (backend_) {
+                return backend_->GetGravity();
+            }
+            return glm::vec3{0.0F, -9.81F, 0.0F};
         }
 
         // Update the physics simulation
@@ -155,7 +164,10 @@ export namespace engine::physics {
 
         // Add a rigid body
         bool AddRigidBody(EntityId entity, const RigidBodyConfig& config = RigidBodyConfig{}) {
-            return backend_ && backend_->AddRigidBody(entity, config);
+            if (backend_) {
+                return backend_->AddRigidBody(entity, config);
+            }
+            return false;
         }
 
         // Remove a rigid body
@@ -167,7 +179,10 @@ export namespace engine::physics {
 
         // Check if entity has a rigid body
         [[nodiscard]] bool HasRigidBody(EntityId entity) const {
-            return backend_ && backend_->HasRigidBody(entity);
+            if (backend_) {
+                return backend_->HasRigidBody(entity);
+            }
+            return false;
         }
 
         // Set rigid body transform
@@ -204,7 +219,10 @@ export namespace engine::physics {
 
         // Get linear velocity
         [[nodiscard]] glm::vec3 GetLinearVelocity(EntityId entity) const {
-            return backend_ ? backend_->GetLinearVelocity(entity) : glm::vec3{0.0F};
+            if (backend_) {
+                return backend_->GetLinearVelocity(entity);
+            }
+            return glm::vec3{0.0F};
         }
 
         // Set angular velocity
@@ -216,7 +234,10 @@ export namespace engine::physics {
 
         // Get angular velocity
         [[nodiscard]] glm::vec3 GetAngularVelocity(EntityId entity) const {
-            return backend_ ? backend_->GetAngularVelocity(entity) : glm::vec3{0.0F};
+            if (backend_) {
+                return backend_->GetAngularVelocity(entity);
+            }
+            return glm::vec3{0.0F};
         }
 
         // Apply force at center of mass
@@ -258,7 +279,10 @@ export namespace engine::physics {
 
         // Add a collider
         bool AddCollider(EntityId entity, const ColliderConfig& config = ColliderConfig{}) {
-            return backend_ && backend_->AddCollider(entity, config);
+            if (backend_) {
+                return backend_->AddCollider(entity, config);
+            }
+            return false;
         }
 
         // Remove a collider
@@ -270,31 +294,46 @@ export namespace engine::physics {
 
         // Check if entity has a collider
         [[nodiscard]] bool HasCollider(EntityId entity) const {
-            return backend_ && backend_->HasCollider(entity);
+            if (backend_) {
+                return backend_->HasCollider(entity);
+            }
+            return false;
         }
 
         // === CCD Control ===
 
         // Enable/disable CCD for an entity
         bool EnableCCD(EntityId entity, bool enable) {
-            return backend_ && backend_->EnableCCD(entity, enable);
+            if (backend_) {
+                return backend_->EnableCCD(entity, enable);
+            }
+            return false;
         }
 
         // Check if CCD is enabled
         [[nodiscard]] bool IsCCDEnabled(EntityId entity) const {
-            return backend_ && backend_->IsCCDEnabled(entity);
+            if (backend_) {
+                return backend_->IsCCDEnabled(entity);
+            }
+            return false;
         }
 
         // === Collision Queries ===
 
         // Check collision between two entities
         [[nodiscard]] std::optional<CollisionInfo> CheckCollision(EntityId entity_a, EntityId entity_b) const {
-            return backend_ ? backend_->CheckCollision(entity_a, entity_b) : std::nullopt;
+            if (backend_) {
+                return backend_->CheckCollision(entity_a, entity_b);
+            }
+            return std::nullopt;
         }
 
         // Get all collisions for an entity
         [[nodiscard]] std::vector<CollisionInfo> GetAllCollisions(EntityId entity) const {
-            return backend_ ? backend_->GetAllCollisions(entity) : std::vector<CollisionInfo>{};
+            if (backend_) {
+                return backend_->GetAllCollisions(entity);
+            }
+            return {};
         }
 
         // Set collision callback
@@ -328,7 +367,10 @@ export namespace engine::physics {
 
         // Add a constraint between two entities
         bool AddConstraint(EntityId entity_a, EntityId entity_b, const ConstraintConfig& config = ConstraintConfig{}) {
-            return backend_ && backend_->AddConstraint(entity_a, entity_b, config);
+            if (backend_) {
+                return backend_->AddConstraint(entity_a, entity_b, config);
+            }
+            return false;
         }
 
         // Remove a constraint
@@ -342,7 +384,10 @@ export namespace engine::physics {
 
         // Add a character controller
         bool AddCharacterController(EntityId entity, const CharacterControllerConfig& config = CharacterControllerConfig{}) {
-            return backend_ && backend_->AddCharacterController(entity, config);
+            if (backend_) {
+                return backend_->AddCharacterController(entity, config);
+            }
+            return false;
         }
 
         // Remove a character controller
@@ -354,7 +399,10 @@ export namespace engine::physics {
 
         // Check if entity has a character controller
         [[nodiscard]] bool HasCharacterController(EntityId entity) const {
-            return backend_ && backend_->HasCharacterController(entity);
+            if (backend_) {
+                return backend_->HasCharacterController(entity);
+            }
+            return false;
         }
 
         // Move character
@@ -366,7 +414,10 @@ export namespace engine::physics {
 
         // Check if character is grounded
         [[nodiscard]] bool IsCharacterGrounded(EntityId entity) const {
-            return backend_ && backend_->IsCharacterGrounded(entity);
+            if (backend_) {
+                return backend_->IsCharacterGrounded(entity);
+            }
+            return false;
         }
 
         // === Convenience Methods ===
@@ -425,6 +476,75 @@ export namespace engine::physics {
             ColliderConfig collider_config{};
             collider_config.shape.type = ShapeType::Sphere;
             collider_config.shape.sphere_radius = radius;
+
+            if (!AddRigidBody(entity, body_config)) {
+                return false;
+            }
+
+            if (!AddCollider(entity, collider_config)) {
+                RemoveRigidBody(entity);
+                return false;
+            }
+
+            SetTransform(entity, position);
+            return true;
+        }
+
+        // Create a static rigid body with a sphere collider
+        bool CreateStaticSphere(EntityId entity, const glm::vec3& position, float radius) {
+            RigidBodyConfig body_config{};
+            body_config.motion_type = MotionType::Static;
+
+            ColliderConfig collider_config{};
+            collider_config.shape.type = ShapeType::Sphere;
+            collider_config.shape.sphere_radius = radius;
+
+            if (!AddRigidBody(entity, body_config)) {
+                return false;
+            }
+
+            if (!AddCollider(entity, collider_config)) {
+                RemoveRigidBody(entity);
+                return false;
+            }
+
+            SetTransform(entity, position);
+            return true;
+        }
+
+        // Create a dynamic rigid body with a capsule collider
+        bool CreateDynamicCapsule(EntityId entity, const glm::vec3& position, float radius, float height, float mass = 1.0F) {
+            RigidBodyConfig body_config{};
+            body_config.motion_type = MotionType::Dynamic;
+            body_config.mass = mass;
+
+            ColliderConfig collider_config{};
+            collider_config.shape.type = ShapeType::Capsule;
+            collider_config.shape.capsule_radius = radius;
+            collider_config.shape.capsule_height = height;
+
+            if (!AddRigidBody(entity, body_config)) {
+                return false;
+            }
+
+            if (!AddCollider(entity, collider_config)) {
+                RemoveRigidBody(entity);
+                return false;
+            }
+
+            SetTransform(entity, position);
+            return true;
+        }
+
+        // Create a static rigid body with a capsule collider
+        bool CreateStaticCapsule(EntityId entity, const glm::vec3& position, float radius, float height) {
+            RigidBodyConfig body_config{};
+            body_config.motion_type = MotionType::Static;
+
+            ColliderConfig collider_config{};
+            collider_config.shape.type = ShapeType::Capsule;
+            collider_config.shape.capsule_radius = radius;
+            collider_config.shape.capsule_height = height;
 
             if (!AddRigidBody(entity, body_config)) {
                 return false;

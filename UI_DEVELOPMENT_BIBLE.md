@@ -562,6 +562,379 @@ See `examples/src/ui_showcase_scene.cpp` for a complete demonstration of UITheme
 
 ---
 
+## UI Component System
+
+The UI system uses a **Component Pattern** for adding optional behaviors to elements. Components are modular, composable, and follow the element's lifecycle.
+
+### Core Concepts
+
+**Files:**
+- `src/engine/ui/ui_element.cppm` - Base component interfaces (`IUIComponent`, `ComponentContainer`)
+- `src/engine/ui/components/layout.cppm` - Layout strategies
+- `src/engine/ui/components/constraints.cppm` - Positioning constraints
+- `src/engine/ui/components/scroll.cppm` - Scroll behavior
+- `src/engine/ui/builder.cppm` - Fluent builder API
+
+**Design Patterns Used:**
+- **Component Pattern** - Attach behaviors to elements
+- **Strategy Pattern** - Interchangeable layout algorithms
+- **Builder Pattern** - Fluent construction API
+
+### UIElement Component Support
+
+All `UIElement` subclasses can have components attached:
+
+```cpp
+using namespace engine::ui::elements;
+using namespace engine::ui::components;
+
+// Add constraints to any element (e.g., close button anchored to top-right)
+auto close_btn = std::make_unique<Button>(0, 0, 30, 20, "X");
+close_btn->AddComponent<ConstraintComponent>(Anchor::TopRight(5.0f));
+panel->AddChild(std::move(close_btn));
+
+// Container with layout and scroll components
+auto container = std::make_unique<Container>(0, 0, 300, 400);
+container->AddComponent<LayoutComponent>(
+    std::make_unique<VerticalLayout>(8.0f, Alignment::Center)
+);
+container->AddComponent<ScrollComponent>(ScrollDirection::Vertical);
+
+// Get/check components
+auto* layout = container->GetComponent<LayoutComponent>();
+bool has_scroll = container->HasComponent<ScrollComponent>();
+
+// Remove components
+container->RemoveComponent<ScrollComponent>();
+
+// Update all components recursively (including nested element constraints)
+container->UpdateComponentsRecursive();
+```
+
+**Note:** While any `UIElement` can have components, some are more appropriate for certain elements:
+- `LayoutComponent` and `ScrollComponent` - best on `Container` elements with children
+- `ConstraintComponent` - useful on any element to anchor within its parent
+
+### ContainerBuilder (Fluent API)
+
+Build containers with a clean, chainable API:
+
+```cpp
+using namespace engine::ui;
+using namespace engine::ui::components;
+
+auto menu = ContainerBuilder()
+    .Position(100, 50)
+    .Size(300, 400)
+    .Padding(10)
+    .Layout<VerticalLayout>(8.0f, Alignment::Center)
+    .Scrollable(ScrollDirection::Vertical)
+    .Background(UITheme::Background::PANEL)
+    .Border(1.0f, UITheme::Border::DEFAULT)
+    .ClipChildren()
+    .Build();
+```
+
+---
+
+### LayoutComponent
+
+Manages child positioning using the **Strategy Pattern**.
+
+**Available Strategies:**
+
+**VerticalLayout** - Stack children top to bottom:
+```cpp
+container->AddComponent<LayoutComponent>(
+    std::make_unique<VerticalLayout>(
+        8.0f,              // Gap between children
+        Alignment::Center  // Horizontal alignment
+    )
+);
+```
+
+**HorizontalLayout** - Arrange children left to right:
+```cpp
+container->AddComponent<LayoutComponent>(
+    std::make_unique<HorizontalLayout>(10.0f, Alignment::Center)
+);
+```
+
+**GridLayout** - Arrange in rows and columns:
+```cpp
+container->AddComponent<LayoutComponent>(
+    std::make_unique<GridLayout>(
+        3,      // 3 columns
+        8.0f,   // Horizontal gap
+        8.0f    // Vertical gap
+    )
+);
+```
+
+**JustifyLayout** - Distribute children evenly (like CSS flexbox justify-content: space-between):
+```cpp
+container->AddComponent<LayoutComponent>(
+    std::make_unique<JustifyLayout>(
+        JustifyDirection::Horizontal,  // Or Vertical
+        Alignment::Center              // Cross-axis alignment
+    )
+);
+// Note: Gap is calculated automatically to distribute children evenly
+```
+
+**StackLayout** - Overlay children at same position (for layered UI):
+```cpp
+container->AddComponent<LayoutComponent>(
+    std::make_unique<StackLayout>(
+        Alignment::Center,  // Horizontal alignment
+        Alignment::Center   // Vertical alignment
+    )
+);
+
+// Example use cases:
+// - Background image + content panel + overlay badge
+// - Icon with notification count in corner (End, Start)
+// - Loading spinner over content
+```
+
+**Alignment Options:**
+```cpp
+enum class Alignment : uint8_t {
+    Start,   // Left/top
+    Center,  // Center
+    End,     // Right/bottom
+    Stretch  // Fill available space
+};
+```
+
+**Padding Behavior:**
+
+When a Panel has padding, layouts handle it intelligently:
+
+- **Primary axis** (vertical for VerticalLayout, horizontal for HorizontalLayout): 
+  Padding insets the start position and reduces available space.
+  
+- **Cross axis**: 
+  - `Start`/`End`/`Stretch`: Respect padding (children inset from edges)
+  - `Center`: Uses full dimension (ignores padding for true centering)
+
+```cpp
+// Panel 200x200 with padding 20
+// Child 80x40 with VerticalLayout + Alignment::Center
+panel->SetPadding(20.0f);
+panel->AddComponent<LayoutComponent>(
+    std::make_unique<VerticalLayout>(0.0f, Alignment::Center)
+);
+
+// Result:
+// - Y position = 20 (primary axis respects padding)
+// - X position = 60 ((200-80)/2, cross-axis Center ignores padding)
+```
+
+---
+
+### ConstraintComponent
+
+Positions and sizes elements relative to their parent.
+
+```cpp
+using namespace engine::ui::components;
+
+// Add constraint component
+container->AddComponent<ConstraintComponent>(
+    Anchor::Fill(10.0f),           // 10px margin on all sides
+    SizeConstraints::Percent(0.8f, 0.5f)  // 80% width, 50% height
+);
+```
+
+**Anchor Factories:**
+```cpp
+Anchor::TopLeft(margin)
+Anchor::TopRight(margin)
+Anchor::BottomLeft(margin)
+Anchor::BottomRight(margin)
+Anchor::StretchHorizontal(left, right)  // Stretch between left/right edges
+Anchor::StretchVertical(top, bottom)    // Stretch between top/bottom edges
+Anchor::Fill(margin)                    // Fill with uniform margin
+```
+
+**Manual Anchor Configuration:**
+```cpp
+Anchor anchor;
+anchor.SetLeft(10.0f);    // 10px from left
+anchor.SetRight(10.0f);   // 10px from right (causes horizontal stretch)
+anchor.SetTop(20.0f);     // 20px from top
+// anchor.SetBottom(...) would cause vertical stretch
+```
+
+**Size Constraints:**
+```cpp
+SizeConstraint::Fixed(200.0f)           // Fixed 200px
+SizeConstraint::Percent(0.5f)           // 50% of parent
+SizeConstraint::FitContent(100, 300)    // Fit content, min 100, max 300
+
+SizeConstraints::Fixed(200.0f, 100.0f)  // Fixed width and height
+SizeConstraints::Percent(0.8f, 0.5f)    // Percentage-based
+SizeConstraints::Full()                 // 100% of parent
+```
+
+---
+
+### ScrollComponent
+
+Adds scrolling behavior with automatic scrollbar rendering.
+
+```cpp
+using namespace engine::ui::components;
+
+// Enable scrolling
+auto* scroll = container->AddComponent<ScrollComponent>(ScrollDirection::Vertical);
+scroll->SetContentSize(300, 1000);  // Total scrollable area
+
+// Or auto-calculate from children
+scroll->CalculateContentSizeFromChildren();
+```
+
+**ScrollState API:**
+```cpp
+ScrollState& state = scroll->GetState();
+
+// Position
+state.SetScroll(0, 100);
+state.ScrollBy(0, 50);
+state.ScrollToStart();
+state.ScrollToEnd();
+
+// Queries
+bool can_scroll = state.CanScrollY();
+float max = state.GetMaxScrollY();
+float normalized = state.GetScrollYNormalized();  // 0.0-1.0
+```
+
+**Scrollbar Styling:**
+```cpp
+ScrollbarStyle style;
+style.track_color = {0.2f, 0.2f, 0.2f, 0.5f};
+style.thumb_color = {0.5f, 0.5f, 0.5f, 0.8f};
+style.width = 10.0f;
+style.min_thumb_length = 30.0f;
+scroll->SetStyle(style);
+```
+
+**Scroll Direction:**
+```cpp
+enum class ScrollDirection : uint8_t {
+    Vertical,    // Up/down only
+    Horizontal,  // Left/right only
+    Both         // Both directions
+};
+```
+
+---
+
+### Component Lifecycle
+
+Components participate in the element's lifecycle:
+
+```cpp
+class IUIComponent {
+    virtual void OnAttach(UIElement* owner);  // Called when added
+    virtual void OnDetach();                   // Called when removed
+    virtual void OnUpdate(float delta_time);   // Called each frame
+    virtual void OnRender() const;             // Called during render
+    virtual void OnInvalidate();               // Called when element state changes
+    virtual bool OnMouseEvent(const MouseEvent&);  // Event handling
+};
+```
+
+### Component Invalidation
+
+When an element's state changes in a way that affects components (e.g., size change, children added/removed), call `InvalidateComponents()` to notify all attached components:
+
+```cpp
+// Element implementation that needs to invalidate components
+void MyElement::SetSize(float width, float height) {
+    width_ = width;
+    height_ = height;
+    InvalidateComponents();  // Notify LayoutComponent, ConstraintComponent, etc.
+}
+
+void MyElement::AddChild(std::unique_ptr<UIElement> child) {
+    children_.push_back(std::move(child));
+    InvalidateComponents();  // Layout needs recalculation
+}
+```
+
+**Components that respond to invalidation:**
+- `LayoutComponent`: Marks layout as dirty, recalculates on next `Update()`
+- `ConstraintComponent`: Recalculates anchors and size constraints
+- `ScrollComponent`: Recalculates content size and scrollbar visibility
+
+---
+
+### Usage Patterns
+
+**Responsive Toolbar:**
+```cpp
+auto toolbar = ContainerBuilder()
+    .Bounds(0, 0, 0, 50)
+    .Layout<HorizontalLayout>(8.0f, Alignment::Center)
+    .Anchor(Anchor::StretchHorizontal(0, 0))
+    .Padding(10)
+    .Build();
+```
+
+**Centered Modal Dialog:**
+```cpp
+auto dialog = ContainerBuilder()
+    .Size(400, 300)
+    .Layout<VerticalLayout>(12.0f, Alignment::Center)
+    .Fill(50.0f)  // 50px margin from all edges
+    .Background(UITheme::Background::PANEL)
+    .Border(2.0f, UITheme::Border::ACCENT)
+    .Build();
+```
+
+**Scrollable List:**
+```cpp
+auto list = ContainerBuilder()
+    .Size(250, 400)
+    .Layout<VerticalLayout>(4.0f, Alignment::Stretch)
+    .Scrollable(ScrollDirection::Vertical)
+    .ClipChildren()
+    .Build();
+
+for (const auto& item : items) {
+    list->AddChild(CreateListItem(item));
+}
+list->Update();  // Apply layout and calculate content size
+```
+
+**Icon Grid:**
+```cpp
+auto grid = ContainerBuilder()
+    .Size(400, 400)
+    .Layout<GridLayout>(4, 8.0f, 8.0f)
+    .Scrollable(ScrollDirection::Vertical)
+    .Build();
+
+for (const auto& icon : icons) {
+    grid->AddChild(std::make_unique<ImageElement>(0, 0, 80, 80, icon.texture));
+}
+grid->Update();
+```
+
+---
+
+### Testing
+
+The component system has comprehensive tests:
+- `tests/ui_layout_test.cpp` - All layout strategies
+- `tests/ui_anchoring_test.cpp` - Anchor and size constraints  
+- `tests/ui_scroll_test.cpp` - Scroll state and geometry
+
+---
+
 ## Philosophy & Core Principles
 
 ### Declarative Over Imperative
@@ -927,48 +1300,38 @@ protected:
 
 **Implementation**:
 ```cpp
-// Layout strategies
-class ILayoutStrategy {
+// Layout strategies receive the container to extract bounds and padding
+class ILayout {
 public:
-    virtual void Layout(std::vector<UIElement*>& children, Rectangle bounds) = 0;
+    virtual void Apply(std::vector<std::unique_ptr<UIElement>>& children, 
+                       UIElement* container) = 0;
 };
 
-class VerticalLayout : public ILayoutStrategy {
-    void Layout(std::vector<UIElement*>& children, Rectangle bounds) override {
-        float y = bounds.y;
-        for (auto* child : children) {
-            child->SetPosition(bounds.x, y);
-            y += child->GetHeight() + spacing_;
+class VerticalLayout : public ILayout {
+    void Apply(std::vector<std::unique_ptr<UIElement>>& children, 
+               UIElement* container) override {
+        auto bounds = container->GetRelativeBounds();
+        float padding = GetContainerPadding(container);  // 0 if not a Panel
+        
+        float y = padding;  // Primary axis starts at padding
+        for (auto& child : children) {
+            // Cross-axis centering uses full width (ignores padding)
+            float x = (bounds.width - child->GetWidth()) / 2.0f;
+            child->SetRelativePosition(x, y);
+            y += child->GetHeight() + gap_;
         }
     }
 };
 
-class HorizontalLayout : public ILayoutStrategy {
-    void Layout(std::vector<UIElement*>& children, Rectangle bounds) override {
-        float x = bounds.x;
-        for (auto* child : children) {
-            child->SetPosition(x, bounds.y);
-            x += child->GetWidth() + spacing_;
-        }
-    }
-};
-
-// Panel uses strategy
-class Panel {
-    void SetLayoutStrategy(std::unique_ptr<ILayoutStrategy> strategy) {
-        layout_strategy_ = std::move(strategy);
-    }
-    
-    void UpdateLayout() {
-        if (layout_strategy_) {
-            layout_strategy_->Layout(children_, GetBounds());
-        }
-    }
-};
+// Container uses LayoutComponent with strategy
+container->AddComponent<LayoutComponent>(
+    std::make_unique<VerticalLayout>(8.0f, Alignment::Center)
+);
+container->Update();  // Applies layout
 ```
 
 **Common Strategies**:
-- Layout: Vertical, Horizontal, Grid, Flow, Absolute
+- Layout: Vertical, Horizontal, Grid, Justify, Stack
 - Validation: Range, Pattern, Custom
 - Formatting: Currency, Percentage, Date/Time
 - Animation: Linear, EaseIn, EaseOut, Bounce
@@ -1226,16 +1589,76 @@ public:
 
 #### Progress Bar
 **Visual**: Horizontal bar showing completion percentage.  
-**Use Cases**: Loading, construction progress.
+**Use Cases**: Loading, construction progress, download indicators.
+**Implementation Status**: ✅ Implemented in `src/engine/ui/elements/progress_bar.cppm`
 
 ```cpp
-class ProgressBar : public UIElement {
-public:
-    ProgressBar(float width, float height);
-    void SetProgress(float percentage);  // 0.0 - 1.0
-    void SetLabel(const std::string& label);
-    void SetColor(Color color);
-};
+// Create progress bar
+auto progress = std::make_unique<ProgressBar>(10, 10, 200, 20, 0.0f);
+
+// Configure display
+progress->SetLabel("Loading");        // Label on left
+progress->SetShowPercentage(true);    // "75%" on right
+
+// Customize colors
+progress->SetTrackColor(Colors::DARK_GRAY);
+progress->SetFillColor(Colors::GOLD);
+progress->SetBorderWidth(1.0f);
+
+// Update progress (0.0 to 1.0)
+progress->SetProgress(0.75f);
+```
+
+---
+
+#### Tab Container
+**Visual**: Tab bar at top with switchable content panels.  
+**Use Cases**: Settings dialogs, multi-section menus.
+**Implementation Status**: ✅ Implemented in `src/engine/ui/elements/tab_container.cppm`
+
+```cpp
+// Create tab container
+auto tabs = std::make_unique<TabContainer>(10, 10, 400, 300);
+
+// Add tabs with content panels
+auto general_panel = std::make_unique<Panel>(0, 0, 380, 250);
+tabs->AddTab("General", std::move(general_panel));
+
+auto audio_panel = std::make_unique<Panel>(0, 0, 380, 250);
+tabs->AddTab("Audio", std::move(audio_panel));
+
+// Tab selection callback
+tabs->SetTabChangedCallback([](size_t index, const std::string& label) {
+    std::cout << "Tab changed to: " << label << std::endl;
+});
+
+// Programmatic tab selection
+tabs->SetActiveTab(1);  // Select "Audio" tab
+```
+
+---
+
+#### Tooltip Component
+**Visual**: Panel that appears on hover, following mouse position.  
+**Use Cases**: Contextual help, button descriptions.
+**Implementation Status**: ✅ Implemented in `src/engine/ui/components/tooltip.cppm`
+
+```cpp
+// Create a button with tooltip
+auto button = std::make_unique<Button>(10, 10, 100, 30, "Hover me");
+
+// Create tooltip content
+auto tip_panel = std::make_unique<Panel>(0, 0, 150, 40);
+tip_panel->SetBackgroundColor(UITheme::Background::PANEL_DARK);
+auto tip_label = std::make_unique<Label>(5, 5, "This is a tooltip!", 12);
+tip_panel->AddChild(std::move(tip_label));
+
+// Attach tooltip component
+auto* tooltip = button->AddComponent<TooltipComponent>(std::move(tip_panel));
+tooltip->SetOffset(10.0f, 15.0f);  // Offset from cursor
+
+// Tooltip automatically shows/hides on hover
+// Repositions to stay within window bounds
 ```
 
 ---
@@ -1772,32 +2195,28 @@ Only recalculate layout when necessary:
 - Content change (add/remove children)
 - Explicit `UpdateLayout()` call
 
+Layout is handled by the `LayoutComponent` using strategy pattern:
+
 ```cpp
-class Panel {
-public:
-    void UpdateLayout() {
-        if (!layout_dirty_) return;
-        
-        // Recalculate child positions
-        float y = padding_;
-        for (auto& child : children_) {
-            child->SetRelativePosition(padding_, y);
-            y += child->GetHeight() + spacing_;
-        }
-        
-        layout_dirty_ = false;
-    }
-    
-    void AddChild(std::unique_ptr<UIElement> child) {
-        children_.push_back(std::move(child));
-        layout_dirty_ = true;  // Mark for recalculation
-    }
-    
-    void Render() const {
-        const_cast<Panel*>(this)->UpdateLayout();  // Lazy update
-        // ...
-    }
-};
+// Add a layout to a panel
+panel->AddComponent<LayoutComponent>(
+    std::make_unique<VerticalLayout>(8.0f, Alignment::Center)
+);
+
+// Layout is applied automatically during Update()
+panel->Update();
+```
+
+**Padding behavior in layouts:**
+- **Primary axis**: Padding insets start position and reduces available space
+- **Cross axis**: `Start`/`End`/`Stretch` respect padding, `Center` uses full dimension
+
+```cpp
+// Panel 200x200 with padding 10
+// Child 80x40 with VerticalLayout + Alignment::Center
+
+// Primary axis (Y): child starts at y=10 (padding)
+// Cross axis (X): child centered at x=60 ((200-80)/2, ignores padding)
 ```
 
 ---

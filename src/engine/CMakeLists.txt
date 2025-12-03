@@ -78,9 +78,19 @@ target_sources(engine-core
     ui/elements/label.cppm
     ui/elements/slider.cppm
     ui/elements/checkbox.cppm
+    ui/elements/divider.cppm
+    ui/elements/progress_bar.cppm
+    ui/elements/tab_container.cppm
     ui/elements/confirmation_dialog.cppm
     ui/elements/image_element.cppm
+    ui/elements/container.cppm
     ui/elements/elements.cppm
+    ui/components/layout.cppm
+    ui/components/constraints.cppm
+    ui/components/scroll.cppm
+    ui/components/tooltip.cppm
+    ui/components/components.cppm
+    ui/builder.cppm
     engine.cppm  # Main module last - depends on others
 )
 

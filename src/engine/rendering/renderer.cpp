@@ -408,8 +408,12 @@ void Renderer::SubmitUIBatch(const UIBatchRenderCommand& command) const {
 
 	// Apply scissor if active
 	if (command.enable_scissor) {
+		// OpenGL scissor uses bottom-left origin, but UI uses top-left origin
 		glEnable(GL_SCISSOR_TEST);
-		glScissor(command.scissor_x, command.scissor_y, command.scissor_width, command.scissor_height);
+		glScissor(command.scissor_x,
+				  static_cast<int>(pimpl_->window_height) - command.scissor_y - command.scissor_height, // Flip Y
+				  command.scissor_width,
+				  command.scissor_height);
 		CheckGLError("After setting scissor");
 	}
 
@@ -478,13 +482,19 @@ void Renderer::SetCamera(const components::Camera& camera) {
 
 void Renderer::SetClearColor(const Color& color) const { pimpl_->clear_color = color; }
 
-void Renderer::SetViewport(int x, int y, uint32_t width, uint32_t height) {
-	// TODO: Implement viewport setting
+void Renderer::SetViewport(const int x, const int y, const uint32_t width, const uint32_t height) {
+	glViewport(x, y, width, height);
 }
 
 void Renderer::GetFramebufferSize(uint32_t& width, uint32_t& height) const {
 	width = pimpl_->window_width;
 	height = pimpl_->window_height;
+}
+
+void Renderer::SetWindowSize(const uint32_t width, const uint32_t height) const {
+	pimpl_->window_width = width;
+	pimpl_->window_height = height;
+	SetViewport(0, 0, width, height);
 }
 
 uint32_t Renderer::GetDrawCallCount() const { return pimpl_->draw_call_count; }

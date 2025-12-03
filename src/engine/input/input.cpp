@@ -28,6 +28,12 @@ namespace engine::input {
         };
         std::atomic initialized{false};
 
+        void ScrollCallback([[maybe_unused]] GLFWwindow *window, double x_offset, double y_offset) {
+            const std::lock_guard lock(event_mutex);
+            mouse_state.scroll_delta_x += static_cast<float>(x_offset);
+            mouse_state.scroll_delta_y += static_cast<float>(y_offset);
+        }
+
         void KeyCallback([[maybe_unused]] GLFWwindow *window, const int key, [[maybe_unused]] int key_code,
                          const int action, int) {
             const auto it = GLFW_TO_KEYCODE.find(key);
@@ -61,6 +67,7 @@ namespace engine::input {
         GLFWwindow *window = glfwGetCurrentContext();
         if (!window) { return false; }
         glfwSetKeyCallback(window, KeyCallback);
+        glfwSetScrollCallback(window, ScrollCallback);
         initialized = true;
         return true;
     }
@@ -77,6 +84,15 @@ namespace engine::input {
         
         GLFWwindow *window = glfwGetCurrentContext();
         if (!window) { return; }
+        
+        // Reset scroll delta before polling. The scroll callback accumulates new values
+        // during glfwPollEvents() via +=, so resetting first ensures we only capture
+        // scroll events from the current frame.
+        {
+            std::lock_guard lock(event_mutex);
+            mouse_state.scroll_delta_x = 0.0f;
+            mouse_state.scroll_delta_y = 0.0f;
+        }
         
         glfwPollEvents();
         
@@ -112,9 +128,6 @@ namespace engine::input {
         mouse_state.left_released = !left_down && prev_mouse_state.left_down;
         mouse_state.right_released = !right_down && prev_mouse_state.right_down;
         mouse_state.middle_released = !middle_down && prev_mouse_state.middle_down;
-        
-        // Reset scroll delta (would be set by callback)
-        mouse_state.scroll_delta = 0.0f;
     }
 
     bool Input::IsKeyPressed(const KeyCode key) {

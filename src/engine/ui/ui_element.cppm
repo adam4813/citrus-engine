@@ -1,8 +1,12 @@
 module;
 
 #include <algorithm>
+#include <cstdint>
 #include <functional>
 #include <memory>
+#include <ranges>
+#include <typeindex>
+#include <unordered_map>
 #include <vector>
 
 export module engine.ui:ui_element;
@@ -11,6 +15,202 @@ import engine.ui.batch_renderer;
 import :mouse_event;
 
 export namespace engine::ui {
+
+// Forward declaration
+class UIElement;
+
+/**
+ * @brief Unique identifier for component types
+ */
+using ComponentTypeId = std::type_index;
+
+/**
+ * @brief Get the type ID for a component type
+ */
+template <typename T> ComponentTypeId GetComponentTypeId() { return std::type_index(typeid(T)); }
+
+/**
+ * @brief Base interface for all UI components (Component Pattern)
+ *
+ * Components add optional behaviors to UIElements. Each element can have
+ * at most one component of each type. Components participate in the
+ * element's lifecycle (update, render, events).
+ */
+class IUIComponent {
+public:
+	virtual ~IUIComponent() = default;
+
+	/**
+	 * @brief Called when component is attached to an element
+	 * @param owner The element this component is attached to
+	 */
+	virtual void OnAttach(UIElement* owner) { owner_ = owner; }
+
+	/**
+	 * @brief Called when component is detached from an element
+	 */
+	virtual void OnDetach() { owner_ = nullptr; }
+
+	/**
+	 * @brief Called each frame to update component state
+	 * @param delta_time Time since last frame in seconds
+	 */
+	virtual void OnUpdate([[maybe_unused]] float delta_time) {}
+
+	/**
+	 * @brief Called during rendering, after the element renders itself
+	 */
+	virtual void OnRender() const {}
+
+	/**
+	 * @brief Called when the component needs to invalidate its state
+	 */
+	virtual void OnInvalidate() {}
+
+	/**
+	 * @brief Called to handle mouse events
+	 * @param event The mouse event
+	 * @return true if event was consumed, false to continue propagation
+	 */
+	virtual bool OnMouseEvent([[maybe_unused]] const MouseEvent& event) { return false; }
+
+	/**
+	 * @brief Get the owning element
+	 */
+	UIElement* GetOwner() const { return owner_; }
+
+protected:
+	UIElement* owner_ = nullptr;
+};
+
+/**
+ * @brief Container for managing components on a UIElement
+ *
+ * Provides type-safe storage and retrieval of components.
+ * Each component type can only be added once per element.
+ */
+class ComponentContainer {
+public:
+	/**
+	 * @brief Add a component of type T
+	 * @return Pointer to the added component, or nullptr if type already exists
+	 */
+	template <typename T, typename... Args> T* Add(UIElement* owner, Args&&... args) {
+		static_assert(std::is_base_of_v<IUIComponent, T>, "T must derive from IUIComponent");
+
+		auto type_id = GetComponentTypeId<T>();
+		if (components_.contains(type_id)) {
+			return nullptr; // Already has this component type
+		}
+
+		auto component = std::make_unique<T>(std::forward<Args>(args)...);
+		T* ptr = component.get();
+		component->OnAttach(owner);
+		components_[type_id] = std::move(component);
+		return ptr;
+	}
+
+	/**
+	 * @brief Get a component of type T
+	 * @return Pointer to component, or nullptr if not found
+	 */
+	template <typename T> T* Get() const {
+		static_assert(std::is_base_of_v<IUIComponent, T>, "T must derive from IUIComponent");
+
+		auto type_id = GetComponentTypeId<T>();
+		auto it = components_.find(type_id);
+		if (it != components_.end()) {
+			return static_cast<T*>(it->second.get());
+		}
+		return nullptr;
+	}
+
+	/**
+	 * @brief Check if element has a component of type T
+	 */
+	template <typename T> bool Has() const { return Get<T>() != nullptr; }
+
+	/**
+	 * @brief Remove a component of type T
+	 * @return true if component was removed
+	 */
+	template <typename T> bool Remove() {
+		static_assert(std::is_base_of_v<IUIComponent, T>, "T must derive from IUIComponent");
+
+		auto type_id = GetComponentTypeId<T>();
+		auto it = components_.find(type_id);
+		if (it != components_.end()) {
+			it->second->OnDetach();
+			components_.erase(it);
+			return true;
+		}
+		return false;
+	}
+
+	/**
+	 * @brief Remove all components
+	 */
+	void Clear() {
+		for (const auto& component : components_ | std::views::values) {
+			component->OnDetach();
+		}
+		components_.clear();
+	}
+
+	/**
+	 * @brief Update all components
+	 */
+	void Update(const float delta_time) {
+		for (const auto& component : components_ | std::views::values) {
+			component->OnUpdate(delta_time);
+		}
+	}
+
+	/**
+	 * @brief Marks all components as invalid
+	 */
+	void Invalidate() {
+		for (const auto& component : components_ | std::views::values) {
+			component->OnInvalidate();
+		}
+	}
+
+	/**
+	 * @brief Render all components
+	 */
+	void Render() const {
+		for (const auto& component : components_ | std::views::values) {
+			component->OnRender();
+		}
+	}
+
+	/**
+	 * @brief Process mouse event through all components
+	 * @return true if any component consumed the event
+	 */
+	bool ProcessMouseEvent(const MouseEvent& event) {
+		for (const auto& component : components_ | std::views::values) {
+			if (component->OnMouseEvent(event)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * @brief Check if container is empty
+	 */
+	bool Empty() const { return components_.empty(); }
+
+	/**
+	 * @brief Get number of components
+	 */
+	size_t Size() const { return components_.size(); }
+
+private:
+	std::unordered_map<ComponentTypeId, std::unique_ptr<IUIComponent>> components_;
+};
+
 /**
      * @brief Base class for all UI elements
      *
@@ -49,7 +249,7 @@ export namespace engine::ui {
      */
 class UIElement {
 public:
-	virtual ~UIElement() = default;
+	virtual ~UIElement() { components_.Clear(); }
 
 	// === Tree Structure (Composite Pattern) ===
 
@@ -83,6 +283,31 @@ public:
          * @endcode
          */
 	void RemoveChild(UIElement* child);
+
+	/**
+	 * @brief Remove and destroy all child elements
+	 *
+	 * Clears the children vector, destroying all owned child elements.
+	 * Since children are stored as unique_ptr, they are automatically
+	 * deallocated when cleared. After calling, GetChildren() returns
+	 * an empty vector.
+	 *
+	 * @note Any raw pointers to children become invalid after this call.
+	 *
+	 * Use when rebuilding dynamic content (lists, grids) rather than
+	 * removing children one by one.
+	 *
+	 * @code
+	 * // Clear old items before rebuilding
+	 * container->ClearChildren();
+	 *
+	 * // Add new children
+	 * for (const auto& item : items) {
+	 *     container->AddChild(CreateItem(item));
+	 * }
+	 * @endcode
+	 */
+	void ClearChildren();
 
 	/**
          * @brief Set parent element
@@ -132,11 +357,23 @@ public:
 	batch_renderer::Rectangle GetRelativeBounds() const { return {relative_x_, relative_y_, width_, height_}; }
 
 	/**
+	 * @brief Get the content area where children are placed
+	 *
+	 * Override in elements that have padding or insets. Children are
+	 * positioned relative to this area.
+	 *
+	 * @return Rectangle representing the content area. The position fields indicate the offset
+	 *         from the element's origin to the start of the content area; children are positioned
+	 *         relative to this area.
+	 */
+	virtual batch_renderer::Rectangle GetContentArea() const { return {0.0f, 0.0f, width_, height_}; }
+
+	/**
          * @brief Set relative position (within parent)
          * @param x X coordinate relative to parent
          * @param y Y coordinate relative to parent
          */
-	void SetRelativePosition(float x, float y) {
+	void SetRelativePosition(const float x, const float y) {
 		relative_x_ = x;
 		relative_y_ = y;
 	}
@@ -146,10 +383,22 @@ public:
          * @param width Element width in pixels
          * @param height Element height in pixels
          */
-	void SetSize(float width, float height) {
+	void SetSize(const float width, const float height) {
 		width_ = width;
 		height_ = height;
 	}
+
+	/**
+         * @brief Set element width
+         * @param width Element width in pixels
+         */
+	void SetWidth(const float width) { width_ = width; }
+
+	/**
+         * @brief Set element height
+         * @param height Element height in pixels
+         */
+	void SetHeight(const float height) { height_ = height; }
 
 	/**
          * @brief Get element width
@@ -162,6 +411,30 @@ public:
          * @return Height in pixels
          */
 	float GetHeight() const { return height_; }
+
+	/**
+         * @brief Get relative X position
+         * @return X coordinate relative to parent
+         */
+	float GetRelativeX() const { return relative_x_; }
+
+	/**
+         * @brief Get relative Y position
+         * @return Y coordinate relative to parent
+         */
+	float GetRelativeY() const { return relative_y_; }
+
+	/**
+         * @brief Set relative X position
+         * @param x X coordinate relative to parent
+         */
+	void SetRelativeX(const float x) { relative_x_ = x; }
+
+	/**
+         * @brief Set relative Y position
+         * @param y Y coordinate relative to parent
+         */
+	void SetRelativeY(const float y) { relative_y_ = y; }
 
 	// === Hit Testing ===
 
@@ -188,7 +461,7 @@ public:
          * @brief Set focused state
          * @param focused True to focus, false to unfocus
          */
-	void SetFocused(bool focused) { is_focused_ = focused; }
+	void SetFocused(const bool focused) { is_focused_ = focused; }
 
 	/**
          * @brief Check if element is focused
@@ -200,7 +473,7 @@ public:
          * @brief Set hovered state
          * @param hovered True if mouse is over element
          */
-	void SetHovered(bool hovered) { is_hovered_ = hovered; }
+	void SetHovered(const bool hovered) { is_hovered_ = hovered; }
 
 	/**
          * @brief Check if element is hovered
@@ -212,7 +485,7 @@ public:
          * @brief Set visibility
          * @param visible True to show, false to hide
          */
-	void SetVisible(bool visible) { is_visible_ = visible; }
+	void SetVisible(const bool visible) { is_visible_ = visible; }
 
 	/**
          * @brief Check if element is visible
@@ -337,6 +610,11 @@ public:
 			return false;
 		}
 
+		// Let components handle first
+		if (components_.ProcessMouseEvent(event)) {
+			return true;
+		}
+
 		// First, give children a chance to handle (reverse order = top to bottom)
 		for (auto it = children_.rbegin(); it != children_.rend(); ++it) {
 			if ((*it)->ProcessMouseEvent(event)) {
@@ -369,7 +647,7 @@ public:
 			}
 		}
 
-		if (event.scroll_delta != 0.0f) {
+		if (event.scroll_delta_x != 0.0f || event.scroll_delta_y != 0.0f) {
 			// Try callback first
 			if (scroll_callback_ && scroll_callback_(event)) {
 				return true;
@@ -409,7 +687,7 @@ public:
          * @param event Mouse event data
          * @return true if event was consumed, false otherwise
          */
-	virtual bool OnHover(const MouseEvent& event) { return false; }
+	virtual bool OnHover([[maybe_unused]] const MouseEvent& event) { return false; }
 
 	/**
          * @brief Handle mouse click (stub)
@@ -420,7 +698,7 @@ public:
          * @param event Mouse event data
          * @return true if event was consumed, false otherwise
          */
-	virtual bool OnClick(const MouseEvent& event) { return false; }
+	virtual bool OnClick([[maybe_unused]] const MouseEvent& event) { return false; }
 
 	/**
          * @brief Handle mouse drag (stub)
@@ -431,7 +709,7 @@ public:
          * @param event Mouse event data
          * @return true if event was consumed, false otherwise
          */
-	virtual bool OnDrag(const MouseEvent& event) { return false; }
+	virtual bool OnDrag([[maybe_unused]] const MouseEvent& event) { return false; }
 
 	/**
          * @brief Handle mouse scroll (stub)
@@ -442,42 +720,121 @@ public:
          * @param event Mouse event data
          * @return true if event was consumed, false otherwise
          */
-	virtual bool OnScroll(const MouseEvent& event) { return false; }
+	virtual bool OnScroll([[maybe_unused]] const MouseEvent& event) { return false; }
+
+	// === Content Offset (for scrollable containers) ===
+
+	/**
+	 * @brief Get content offset applied to children (e.g., scroll offset)
+	 *
+	 * Override in scrollable containers to offset children's positions.
+	 * Called by GetAbsoluteParentBounds() when walking the parent chain.
+	 *
+	 * @return Offset (x, y) to subtract from children's positions
+	 */
+	virtual std::pair<float, float> GetContentOffset() const { return {0.0f, 0.0f}; }
+
+	// === Component Management ===
+
+	/**
+	 * @brief Add a component of type T
+	 *
+	 * Components add optional behaviors to elements like constraints,
+	 * animations, tooltips, or drag handling.
+	 *
+	 * @return Pointer to the added component, or nullptr if type already exists
+	 *
+	 * @code
+	 * button->AddComponent<ConstraintComponent>(Anchor::TopRight(10.0f));
+	 * @endcode
+	 */
+	template <typename T, typename... Args> T* AddComponent(Args&&... args) {
+		return components_.Add<T>(this, std::forward<Args>(args)...);
+	}
+
+	/**
+	 * @brief Get a component of type T
+	 * @return Pointer to component, or nullptr if not found
+	 */
+	template <typename T> T* GetComponent() const { return components_.Get<T>(); }
+
+	/**
+	 * @brief Check if element has a component of type T
+	 */
+	template <typename T> bool HasComponent() const { return components_.Has<T>(); }
+
+	/**
+	 * @brief Remove a component of type T
+	 * @return true if component was removed
+	 */
+	template <typename T> bool RemoveComponent() { return components_.Remove<T>(); }
+
+	/**
+	 * @brief Invalidate all components
+	 *
+	 * Call this when the element's state changes and components
+	 * need to refresh their internal state.
+	 */
+	void InvalidateComponents() { components_.Invalidate(); }
+
+	/**
+	 * @brief Update all components
+	 *
+	 * Call this each frame before rendering if components need updating.
+	 * Note: Layout and constraint components auto-update when dirty.
+	 */
+	void UpdateComponents(const float delta_time = 0.0f) { components_.Update(delta_time); }
+
+	/**
+	 * @brief Recursively update components on this element and all children
+	 *
+	 * Call this on the root element to update the entire UI tree.
+	 */
+	void UpdateComponentsRecursive(const float delta_time = 0.0f) {
+		components_.Update(delta_time);
+		for (auto& child : children_) {
+			if (child) {
+				child->UpdateComponentsRecursive(delta_time);
+			}
+		}
+	}
+
+	/**
+	 * @brief Render all component visuals (e.g., scrollbars)
+	 */
+	void RenderComponents() const { components_.Render(); }
+
+	/**
+	 * @brief Recursively render components on this element and all children
+	 *
+	 * Call this on the root element to update the entire UI tree.
+	 */
+	void RenderComponentsRecursive() const {
+		components_.Render();
+		for (const auto& child : children_) {
+			if (child) {
+				child->RenderComponentsRecursive();
+			}
+		}
+	}
 
 protected:
 	// Subclasses can construct with initial bounds
-	UIElement(float x, float y, float width, float height) :
+	UIElement(const float x, const float y, const float width, const float height) :
 			relative_x_(x), relative_y_(y), width_(width), height_(height) {}
 
-	/**
-         * @brief Get content bounds (area where children are positioned)
-         *
-         * By default, returns the same as GetRelativeBounds(). Container elements
-         * like Panel can override this to account for padding/margins.
-         *
-         * This is used internally when positioning children within this element.
-         *
-         * @return Rectangle representing the content area in parent-relative coordinates
-         */
-	virtual batch_renderer::Rectangle GetContentBounds() const { return GetRelativeBounds(); }
+	// Default constructor for layout-managed elements (position/size set by layout)
+	UIElement() = default;
 
 	/**
-         * @brief Get absolute content bounds (where children are positioned in screen space)
-         *
-         * Walks up the parent chain using GetContentBounds() to compute the absolute
-         * position of this element's content area. This is where children at (0,0)
-         * will actually be positioned.
-         *
-         * @return Rectangle in absolute screen coordinates representing content area
-         */
-	batch_renderer::Rectangle GetAbsoluteContentBounds() const;
-
-	/**
-	 * @brief Get absolute content bounds of the bounds of the parent element
+	 * @brief Get absolute bounds of parent's content area
 	 *
-	 * @return Rectangle in absolute screen coordinates representing content area of the parent
+	 * Walks up the parent chain accumulating relative positions to compute
+	 * where this element's (0,0) position maps to in screen coordinates.
+	 *
+	 * @return Rectangle in absolute screen coordinates representing parent content area
 	 */
-	batch_renderer::Rectangle GetAbsoluteParentContentBounds() const;
+	batch_renderer::Rectangle GetAbsoluteParentBounds() const;
 
 	// Position relative to parent
 	float relative_x_ = 0.0f;
@@ -501,6 +858,9 @@ protected:
 	// Tree structure
 	UIElement* parent_ = nullptr; ///< Non-owning pointer to parent
 	std::vector<std::unique_ptr<UIElement>> children_; ///< Owned children
+
+	// Component system
+	ComponentContainer components_;
 };
 
 // === Implementation ===
@@ -513,49 +873,41 @@ inline void UIElement::AddChild(std::unique_ptr<UIElement> child) {
 }
 
 inline void UIElement::RemoveChild(UIElement* child) {
-	children_.erase(
-			std::remove_if(
-					children_.begin(),
-					children_.end(),
-					[child](const std::unique_ptr<UIElement>& elem) { return elem.get() == child; }),
-			children_.end());
+	std::erase_if(children_, [child](const std::unique_ptr<UIElement>& elem) { return elem.get() == child; });
+}
+
+inline void UIElement::ClearChildren() {
+	children_.clear();
 }
 
 inline batch_renderer::Rectangle UIElement::GetAbsoluteBounds() const {
 	const batch_renderer::Rectangle bounds = GetRelativeBounds();
-	const batch_renderer::Rectangle parents_bounds = GetAbsoluteParentContentBounds();
+	const batch_renderer::Rectangle parent_bounds = GetAbsoluteParentBounds();
 
-	return {bounds.x + parents_bounds.x,
-			bounds.y + parents_bounds.y,
-			bounds.width - parents_bounds.width,
-			bounds.height - parents_bounds.height};
+	return {bounds.x + parent_bounds.x, bounds.y + parent_bounds.y, bounds.width, bounds.height};
 }
 
-inline batch_renderer::Rectangle UIElement::GetAbsoluteContentBounds() const {
-	const batch_renderer::Rectangle bounds = GetContentBounds();
-	const batch_renderer::Rectangle parents_bounds = GetAbsoluteParentContentBounds();
-
-	return {bounds.x + parents_bounds.x,
-			bounds.y + parents_bounds.y,
-			bounds.width - parents_bounds.width,
-			bounds.height - parents_bounds.height};
-}
-
-inline batch_renderer::Rectangle UIElement::GetAbsoluteParentContentBounds() const {
+inline batch_renderer::Rectangle UIElement::GetAbsoluteParentBounds() const {
 	batch_renderer::Rectangle bounds{0.0f, 0.0f, 0.0f, 0.0f};
 
 	const UIElement* current_parent = parent_;
 	while (current_parent != nullptr) {
-		const batch_renderer::Rectangle parent_content_bounds = current_parent->GetContentBounds();
-		bounds.x += parent_content_bounds.x;
-		bounds.y += parent_content_bounds.y;
+		const batch_renderer::Rectangle parent_bounds = current_parent->GetRelativeBounds();
+		bounds.x += parent_bounds.x;
+		bounds.y += parent_bounds.y;
+
+		// Apply content offset (e.g., scroll offset from scrollable containers)
+		const auto [offset_x, offset_y] = current_parent->GetContentOffset();
+		bounds.x -= offset_x;
+		bounds.y -= offset_y;
+
 		current_parent = current_parent->parent_;
 	}
 
 	return bounds;
 }
 
-inline bool UIElement::Contains(float x, float y) const {
+inline bool UIElement::Contains(const float x, const float y) const {
 	const batch_renderer::Rectangle bounds = GetAbsoluteBounds();
 	return x >= bounds.x && x < bounds.x + bounds.width && y >= bounds.y && y < bounds.y + bounds.height;
 }

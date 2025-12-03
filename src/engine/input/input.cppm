@@ -57,7 +57,8 @@ export namespace engine::input {
         bool left_released = false;
         bool right_released = false;
         bool middle_released = false;
-        float scroll_delta = 0.0f;
+        float scroll_delta_x = 0.0f;
+        float scroll_delta_y = 0.0f;
     };
 
     // Handler signature

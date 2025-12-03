@@ -60,6 +60,26 @@ public:
 	using ToggleCallback = std::function<void(bool checked)>;
 
 	/**
+         * @brief Construct checkbox for layout container (position determined by layout)
+         *
+         * Creates a checkbox with zero position (will be set by parent layout).
+         * Checkbox auto-sizes based on font size.
+         *
+         * @param label Optional text label (empty for no label)
+         * @param font_size Font size for label (default: 16)
+         * @param initial_checked Initial checked state (default: false)
+         *
+         * @code
+         * auto checkbox = std::make_unique<Checkbox>("Enable Sound");
+         * container->AddChild(std::move(checkbox));  // Layout sets position
+         * @endcode
+         */
+	Checkbox(const std::string& label = "",
+			 const float font_size = 16.0f,
+			 const bool initial_checked = false) :
+			Checkbox(0, 0, label, font_size, initial_checked) {}
+
+	/**
          * @brief Construct checkbox with optional label
          *
          * Checkbox size is fixed (based on font size), but width extends

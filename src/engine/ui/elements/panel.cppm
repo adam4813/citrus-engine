@@ -55,6 +55,19 @@ export namespace engine::ui::elements {
 class Panel : public UIElement {
 public:
 	/**
+         * @brief Default constructor for layout-managed panels
+         *
+         * Creates a panel with zero position and size. Use when the panel
+         * will be sized by a parent layout container.
+         *
+         * @code
+         * auto panel = std::make_unique<Panel>();
+         * container->AddChild(std::move(panel));  // Layout sets position/size
+         * @endcode
+         */
+	Panel() = default;
+
+	/**
          * @brief Construct a panel with position and size
          *
          * @param x X position relative to parent
@@ -192,6 +205,17 @@ public:
 	float GetPadding() const { return padding_; }
 
 	/**
+	 * @brief Get the content area (element bounds minus padding)
+	 *
+	 * Returns the area where children are placed, inset by padding.
+	 */
+	batch_renderer::Rectangle GetContentArea() const override {
+		const float content_width = width_ > padding_ * 2.0f ? width_ - padding_ * 2.0f : 0.0f;
+		const float content_height = height_ > padding_ * 2.0f ? height_ - padding_ * 2.0f : 0.0f;
+		return {padding_, padding_, content_width, content_height};
+	}
+
+	/**
          * @brief Enable/disable scissor clipping for children
          *
          * When enabled, children are clipped to panel bounds.
@@ -263,16 +287,13 @@ public:
 			BatchRenderer::SubmitLine(x, y + h, x, y, border_width_, border_color);
 		}
 
-		// Get content bounds for scissor clipping
-		const Rectangle content_bounds = GetAbsoluteContentBounds();
-
 		// Push scissor for children (if clipping enabled)
 		if (clip_children_) {
-			const ScissorRect scissor{content_bounds.x, content_bounds.y, content_bounds.width, content_bounds.height};
+			const ScissorRect scissor{absolute_bounds.x, absolute_bounds.y, absolute_bounds.width, absolute_bounds.height};
 			BatchRenderer::PushScissor(scissor);
 		}
 
-		// Render children (they use GetAbsoluteBounds which accounts for parent padding)
+		// Render children
 		for (const auto& child : GetChildren()) {
 			child->Render();
 		}
@@ -281,30 +302,6 @@ public:
 		if (clip_children_) {
 			BatchRenderer::PopScissor();
 		}
-	}
-
-protected:
-	// === Bounds Calculation Override ===
-
-	/**
-		 * @brief Get content bounds with padding applied
-		 *
-		 * Overrides base implementation to apply this panel's padding to
-		 * the bounds. This ensures that children positioned at (0,0) will
-		 * render at (padding, padding) relative to the panel's top-left corner.
-		 *
-		 * @return Rectangle representing content area (relative bounds with padding applied)
-		 */
-	batch_renderer::Rectangle GetContentBounds() const override {
-		batch_renderer::Rectangle bounds = GetRelativeBounds();
-
-		// Apply padding to create content area
-		bounds.x += padding_;
-		bounds.y += padding_;
-		bounds.width -= padding_ * 2.0f;
-		bounds.height -= padding_ * 2.0f;
-
-		return bounds;
 	}
 
 private:

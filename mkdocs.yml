@@ -33,8 +33,11 @@ markdown_extensions:
 
 nav:
   - Home: index.md
-  - Tilemap System: tilemap-system.md
-  - UI Mouse Events: ui_mouse_events_guide.md
+  - UI System:
+    - Component System: ui-components.md
+    - Mouse Events: ui_mouse_events_guide.md
+  - Rendering:
+    - Tilemap System: tilemap-system.md
   - API Reference:
     - Overview: api/index.md
 

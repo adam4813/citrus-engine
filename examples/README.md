@@ -191,6 +191,33 @@ Features:
 
 See the header file documentation for complete usage instructions.
 
+### UI Element Inspector
+
+The `UIElementInspector` utility (see `examples/include/ui_element_inspector.h`) provides an interactive widget for editing UI element properties at runtime, inspired by Unity's RectTransform and Chrome DevTools.
+
+Features:
+- **Box Model Visualization**: Chrome DevTools-style nested box diagram showing margin/border/padding/content
+- **Transform Editing**: Drag to adjust position and size
+- **Anchor Widget**: Visual anchor point editor with preset buttons (TL, TC, TR, Fill, Stretch, etc.)
+- **Constraint Configuration**: Toggle and edit Left/Right/Top/Bottom constraints
+- **Component Inspection**: View attached LayoutComponent, ConstraintComponent, ScrollComponent
+
+Usage:
+```cpp
+#include "ui_element_inspector.h"
+
+UIElementInspector inspector;
+UIElement* selected = my_panel.get();
+
+// In ImGui rendering:
+ImGui::Begin("Inspector");
+if (inspector.Render(selected)) {
+    // Element was modified
+    my_container->Update();
+}
+ImGui::End();
+```
+
 ## Asset Management
 
 Example assets are stored in `examples/assets/`:

@@ -65,6 +65,10 @@ namespace engine::os {
 		glfwSetMouseButtonCallback(window, callback);
 	}
 
+	void OS::SetScrollCallback(GLFWwindow *window, const GLFWscrollfun callback) {
+		glfwSetScrollCallback(window, callback);
+	}
+
 	void OS::SetFrameBufferSizeCallback(GLFWwindow *window, GLFWframebuffersizefun callback) {
 		glfwSetFramebufferSizeCallback(window, callback);
 	}

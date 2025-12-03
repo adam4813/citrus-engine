@@ -1,8 +1,8 @@
 module;
 
 #include <cstdint>
-#include <memory>
 #include <functional>
+#include <memory>
 
 export module engine.rendering:renderer;
 
@@ -14,84 +14,86 @@ import :mesh;
 import :material;
 
 export namespace engine::rendering {
-    // Forward declarations for managers
-    class TextureManager;
-    class ShaderManager;
-    class MeshManager;
-    class MaterialManager;
+// Forward declarations for managers
+class TextureManager;
+class ShaderManager;
+class MeshManager;
+class MaterialManager;
 
-    // Render statistics
-    struct RenderStats {
-        uint32_t draw_calls = 0;
-        uint32_t triangles = 0;
-        uint32_t vertices = 0;
-        uint32_t textures_bound = 0;
-        uint32_t shader_switches = 0;
-    };
+// Render statistics
+struct RenderStats {
+	uint32_t draw_calls = 0;
+	uint32_t triangles = 0;
+	uint32_t vertices = 0;
+	uint32_t textures_bound = 0;
+	uint32_t shader_switches = 0;
+};
 
-    // Main renderer class
-    class Renderer {
-    public:
-        Renderer();
+// Main renderer class
+class Renderer {
+public:
+	Renderer();
 
-        ~Renderer();
+	~Renderer();
 
-        // Initialization
-        bool Initialize(uint32_t window_width, uint32_t window_height) const;
+	// Initialization
+	bool Initialize(uint32_t window_width, uint32_t window_height) const;
 
-        void Shutdown() const;
+	void Shutdown() const;
 
-        // Frame management
-        void BeginFrame() const;
+	// Frame management
+	void BeginFrame() const;
 
-        void EndFrame();
+	void EndFrame();
 
-        // Camera management
-        void SetCamera(const components::Camera &camera);
+	// Camera management
+	void SetCamera(const components::Camera& camera);
 
-        //const Camera& GetCamera() const;
+	//const Camera& GetCamera() const;
 
-        // Resource manager access
-        TextureManager &GetTextureManager() const;
+	// Resource manager access
+	TextureManager& GetTextureManager() const;
 
-        ShaderManager &GetShaderManager() const;
+	ShaderManager& GetShaderManager() const;
 
-        MeshManager &GetMeshManager() const;
+	MeshManager& GetMeshManager() const;
 
-        MaterialManager &GetMaterialManager() const;
+	MaterialManager& GetMaterialManager() const;
 
-        // Rendering operations
-        void SubmitRenderCommand(const RenderCommand &command) const;
+	// Rendering operations
+	void SubmitRenderCommand(const RenderCommand& command) const;
 
-        void SubmitSprite(const SpriteRenderCommand &command) const;
+	void SubmitSprite(const SpriteRenderCommand& command) const;
 
-        void SubmitUIBatch(const UIBatchRenderCommand &command) const;
+	void SubmitUIBatch(const UIBatchRenderCommand& command) const;
 
-        // Immediate mode rendering (for debugging)
-        void DrawLine(const Vec3 &start, const Vec3 &end, const Color &color = colors::white);
+	// Immediate mode rendering (for debugging)
+	void DrawLine(const Vec3& start, const Vec3& end, const Color& color = colors::white);
 
-        void DrawWireCube(const Vec3 &center, const Vec3 &size, const Color &color = colors::white);
+	void DrawWireCube(const Vec3& center, const Vec3& size, const Color& color = colors::white);
 
-        void DrawWireSphere(const Vec3 &center, float radius, const Color &color = colors::white);
+	void DrawWireSphere(const Vec3& center, float radius, const Color& color = colors::white);
 
-        // Render settings
-        void SetClearColor(const Color &color) const;
+	// Render settings
+	void SetClearColor(const Color& color) const;
 
-        void SetViewport(int x, int y, uint32_t width, uint32_t height);
+	static void SetViewport(int x, int y, uint32_t width, uint32_t height);
 
-        void GetFramebufferSize(uint32_t &width, uint32_t &height) const;
+	void GetFramebufferSize(uint32_t& width, uint32_t& height) const;
 
-        // Statistics
-        uint32_t GetDrawCallCount() const;
+	void SetWindowSize(uint32_t width, uint32_t height) const;
 
-        uint32_t GetTriangleCount() const;
+	// Statistics
+	uint32_t GetDrawCallCount() const;
 
-        void ResetStatistics() const;
+	uint32_t GetTriangleCount() const;
 
-    private:
-        struct Impl;
-        std::unique_ptr<Impl> pimpl_;
-    };
+	void ResetStatistics() const;
 
-    Renderer &GetRenderer();
-}
+private:
+	struct Impl;
+	std::unique_ptr<Impl> pimpl_;
+};
+
+Renderer& GetRenderer();
+} // namespace engine::rendering

@@ -47,7 +47,30 @@ export namespace engine::ui::elements {
  */
 class Container : public Panel {
 public:
+	/**
+	 * @brief Default constructor for layout-managed containers
+	 *
+	 * Creates a container with zero position and size. Use when the container
+	 * will be sized by a parent layout container.
+	 */
+	Container() = default;
+
 	Container(const float x, const float y, const float width, const float height) : Panel(x, y, width, height) {}
+
+	// === Scroll Offset for Children ===
+
+	/**
+	 * @brief Get content offset from scroll component
+	 *
+	 * Children of this container will have their positions offset by
+	 * the current scroll amount.
+	 */
+	std::pair<float, float> GetContentOffset() const override {
+		if (const auto* scroll = GetComponent<components::ScrollComponent>()) {
+			return {scroll->GetState().GetScrollX(), scroll->GetState().GetScrollY()};
+		}
+		return {0.0f, 0.0f};
+	}
 
 	// === Convenience Methods (Container-specific) ===
 
@@ -82,15 +105,6 @@ public:
 	 * Note: Layout and constraint components auto-update when dirty.
 	 */
 	void Update(const float delta_time = 0.0f) { UpdateComponents(delta_time); }
-
-	// === Rendering ===
-
-	void Render() const override {
-		Panel::Render();
-
-		// Render component visuals (e.g., scrollbars)
-		RenderComponents();
-	}
 };
 
 } // namespace engine::ui::elements

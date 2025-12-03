@@ -31,7 +31,8 @@ TEST(InputMouseTest, MouseStateInitialization) {
     EXPECT_FALSE(state.middle_released);
     
     // Scroll delta defaults to zero
-    EXPECT_EQ(state.scroll_delta, 0.0f);
+    EXPECT_EQ(state.scroll_delta_x, 0.0f);
+    EXPECT_EQ(state.scroll_delta_y, 0.0f);
 }
 
 /**

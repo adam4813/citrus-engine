@@ -54,6 +54,25 @@ export namespace engine::ui::elements {
 class Button : public UIElement {
 public:
 	/**
+         * @brief Construct button for layout container (size determined by layout)
+         *
+         * Creates a button with zero position (will be set by parent layout).
+         * Specify width/height for the button's size.
+         *
+         * @param width Button width in pixels
+         * @param height Button height in pixels
+         * @param label Text label displayed on button
+         * @param font_size Font size for label (default: 16)
+         *
+         * @code
+         * auto button = std::make_unique<Button>(100, 30, "OK");
+         * container->AddChild(std::move(button));  // Layout sets position
+         * @endcode
+         */
+	Button(const float width, const float height, const std::string& label, const float font_size = 16.0f) :
+			Button(0, 0, width, height, label, font_size) {}
+
+	/**
          * @brief Construct button with label
          *
          * @param x X position relative to parent

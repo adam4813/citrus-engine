@@ -286,14 +286,14 @@ public:
 		const MouseEvent event{Input::GetMouseState()};
 
 		if (use_constraints_) {
-			if (event.left_pressed || event.scroll_delta != 0.0f) {
+			if (event.left_pressed || event.scroll_delta_x != 0.0f || event.scroll_delta_y != 0.0f) {
 				parent_panel_->ProcessMouseEvent(event);
 			}
 			// Update all components recursively (including constraints on nested elements)
 			parent_panel_->UpdateComponentsRecursive(delta_time);
 		}
 		else if (demo_container_) {
-			if (event.left_pressed || event.scroll_delta != 0.0f) {
+			if (event.left_pressed || event.scroll_delta_x != 0.0f || event.scroll_delta_y != 0.0f) {
 				demo_container_->ProcessMouseEvent(event);
 			}
 			// Update all components recursively (including constraints on nested elements)

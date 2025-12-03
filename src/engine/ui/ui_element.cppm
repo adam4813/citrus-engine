@@ -332,6 +332,18 @@ public:
 	batch_renderer::Rectangle GetRelativeBounds() const { return {relative_x_, relative_y_, width_, height_}; }
 
 	/**
+	 * @brief Get the content area where children are placed
+	 *
+	 * Override in elements that have padding or insets. Children are
+	 * positioned relative to this area.
+	 *
+	 * @return Rectangle representing the content area. The position fields indicate the offset
+	 *         from the element's origin to the start of the content area; children are positioned
+	 *         relative to this area.
+	 */
+	virtual batch_renderer::Rectangle GetContentArea() const { return {0.0f, 0.0f, width_, height_}; }
+
+	/**
          * @brief Set relative position (within parent)
          * @param x X coordinate relative to parent
          * @param y Y coordinate relative to parent
@@ -352,6 +364,18 @@ public:
 	}
 
 	/**
+         * @brief Set element width
+         * @param width Element width in pixels
+         */
+	void SetWidth(const float width) { width_ = width; }
+
+	/**
+         * @brief Set element height
+         * @param height Element height in pixels
+         */
+	void SetHeight(const float height) { height_ = height; }
+
+	/**
          * @brief Get element width
          * @return Width in pixels
          */
@@ -362,6 +386,30 @@ public:
          * @return Height in pixels
          */
 	float GetHeight() const { return height_; }
+
+	/**
+         * @brief Get relative X position
+         * @return X coordinate relative to parent
+         */
+	float GetRelativeX() const { return relative_x_; }
+
+	/**
+         * @brief Get relative Y position
+         * @return Y coordinate relative to parent
+         */
+	float GetRelativeY() const { return relative_y_; }
+
+	/**
+         * @brief Set relative X position
+         * @param x X coordinate relative to parent
+         */
+	void SetRelativeX(const float x) { relative_x_ = x; }
+
+	/**
+         * @brief Set relative Y position
+         * @param y Y coordinate relative to parent
+         */
+	void SetRelativeY(const float y) { relative_y_ = y; }
 
 	// === Hit Testing ===
 
@@ -574,7 +622,7 @@ public:
 			}
 		}
 
-		if (event.scroll_delta != 0.0f) {
+		if (event.scroll_delta_x != 0.0f || event.scroll_delta_y != 0.0f) {
 			// Try callback first
 			if (scroll_callback_ && scroll_callback_(event)) {
 				return true;
@@ -649,6 +697,18 @@ public:
          */
 	virtual bool OnScroll([[maybe_unused]] const MouseEvent& event) { return false; }
 
+	// === Content Offset (for scrollable containers) ===
+
+	/**
+	 * @brief Get content offset applied to children (e.g., scroll offset)
+	 *
+	 * Override in scrollable containers to offset children's positions.
+	 * Called by GetAbsoluteParentBounds() when walking the parent chain.
+	 *
+	 * @return Offset (x, y) to subtract from children's positions
+	 */
+	virtual std::pair<float, float> GetContentOffset() const { return {0.0f, 0.0f}; }
+
 	// === Component Management ===
 
 	/**
@@ -719,10 +779,27 @@ public:
 	 */
 	void RenderComponents() const { components_.Render(); }
 
+	/**
+	 * @brief Recursively render components on this element and all children
+	 *
+	 * Call this on the root element to update the entire UI tree.
+	 */
+	void RenderComponentsRecursive() const {
+		components_.Render();
+		for (const auto& child : children_) {
+			if (child) {
+				child->RenderComponentsRecursive();
+			}
+		}
+	}
+
 protected:
 	// Subclasses can construct with initial bounds
 	UIElement(const float x, const float y, const float width, const float height) :
 			relative_x_(x), relative_y_(y), width_(width), height_(height) {}
+
+	// Default constructor for layout-managed elements (position/size set by layout)
+	UIElement() = default;
 
 	/**
 	 * @brief Get absolute bounds of parent's content area
@@ -789,6 +866,12 @@ inline batch_renderer::Rectangle UIElement::GetAbsoluteParentBounds() const {
 		const batch_renderer::Rectangle parent_bounds = current_parent->GetRelativeBounds();
 		bounds.x += parent_bounds.x;
 		bounds.y += parent_bounds.y;
+
+		// Apply content offset (e.g., scroll offset from scrollable containers)
+		const auto [offset_x, offset_y] = current_parent->GetContentOffset();
+		bounds.x -= offset_x;
+		bounds.y -= offset_y;
+
 		current_parent = current_parent->parent_;
 	}
 

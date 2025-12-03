@@ -7,6 +7,7 @@ module;
 export module engine.ui:components.scroll;
 
 import :ui_element;
+import :elements.panel;
 import :mouse_event;
 import engine.ui.batch_renderer;
 
@@ -129,6 +130,29 @@ public:
 	// === Scroll Limits ===
 
 	/**
+	 * @brief Set minimum scroll position (for centered/offset content)
+	 *
+	 * When content doesn't start at (0,0), this allows scrolling to
+	 * reveal content that starts before the viewport origin.
+	 * Values are clamped to be <= 0 (negative scroll min means content starts before origin).
+	 */
+	void SetScrollMin(float min_x, float min_y) {
+		scroll_min_x_ = std::min(0.0f, min_x);
+		scroll_min_y_ = std::min(0.0f, min_y);
+		ClampScroll();
+	}
+
+	/**
+	 * @brief Get minimum horizontal scroll
+	 */
+	float GetMinScrollX() const { return scroll_min_x_; }
+
+	/**
+	 * @brief Get minimum vertical scroll
+	 */
+	float GetMinScrollY() const { return scroll_min_y_; }
+
+	/**
 	 * @brief Get maximum horizontal scroll
 	 */
 	float GetMaxScrollX() const { return std::max(0.0f, content_width_ - viewport_width_); }
@@ -141,12 +165,12 @@ public:
 	/**
 	 * @brief Check if horizontal scrolling is possible
 	 */
-	bool CanScrollX() const { return content_width_ > viewport_width_; }
+	bool CanScrollX() const { return GetMinScrollX() < GetMaxScrollX(); }
 
 	/**
 	 * @brief Check if vertical scrolling is possible
 	 */
-	bool CanScrollY() const { return content_height_ > viewport_height_; }
+	bool CanScrollY() const { return GetMinScrollY() < GetMaxScrollY(); }
 
 	// === Scroll Direction ===
 
@@ -195,47 +219,48 @@ public:
 	 * @return true if scroll was handled (content can scroll in that direction)
 	 */
 	bool HandleScroll(const MouseEvent& event) {
-		if (event.scroll_delta == 0.0f) {
+		if (event.scroll_delta_x == 0.0f && event.scroll_delta_y == 0.0f) {
 			return false;
 		}
 
-		const float delta = -event.scroll_delta * scroll_speed_;
+		const float delta_x = -event.scroll_delta_x * scroll_speed_;
+		const float delta_y = -event.scroll_delta_y * scroll_speed_;
+		bool handled = false;
 
 		switch (direction_) {
 		case ScrollDirection::Vertical:
-			if (!CanScrollY()) {
-				return false;
+			if (CanScrollY() && event.scroll_delta_y != 0.0f) {
+				ScrollBy(0.0f, delta_y);
+				handled = true;
 			}
-			ScrollBy(0.0f, delta);
-			return true;
+			break;
 
 		case ScrollDirection::Horizontal:
-			if (!CanScrollX()) {
-				return false;
+			if (CanScrollX() && event.scroll_delta_x != 0.0f) {
+				ScrollBy(delta_x, 0.0f);
+				handled = true;
 			}
-			ScrollBy(delta, 0.0f);
-			return true;
+			break;
 
 		case ScrollDirection::Both:
-			// Default to vertical scroll, horizontal with shift (future enhancement)
-			if (CanScrollY()) {
-				ScrollBy(0.0f, delta);
-				return true;
+			if (CanScrollX() && event.scroll_delta_x != 0.0f) {
+				ScrollBy(delta_x, 0.0f);
+				handled = true;
 			}
-			else if (CanScrollX()) {
-				ScrollBy(delta, 0.0f);
-				return true;
+			if (CanScrollY() && event.scroll_delta_y != 0.0f) {
+				ScrollBy(0.0f, delta_y);
+				handled = true;
 			}
-			return false;
+			break;
 		}
 
-		return false;
+		return handled;
 	}
 
 private:
 	void ClampScroll() {
-		scroll_x_ = std::clamp(scroll_x_, 0.0f, GetMaxScrollX());
-		scroll_y_ = std::clamp(scroll_y_, 0.0f, GetMaxScrollY());
+		scroll_x_ = std::clamp(scroll_x_, GetMinScrollX(), GetMaxScrollX());
+		scroll_y_ = std::clamp(scroll_y_, GetMinScrollY(), GetMaxScrollY());
 	}
 
 	float content_width_{0.0f};
@@ -244,6 +269,8 @@ private:
 	float viewport_height_{0.0f};
 	float scroll_x_{0.0f};
 	float scroll_y_{0.0f};
+	float scroll_min_x_{0.0f};
+	float scroll_min_y_{0.0f};
 	float scroll_speed_{30.0f}; // Pixels per scroll tick
 	ScrollDirection direction_{ScrollDirection::Vertical};
 };
@@ -385,22 +412,63 @@ public:
 
 	/**
 	 * @brief Calculate total content size from owner's children
+	 *
+	 * Calculates the bounding box of all visible children relative to the
+	 * content area. The content area origin (from GetContentArea) defines
+	 * where (0,0) content starts.
 	 */
 	void CalculateContentSizeFromChildren() {
 		if (!owner_) {
 			return;
 		}
+
+		const auto content_area = owner_->GetContentArea();
+
+		float min_x = 0.0f;
+		float min_y = 0.0f;
 		float max_x = 0.0f;
 		float max_y = 0.0f;
+		bool has_children = false;
+
 		for (const auto& child : owner_->GetChildren()) {
 			if (!child || !child->IsVisible()) {
 				continue;
 			}
 			const auto bounds = child->GetRelativeBounds();
-			max_x = std::max(max_x, bounds.x + bounds.width);
-			max_y = std::max(max_y, bounds.y + bounds.height);
+			if (!has_children) {
+				min_x = bounds.x;
+				min_y = bounds.y;
+				max_x = bounds.x + bounds.width;
+				max_y = bounds.y + bounds.height;
+				has_children = true;
+			}
+			else {
+				min_x = std::min(min_x, bounds.x);
+				min_y = std::min(min_y, bounds.y);
+				max_x = std::max(max_x, bounds.x + bounds.width);
+				max_y = std::max(max_y, bounds.y + bounds.height);
+			}
 		}
-		state_.SetContentSize(max_x, max_y);
+
+		// No visible children - reset to no scrollable content
+		if (!has_children) {
+			state_.SetContentSize(0.0f, 0.0f);
+			state_.SetScrollMin(0.0f, 0.0f);
+			return;
+		}
+
+		// Content size is from content area origin to max child bounds
+		// plus the content area offset (e.g., padding)
+		const float content_width = max_x + content_area.x;
+		const float content_height = max_y + content_area.y;
+
+		// Min scroll allows scrolling to reveal content that starts before
+		// the content area origin (e.g., centered content)
+		const float scroll_min_x = min_x - content_area.x;
+		const float scroll_min_y = min_y - content_area.y;
+
+		state_.SetContentSize(content_width, content_height);
+		state_.SetScrollMin(scroll_min_x, scroll_min_y);
 	}
 
 	void OnAttach(UIElement* owner) override {

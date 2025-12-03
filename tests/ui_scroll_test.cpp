@@ -131,7 +131,7 @@ TEST_F(ScrollStateTest, HandleScrollVertical) {
 	scroll_.SetDirection(ScrollDirection::Vertical);
 
 	MouseEvent event;
-	event.scroll_delta = -2.0f;  // Scroll down
+	event.scroll_delta_y = -2.0f;  // Scroll down
 
 	bool handled = scroll_.HandleScroll(event);
 
@@ -143,12 +143,52 @@ TEST_F(ScrollStateTest, HandleScrollHorizontal) {
 	scroll_.SetDirection(ScrollDirection::Horizontal);
 
 	MouseEvent event;
-	event.scroll_delta = -2.0f;
+	event.scroll_delta_x = -2.0f;
 
 	bool handled = scroll_.HandleScroll(event);
 
 	EXPECT_TRUE(handled);
 	EXPECT_GT(scroll_.GetScrollX(), 0.0f);
+}
+
+TEST_F(ScrollStateTest, HorizontalScrollSpeedAffectsAmount) {
+	scroll_.SetDirection(ScrollDirection::Horizontal);
+	scroll_.SetScrollSpeed(50.0f);
+
+	MouseEvent event;
+	event.scroll_delta_x = -1.0f;
+
+	scroll_.HandleScroll(event);
+
+	// With speed 50, delta -1, scroll should increase by 50
+	EXPECT_FLOAT_EQ(scroll_.GetScrollX(), 50.0f);
+}
+
+TEST_F(ScrollStateTest, HorizontalScrollClampsToMax) {
+	scroll_.SetDirection(ScrollDirection::Horizontal);
+	scroll_.SetScrollSpeed(1000.0f);  // Large speed to exceed max
+
+	MouseEvent event;
+	event.scroll_delta_x = -1.0f;
+
+	scroll_.HandleScroll(event);
+
+	// Should clamp to max scroll (300.0f)
+	EXPECT_FLOAT_EQ(scroll_.GetScrollX(), scroll_.GetMaxScrollX());
+}
+
+TEST_F(ScrollStateTest, HorizontalScrollNoContentReturnsFalse) {
+	ScrollState s;
+	s.SetContentSize(100.0f, 100.0f);  // Content fits horizontally
+	s.SetViewportSize(200.0f, 200.0f);
+	s.SetDirection(ScrollDirection::Horizontal);
+
+	MouseEvent event;
+	event.scroll_delta_x = -2.0f;
+
+	bool handled = s.HandleScroll(event);
+
+	EXPECT_FALSE(handled);  // Can't scroll when content fits
 }
 
 TEST_F(ScrollStateTest, HandleScrollNoContentReturnsFalse) {
@@ -158,7 +198,7 @@ TEST_F(ScrollStateTest, HandleScrollNoContentReturnsFalse) {
 	s.SetDirection(ScrollDirection::Vertical);
 
 	MouseEvent event;
-	event.scroll_delta = -2.0f;
+	event.scroll_delta_y = -2.0f;
 
 	bool handled = s.HandleScroll(event);
 
@@ -170,12 +210,54 @@ TEST_F(ScrollStateTest, ScrollSpeedAffectsScrollAmount) {
 	scroll_.SetScrollSpeed(100.0f);
 
 	MouseEvent event;
-	event.scroll_delta = -1.0f;
+	event.scroll_delta_y = -1.0f;
 
 	scroll_.HandleScroll(event);
 
 	// With speed 100, delta -1, scroll should increase by 100
 	EXPECT_FLOAT_EQ(scroll_.GetScrollY(), 100.0f);
+}
+
+TEST_F(ScrollStateTest, HandleScrollBothAxes) {
+	scroll_.SetDirection(ScrollDirection::Both);
+
+	MouseEvent event;
+	event.scroll_delta_x = -1.0f;
+	event.scroll_delta_y = -2.0f;
+
+	bool handled = scroll_.HandleScroll(event);
+
+	EXPECT_TRUE(handled);
+	EXPECT_GT(scroll_.GetScrollX(), 0.0f);
+	EXPECT_GT(scroll_.GetScrollY(), 0.0f);
+}
+
+TEST_F(ScrollStateTest, HorizontalScrollIgnoresYDelta) {
+	scroll_.SetDirection(ScrollDirection::Horizontal);
+
+	MouseEvent event;
+	event.scroll_delta_x = 0.0f;
+	event.scroll_delta_y = -2.0f;  // Only Y delta
+
+	bool handled = scroll_.HandleScroll(event);
+
+	// Horizontal mode should not handle Y-only scroll
+	EXPECT_FALSE(handled);
+	EXPECT_FLOAT_EQ(scroll_.GetScrollX(), 0.0f);
+}
+
+TEST_F(ScrollStateTest, VerticalScrollIgnoresXDelta) {
+	scroll_.SetDirection(ScrollDirection::Vertical);
+
+	MouseEvent event;
+	event.scroll_delta_x = -2.0f;  // Only X delta
+	event.scroll_delta_y = 0.0f;
+
+	bool handled = scroll_.HandleScroll(event);
+
+	// Vertical mode should not handle X-only scroll
+	EXPECT_FALSE(handled);
+	EXPECT_FLOAT_EQ(scroll_.GetScrollY(), 0.0f);
 }
 
 // ========================================

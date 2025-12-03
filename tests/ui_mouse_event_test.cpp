@@ -30,11 +30,12 @@ TEST_F(UIMouseEventTest, MouseEventDefaultConstructor) {
 	EXPECT_FALSE(event.right_down);
 	EXPECT_FALSE(event.left_pressed);
 	EXPECT_FALSE(event.right_pressed);
-	EXPECT_FLOAT_EQ(event.scroll_delta, 0.0f);
+	EXPECT_FLOAT_EQ(event.scroll_delta_x, 0.0f);
+	EXPECT_FLOAT_EQ(event.scroll_delta_y, 0.0f);
 }
 
 TEST_F(UIMouseEventTest, MouseEventParameterizedConstructor) {
-	MouseEvent event{100.0f, 200.0f, true, false, false, true, 5.0f};
+	MouseEvent event{100.0f, 200.0f, true, false, false, true, 2.0f, 5.0f};
 
 	EXPECT_FLOAT_EQ(event.x, 100.0f);
 	EXPECT_FLOAT_EQ(event.y, 200.0f);
@@ -42,7 +43,8 @@ TEST_F(UIMouseEventTest, MouseEventParameterizedConstructor) {
 	EXPECT_FALSE(event.right_down);
 	EXPECT_FALSE(event.left_pressed);
 	EXPECT_TRUE(event.right_pressed);
-	EXPECT_FLOAT_EQ(event.scroll_delta, 5.0f);
+	EXPECT_FLOAT_EQ(event.scroll_delta_x, 2.0f);
+	EXPECT_FLOAT_EQ(event.scroll_delta_y, 5.0f);
 }
 
 // ============================================================================
@@ -574,15 +576,18 @@ TEST_F(UIMouseEventTest, CallbackDragEvent) {
 TEST_F(UIMouseEventTest, CallbackScrollEvent) {
 	TestUIElement element{100.0f, 100.0f, 200.0f, 100.0f};
 
-	float total_scroll = 0.0f;
-	element.SetScrollCallback([&total_scroll](const MouseEvent& event) {
-		total_scroll += event.scroll_delta;
+	float total_scroll_x = 0.0f;
+	float total_scroll_y = 0.0f;
+	element.SetScrollCallback([&total_scroll_x, &total_scroll_y](const MouseEvent& event) {
+		total_scroll_x += event.scroll_delta_x;
+		total_scroll_y += event.scroll_delta_y;
 		return true;
 	});
 
-	MouseEvent event{150.0f, 150.0f, false, false, false, false, 5.0f};
+	MouseEvent event{150.0f, 150.0f, false, false, false, false, 2.0f, 5.0f};
 	bool handled = element.ProcessMouseEvent(event);
 
 	EXPECT_TRUE(handled);
-	EXPECT_FLOAT_EQ(total_scroll, 5.0f);
+	EXPECT_FLOAT_EQ(total_scroll_x, 2.0f);
+	EXPECT_FLOAT_EQ(total_scroll_y, 5.0f);
 }

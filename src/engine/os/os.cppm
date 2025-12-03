@@ -15,6 +15,7 @@ public:
 
 	static void SetKeyCallback(GLFWwindow* window, GLFWkeyfun callback);
 	static void SetMouseButtonCallback(GLFWwindow* window, GLFWmousebuttonfun callback);
+	static void SetScrollCallback(GLFWwindow* window, GLFWscrollfun callback);
 	static void SetFrameBufferSizeCallback(GLFWwindow* window, GLFWframebuffersizefun callback);
 	static void MakeContextCurrent(GLFWwindow* window);
 };

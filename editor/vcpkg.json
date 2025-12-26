@@ -1,0 +1,20 @@
+{
+  "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg.schema.json",
+  "name": "citrus-scene-editor",
+  "version": "0.0.1",
+  "dependencies": [
+    "citrus-engine"
+  ],
+  "supports": "windows | linux | osx | emscripten",
+  "builtin-baseline": "dd3097e305afa53f7b4312371f62058d2e665320",
+  "overrides": [
+    {
+      "name": "spdlog",
+      "version": "1.11.0"
+    },
+    {
+      "name": "fmt",
+      "version": "9.0.0"
+    }
+  ]
+}

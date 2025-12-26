@@ -127,15 +127,23 @@ void EditorScene::RenderMenuBar() {
 				state_.show_new_scene_dialog = true;
 			}
 			if (ImGui::MenuItem("Open...", "Ctrl+O")) {
+				file_path_buffer_[0] = '\0'; // Clear buffer for new input
 				state_.show_open_dialog = true;
 			}
 
 			ImGui::Separator();
 
-			if (ImGui::MenuItem("Save", "Ctrl+S", false, !state_.current_file_path.empty())) {
-				SaveScene();
+			if (ImGui::MenuItem("Save", "Ctrl+S")) {
+				if (state_.current_file_path.empty()) {
+					file_path_buffer_[0] = '\0'; // Clear buffer for new input
+					state_.show_save_as_dialog = true;
+				}
+				else {
+					SaveScene();
+				}
 			}
 			if (ImGui::MenuItem("Save As...", "Ctrl+Shift+S")) {
+				file_path_buffer_[0] = '\0'; // Clear buffer for new input
 				state_.show_save_as_dialog = true;
 			}
 
@@ -223,6 +231,7 @@ void EditorScene::RenderToolbar() {
 	// Quick save button
 	if (ImGui::Button("Save")) {
 		if (state_.current_file_path.empty()) {
+			file_path_buffer_[0] = '\0'; // Clear buffer for new input
 			state_.show_save_as_dialog = true;
 		}
 		else {

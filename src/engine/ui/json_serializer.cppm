@@ -4,6 +4,7 @@ module;
 #include <optional>
 #include <sstream>
 #include <string>
+#include <type_traits>
 #include <variant>
 #include <vector>
 
@@ -137,41 +138,7 @@ public:
 	 * @brief Serialize a descriptor variant to JSON string
 	 */
 	static std::string ToJson(const CompleteUIDescriptor& desc, const int indent = 2) {
-		nlohmann::json j = std::visit(
-			[](const auto& d) -> nlohmann::json {
-				using T = std::decay_t<decltype(d)>;
-				if constexpr (std::is_same_v<T, ButtonDescriptor>) {
-					return ButtonToJsonObject(d);
-				}
-				else if constexpr (std::is_same_v<T, PanelDescriptor>) {
-					return PanelToJsonObject(d);
-				}
-				else if constexpr (std::is_same_v<T, LabelDescriptor>) {
-					return LabelToJsonObject(d);
-				}
-				else if constexpr (std::is_same_v<T, SliderDescriptor>) {
-					return SliderToJsonObject(d);
-				}
-				else if constexpr (std::is_same_v<T, CheckboxDescriptor>) {
-					return CheckboxToJsonObject(d);
-				}
-				else if constexpr (std::is_same_v<T, DividerDescriptor>) {
-					return DividerToJsonObject(d);
-				}
-				else if constexpr (std::is_same_v<T, ProgressBarDescriptor>) {
-					return ProgressBarToJsonObject(d);
-				}
-				else if constexpr (std::is_same_v<T, ImageDescriptor>) {
-					return ImageToJsonObject(d);
-				}
-				else if constexpr (std::is_same_v<T, ContainerDescriptor>) {
-					return ContainerToJsonObject(d);
-				}
-				else {
-					return nlohmann::json{};
-				}
-			},
-			desc);
+		nlohmann::json j = std::visit([](const auto& d) { return DescriptorToJsonObject(d); }, desc);
 		return j.dump(indent);
 	}
 
@@ -310,6 +277,51 @@ private:
 			style.color = ColorFromJson(j["color"]);
 		}
 		return style;
+	}
+
+	// ========================================================================
+	// Generic Descriptor to JSON (used for variant serialization)
+	// ========================================================================
+
+	/**
+	 * @brief Helper template to convert any descriptor type to JSON object
+	 * 
+	 * Uses if-constexpr to dispatch to the appropriate type-specific function.
+	 * This eliminates code duplication between CompleteUIDescriptor and
+	 * UIDescriptorVariant serialization.
+	 */
+	template <typename T>
+	static nlohmann::json DescriptorToJsonObject(const T& desc) {
+		if constexpr (std::is_same_v<T, ButtonDescriptor>) {
+			return ButtonToJsonObject(desc);
+		}
+		else if constexpr (std::is_same_v<T, PanelDescriptor>) {
+			return PanelToJsonObject(desc);
+		}
+		else if constexpr (std::is_same_v<T, LabelDescriptor>) {
+			return LabelToJsonObject(desc);
+		}
+		else if constexpr (std::is_same_v<T, SliderDescriptor>) {
+			return SliderToJsonObject(desc);
+		}
+		else if constexpr (std::is_same_v<T, CheckboxDescriptor>) {
+			return CheckboxToJsonObject(desc);
+		}
+		else if constexpr (std::is_same_v<T, DividerDescriptor>) {
+			return DividerToJsonObject(desc);
+		}
+		else if constexpr (std::is_same_v<T, ProgressBarDescriptor>) {
+			return ProgressBarToJsonObject(desc);
+		}
+		else if constexpr (std::is_same_v<T, ImageDescriptor>) {
+			return ImageToJsonObject(desc);
+		}
+		else if constexpr (std::is_same_v<T, ContainerDescriptor>) {
+			return ContainerToJsonObject(desc);
+		}
+		else {
+			return nlohmann::json{};
+		}
 	}
 
 	// ========================================================================
@@ -606,38 +618,7 @@ private:
 	// ========================================================================
 
 	static nlohmann::json ChildVariantToJson(const UIDescriptorVariant& child) {
-		return std::visit(
-			[](const auto& c) -> nlohmann::json {
-				using T = std::decay_t<decltype(c)>;
-				if constexpr (std::is_same_v<T, ButtonDescriptor>) {
-					return ButtonToJsonObject(c);
-				}
-				else if constexpr (std::is_same_v<T, PanelDescriptor>) {
-					return PanelToJsonObject(c);
-				}
-				else if constexpr (std::is_same_v<T, LabelDescriptor>) {
-					return LabelToJsonObject(c);
-				}
-				else if constexpr (std::is_same_v<T, SliderDescriptor>) {
-					return SliderToJsonObject(c);
-				}
-				else if constexpr (std::is_same_v<T, CheckboxDescriptor>) {
-					return CheckboxToJsonObject(c);
-				}
-				else if constexpr (std::is_same_v<T, DividerDescriptor>) {
-					return DividerToJsonObject(c);
-				}
-				else if constexpr (std::is_same_v<T, ProgressBarDescriptor>) {
-					return ProgressBarToJsonObject(c);
-				}
-				else if constexpr (std::is_same_v<T, ImageDescriptor>) {
-					return ImageToJsonObject(c);
-				}
-				else {
-					return nlohmann::json{};
-				}
-			},
-			child);
+		return std::visit([](const auto& c) { return DescriptorToJsonObject(c); }, child);
 	}
 
 	static UIDescriptorVariant ChildVariantFromJson(const nlohmann::json& j) {

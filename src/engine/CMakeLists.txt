@@ -88,6 +88,16 @@ target_sources(engine-core
     ui/components/tooltip.cppm
     ui/components/components.cppm
     ui/builder.cppm
+    ui/descriptors/common.cppm
+    ui/descriptors/button.cppm
+    ui/descriptors/panel.cppm
+    ui/descriptors/label.cppm
+    ui/descriptors/slider.cppm
+    ui/descriptors/checkbox.cppm
+    ui/descriptors/divider.cppm
+    ui/descriptors/progress_bar.cppm
+    ui/descriptors/image.cppm
+    ui/descriptors/container.cppm
     ui/descriptor.cppm
     ui/factory.cppm
     ui/factory_registry.cppm

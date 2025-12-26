@@ -2,10 +2,20 @@
 // UI Descriptor System
 // ============================================================================
 //
-// This module re-exports the descriptor sub-modules for backwards compatibility.
-// New code should import the specific descriptor modules directly.
+// This module re-exports the descriptor sub-modules for convenient importing.
 //
-// See descriptors/descriptors.cppm for documentation on adding new types.
+// ## Adding New UI Element Types
+//
+// 1. Create a new file in `descriptors/` (e.g., `my_widget.cppm`)
+// 2. Define the descriptor struct with all properties
+// 3. Add `to_json` and `from_json` functions for JSON serialization
+// 4. Add the descriptor to `UIDescriptorVariant` and `CompleteUIDescriptor`
+//    in `descriptors/container.cppm`
+// 5. Add the import to this file
+// 6. Add a `Create()` method in `factory.cppm`
+// 7. Register the module in `CMakeLists.txt`
+//
+// See individual descriptor files in `descriptors/` for examples.
 //
 // ============================================================================
 

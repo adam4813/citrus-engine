@@ -59,7 +59,7 @@ public:
 	 */
 	template <typename T>
 	static std::string ToJsonString(const T& desc, const int indent = 2) {
-		nlohmann::json j = desc;  // ADL to_json called here
+		nlohmann::json j = desc;  // Uses ADL to find to_json
 		return j.dump(indent);
 	}
 
@@ -72,7 +72,7 @@ public:
 	 */
 	template <typename T>
 	static T FromJsonString(const std::string& json_str) {
-		return nlohmann::json::parse(json_str).get<T>();  // ADL from_json called
+		return nlohmann::json::parse(json_str).get<T>();  // Uses ADL to find from_json
 	}
 
 	/**

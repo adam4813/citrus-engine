@@ -11,6 +11,7 @@ module;
 export module engine.ui:elements.tab_container;
 
 import :ui_element;
+import :components;
 import :elements.panel;
 import :elements.button;
 import :elements.text;
@@ -108,6 +109,7 @@ public:
 		// Create tab bar panel for button layout - added as child for proper hierarchy
 		auto tab_bar = std::make_unique<Panel>(0, 0, width, tab_bar_height_);
 		tab_bar->SetBackgroundColor(batch_renderer::UITheme::Background::PANEL_DARK);
+		tab_bar->AddComponent<components::ConstraintComponent>(components::Anchor::StretchHorizontal());
 		tab_bar_panel_ = tab_bar.get();
 		AddChild(std::move(tab_bar));
 
@@ -115,6 +117,10 @@ public:
 		auto content = std::make_unique<Panel>(0, tab_bar_height_, width, GetContentHeight());
 		content->SetBackgroundColor(batch_renderer::UITheme::Background::PANEL);
 		content->SetClipChildren(true);
+		auto anchor = components::Anchor::StretchHorizontal();
+		anchor.SetTop(tab_bar_height_);
+		anchor.SetBottom(0);
+		content->AddComponent<components::ConstraintComponent>(anchor);
 		content_panel_ = content.get();
 		AddChild(std::move(content));
 	}
@@ -373,7 +379,7 @@ private:
 	 */
 	struct TabInfo {
 		std::string label;
-		Button* button{nullptr};    // Raw pointer - tab_bar_panel_ owns
+		Button* button{nullptr}; // Raw pointer - tab_bar_panel_ owns
 		UIElement* content{nullptr}; // Raw pointer - content_panel_ owns
 	};
 
@@ -450,8 +456,8 @@ private:
 	size_t active_tab_index_{0};
 
 	// Panel hierarchy (raw pointers - owned by children_ via AddChild)
-	Panel* tab_bar_panel_{nullptr};   // Contains tab Button elements
-	Panel* content_panel_{nullptr};   // Contains active tab content
+	Panel* tab_bar_panel_{nullptr}; // Contains tab Button elements
+	Panel* content_panel_{nullptr}; // Contains active tab content
 
 	// Appearance
 	float tab_bar_height_{30.0f};

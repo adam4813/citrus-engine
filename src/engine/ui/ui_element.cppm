@@ -778,6 +778,21 @@ public:
 	void InvalidateComponents() { components_.Invalidate(); }
 
 	/**
+	 * @brief Invalidate all components on this element and all children
+	 *
+	 * Call this on the root element to update the entire UI tree when state changes and components
+	 * need to refresh their internal state.
+	 */
+	void InvalidateComponentsRecursive() {
+		components_.Invalidate();
+		for (auto& child : children_) {
+			if (child) {
+				child->InvalidateComponentsRecursive();
+			}
+		}
+	}
+
+	/**
 	 * @brief Update all components
 	 *
 	 * Call this each frame before rendering if components need updating.

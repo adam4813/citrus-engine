@@ -28,7 +28,22 @@ export namespace engine::ui {
  * descriptor structs, enabling declarative UI construction with designated
  * initializers.
  *
- * **Usage:**
+ * ## Architecture Note
+ *
+ * Factory functions are kept separate from descriptors (in descriptor.cppm) because:
+ * - They need to import element implementations (Button, Panel, etc.)
+ * - This avoids circular dependencies
+ * - Descriptors remain pure data structures with JSON serialization
+ *
+ * When adding a new element type, you need to:
+ * 1. Define the descriptor and JSON functions in descriptor.cppm
+ * 2. Add a Create() overload here with the appropriate element import
+ * 3. Optionally register with UIFactoryRegistry for JSON-based creation
+ *
+ * See the documentation in descriptor.cppm for complete step-by-step guide.
+ *
+ * ## Usage
+ *
  * @code
  * using namespace engine::ui;
  * using namespace engine::ui::descriptor;

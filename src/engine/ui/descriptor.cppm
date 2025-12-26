@@ -18,6 +18,144 @@ import engine.ui.batch_renderer;
 
 export namespace engine::ui::descriptor {
 
+// ============================================================================
+// UI Descriptor System - Adding New Elements
+// ============================================================================
+//
+// This module defines declarative descriptors for UI elements, enabling
+// UI construction via designated initializers and JSON serialization.
+//
+// ## Architecture Overview
+//
+// The UI descriptor system consists of three coupled components:
+//
+// 1. **Descriptor struct** (this file) - Data-only struct with all properties
+// 2. **to_json/from_json functions** (this file) - JSON serialization
+// 3. **Factory::Create function** (factory.cppm) - Creates element from descriptor
+//
+// Descriptors and JSON functions are in the same file because:
+// - They are tightly coupled (JSON must serialize all descriptor fields)
+// - Changes to descriptor fields require matching JSON changes
+// - Keeps related code together for maintainability
+//
+// Factory functions are in a separate file because:
+// - They need to import element implementations (Button, Panel, etc.)
+// - This avoids circular dependencies
+// - Enables different linking strategies if needed
+//
+// ## How to Add a New UI Element Type
+//
+// ### Step 1: Define the Descriptor (this file)
+//
+// Add a new descriptor struct with all configurable properties:
+//
+//     struct MyWidgetDescriptor {
+//         /// Bounds (position and size)
+//         Bounds bounds;
+//
+//         /// Widget-specific properties
+//         std::string label;
+//         float value{0.0f};
+//         batch_renderer::Color color{batch_renderer::Colors::WHITE};
+//
+//         /// Whether widget is initially visible
+//         bool visible{true};
+//
+//         /// Event callbacks (optional, not serializable to JSON)
+//         std::function<void(float)> on_value_changed;
+//     };
+//
+// ### Step 2: Add to Variant Types (this file)
+//
+// Add your descriptor to both variant types:
+//
+//     using UIDescriptorVariant = std::variant<
+//         ButtonDescriptor,
+//         PanelDescriptor,
+//         // ... existing types ...
+//         MyWidgetDescriptor  // <-- Add here
+//     >;
+//
+//     using CompleteUIDescriptor = std::variant<
+//         // ... same list including ContainerDescriptor ...
+//         MyWidgetDescriptor  // <-- Add here
+//     >;
+//
+// ### Step 3: Add JSON Serialization (this file)
+//
+// Add to_json and from_json functions using the detail:: helpers:
+//
+//     inline void to_json(nlohmann::json& j, const MyWidgetDescriptor& d) {
+//         j = nlohmann::json{
+//             {"type", "my_widget"},  // <-- Type identifier for deserialization
+//             {"bounds", detail::bounds_to_json(d.bounds)},
+//             {"label", d.label},
+//             {"value", d.value},
+//             {"color", detail::color_to_json(d.color)},
+//             {"visible", d.visible}
+//         };
+//         // Note: Callbacks cannot be serialized
+//     }
+//
+//     inline void from_json(const nlohmann::json& j, MyWidgetDescriptor& d) {
+//         if (j.contains("bounds"))
+//             d.bounds = detail::bounds_from_json(j["bounds"]);
+//         d.label = j.value("label", "");
+//         d.value = j.value("value", 0.0f);
+//         if (j.contains("color"))
+//             d.color = detail::color_from_json(j["color"]);
+//         d.visible = j.value("visible", true);
+//     }
+//
+// ### Step 4: Update Variant from_json (this file)
+//
+// Add your type to from_json for UIDescriptorVariant and CompleteUIDescriptor:
+//
+//     inline void from_json(const nlohmann::json& j, UIDescriptorVariant& v) {
+//         const std::string type = j.value("type", "panel");
+//         // ... existing types ...
+//         else if (type == "my_widget") {
+//             v = j.get<MyWidgetDescriptor>();
+//         }
+//     }
+//
+// ### Step 5: Add Factory Function (factory.cppm)
+//
+// Add a Create overload in UIFactory:
+//
+//     static std::unique_ptr<elements::MyWidget> Create(
+//             const descriptor::MyWidgetDescriptor& desc) {
+//         auto widget = std::make_unique<elements::MyWidget>(
+//             desc.bounds.x, desc.bounds.y,
+//             desc.bounds.width, desc.bounds.height);
+//
+//         widget->SetLabel(desc.label);
+//         widget->SetValue(desc.value);
+//         widget->SetColor(desc.color);
+//         widget->SetVisible(desc.visible);
+//
+//         if (desc.on_value_changed) {
+//             widget->SetValueChangedCallback(desc.on_value_changed);
+//         }
+//
+//         return widget;
+//     }
+//
+// Don't forget to import your element module in factory.cppm:
+//
+//     import :elements.my_widget;
+//
+// ### Step 6 (Optional): Register with UIFactoryRegistry
+//
+// For dynamic creation from JSON type strings:
+//
+//     UIFactoryRegistry::RegisterJsonCreator("my_widget",
+//         [](const nlohmann::json& j) {
+//             return UIFactory::Create(j.get<descriptor::MyWidgetDescriptor>());
+//         });
+//
+// ============================================================================
+
 // Forward declarations
 struct ButtonDescriptor;
 struct PanelDescriptor;

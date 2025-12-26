@@ -40,8 +40,11 @@ export namespace engine::ui::descriptor {
  * std::string json_str = UIJsonSerializer::ToJson(container);
  *
  * // Deserialize from JSON
- * auto desc = UIJsonSerializer::FromJson<ContainerDescriptor>(json_str);
+ * auto desc = UIJsonSerializer::ButtonFromJson(json_str);  // Type-specific
  * auto element = UIFactory::Create(desc);
+ *
+ * // Or auto-detect from "type" field
+ * auto variant = UIJsonSerializer::FromJsonAuto(json_str);
  * @endcode
  *
  * **JSON Format Example:**
@@ -68,40 +71,175 @@ public:
 	// ========================================================================
 
 	/**
-	 * @brief Serialize a descriptor to JSON string
-	 *
-	 * @tparam T Descriptor type (ButtonDescriptor, PanelDescriptor, etc.)
-	 * @param desc Descriptor to serialize
-	 * @param indent Indentation for pretty printing (-1 for compact)
-	 * @return JSON string
+	 * @brief Serialize a Button descriptor to JSON string
 	 */
-	template <typename T> static std::string ToJson(const T& desc, const int indent = 2) {
-		nlohmann::json j = ToJsonObject(desc);
-		return j.dump(indent);
+	static std::string ToJson(const ButtonDescriptor& desc, const int indent = 2) {
+		return ButtonToJsonObject(desc).dump(indent);
+	}
+
+	/**
+	 * @brief Serialize a Panel descriptor to JSON string
+	 */
+	static std::string ToJson(const PanelDescriptor& desc, const int indent = 2) {
+		return PanelToJsonObject(desc).dump(indent);
+	}
+
+	/**
+	 * @brief Serialize a Label descriptor to JSON string
+	 */
+	static std::string ToJson(const LabelDescriptor& desc, const int indent = 2) {
+		return LabelToJsonObject(desc).dump(indent);
+	}
+
+	/**
+	 * @brief Serialize a Slider descriptor to JSON string
+	 */
+	static std::string ToJson(const SliderDescriptor& desc, const int indent = 2) {
+		return SliderToJsonObject(desc).dump(indent);
+	}
+
+	/**
+	 * @brief Serialize a Checkbox descriptor to JSON string
+	 */
+	static std::string ToJson(const CheckboxDescriptor& desc, const int indent = 2) {
+		return CheckboxToJsonObject(desc).dump(indent);
+	}
+
+	/**
+	 * @brief Serialize a Divider descriptor to JSON string
+	 */
+	static std::string ToJson(const DividerDescriptor& desc, const int indent = 2) {
+		return DividerToJsonObject(desc).dump(indent);
+	}
+
+	/**
+	 * @brief Serialize a ProgressBar descriptor to JSON string
+	 */
+	static std::string ToJson(const ProgressBarDescriptor& desc, const int indent = 2) {
+		return ProgressBarToJsonObject(desc).dump(indent);
+	}
+
+	/**
+	 * @brief Serialize an Image descriptor to JSON string
+	 */
+	static std::string ToJson(const ImageDescriptor& desc, const int indent = 2) {
+		return ImageToJsonObject(desc).dump(indent);
+	}
+
+	/**
+	 * @brief Serialize a Container descriptor to JSON string
+	 */
+	static std::string ToJson(const ContainerDescriptor& desc, const int indent = 2) {
+		return ContainerToJsonObject(desc).dump(indent);
 	}
 
 	/**
 	 * @brief Serialize a descriptor variant to JSON string
 	 */
 	static std::string ToJson(const CompleteUIDescriptor& desc, const int indent = 2) {
-		nlohmann::json j = std::visit([](const auto& d) { return ToJsonObject(d); }, desc);
+		nlohmann::json j = std::visit(
+			[](const auto& d) -> nlohmann::json {
+				using T = std::decay_t<decltype(d)>;
+				if constexpr (std::is_same_v<T, ButtonDescriptor>) {
+					return ButtonToJsonObject(d);
+				}
+				else if constexpr (std::is_same_v<T, PanelDescriptor>) {
+					return PanelToJsonObject(d);
+				}
+				else if constexpr (std::is_same_v<T, LabelDescriptor>) {
+					return LabelToJsonObject(d);
+				}
+				else if constexpr (std::is_same_v<T, SliderDescriptor>) {
+					return SliderToJsonObject(d);
+				}
+				else if constexpr (std::is_same_v<T, CheckboxDescriptor>) {
+					return CheckboxToJsonObject(d);
+				}
+				else if constexpr (std::is_same_v<T, DividerDescriptor>) {
+					return DividerToJsonObject(d);
+				}
+				else if constexpr (std::is_same_v<T, ProgressBarDescriptor>) {
+					return ProgressBarToJsonObject(d);
+				}
+				else if constexpr (std::is_same_v<T, ImageDescriptor>) {
+					return ImageToJsonObject(d);
+				}
+				else if constexpr (std::is_same_v<T, ContainerDescriptor>) {
+					return ContainerToJsonObject(d);
+				}
+				else {
+					return nlohmann::json{};
+				}
+			},
+			desc);
 		return j.dump(indent);
 	}
 
 	// ========================================================================
-	// Deserialization (JSON -> Descriptor)
+	// Deserialization (JSON -> Descriptor) - Type-specific methods
 	// ========================================================================
 
 	/**
-	 * @brief Deserialize a descriptor from JSON string
-	 *
-	 * @tparam T Descriptor type to deserialize to
-	 * @param json_str JSON string
-	 * @return Deserialized descriptor
+	 * @brief Deserialize a Button descriptor from JSON string
 	 */
-	template <typename T> static T FromJson(const std::string& json_str) {
-		const nlohmann::json j = nlohmann::json::parse(json_str);
-		return FromJsonObject<T>(j);
+	static ButtonDescriptor ButtonFromJson(const std::string& json_str) {
+		return ButtonFromJsonObject(nlohmann::json::parse(json_str));
+	}
+
+	/**
+	 * @brief Deserialize a Panel descriptor from JSON string
+	 */
+	static PanelDescriptor PanelFromJson(const std::string& json_str) {
+		return PanelFromJsonObject(nlohmann::json::parse(json_str));
+	}
+
+	/**
+	 * @brief Deserialize a Label descriptor from JSON string
+	 */
+	static LabelDescriptor LabelFromJson(const std::string& json_str) {
+		return LabelFromJsonObject(nlohmann::json::parse(json_str));
+	}
+
+	/**
+	 * @brief Deserialize a Slider descriptor from JSON string
+	 */
+	static SliderDescriptor SliderFromJson(const std::string& json_str) {
+		return SliderFromJsonObject(nlohmann::json::parse(json_str));
+	}
+
+	/**
+	 * @brief Deserialize a Checkbox descriptor from JSON string
+	 */
+	static CheckboxDescriptor CheckboxFromJson(const std::string& json_str) {
+		return CheckboxFromJsonObject(nlohmann::json::parse(json_str));
+	}
+
+	/**
+	 * @brief Deserialize a Divider descriptor from JSON string
+	 */
+	static DividerDescriptor DividerFromJson(const std::string& json_str) {
+		return DividerFromJsonObject(nlohmann::json::parse(json_str));
+	}
+
+	/**
+	 * @brief Deserialize a ProgressBar descriptor from JSON string
+	 */
+	static ProgressBarDescriptor ProgressBarFromJson(const std::string& json_str) {
+		return ProgressBarFromJsonObject(nlohmann::json::parse(json_str));
+	}
+
+	/**
+	 * @brief Deserialize an Image descriptor from JSON string
+	 */
+	static ImageDescriptor ImageFromJson(const std::string& json_str) {
+		return ImageFromJsonObject(nlohmann::json::parse(json_str));
+	}
+
+	/**
+	 * @brief Deserialize a Container descriptor from JSON string
+	 */
+	static ContainerDescriptor ContainerFromJson(const std::string& json_str) {
+		return ContainerFromJsonObject(nlohmann::json::parse(json_str));
 	}
 
 	/**
@@ -137,8 +275,7 @@ private:
 	}
 
 	static Bounds BoundsFromJson(const nlohmann::json& j) {
-		return Bounds{
-			j.value("x", 0.0f), j.value("y", 0.0f), j.value("width", 100.0f), j.value("height", 100.0f)};
+		return Bounds{j.value("x", 0.0f), j.value("y", 0.0f), j.value("width", 100.0f), j.value("height", 100.0f)};
 	}
 
 	// ========================================================================
@@ -179,7 +316,7 @@ private:
 	// Button Serialization
 	// ========================================================================
 
-	static nlohmann::json ToJsonObject(const ButtonDescriptor& desc) {
+	static nlohmann::json ButtonToJsonObject(const ButtonDescriptor& desc) {
 		return nlohmann::json{{"type", "button"},
 							  {"bounds", BoundsToJson(desc.bounds)},
 							  {"label", desc.label},
@@ -193,7 +330,7 @@ private:
 							  {"visible", desc.visible}};
 	}
 
-	template <> static ButtonDescriptor FromJsonObject<ButtonDescriptor>(const nlohmann::json& j) {
+	static ButtonDescriptor ButtonFromJsonObject(const nlohmann::json& j) {
 		ButtonDescriptor desc;
 		if (j.contains("bounds")) {
 			desc.bounds = BoundsFromJson(j["bounds"]);
@@ -227,7 +364,7 @@ private:
 	// Panel Serialization
 	// ========================================================================
 
-	static nlohmann::json ToJsonObject(const PanelDescriptor& desc) {
+	static nlohmann::json PanelToJsonObject(const PanelDescriptor& desc) {
 		return nlohmann::json{{"type", "panel"},
 							  {"bounds", BoundsToJson(desc.bounds)},
 							  {"background", ColorToJson(desc.background)},
@@ -238,7 +375,7 @@ private:
 							  {"visible", desc.visible}};
 	}
 
-	template <> static PanelDescriptor FromJsonObject<PanelDescriptor>(const nlohmann::json& j) {
+	static PanelDescriptor PanelFromJsonObject(const nlohmann::json& j) {
 		PanelDescriptor desc;
 		if (j.contains("bounds")) {
 			desc.bounds = BoundsFromJson(j["bounds"]);
@@ -260,7 +397,7 @@ private:
 	// Label Serialization
 	// ========================================================================
 
-	static nlohmann::json ToJsonObject(const LabelDescriptor& desc) {
+	static nlohmann::json LabelToJsonObject(const LabelDescriptor& desc) {
 		return nlohmann::json{{"type", "label"},
 							  {"bounds", BoundsToJson(desc.bounds)},
 							  {"text", desc.text},
@@ -268,7 +405,7 @@ private:
 							  {"visible", desc.visible}};
 	}
 
-	template <> static LabelDescriptor FromJsonObject<LabelDescriptor>(const nlohmann::json& j) {
+	static LabelDescriptor LabelFromJsonObject(const nlohmann::json& j) {
 		LabelDescriptor desc;
 		if (j.contains("bounds")) {
 			desc.bounds = BoundsFromJson(j["bounds"]);
@@ -285,7 +422,7 @@ private:
 	// Slider Serialization
 	// ========================================================================
 
-	static nlohmann::json ToJsonObject(const SliderDescriptor& desc) {
+	static nlohmann::json SliderToJsonObject(const SliderDescriptor& desc) {
 		return nlohmann::json{{"type", "slider"},
 							  {"bounds", BoundsToJson(desc.bounds)},
 							  {"min_value", desc.min_value},
@@ -298,7 +435,7 @@ private:
 							  {"visible", desc.visible}};
 	}
 
-	template <> static SliderDescriptor FromJsonObject<SliderDescriptor>(const nlohmann::json& j) {
+	static SliderDescriptor SliderFromJsonObject(const nlohmann::json& j) {
 		SliderDescriptor desc;
 		if (j.contains("bounds")) {
 			desc.bounds = BoundsFromJson(j["bounds"]);
@@ -325,7 +462,7 @@ private:
 	// Checkbox Serialization
 	// ========================================================================
 
-	static nlohmann::json ToJsonObject(const CheckboxDescriptor& desc) {
+	static nlohmann::json CheckboxToJsonObject(const CheckboxDescriptor& desc) {
 		return nlohmann::json{{"type", "checkbox"},
 							  {"bounds", BoundsToJson(desc.bounds)},
 							  {"label", desc.label},
@@ -337,7 +474,7 @@ private:
 							  {"visible", desc.visible}};
 	}
 
-	template <> static CheckboxDescriptor FromJsonObject<CheckboxDescriptor>(const nlohmann::json& j) {
+	static CheckboxDescriptor CheckboxFromJsonObject(const nlohmann::json& j) {
 		CheckboxDescriptor desc;
 		if (j.contains("bounds")) {
 			desc.bounds = BoundsFromJson(j["bounds"]);
@@ -363,7 +500,7 @@ private:
 	// Divider Serialization
 	// ========================================================================
 
-	static nlohmann::json ToJsonObject(const DividerDescriptor& desc) {
+	static nlohmann::json DividerToJsonObject(const DividerDescriptor& desc) {
 		return nlohmann::json{{"type", "divider"},
 							  {"bounds", BoundsToJson(desc.bounds)},
 							  {"color", ColorToJson(desc.color)},
@@ -371,7 +508,7 @@ private:
 							  {"visible", desc.visible}};
 	}
 
-	template <> static DividerDescriptor FromJsonObject<DividerDescriptor>(const nlohmann::json& j) {
+	static DividerDescriptor DividerFromJsonObject(const nlohmann::json& j) {
 		DividerDescriptor desc;
 		if (j.contains("bounds")) {
 			desc.bounds = BoundsFromJson(j["bounds"]);
@@ -388,7 +525,7 @@ private:
 	// ProgressBar Serialization
 	// ========================================================================
 
-	static nlohmann::json ToJsonObject(const ProgressBarDescriptor& desc) {
+	static nlohmann::json ProgressBarToJsonObject(const ProgressBarDescriptor& desc) {
 		return nlohmann::json{{"type", "progress_bar"},
 							  {"bounds", BoundsToJson(desc.bounds)},
 							  {"initial_progress", desc.initial_progress},
@@ -401,7 +538,7 @@ private:
 							  {"visible", desc.visible}};
 	}
 
-	template <> static ProgressBarDescriptor FromJsonObject<ProgressBarDescriptor>(const nlohmann::json& j) {
+	static ProgressBarDescriptor ProgressBarFromJsonObject(const nlohmann::json& j) {
 		ProgressBarDescriptor desc;
 		if (j.contains("bounds")) {
 			desc.bounds = BoundsFromJson(j["bounds"]);
@@ -429,7 +566,7 @@ private:
 	// Image Serialization
 	// ========================================================================
 
-	static nlohmann::json ToJsonObject(const ImageDescriptor& desc) {
+	static nlohmann::json ImageToJsonObject(const ImageDescriptor& desc) {
 		nlohmann::json j{{"type", "image"},
 						 {"bounds", BoundsToJson(desc.bounds)},
 						 {"texture_id", desc.texture_id},
@@ -446,7 +583,7 @@ private:
 		return j;
 	}
 
-	template <> static ImageDescriptor FromJsonObject<ImageDescriptor>(const nlohmann::json& j) {
+	static ImageDescriptor ImageFromJsonObject(const nlohmann::json& j) {
 		ImageDescriptor desc;
 		if (j.contains("bounds")) {
 			desc.bounds = BoundsFromJson(j["bounds"]);
@@ -457,8 +594,8 @@ private:
 		}
 		if (j.contains("uv_coords")) {
 			const auto& uv = j["uv_coords"];
-			desc.uv_coords = UVCoords{uv.value("u0", 0.0f), uv.value("v0", 0.0f), uv.value("u1", 1.0f),
-									  uv.value("v1", 1.0f)};
+			desc.uv_coords =
+				UVCoords{uv.value("u0", 0.0f), uv.value("v0", 0.0f), uv.value("u1", 1.0f), uv.value("v1", 1.0f)};
 		}
 		desc.visible = j.value("visible", true);
 		return desc;
@@ -469,38 +606,69 @@ private:
 	// ========================================================================
 
 	static nlohmann::json ChildVariantToJson(const UIDescriptorVariant& child) {
-		return std::visit([](const auto& c) { return ToJsonObject(c); }, child);
+		return std::visit(
+			[](const auto& c) -> nlohmann::json {
+				using T = std::decay_t<decltype(c)>;
+				if constexpr (std::is_same_v<T, ButtonDescriptor>) {
+					return ButtonToJsonObject(c);
+				}
+				else if constexpr (std::is_same_v<T, PanelDescriptor>) {
+					return PanelToJsonObject(c);
+				}
+				else if constexpr (std::is_same_v<T, LabelDescriptor>) {
+					return LabelToJsonObject(c);
+				}
+				else if constexpr (std::is_same_v<T, SliderDescriptor>) {
+					return SliderToJsonObject(c);
+				}
+				else if constexpr (std::is_same_v<T, CheckboxDescriptor>) {
+					return CheckboxToJsonObject(c);
+				}
+				else if constexpr (std::is_same_v<T, DividerDescriptor>) {
+					return DividerToJsonObject(c);
+				}
+				else if constexpr (std::is_same_v<T, ProgressBarDescriptor>) {
+					return ProgressBarToJsonObject(c);
+				}
+				else if constexpr (std::is_same_v<T, ImageDescriptor>) {
+					return ImageToJsonObject(c);
+				}
+				else {
+					return nlohmann::json{};
+				}
+			},
+			child);
 	}
 
 	static UIDescriptorVariant ChildVariantFromJson(const nlohmann::json& j) {
 		const std::string type = j.value("type", "panel");
 
 		if (type == "button") {
-			return FromJsonObject<ButtonDescriptor>(j);
+			return ButtonFromJsonObject(j);
 		}
 		if (type == "label") {
-			return FromJsonObject<LabelDescriptor>(j);
+			return LabelFromJsonObject(j);
 		}
 		if (type == "slider") {
-			return FromJsonObject<SliderDescriptor>(j);
+			return SliderFromJsonObject(j);
 		}
 		if (type == "checkbox") {
-			return FromJsonObject<CheckboxDescriptor>(j);
+			return CheckboxFromJsonObject(j);
 		}
 		if (type == "divider") {
-			return FromJsonObject<DividerDescriptor>(j);
+			return DividerFromJsonObject(j);
 		}
 		if (type == "progress_bar") {
-			return FromJsonObject<ProgressBarDescriptor>(j);
+			return ProgressBarFromJsonObject(j);
 		}
 		if (type == "image") {
-			return FromJsonObject<ImageDescriptor>(j);
+			return ImageFromJsonObject(j);
 		}
 		// Default to panel
-		return FromJsonObject<PanelDescriptor>(j);
+		return PanelFromJsonObject(j);
 	}
 
-	static nlohmann::json ToJsonObject(const ContainerDescriptor& desc) {
+	static nlohmann::json ContainerToJsonObject(const ContainerDescriptor& desc) {
 		nlohmann::json j{{"type", "container"},
 						 {"bounds", BoundsToJson(desc.bounds)},
 						 {"background", ColorToJson(desc.background)},
@@ -521,7 +689,7 @@ private:
 		return j;
 	}
 
-	template <> static ContainerDescriptor FromJsonObject<ContainerDescriptor>(const nlohmann::json& j) {
+	static ContainerDescriptor ContainerFromJsonObject(const nlohmann::json& j) {
 		ContainerDescriptor desc;
 		if (j.contains("bounds")) {
 			desc.bounds = BoundsFromJson(j["bounds"]);
@@ -554,37 +722,31 @@ private:
 		const std::string type = j.value("type", "panel");
 
 		if (type == "button") {
-			return FromJsonObject<ButtonDescriptor>(j);
+			return ButtonFromJsonObject(j);
 		}
 		if (type == "label") {
-			return FromJsonObject<LabelDescriptor>(j);
+			return LabelFromJsonObject(j);
 		}
 		if (type == "slider") {
-			return FromJsonObject<SliderDescriptor>(j);
+			return SliderFromJsonObject(j);
 		}
 		if (type == "checkbox") {
-			return FromJsonObject<CheckboxDescriptor>(j);
+			return CheckboxFromJsonObject(j);
 		}
 		if (type == "divider") {
-			return FromJsonObject<DividerDescriptor>(j);
+			return DividerFromJsonObject(j);
 		}
 		if (type == "progress_bar") {
-			return FromJsonObject<ProgressBarDescriptor>(j);
+			return ProgressBarFromJsonObject(j);
 		}
 		if (type == "image") {
-			return FromJsonObject<ImageDescriptor>(j);
+			return ImageFromJsonObject(j);
 		}
 		if (type == "container") {
-			return FromJsonObject<ContainerDescriptor>(j);
+			return ContainerFromJsonObject(j);
 		}
 		// Default to panel
-		return FromJsonObject<PanelDescriptor>(j);
-	}
-
-	// Generic template for unknown types
-	template <typename T> static T FromJsonObject(const nlohmann::json& /*j*/) {
-		static_assert(sizeof(T) == 0, "No FromJsonObject specialization for this type");
-		return T{};
+		return PanelFromJsonObject(j);
 	}
 };
 

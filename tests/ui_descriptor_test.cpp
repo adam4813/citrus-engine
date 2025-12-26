@@ -396,7 +396,7 @@ TEST_F(UIJsonSerializerTest, ButtonDescriptor_SerializeDeserialize) {
 	};
 
 	std::string json = UIJsonSerializer::ToJson(desc);
-	auto restored = UIJsonSerializer::FromJson<ButtonDescriptor>(json);
+	auto restored = UIJsonSerializer::ButtonFromJson(json);
 
 	EXPECT_FLOAT_EQ(restored.bounds.x, 10.0f);
 	EXPECT_FLOAT_EQ(restored.bounds.y, 20.0f);
@@ -418,7 +418,7 @@ TEST_F(UIJsonSerializerTest, PanelDescriptor_SerializeDeserialize) {
 	};
 
 	std::string json = UIJsonSerializer::ToJson(desc);
-	auto restored = UIJsonSerializer::FromJson<PanelDescriptor>(json);
+	auto restored = UIJsonSerializer::PanelFromJson(json);
 
 	EXPECT_FLOAT_EQ(restored.bounds.width, 400.0f);
 	EXPECT_FLOAT_EQ(restored.padding, 15.0f);
@@ -436,7 +436,7 @@ TEST_F(UIJsonSerializerTest, LabelDescriptor_SerializeDeserialize) {
 	};
 
 	std::string json = UIJsonSerializer::ToJson(desc);
-	auto restored = UIJsonSerializer::FromJson<LabelDescriptor>(json);
+	auto restored = UIJsonSerializer::LabelFromJson(json);
 
 	EXPECT_EQ(restored.text, "Hello World");
 	EXPECT_FLOAT_EQ(restored.style.font_size, 20.0f);
@@ -454,7 +454,7 @@ TEST_F(UIJsonSerializerTest, SliderDescriptor_SerializeDeserialize) {
 	};
 
 	std::string json = UIJsonSerializer::ToJson(desc);
-	auto restored = UIJsonSerializer::FromJson<SliderDescriptor>(json);
+	auto restored = UIJsonSerializer::SliderFromJson(json);
 
 	EXPECT_FLOAT_EQ(restored.min_value, 0.0f);
 	EXPECT_FLOAT_EQ(restored.max_value, 100.0f);
@@ -472,7 +472,7 @@ TEST_F(UIJsonSerializerTest, CheckboxDescriptor_SerializeDeserialize) {
 	};
 
 	std::string json = UIJsonSerializer::ToJson(desc);
-	auto restored = UIJsonSerializer::FromJson<CheckboxDescriptor>(json);
+	auto restored = UIJsonSerializer::CheckboxFromJson(json);
 
 	EXPECT_EQ(restored.label, "Enable Feature");
 	EXPECT_TRUE(restored.initial_checked);
@@ -498,7 +498,7 @@ TEST_F(UIJsonSerializerTest, ContainerDescriptor_WithChildren_SerializeDeseriali
 	};
 
 	std::string json = UIJsonSerializer::ToJson(desc);
-	auto restored = UIJsonSerializer::FromJson<ContainerDescriptor>(json);
+	auto restored = UIJsonSerializer::ContainerFromJson(json);
 
 	EXPECT_FLOAT_EQ(restored.bounds.x, 100.0f);
 	EXPECT_FLOAT_EQ(restored.bounds.y, 100.0f);

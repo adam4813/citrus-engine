@@ -75,6 +75,11 @@ add_engine_test(ui_theme_test
     ui_theme_test.cpp
 )
 
+# Add physics system test
+add_engine_test(physics_test
+    physics_test.cpp
+)
+
 # Add UI Layout mixin test
 add_engine_test(ui_layout_test
     ui_layout_test.cpp

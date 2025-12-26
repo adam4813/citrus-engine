@@ -60,6 +60,9 @@ target_sources(engine-core
     scene/scene.cppm
     scripting/scripting_backend.cppm
     scripting/scripting_system.cppm
+    physics/physics_types.cppm
+    physics/physics_backend.cppm
+    physics/physics_system.cppm
     ui/ui.cppm
     ui/types.cppm
     ui/text_renderer.cppm
@@ -137,6 +140,12 @@ target_sources(engine-core PRIVATE
     scripting/angelscript_backend.cpp
     scripting/scripting_factory.cpp
 
+    # Physics module implementation
+    physics/physics_factory.cpp
+    physics/jolt_backend.cpp
+    physics/bullet3_backend.cpp
+    physics/physx_backend.cpp
+
     ui/text_renderer.cpp
     ui/batch_renderer/batch_renderer.cpp
 
@@ -151,6 +160,7 @@ target_include_directories(engine-core
     $<INSTALL_INTERFACE:include>
     PRIVATE
     ${STB_INCLUDE_DIRS}
+    ${BULLET_INCLUDE_DIRS}
 )
 
 # Engine dependencies
@@ -162,6 +172,10 @@ target_link_libraries(engine-core
     spdlog::spdlog
     nlohmann_json::nlohmann_json
     imgui::imgui
+    Jolt::Jolt
+    BulletDynamics
+    BulletCollision
+    LinearMath
     PRIVATE
     Angelscript::angelscript
     lua

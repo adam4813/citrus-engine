@@ -1,5 +1,7 @@
 #include <gtest/gtest.h>
 #include <memory>
+#include <string>
+#include <variant>
 
 import engine.ui;
 
@@ -371,4 +373,200 @@ TEST_F(UIFactoryTest, CreateFromCompleteVariant_Container) {
 	auto element = UIFactory::CreateFromVariant(variant);
 
 	ASSERT_NE(element, nullptr);
+}
+
+// ============================================================================
+// UIJsonSerializer Tests
+// ============================================================================
+
+class UIJsonSerializerTest : public ::testing::Test {
+protected:
+	void SetUp() override {}
+	void TearDown() override {}
+};
+
+// === Button JSON Serialization Tests ===
+
+TEST_F(UIJsonSerializerTest, ButtonDescriptor_SerializeDeserialize) {
+	auto desc = ButtonDescriptor{
+		.bounds = {10, 20, 120, 40},
+		.label = "Test Button",
+		.text_style = {.font_size = 18.0f},
+		.enabled = false
+	};
+
+	std::string json = UIJsonSerializer::ToJson(desc);
+	auto restored = UIJsonSerializer::FromJson<ButtonDescriptor>(json);
+
+	EXPECT_FLOAT_EQ(restored.bounds.x, 10.0f);
+	EXPECT_FLOAT_EQ(restored.bounds.y, 20.0f);
+	EXPECT_FLOAT_EQ(restored.bounds.width, 120.0f);
+	EXPECT_FLOAT_EQ(restored.bounds.height, 40.0f);
+	EXPECT_EQ(restored.label, "Test Button");
+	EXPECT_FLOAT_EQ(restored.text_style.font_size, 18.0f);
+	EXPECT_FALSE(restored.enabled);
+}
+
+// === Panel JSON Serialization Tests ===
+
+TEST_F(UIJsonSerializerTest, PanelDescriptor_SerializeDeserialize) {
+	auto desc = PanelDescriptor{
+		.bounds = {0, 0, 400, 300},
+		.padding = 15.0f,
+		.opacity = 0.8f,
+		.clip_children = true
+	};
+
+	std::string json = UIJsonSerializer::ToJson(desc);
+	auto restored = UIJsonSerializer::FromJson<PanelDescriptor>(json);
+
+	EXPECT_FLOAT_EQ(restored.bounds.width, 400.0f);
+	EXPECT_FLOAT_EQ(restored.padding, 15.0f);
+	EXPECT_FLOAT_EQ(restored.opacity, 0.8f);
+	EXPECT_TRUE(restored.clip_children);
+}
+
+// === Label JSON Serialization Tests ===
+
+TEST_F(UIJsonSerializerTest, LabelDescriptor_SerializeDeserialize) {
+	auto desc = LabelDescriptor{
+		.bounds = {10, 10, 200, 24},
+		.text = "Hello World",
+		.style = {.font_size = 20.0f}
+	};
+
+	std::string json = UIJsonSerializer::ToJson(desc);
+	auto restored = UIJsonSerializer::FromJson<LabelDescriptor>(json);
+
+	EXPECT_EQ(restored.text, "Hello World");
+	EXPECT_FLOAT_EQ(restored.style.font_size, 20.0f);
+}
+
+// === Slider JSON Serialization Tests ===
+
+TEST_F(UIJsonSerializerTest, SliderDescriptor_SerializeDeserialize) {
+	auto desc = SliderDescriptor{
+		.bounds = {10, 100, 200, 30},
+		.min_value = 0.0f,
+		.max_value = 100.0f,
+		.initial_value = 75.0f,
+		.label = "Volume"
+	};
+
+	std::string json = UIJsonSerializer::ToJson(desc);
+	auto restored = UIJsonSerializer::FromJson<SliderDescriptor>(json);
+
+	EXPECT_FLOAT_EQ(restored.min_value, 0.0f);
+	EXPECT_FLOAT_EQ(restored.max_value, 100.0f);
+	EXPECT_FLOAT_EQ(restored.initial_value, 75.0f);
+	EXPECT_EQ(restored.label, "Volume");
+}
+
+// === Checkbox JSON Serialization Tests ===
+
+TEST_F(UIJsonSerializerTest, CheckboxDescriptor_SerializeDeserialize) {
+	auto desc = CheckboxDescriptor{
+		.label = "Enable Feature",
+		.initial_checked = true,
+		.enabled = false
+	};
+
+	std::string json = UIJsonSerializer::ToJson(desc);
+	auto restored = UIJsonSerializer::FromJson<CheckboxDescriptor>(json);
+
+	EXPECT_EQ(restored.label, "Enable Feature");
+	EXPECT_TRUE(restored.initial_checked);
+	EXPECT_FALSE(restored.enabled);
+}
+
+// === Container JSON Serialization Tests ===
+
+TEST_F(UIJsonSerializerTest, ContainerDescriptor_WithChildren_SerializeDeserialize) {
+	auto desc = ContainerDescriptor{
+		.bounds = {100, 100, 300, 400},
+		.padding = 10.0f,
+		.children = {
+			LabelDescriptor{
+				.bounds = {0, 0, 200, 24},
+				.text = "Title"
+			},
+			ButtonDescriptor{
+				.bounds = {0, 40, 100, 30},
+				.label = "OK"
+			}
+		}
+	};
+
+	std::string json = UIJsonSerializer::ToJson(desc);
+	auto restored = UIJsonSerializer::FromJson<ContainerDescriptor>(json);
+
+	EXPECT_FLOAT_EQ(restored.bounds.x, 100.0f);
+	EXPECT_FLOAT_EQ(restored.bounds.y, 100.0f);
+	EXPECT_FLOAT_EQ(restored.padding, 10.0f);
+	EXPECT_EQ(restored.children.size(), 2);
+
+	// Verify first child is a label
+	EXPECT_TRUE(std::holds_alternative<LabelDescriptor>(restored.children[0]));
+	const auto& label = std::get<LabelDescriptor>(restored.children[0]);
+	EXPECT_EQ(label.text, "Title");
+
+	// Verify second child is a button
+	EXPECT_TRUE(std::holds_alternative<ButtonDescriptor>(restored.children[1]));
+	const auto& button = std::get<ButtonDescriptor>(restored.children[1]);
+	EXPECT_EQ(button.label, "OK");
+}
+
+// === Auto-Detection Tests ===
+
+TEST_F(UIJsonSerializerTest, FromJsonAuto_DetectsButtonType) {
+	std::string json = R"({
+		"type": "button",
+		"bounds": {"x": 0, "y": 0, "width": 100, "height": 30},
+		"label": "Test"
+	})";
+
+	auto variant = UIJsonSerializer::FromJsonAuto(json);
+
+	EXPECT_TRUE(std::holds_alternative<ButtonDescriptor>(variant));
+	const auto& button = std::get<ButtonDescriptor>(variant);
+	EXPECT_EQ(button.label, "Test");
+}
+
+TEST_F(UIJsonSerializerTest, FromJsonAuto_DetectsContainerType) {
+	std::string json = R"({
+		"type": "container",
+		"bounds": {"x": 0, "y": 0, "width": 400, "height": 300},
+		"padding": 10,
+		"children": [
+			{"type": "label", "text": "Header"}
+		]
+	})";
+
+	auto variant = UIJsonSerializer::FromJsonAuto(json);
+
+	EXPECT_TRUE(std::holds_alternative<ContainerDescriptor>(variant));
+	const auto& container = std::get<ContainerDescriptor>(variant);
+	EXPECT_FLOAT_EQ(container.padding, 10.0f);
+	EXPECT_EQ(container.children.size(), 1);
+}
+
+// === Roundtrip Tests (Serialize -> Deserialize -> Create) ===
+
+TEST_F(UIJsonSerializerTest, Roundtrip_CreateElementFromJson) {
+	std::string json = R"({
+		"type": "button",
+		"bounds": {"x": 10, "y": 20, "width": 120, "height": 40},
+		"label": "Click Me",
+		"enabled": true,
+		"visible": true
+	})";
+
+	auto variant = UIJsonSerializer::FromJsonAuto(json);
+	auto element = UIFactory::CreateFromVariant(variant);
+
+	ASSERT_NE(element, nullptr);
+	EXPECT_FLOAT_EQ(element->GetRelativeX(), 10.0f);
+	EXPECT_FLOAT_EQ(element->GetRelativeY(), 20.0f);
+	EXPECT_FLOAT_EQ(element->GetWidth(), 120.0f);
+	EXPECT_FLOAT_EQ(element->GetHeight(), 40.0f);
 }

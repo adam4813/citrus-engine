@@ -88,6 +88,8 @@ target_sources(engine-core
     ui/components/tooltip.cppm
     ui/components/components.cppm
     ui/builder.cppm
+    ui/descriptor.cppm
+    ui/factory.cppm
     engine.cppm  # Main module last - depends on others
 )
 

@@ -9,6 +9,8 @@ export import :ui_element;
 export import :mouse_event_manager;
 export import :components;
 export import :builder;
+export import :descriptor;
+export import :factory;
 
 // Re-export batch_renderer as a separate submodule
 export import engine.ui.batch_renderer;

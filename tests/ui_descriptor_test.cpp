@@ -3,6 +3,8 @@
 #include <string>
 #include <variant>
 
+#include <nlohmann/json.hpp>
+
 import engine.ui;
 
 using namespace engine::ui;
@@ -395,8 +397,8 @@ TEST_F(UIJsonSerializerTest, ButtonDescriptor_SerializeDeserialize) {
 		.enabled = false
 	};
 
-	std::string json = UIJsonSerializer::ToJson(desc);
-	auto restored = UIJsonSerializer::ButtonFromJson(json);
+	std::string json = UIJsonSerializer::ToJsonString(desc);
+	auto restored = UIJsonSerializer::FromJsonString<ButtonDescriptor>(json);
 
 	EXPECT_FLOAT_EQ(restored.bounds.x, 10.0f);
 	EXPECT_FLOAT_EQ(restored.bounds.y, 20.0f);
@@ -417,8 +419,8 @@ TEST_F(UIJsonSerializerTest, PanelDescriptor_SerializeDeserialize) {
 		.clip_children = true
 	};
 
-	std::string json = UIJsonSerializer::ToJson(desc);
-	auto restored = UIJsonSerializer::PanelFromJson(json);
+	std::string json = UIJsonSerializer::ToJsonString(desc);
+	auto restored = UIJsonSerializer::FromJsonString<PanelDescriptor>(json);
 
 	EXPECT_FLOAT_EQ(restored.bounds.width, 400.0f);
 	EXPECT_FLOAT_EQ(restored.padding, 15.0f);
@@ -435,8 +437,8 @@ TEST_F(UIJsonSerializerTest, LabelDescriptor_SerializeDeserialize) {
 		.style = {.font_size = 20.0f}
 	};
 
-	std::string json = UIJsonSerializer::ToJson(desc);
-	auto restored = UIJsonSerializer::LabelFromJson(json);
+	std::string json = UIJsonSerializer::ToJsonString(desc);
+	auto restored = UIJsonSerializer::FromJsonString<LabelDescriptor>(json);
 
 	EXPECT_EQ(restored.text, "Hello World");
 	EXPECT_FLOAT_EQ(restored.style.font_size, 20.0f);
@@ -453,8 +455,8 @@ TEST_F(UIJsonSerializerTest, SliderDescriptor_SerializeDeserialize) {
 		.label = "Volume"
 	};
 
-	std::string json = UIJsonSerializer::ToJson(desc);
-	auto restored = UIJsonSerializer::SliderFromJson(json);
+	std::string json = UIJsonSerializer::ToJsonString(desc);
+	auto restored = UIJsonSerializer::FromJsonString<SliderDescriptor>(json);
 
 	EXPECT_FLOAT_EQ(restored.min_value, 0.0f);
 	EXPECT_FLOAT_EQ(restored.max_value, 100.0f);
@@ -471,8 +473,8 @@ TEST_F(UIJsonSerializerTest, CheckboxDescriptor_SerializeDeserialize) {
 		.enabled = false
 	};
 
-	std::string json = UIJsonSerializer::ToJson(desc);
-	auto restored = UIJsonSerializer::CheckboxFromJson(json);
+	std::string json = UIJsonSerializer::ToJsonString(desc);
+	auto restored = UIJsonSerializer::FromJsonString<CheckboxDescriptor>(json);
 
 	EXPECT_EQ(restored.label, "Enable Feature");
 	EXPECT_TRUE(restored.initial_checked);
@@ -497,8 +499,8 @@ TEST_F(UIJsonSerializerTest, ContainerDescriptor_WithChildren_SerializeDeseriali
 		}
 	};
 
-	std::string json = UIJsonSerializer::ToJson(desc);
-	auto restored = UIJsonSerializer::ContainerFromJson(json);
+	std::string json = UIJsonSerializer::ToJsonString(desc);
+	auto restored = UIJsonSerializer::FromJsonString<ContainerDescriptor>(json);
 
 	EXPECT_FLOAT_EQ(restored.bounds.x, 100.0f);
 	EXPECT_FLOAT_EQ(restored.bounds.y, 100.0f);
@@ -569,4 +571,38 @@ TEST_F(UIJsonSerializerTest, Roundtrip_CreateElementFromJson) {
 	EXPECT_FLOAT_EQ(element->GetRelativeY(), 20.0f);
 	EXPECT_FLOAT_EQ(element->GetWidth(), 120.0f);
 	EXPECT_FLOAT_EQ(element->GetHeight(), 40.0f);
+}
+
+// === nlohmann ADL Pattern Tests ===
+
+TEST_F(UIJsonSerializerTest, ADL_DirectSerialization) {
+	// Test that nlohmann's ADL pattern works directly
+	ButtonDescriptor desc{
+		.bounds = {5, 10, 100, 50},
+		.label = "ADL Test"
+	};
+
+	// Direct serialization via ADL
+	nlohmann::json j = desc;
+
+	EXPECT_EQ(j["type"], "button");
+	EXPECT_EQ(j["label"], "ADL Test");
+	EXPECT_FLOAT_EQ(j["bounds"]["x"].get<float>(), 5.0f);
+}
+
+TEST_F(UIJsonSerializerTest, ADL_DirectDeserialization) {
+	// Test that nlohmann's ADL pattern works for deserialization
+	nlohmann::json j = {
+		{"type", "label"},
+		{"bounds", {{"x", 10}, {"y", 20}, {"width", 200}, {"height", 30}}},
+		{"text", "ADL Deserialized"},
+		{"visible", true}
+	};
+
+	// Direct deserialization via ADL
+	auto desc = j.get<LabelDescriptor>();
+
+	EXPECT_EQ(desc.text, "ADL Deserialized");
+	EXPECT_FLOAT_EQ(desc.bounds.x, 10.0f);
+	EXPECT_FLOAT_EQ(desc.bounds.width, 200.0f);
 }

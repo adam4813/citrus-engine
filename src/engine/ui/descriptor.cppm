@@ -8,6 +8,8 @@ module;
 #include <variant>
 #include <vector>
 
+#include <nlohmann/json.hpp>
+
 export module engine.ui:descriptor;
 
 import :ui_element;
@@ -512,5 +514,457 @@ using CompleteUIDescriptor = std::variant<ButtonDescriptor,
 										  ProgressBarDescriptor,
 										  ImageDescriptor,
 										  ContainerDescriptor>;
+
+// ============================================================================
+// JSON Serialization (nlohmann ADL pattern)
+// ============================================================================
+// These to_json/from_json functions use nlohmann's ADL (Argument Dependent Lookup)
+// pattern for automatic serialization. This allows:
+// - nlohmann::json j = descriptor;  (calls to_json)
+// - descriptor = j.get<DescriptorType>();  (calls from_json)
+//
+// Note: Callbacks (on_click, on_value_changed, etc.) cannot be serialized.
+// Wire them after loading from JSON.
+// ============================================================================
+
+// --- Private helper functions for types in other namespaces ---
+
+namespace detail {
+
+inline nlohmann::json color_to_json(const batch_renderer::Color& c) {
+	return nlohmann::json{{"r", c.r}, {"g", c.g}, {"b", c.b}, {"a", c.a}};
+}
+
+inline batch_renderer::Color color_from_json(const nlohmann::json& j) {
+	return batch_renderer::Color{
+		j.value("r", 1.0f),
+		j.value("g", 1.0f),
+		j.value("b", 1.0f),
+		j.value("a", 1.0f)
+	};
+}
+
+inline nlohmann::json bounds_to_json(const Bounds& b) {
+	return nlohmann::json{{"x", b.x}, {"y", b.y}, {"width", b.width}, {"height", b.height}};
+}
+
+inline Bounds bounds_from_json(const nlohmann::json& j) {
+	return Bounds{
+		j.value("x", 0.0f),
+		j.value("y", 0.0f),
+		j.value("width", 100.0f),
+		j.value("height", 100.0f)
+	};
+}
+
+inline nlohmann::json border_to_json(const BorderStyle& b) {
+	return nlohmann::json{{"width", b.width}, {"color", color_to_json(b.color)}};
+}
+
+inline BorderStyle border_from_json(const nlohmann::json& j) {
+	BorderStyle b;
+	b.width = j.value("width", 0.0f);
+	if (j.contains("color")) {
+		b.color = color_from_json(j["color"]);
+	}
+	return b;
+}
+
+inline nlohmann::json textstyle_to_json(const TextStyle& t) {
+	return nlohmann::json{{"font_size", t.font_size}, {"color", color_to_json(t.color)}};
+}
+
+inline TextStyle textstyle_from_json(const nlohmann::json& j) {
+	TextStyle t;
+	t.font_size = j.value("font_size", 16.0f);
+	if (j.contains("color")) {
+		t.color = color_from_json(j["color"]);
+	}
+	return t;
+}
+
+inline nlohmann::json uv_to_json(const UVCoords& uv) {
+	return nlohmann::json{{"u0", uv.u0}, {"v0", uv.v0}, {"u1", uv.u1}, {"v1", uv.v1}};
+}
+
+inline UVCoords uv_from_json(const nlohmann::json& j) {
+	return UVCoords{
+		j.value("u0", 0.0f),
+		j.value("v0", 0.0f),
+		j.value("u1", 1.0f),
+		j.value("v1", 1.0f)
+	};
+}
+
+} // namespace detail
+
+// --- ADL functions for Bounds (in this namespace) ---
+
+inline void to_json(nlohmann::json& j, const Bounds& b) {
+	j = detail::bounds_to_json(b);
+}
+
+inline void from_json(const nlohmann::json& j, Bounds& b) {
+	b = detail::bounds_from_json(j);
+}
+
+inline void to_json(nlohmann::json& j, const BorderStyle& b) {
+	j = detail::border_to_json(b);
+}
+
+inline void from_json(const nlohmann::json& j, BorderStyle& b) {
+	b = detail::border_from_json(j);
+}
+
+inline void to_json(nlohmann::json& j, const TextStyle& t) {
+	j = detail::textstyle_to_json(t);
+}
+
+inline void from_json(const nlohmann::json& j, TextStyle& t) {
+	t = detail::textstyle_from_json(j);
+}
+
+inline void to_json(nlohmann::json& j, const UVCoords& uv) {
+	j = detail::uv_to_json(uv);
+}
+
+inline void from_json(const nlohmann::json& j, UVCoords& uv) {
+	uv = detail::uv_from_json(j);
+}
+
+// --- Descriptor serialization ---
+
+inline void to_json(nlohmann::json& j, const ButtonDescriptor& d) {
+	j = nlohmann::json{
+		{"type", "button"},
+		{"bounds", detail::bounds_to_json(d.bounds)},
+		{"label", d.label},
+		{"text_style", detail::textstyle_to_json(d.text_style)},
+		{"normal_color", detail::color_to_json(d.normal_color)},
+		{"hover_color", detail::color_to_json(d.hover_color)},
+		{"pressed_color", detail::color_to_json(d.pressed_color)},
+		{"disabled_color", detail::color_to_json(d.disabled_color)},
+		{"border", detail::border_to_json(d.border)},
+		{"enabled", d.enabled},
+		{"visible", d.visible}
+	};
+}
+
+inline void from_json(const nlohmann::json& j, ButtonDescriptor& d) {
+	if (j.contains("bounds"))
+		d.bounds = detail::bounds_from_json(j["bounds"]);
+	d.label = j.value("label", "");
+	if (j.contains("text_style"))
+		d.text_style = detail::textstyle_from_json(j["text_style"]);
+	if (j.contains("normal_color"))
+		d.normal_color = detail::color_from_json(j["normal_color"]);
+	if (j.contains("hover_color"))
+		d.hover_color = detail::color_from_json(j["hover_color"]);
+	if (j.contains("pressed_color"))
+		d.pressed_color = detail::color_from_json(j["pressed_color"]);
+	if (j.contains("disabled_color"))
+		d.disabled_color = detail::color_from_json(j["disabled_color"]);
+	if (j.contains("border"))
+		d.border = detail::border_from_json(j["border"]);
+	d.enabled = j.value("enabled", true);
+	d.visible = j.value("visible", true);
+}
+
+inline void to_json(nlohmann::json& j, const PanelDescriptor& d) {
+	j = nlohmann::json{
+		{"type", "panel"},
+		{"bounds", detail::bounds_to_json(d.bounds)},
+		{"background", detail::color_to_json(d.background)},
+		{"border", detail::border_to_json(d.border)},
+		{"padding", d.padding},
+		{"opacity", d.opacity},
+		{"clip_children", d.clip_children},
+		{"visible", d.visible}
+	};
+}
+
+inline void from_json(const nlohmann::json& j, PanelDescriptor& d) {
+	if (j.contains("bounds"))
+		d.bounds = detail::bounds_from_json(j["bounds"]);
+	if (j.contains("background"))
+		d.background = detail::color_from_json(j["background"]);
+	if (j.contains("border"))
+		d.border = detail::border_from_json(j["border"]);
+	d.padding = j.value("padding", 0.0f);
+	d.opacity = j.value("opacity", 1.0f);
+	d.clip_children = j.value("clip_children", false);
+	d.visible = j.value("visible", true);
+}
+
+inline void to_json(nlohmann::json& j, const LabelDescriptor& d) {
+	j = nlohmann::json{
+		{"type", "label"},
+		{"bounds", detail::bounds_to_json(d.bounds)},
+		{"text", d.text},
+		{"style", detail::textstyle_to_json(d.style)},
+		{"visible", d.visible}
+	};
+}
+
+inline void from_json(const nlohmann::json& j, LabelDescriptor& d) {
+	if (j.contains("bounds"))
+		d.bounds = detail::bounds_from_json(j["bounds"]);
+	d.text = j.value("text", "");
+	if (j.contains("style"))
+		d.style = detail::textstyle_from_json(j["style"]);
+	d.visible = j.value("visible", true);
+}
+
+inline void to_json(nlohmann::json& j, const SliderDescriptor& d) {
+	j = nlohmann::json{
+		{"type", "slider"},
+		{"bounds", detail::bounds_to_json(d.bounds)},
+		{"min_value", d.min_value},
+		{"max_value", d.max_value},
+		{"initial_value", d.initial_value},
+		{"label", d.label},
+		{"track_color", detail::color_to_json(d.track_color)},
+		{"fill_color", detail::color_to_json(d.fill_color)},
+		{"thumb_color", detail::color_to_json(d.thumb_color)},
+		{"visible", d.visible}
+	};
+}
+
+inline void from_json(const nlohmann::json& j, SliderDescriptor& d) {
+	if (j.contains("bounds"))
+		d.bounds = detail::bounds_from_json(j["bounds"]);
+	d.min_value = j.value("min_value", 0.0f);
+	d.max_value = j.value("max_value", 1.0f);
+	d.initial_value = j.value("initial_value", 0.0f);
+	d.label = j.value("label", "");
+	if (j.contains("track_color"))
+		d.track_color = detail::color_from_json(j["track_color"]);
+	if (j.contains("fill_color"))
+		d.fill_color = detail::color_from_json(j["fill_color"]);
+	if (j.contains("thumb_color"))
+		d.thumb_color = detail::color_from_json(j["thumb_color"]);
+	d.visible = j.value("visible", true);
+}
+
+inline void to_json(nlohmann::json& j, const CheckboxDescriptor& d) {
+	j = nlohmann::json{
+		{"type", "checkbox"},
+		{"bounds", detail::bounds_to_json(d.bounds)},
+		{"label", d.label},
+		{"initial_checked", d.initial_checked},
+		{"unchecked_color", detail::color_to_json(d.unchecked_color)},
+		{"checked_color", detail::color_to_json(d.checked_color)},
+		{"text_style", detail::textstyle_to_json(d.text_style)},
+		{"enabled", d.enabled},
+		{"visible", d.visible}
+	};
+}
+
+inline void from_json(const nlohmann::json& j, CheckboxDescriptor& d) {
+	if (j.contains("bounds"))
+		d.bounds = detail::bounds_from_json(j["bounds"]);
+	d.label = j.value("label", "");
+	d.initial_checked = j.value("initial_checked", false);
+	if (j.contains("unchecked_color"))
+		d.unchecked_color = detail::color_from_json(j["unchecked_color"]);
+	if (j.contains("checked_color"))
+		d.checked_color = detail::color_from_json(j["checked_color"]);
+	if (j.contains("text_style"))
+		d.text_style = detail::textstyle_from_json(j["text_style"]);
+	d.enabled = j.value("enabled", true);
+	d.visible = j.value("visible", true);
+}
+
+inline void to_json(nlohmann::json& j, const DividerDescriptor& d) {
+	j = nlohmann::json{
+		{"type", "divider"},
+		{"bounds", detail::bounds_to_json(d.bounds)},
+		{"color", detail::color_to_json(d.color)},
+		{"horizontal", d.horizontal},
+		{"visible", d.visible}
+	};
+}
+
+inline void from_json(const nlohmann::json& j, DividerDescriptor& d) {
+	if (j.contains("bounds"))
+		d.bounds = detail::bounds_from_json(j["bounds"]);
+	if (j.contains("color"))
+		d.color = detail::color_from_json(j["color"]);
+	d.horizontal = j.value("horizontal", true);
+	d.visible = j.value("visible", true);
+}
+
+inline void to_json(nlohmann::json& j, const ProgressBarDescriptor& d) {
+	j = nlohmann::json{
+		{"type", "progress_bar"},
+		{"bounds", detail::bounds_to_json(d.bounds)},
+		{"initial_progress", d.initial_progress},
+		{"label", d.label},
+		{"show_percentage", d.show_percentage},
+		{"track_color", detail::color_to_json(d.track_color)},
+		{"fill_color", detail::color_to_json(d.fill_color)},
+		{"text_style", detail::textstyle_to_json(d.text_style)},
+		{"border", detail::border_to_json(d.border)},
+		{"visible", d.visible}
+	};
+}
+
+inline void from_json(const nlohmann::json& j, ProgressBarDescriptor& d) {
+	if (j.contains("bounds"))
+		d.bounds = detail::bounds_from_json(j["bounds"]);
+	d.initial_progress = j.value("initial_progress", 0.0f);
+	d.label = j.value("label", "");
+	d.show_percentage = j.value("show_percentage", false);
+	if (j.contains("track_color"))
+		d.track_color = detail::color_from_json(j["track_color"]);
+	if (j.contains("fill_color"))
+		d.fill_color = detail::color_from_json(j["fill_color"]);
+	if (j.contains("text_style"))
+		d.text_style = detail::textstyle_from_json(j["text_style"]);
+	if (j.contains("border"))
+		d.border = detail::border_from_json(j["border"]);
+	d.visible = j.value("visible", true);
+}
+
+inline void to_json(nlohmann::json& j, const ImageDescriptor& d) {
+	j = nlohmann::json{
+		{"type", "image"},
+		{"bounds", detail::bounds_to_json(d.bounds)},
+		{"texture_id", d.texture_id},
+		{"tint", detail::color_to_json(d.tint)},
+		{"visible", d.visible}
+	};
+	if (d.uv_coords) {
+		j["uv_coords"] = detail::uv_to_json(*d.uv_coords);
+	}
+}
+
+inline void from_json(const nlohmann::json& j, ImageDescriptor& d) {
+	if (j.contains("bounds"))
+		d.bounds = detail::bounds_from_json(j["bounds"]);
+	d.texture_id = j.value("texture_id", 0u);
+	if (j.contains("tint"))
+		d.tint = detail::color_from_json(j["tint"]);
+	if (j.contains("uv_coords"))
+		d.uv_coords = detail::uv_from_json(j["uv_coords"]);
+	d.visible = j.value("visible", true);
+}
+
+// Forward declaration for recursive container serialization
+inline void to_json(nlohmann::json& j, const UIDescriptorVariant& v);
+inline void from_json(const nlohmann::json& j, UIDescriptorVariant& v);
+
+inline void to_json(nlohmann::json& j, const ContainerDescriptor& d) {
+	j = nlohmann::json{
+		{"type", "container"},
+		{"bounds", detail::bounds_to_json(d.bounds)},
+		{"background", detail::color_to_json(d.background)},
+		{"border", detail::border_to_json(d.border)},
+		{"padding", d.padding},
+		{"opacity", d.opacity},
+		{"clip_children", d.clip_children},
+		{"visible", d.visible}
+	};
+	if (!d.children.empty()) {
+		j["children"] = nlohmann::json::array();
+		for (const auto& child : d.children) {
+			nlohmann::json child_json;
+			to_json(child_json, child);
+			j["children"].push_back(child_json);
+		}
+	}
+}
+
+inline void from_json(const nlohmann::json& j, ContainerDescriptor& d) {
+	if (j.contains("bounds"))
+		d.bounds = detail::bounds_from_json(j["bounds"]);
+	if (j.contains("background"))
+		d.background = detail::color_from_json(j["background"]);
+	if (j.contains("border"))
+		d.border = detail::border_from_json(j["border"]);
+	d.padding = j.value("padding", 0.0f);
+	d.opacity = j.value("opacity", 1.0f);
+	d.clip_children = j.value("clip_children", false);
+	d.visible = j.value("visible", true);
+	if (j.contains("children") && j["children"].is_array()) {
+		for (const auto& child_json : j["children"]) {
+			UIDescriptorVariant child;
+			from_json(child_json, child);
+			d.children.push_back(std::move(child));
+		}
+	}
+}
+
+// --- Variant serialization (for children) ---
+
+inline void to_json(nlohmann::json& j, const UIDescriptorVariant& v) {
+	std::visit([&j](const auto& d) { to_json(j, d); }, v);
+}
+
+inline void from_json(const nlohmann::json& j, UIDescriptorVariant& v) {
+	const std::string type = j.value("type", "panel");
+	if (type == "button") {
+		v = j.get<ButtonDescriptor>();
+	}
+	else if (type == "label") {
+		v = j.get<LabelDescriptor>();
+	}
+	else if (type == "slider") {
+		v = j.get<SliderDescriptor>();
+	}
+	else if (type == "checkbox") {
+		v = j.get<CheckboxDescriptor>();
+	}
+	else if (type == "divider") {
+		v = j.get<DividerDescriptor>();
+	}
+	else if (type == "progress_bar") {
+		v = j.get<ProgressBarDescriptor>();
+	}
+	else if (type == "image") {
+		v = j.get<ImageDescriptor>();
+	}
+	else {
+		v = j.get<PanelDescriptor>();
+	}
+}
+
+inline void to_json(nlohmann::json& j, const CompleteUIDescriptor& v) {
+	std::visit([&j](const auto& d) { to_json(j, d); }, v);
+}
+
+inline void from_json(const nlohmann::json& j, CompleteUIDescriptor& v) {
+	const std::string type = j.value("type", "panel");
+	if (type == "button") {
+		v = j.get<ButtonDescriptor>();
+	}
+	else if (type == "panel") {
+		v = j.get<PanelDescriptor>();
+	}
+	else if (type == "label") {
+		v = j.get<LabelDescriptor>();
+	}
+	else if (type == "slider") {
+		v = j.get<SliderDescriptor>();
+	}
+	else if (type == "checkbox") {
+		v = j.get<CheckboxDescriptor>();
+	}
+	else if (type == "divider") {
+		v = j.get<DividerDescriptor>();
+	}
+	else if (type == "progress_bar") {
+		v = j.get<ProgressBarDescriptor>();
+	}
+	else if (type == "image") {
+		v = j.get<ImageDescriptor>();
+	}
+	else if (type == "container") {
+		v = j.get<ContainerDescriptor>();
+	}
+	else {
+		v = j.get<PanelDescriptor>();
+	}
+}
 
 } // namespace engine::ui::descriptor

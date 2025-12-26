@@ -11,6 +11,7 @@ export import :components;
 export import :builder;
 export import :descriptor;
 export import :factory;
+export import :factory_registry;
 export import :json_serializer;
 
 // Re-export batch_renderer as a separate submodule

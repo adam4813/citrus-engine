@@ -26,6 +26,12 @@ export namespace engine::ui::descriptor {
  *     }
  * };
  * @endcode
+ *
+ * For JSON-based event binding, use `on_toggle_action` with ActionRegistry:
+ * @code
+ * // In JSON: {"type": "checkbox", "on_toggle_action": "toggle_fullscreen"}
+ * // In code: ActionRegistry::RegisterBoolAction("toggle_fullscreen", handler);
+ * @endcode
  */
 struct CheckboxDescriptor {
 	/// Element ID for event binding (optional)
@@ -57,6 +63,9 @@ struct CheckboxDescriptor {
 
 	/// Toggle callback (not serializable to JSON)
 	std::function<void(bool)> on_toggled;
+
+	/// Named action for toggle (serializable to JSON, resolved via ActionRegistry)
+	std::string on_toggle_action;
 };
 
 // --- JSON Serialization ---
@@ -74,6 +83,9 @@ inline void to_json(nlohmann::json& j, const CheckboxDescriptor& d) {
 		{"enabled", d.enabled},
 		{"visible", d.visible}
 	};
+	if (!d.on_toggle_action.empty()) {
+		j["on_toggle_action"] = d.on_toggle_action;
+	}
 }
 
 inline void from_json(const nlohmann::json& j, CheckboxDescriptor& d) {
@@ -94,6 +106,7 @@ inline void from_json(const nlohmann::json& j, CheckboxDescriptor& d) {
 	}
 	d.enabled = j.value("enabled", true);
 	d.visible = j.value("visible", true);
+	d.on_toggle_action = j.value("on_toggle_action", "");
 }
 
 } // namespace engine::ui::descriptor

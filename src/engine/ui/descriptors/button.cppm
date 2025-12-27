@@ -31,6 +31,12 @@ export namespace engine::ui::descriptor {
  * };
  * auto button = UIFactory::Create(desc);
  * @endcode
+ *
+ * For JSON-based event binding, use `on_click_action` with ActionRegistry:
+ * @code
+ * // In JSON: {"type": "button", "label": "Save", "on_click_action": "save_game"}
+ * // In code: ActionRegistry::RegisterClickAction("save_game", handler);
+ * @endcode
  */
 struct ButtonDescriptor {
 	/// Element ID for event binding (optional)
@@ -68,6 +74,9 @@ struct ButtonDescriptor {
 
 	/// Click callback (optional, not serializable to JSON)
 	UIElement::ClickCallback on_click;
+
+	/// Named action for click (serializable to JSON, resolved via ActionRegistry)
+	std::string on_click_action;
 };
 
 // --- JSON Serialization ---
@@ -87,6 +96,10 @@ inline void to_json(nlohmann::json& j, const ButtonDescriptor& d) {
 		{"enabled", d.enabled},
 		{"visible", d.visible}
 	};
+	// Only include on_click_action if set
+	if (!d.on_click_action.empty()) {
+		j["on_click_action"] = d.on_click_action;
+	}
 }
 
 inline void from_json(const nlohmann::json& j, ButtonDescriptor& d) {
@@ -115,6 +128,7 @@ inline void from_json(const nlohmann::json& j, ButtonDescriptor& d) {
 	}
 	d.enabled = j.value("enabled", true);
 	d.visible = j.value("visible", true);
+	d.on_click_action = j.value("on_click_action", "");
 }
 
 } // namespace engine::ui::descriptor

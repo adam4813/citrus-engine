@@ -27,6 +27,12 @@ export namespace engine::ui::descriptor {
  *     }
  * };
  * @endcode
+ *
+ * For JSON-based event binding, use `on_change_action` with ActionRegistry:
+ * @code
+ * // In JSON: {"type": "slider", "on_change_action": "set_volume"}
+ * // In code: ActionRegistry::RegisterFloatAction("set_volume", handler);
+ * @endcode
  */
 struct SliderDescriptor {
 	/// Element ID for event binding (optional)
@@ -61,6 +67,9 @@ struct SliderDescriptor {
 
 	/// Value changed callback (not serializable to JSON)
 	std::function<void(float)> on_value_changed;
+
+	/// Named action for value change (serializable to JSON, resolved via ActionRegistry)
+	std::string on_change_action;
 };
 
 // --- JSON Serialization ---
@@ -79,6 +88,9 @@ inline void to_json(nlohmann::json& j, const SliderDescriptor& d) {
 		{"thumb_color", detail::color_to_json(d.thumb_color)},
 		{"visible", d.visible}
 	};
+	if (!d.on_change_action.empty()) {
+		j["on_change_action"] = d.on_change_action;
+	}
 }
 
 inline void from_json(const nlohmann::json& j, SliderDescriptor& d) {
@@ -100,6 +112,7 @@ inline void from_json(const nlohmann::json& j, SliderDescriptor& d) {
 		d.thumb_color = detail::color_from_json(j["thumb_color"]);
 	}
 	d.visible = j.value("visible", true);
+	d.on_change_action = j.value("on_change_action", "");
 }
 
 } // namespace engine::ui::descriptor

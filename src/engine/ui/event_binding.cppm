@@ -6,6 +6,8 @@ module;
 #include <unordered_map>
 #include <vector>
 
+#include <nlohmann/json.hpp>
+
 export module engine.ui:event_binding;
 
 import :ui_element;
@@ -15,6 +17,223 @@ import :elements.slider;
 import :elements.checkbox;
 
 export namespace engine::ui {
+
+/**
+ * @brief Registry for named actions that can be referenced from JSON
+ *
+ * ActionRegistry provides a way to specify event handlers declaratively in JSON
+ * by referencing named actions. This bridges the gap between JSON (which cannot
+ * contain code) and runtime callbacks.
+ *
+ * ## How It Works
+ *
+ * 1. Register named actions at application startup
+ * 2. Reference action names in JSON via `on_click_action`, `on_change_action`, etc.
+ * 3. When UI is created from JSON, actions are automatically wired up
+ *
+ * ## JSON Schema
+ *
+ * Descriptors can include action name fields:
+ * - `on_click_action: string` - For buttons
+ * - `on_change_action: string` - For sliders
+ * - `on_toggle_action: string` - For checkboxes
+ *
+ * ## Usage
+ *
+ * @code
+ * // Step 1: Register actions at startup
+ * ActionRegistry::RegisterClickAction("save_game", [](const MouseEvent&) {
+ *     SaveGame();
+ *     return true;
+ * });
+ * ActionRegistry::RegisterFloatAction("set_volume", [](float v) {
+ *     SetVolume(v);
+ * });
+ * ActionRegistry::RegisterBoolAction("toggle_fullscreen", [](bool v) {
+ *     SetFullscreen(v);
+ * });
+ *
+ * // Step 2: Reference in JSON
+ * // {
+ * //   "type": "button",
+ * //   "label": "Save",
+ * //   "on_click_action": "save_game"
+ * // }
+ *
+ * // Step 3: Create UI from JSON (actions auto-wired)
+ * auto ui = UIFactoryRegistry::CreateFromJson(json);
+ *
+ * // Step 4: Apply action bindings
+ * ActionRegistry::ApplyTo(ui.get());
+ * @endcode
+ *
+ * ## Note
+ *
+ * For one-off or context-specific callbacks, continue using EventBindings
+ * after loading. ActionRegistry is best for reusable, global actions.
+ */
+class ActionRegistry {
+public:
+	/// Click action callback type
+	using ClickAction = std::function<bool(const MouseEvent&)>;
+	/// Float value changed callback type
+	using FloatAction = std::function<void(float)>;
+	/// Bool toggled callback type
+	using BoolAction = std::function<void(bool)>;
+
+	/**
+	 * @brief Register a named click action
+	 *
+	 * @param name Action name to reference in JSON
+	 * @param action Callback function
+	 */
+	static void RegisterClickAction(const std::string& name, ClickAction action) {
+		GetClickActions()[name] = std::move(action);
+	}
+
+	/**
+	 * @brief Register a named float value action (for sliders)
+	 *
+	 * @param name Action name to reference in JSON
+	 * @param action Callback function
+	 */
+	static void RegisterFloatAction(const std::string& name, FloatAction action) {
+		GetFloatActions()[name] = std::move(action);
+	}
+
+	/**
+	 * @brief Register a named bool action (for checkboxes)
+	 *
+	 * @param name Action name to reference in JSON
+	 * @param action Callback function
+	 */
+	static void RegisterBoolAction(const std::string& name, BoolAction action) {
+		GetBoolActions()[name] = std::move(action);
+	}
+
+	/**
+	 * @brief Get a registered click action by name
+	 *
+	 * @param name Action name
+	 * @return Pointer to action, or nullptr if not found
+	 */
+	static const ClickAction* GetClickAction(const std::string& name) {
+		const auto& actions = GetClickActions();
+		const auto it = actions.find(name);
+		return it != actions.end() ? &it->second : nullptr;
+	}
+
+	/**
+	 * @brief Get a registered float action by name
+	 *
+	 * @param name Action name
+	 * @return Pointer to action, or nullptr if not found
+	 */
+	static const FloatAction* GetFloatAction(const std::string& name) {
+		const auto& actions = GetFloatActions();
+		const auto it = actions.find(name);
+		return it != actions.end() ? &it->second : nullptr;
+	}
+
+	/**
+	 * @brief Get a registered bool action by name
+	 *
+	 * @param name Action name
+	 * @return Pointer to action, or nullptr if not found
+	 */
+	static const BoolAction* GetBoolAction(const std::string& name) {
+		const auto& actions = GetBoolActions();
+		const auto it = actions.find(name);
+		return it != actions.end() ? &it->second : nullptr;
+	}
+
+	/**
+	 * @brief Clear all registered actions
+	 */
+	static void Clear() {
+		GetClickActions().clear();
+		GetFloatActions().clear();
+		GetBoolActions().clear();
+	}
+
+	/**
+	 * @brief Apply registered actions to a UI tree based on JSON definition
+	 *
+	 * Recursively traverses the JSON and the UI tree, wiring up actions
+	 * based on `on_click_action`, `on_change_action`, and `on_toggle_action` fields.
+	 *
+	 * @param json The JSON used to create the UI
+	 * @param root The root element of the created UI tree
+	 * @return Number of actions successfully applied
+	 */
+	static int ApplyActionsFromJson(const nlohmann::json& json, UIElement* root) {
+		if (!root) {
+			return 0;
+		}
+
+		int applied = 0;
+
+		// Apply click action if specified
+		if (json.contains("on_click_action")) {
+			const std::string action_name = json["on_click_action"];
+			if (const auto* action = GetClickAction(action_name)) {
+				if (auto* button = dynamic_cast<elements::Button*>(root)) {
+					button->SetClickCallback(*action);
+					applied++;
+				}
+			}
+		}
+
+		// Apply change action for sliders
+		if (json.contains("on_change_action")) {
+			const std::string action_name = json["on_change_action"];
+			if (const auto* action = GetFloatAction(action_name)) {
+				if (auto* slider = dynamic_cast<elements::Slider*>(root)) {
+					slider->SetValueChangedCallback(*action);
+					applied++;
+				}
+			}
+		}
+
+		// Apply toggle action for checkboxes
+		if (json.contains("on_toggle_action")) {
+			const std::string action_name = json["on_toggle_action"];
+			if (const auto* action = GetBoolAction(action_name)) {
+				if (auto* checkbox = dynamic_cast<elements::Checkbox*>(root)) {
+					checkbox->SetToggleCallback(*action);
+					applied++;
+				}
+			}
+		}
+
+		// Recursively apply to children
+		if (json.contains("children") && json["children"].is_array()) {
+			const auto& children = root->GetChildren();
+			const auto& json_children = json["children"];
+			for (size_t i = 0; i < json_children.size() && i < children.size(); ++i) {
+				applied += ApplyActionsFromJson(json_children[i], children[i].get());
+			}
+		}
+
+		return applied;
+	}
+
+private:
+	static std::unordered_map<std::string, ClickAction>& GetClickActions() {
+		static std::unordered_map<std::string, ClickAction> actions;
+		return actions;
+	}
+
+	static std::unordered_map<std::string, FloatAction>& GetFloatActions() {
+		static std::unordered_map<std::string, FloatAction> actions;
+		return actions;
+	}
+
+	static std::unordered_map<std::string, BoolAction>& GetBoolActions() {
+		static std::unordered_map<std::string, BoolAction> actions;
+		return actions;
+	}
+};
 
 /**
  * @brief Event binding system for wiring up callbacks after JSON loading

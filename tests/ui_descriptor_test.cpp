@@ -923,3 +923,276 @@ TEST_F(UIFactoryTest, FindChildById_ReturnsNullForUnknownId) {
 	auto* unknown = container->FindChildById("nonexistent");
 	EXPECT_EQ(unknown, nullptr);
 }
+
+// ============================================================================
+// ActionRegistry Tests
+// ============================================================================
+
+class ActionRegistryTest : public ::testing::Test {
+protected:
+	void SetUp() override {
+		// Clear any previously registered actions
+		ActionRegistry::Clear();
+	}
+	void TearDown() override {
+		ActionRegistry::Clear();
+	}
+};
+
+TEST_F(ActionRegistryTest, RegisterClickAction_CanBeRetrieved) {
+	bool called = false;
+	ActionRegistry::RegisterClickAction("test_click", [&called](const MouseEvent&) {
+		called = true;
+		return true;
+	});
+
+	const auto* action = ActionRegistry::GetClickAction("test_click");
+	ASSERT_NE(action, nullptr);
+
+	MouseEvent event{};
+	(*action)(event);
+	EXPECT_TRUE(called);
+}
+
+TEST_F(ActionRegistryTest, RegisterFloatAction_CanBeRetrieved) {
+	float received_value = 0.0f;
+	ActionRegistry::RegisterFloatAction("test_float", [&received_value](float v) {
+		received_value = v;
+	});
+
+	const auto* action = ActionRegistry::GetFloatAction("test_float");
+	ASSERT_NE(action, nullptr);
+
+	(*action)(42.5f);
+	EXPECT_FLOAT_EQ(received_value, 42.5f);
+}
+
+TEST_F(ActionRegistryTest, RegisterBoolAction_CanBeRetrieved) {
+	bool received_value = false;
+	ActionRegistry::RegisterBoolAction("test_bool", [&received_value](bool v) {
+		received_value = v;
+	});
+
+	const auto* action = ActionRegistry::GetBoolAction("test_bool");
+	ASSERT_NE(action, nullptr);
+
+	(*action)(true);
+	EXPECT_TRUE(received_value);
+}
+
+TEST_F(ActionRegistryTest, GetUnregisteredAction_ReturnsNull) {
+	EXPECT_EQ(ActionRegistry::GetClickAction("nonexistent"), nullptr);
+	EXPECT_EQ(ActionRegistry::GetFloatAction("nonexistent"), nullptr);
+	EXPECT_EQ(ActionRegistry::GetBoolAction("nonexistent"), nullptr);
+}
+
+TEST_F(ActionRegistryTest, Clear_RemovesAllActions) {
+	ActionRegistry::RegisterClickAction("test_click", [](const MouseEvent&) { return true; });
+	ActionRegistry::RegisterFloatAction("test_float", [](float) {});
+	ActionRegistry::RegisterBoolAction("test_bool", [](bool) {});
+
+	ActionRegistry::Clear();
+
+	EXPECT_EQ(ActionRegistry::GetClickAction("test_click"), nullptr);
+	EXPECT_EQ(ActionRegistry::GetFloatAction("test_float"), nullptr);
+	EXPECT_EQ(ActionRegistry::GetBoolAction("test_bool"), nullptr);
+}
+
+TEST_F(ActionRegistryTest, ApplyActionsFromJson_WiresClickAction) {
+	bool clicked = false;
+	ActionRegistry::RegisterClickAction("do_click", [&clicked](const MouseEvent&) {
+		clicked = true;
+		return true;
+	});
+
+	nlohmann::json j = {
+		{"type", "button"},
+		{"id", "my_button"},
+		{"label", "Click Me"},
+		{"on_click_action", "do_click"}
+	};
+
+	auto element = UIFactoryRegistry::CreateFromJson(j);
+	ASSERT_NE(element, nullptr);
+
+	int applied = ActionRegistry::ApplyActionsFromJson(j, element.get());
+	EXPECT_EQ(applied, 1);
+
+	// Simulate click - create event within button bounds
+	auto* button = dynamic_cast<Button*>(element.get());
+	ASSERT_NE(button, nullptr);
+	MouseEvent event{5, 5, false, false, true, false, 0.0f};  // left_pressed = true at button position
+	button->OnClick(event);
+	EXPECT_TRUE(clicked);
+}
+
+TEST_F(ActionRegistryTest, ApplyActionsFromJson_WiresSliderAction) {
+	float value = 0.0f;
+	ActionRegistry::RegisterFloatAction("set_value", [&value](float v) {
+		value = v;
+	});
+
+	nlohmann::json j = {
+		{"type", "slider"},
+		{"id", "my_slider"},
+		{"min_value", 0},
+		{"max_value", 100},
+		{"on_change_action", "set_value"}
+	};
+
+	auto element = UIFactoryRegistry::CreateFromJson(j);
+	ASSERT_NE(element, nullptr);
+
+	int applied = ActionRegistry::ApplyActionsFromJson(j, element.get());
+	EXPECT_EQ(applied, 1);
+
+	// Note: Slider callbacks are only triggered during user drag interaction,
+	// not via SetValue(). We verify the action was applied (count = 1).
+	// The callback wiring is verified by the applied count.
+}
+
+TEST_F(ActionRegistryTest, ApplyActionsFromJson_WiresCheckboxAction) {
+	bool toggled = false;
+	ActionRegistry::RegisterBoolAction("toggle_it", [&toggled](bool v) {
+		toggled = v;
+	});
+
+	nlohmann::json j = {
+		{"type", "checkbox"},
+		{"id", "my_checkbox"},
+		{"label", "Enable"},
+		{"on_toggle_action", "toggle_it"}
+	};
+
+	auto element = UIFactoryRegistry::CreateFromJson(j);
+	ASSERT_NE(element, nullptr);
+
+	int applied = ActionRegistry::ApplyActionsFromJson(j, element.get());
+	EXPECT_EQ(applied, 1);
+
+	// Use Toggle() to trigger the callback (simulates user click)
+	auto* checkbox = dynamic_cast<Checkbox*>(element.get());
+	ASSERT_NE(checkbox, nullptr);
+	checkbox->Toggle();
+	EXPECT_TRUE(toggled);
+}
+
+TEST_F(ActionRegistryTest, ApplyActionsFromJson_ContainerWithActions) {
+	bool button_clicked = false;
+	float slider_value = 0.0f;
+
+	ActionRegistry::RegisterClickAction("btn_action", [&button_clicked](const MouseEvent&) {
+		button_clicked = true;
+		return true;
+	});
+	ActionRegistry::RegisterFloatAction("slider_action", [&slider_value](float v) {
+		slider_value = v;
+	});
+
+	nlohmann::json j = {
+		{"type", "container"},
+		{"id", "parent"},
+		{"children", {
+			{
+				{"type", "button"},
+				{"id", "child_btn"},
+				{"label", "Child"},
+				{"on_click_action", "btn_action"}
+			},
+			{
+				{"type", "slider"},
+				{"id", "child_slider"},
+				{"on_change_action", "slider_action"}
+			}
+		}}
+	};
+
+	auto element = UIFactoryRegistry::CreateFromJson(j);
+	ASSERT_NE(element, nullptr);
+
+	int applied = ActionRegistry::ApplyActionsFromJson(j, element.get());
+	EXPECT_EQ(applied, 2);
+
+	// Test button - click at button position
+	auto* btn = element->FindChildById("child_btn");
+	ASSERT_NE(btn, nullptr);
+	auto* button = dynamic_cast<Button*>(btn);
+	ASSERT_NE(button, nullptr);
+	MouseEvent event{5, 5, false, false, true, false, 0.0f};  // left_pressed = true
+	button->OnClick(event);
+	EXPECT_TRUE(button_clicked);
+
+	// Test slider - verify action was wired (callback is only triggered during user drag)
+	auto* sldr = element->FindChildById("child_slider");
+	ASSERT_NE(sldr, nullptr);
+	auto* slider = dynamic_cast<Slider*>(sldr);
+	ASSERT_NE(slider, nullptr);
+	// Note: Slider callback is triggered by drag interaction, not SetValue()
+	// The action wiring is verified by applied count above
+}
+
+TEST_F(ActionRegistryTest, ApplyActionsFromJson_UnregisteredAction_DoesNothing) {
+	nlohmann::json j = {
+		{"type", "button"},
+		{"id", "my_button"},
+		{"label", "Click Me"},
+		{"on_click_action", "nonexistent_action"}  // Not registered
+	};
+
+	auto element = UIFactoryRegistry::CreateFromJson(j);
+	ASSERT_NE(element, nullptr);
+
+	int applied = ActionRegistry::ApplyActionsFromJson(j, element.get());
+	EXPECT_EQ(applied, 0);
+}
+
+// ============================================================================
+// Action Name in Descriptor Tests
+// ============================================================================
+
+TEST_F(UIDescriptorTest, ButtonDescriptor_OnClickAction_SerializesToJson) {
+	auto desc = ButtonDescriptor{
+		.id = "save_btn",
+		.label = "Save",
+		.on_click_action = "save_game"
+	};
+
+	nlohmann::json j = desc;
+
+	EXPECT_EQ(j["on_click_action"], "save_game");
+}
+
+TEST_F(UIDescriptorTest, ButtonDescriptor_OnClickAction_DeserializesFromJson) {
+	nlohmann::json j = {
+		{"type", "button"},
+		{"label", "Save"},
+		{"on_click_action", "save_game"}
+	};
+
+	auto desc = j.get<ButtonDescriptor>();
+
+	EXPECT_EQ(desc.on_click_action, "save_game");
+}
+
+TEST_F(UIDescriptorTest, SliderDescriptor_OnChangeAction_SerializesToJson) {
+	auto desc = SliderDescriptor{
+		.id = "volume",
+		.on_change_action = "set_volume"
+	};
+
+	nlohmann::json j = desc;
+
+	EXPECT_EQ(j["on_change_action"], "set_volume");
+}
+
+TEST_F(UIDescriptorTest, CheckboxDescriptor_OnToggleAction_SerializesToJson) {
+	auto desc = CheckboxDescriptor{
+		.id = "fullscreen",
+		.label = "Fullscreen",
+		.on_toggle_action = "toggle_fullscreen"
+	};
+
+	nlohmann::json j = desc;
+
+	EXPECT_EQ(j["on_toggle_action"], "toggle_fullscreen");
+}

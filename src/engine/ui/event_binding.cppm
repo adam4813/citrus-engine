@@ -202,11 +202,22 @@ private:
  *
  * Provides a fluent interface for creating UI and binding data in one step.
  *
+ * **Lifetime Warning**: The bound references (float&, bool&) must outlive
+ * the DataBinder and any UI elements using these bindings. Typically,
+ * bind to member variables of a long-lived object like a settings struct.
+ *
  * @code
- * auto [ui, bindings] = UIWithBindings::Create(container_desc)
- *     .Bind("volume", settings.volume)
- *     .Bind("fullscreen", settings.fullscreen)
- *     .Build();
+ * // Safe usage: settings outlives the UI
+ * struct Settings {
+ *     float volume = 0.5f;
+ *     bool fullscreen = false;
+ * };
+ * Settings settings; // Must outlive UI
+ *
+ * DataBinder binder;
+ * binder.BindFloat("volume", settings.volume)
+ *       .BindBool("fullscreen", settings.fullscreen);
+ * binder.ApplyTo(ui.get());
  * @endcode
  */
 class DataBinder {
@@ -216,8 +227,10 @@ public:
 	 *
 	 * Creates a two-way binding where changing the slider updates the value.
 	 *
+	 * **Warning**: The referenced float must outlive the UI elements.
+	 *
 	 * @param element_id Slider element ID
-	 * @param value Reference to float to bind
+	 * @param value Reference to float to bind (must remain valid)
 	 * @return Reference to self for chaining
 	 */
 	DataBinder& BindFloat(const std::string& element_id, float& value) {
@@ -230,8 +243,10 @@ public:
 	 *
 	 * Creates a two-way binding where toggling the checkbox updates the value.
 	 *
+	 * **Warning**: The referenced bool must outlive the UI elements.
+	 *
 	 * @param element_id Checkbox element ID
-	 * @param value Reference to bool to bind
+	 * @param value Reference to bool to bind (must remain valid)
 	 * @return Reference to self for chaining
 	 */
 	DataBinder& BindBool(const std::string& element_id, bool& value) {

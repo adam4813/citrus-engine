@@ -16,6 +16,7 @@ export namespace engine::ui::descriptor {
  *
  * @code
  * auto desc = ProgressBarDescriptor{
+ *     .id = "loading_progress",
  *     .bounds = {10, 200, 200, 20},
  *     .initial_progress = 0.0f,
  *     .label = "Loading",
@@ -24,6 +25,9 @@ export namespace engine::ui::descriptor {
  * @endcode
  */
 struct ProgressBarDescriptor {
+	/// Element ID for event binding (optional)
+	std::string id;
+
 	/// Bounds (position and size)
 	Bounds bounds;
 
@@ -57,6 +61,7 @@ struct ProgressBarDescriptor {
 inline void to_json(nlohmann::json& j, const ProgressBarDescriptor& d) {
 	j = nlohmann::json{
 		{"type", "progress_bar"},
+		{"id", d.id},
 		{"bounds", detail::bounds_to_json(d.bounds)},
 		{"initial_progress", d.initial_progress},
 		{"label", d.label},
@@ -70,6 +75,7 @@ inline void to_json(nlohmann::json& j, const ProgressBarDescriptor& d) {
 }
 
 inline void from_json(const nlohmann::json& j, ProgressBarDescriptor& d) {
+	d.id = j.value("id", "");
 	if (j.contains("bounds")) {
 		d.bounds = detail::bounds_from_json(j["bounds"]);
 	}

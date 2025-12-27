@@ -13,6 +13,7 @@ export import :descriptor;
 export import :factory;
 export import :factory_registry;
 export import :json_serializer;
+export import :event_binding;
 
 // Re-export batch_renderer as a separate submodule
 export import engine.ui.batch_renderer;

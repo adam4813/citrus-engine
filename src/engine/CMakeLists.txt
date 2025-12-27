@@ -102,6 +102,7 @@ target_sources(engine-core
     ui/factory.cppm
     ui/factory_registry.cppm
     ui/json_serializer.cppm
+    ui/event_binding.cppm
     engine.cppm  # Main module last - depends on others
 )
 

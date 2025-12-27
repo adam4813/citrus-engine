@@ -86,6 +86,11 @@ public:
 			std::make_unique<elements::Button>(desc.bounds.x, desc.bounds.y, desc.bounds.width, desc.bounds.height,
 											   desc.label, desc.text_style.font_size);
 
+		// Apply ID for event binding
+		if (!desc.id.empty()) {
+			button->SetId(desc.id);
+		}
+
 		// Apply colors
 		button->SetNormalColor(desc.normal_color);
 		button->SetHoverColor(desc.hover_color);
@@ -122,6 +127,11 @@ public:
 	static std::unique_ptr<elements::Panel> Create(const descriptor::PanelDescriptor& desc) {
 		auto panel = std::make_unique<elements::Panel>(desc.bounds.x, desc.bounds.y, desc.bounds.width, desc.bounds.height);
 
+		// Apply ID for event binding
+		if (!desc.id.empty()) {
+			panel->SetId(desc.id);
+		}
+
 		// Apply styling
 		panel->SetBackgroundColor(desc.background);
 		panel->SetBorderWidth(desc.border.width);
@@ -149,6 +159,11 @@ public:
 	static std::unique_ptr<elements::Label> Create(const descriptor::LabelDescriptor& desc) {
 		auto label = std::make_unique<elements::Label>(desc.bounds.x, desc.bounds.y, desc.text, desc.style.font_size);
 
+		// Apply ID for event binding
+		if (!desc.id.empty()) {
+			label->SetId(desc.id);
+		}
+
 		// Apply styling
 		label->SetColor(desc.style.color);
 
@@ -171,6 +186,11 @@ public:
 	static std::unique_ptr<elements::Slider> Create(const descriptor::SliderDescriptor& desc) {
 		auto slider = std::make_unique<elements::Slider>(desc.bounds.x, desc.bounds.y, desc.bounds.width,
 														 desc.bounds.height, desc.min_value, desc.max_value);
+
+		// Apply ID for event binding
+		if (!desc.id.empty()) {
+			slider->SetId(desc.id);
+		}
 
 		// Apply initial value
 		slider->SetValue(desc.initial_value);
@@ -210,6 +230,11 @@ public:
 		auto checkbox = std::make_unique<elements::Checkbox>(desc.bounds.x, desc.bounds.y, desc.label,
 															 desc.text_style.font_size, desc.initial_checked);
 
+		// Apply ID for event binding
+		if (!desc.id.empty()) {
+			checkbox->SetId(desc.id);
+		}
+
 		// Apply styling
 		checkbox->SetBoxColor(desc.unchecked_color);
 		checkbox->SetCheckmarkColor(desc.checked_color);
@@ -243,6 +268,11 @@ public:
 			desc.horizontal ? elements::Orientation::Horizontal : elements::Orientation::Vertical;
 
 		auto divider = std::make_unique<elements::Divider>(orientation, thickness > 0.0f ? thickness : 2.0f);
+
+		// Apply ID for event binding
+		if (!desc.id.empty()) {
+			divider->SetId(desc.id);
+		}
 
 		// Set position
 		divider->SetRelativePosition(desc.bounds.x, desc.bounds.y);
@@ -278,6 +308,11 @@ public:
 		auto progress_bar = std::make_unique<elements::ProgressBar>(
 			desc.bounds.x, desc.bounds.y, desc.bounds.width, desc.bounds.height, desc.initial_progress);
 
+		// Apply ID for event binding
+		if (!desc.id.empty()) {
+			progress_bar->SetId(desc.id);
+		}
+
 		// Apply styling
 		progress_bar->SetTrackColor(desc.track_color);
 		progress_bar->SetFillColor(desc.fill_color);
@@ -310,6 +345,11 @@ public:
 	static std::unique_ptr<elements::Image> Create(const descriptor::ImageDescriptor& desc) {
 		auto image = std::make_unique<elements::Image>(desc.bounds.x, desc.bounds.y, desc.bounds.width,
 													   desc.bounds.height);
+
+		// Apply ID for event binding
+		if (!desc.id.empty()) {
+			image->SetId(desc.id);
+		}
 
 		// Apply sprite if texture_id provided
 		if (desc.texture_id != 0) {
@@ -348,6 +388,11 @@ public:
 	static std::unique_ptr<elements::Container> Create(const descriptor::ContainerDescriptor& desc) {
 		auto container = std::make_unique<elements::Container>(desc.bounds.x, desc.bounds.y, desc.bounds.width,
 															   desc.bounds.height);
+
+		// Apply ID for event binding
+		if (!desc.id.empty()) {
+			container->SetId(desc.id);
+		}
 
 		// Apply styling
 		container->SetBackgroundColor(desc.background);

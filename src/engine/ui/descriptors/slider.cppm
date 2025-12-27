@@ -17,6 +17,7 @@ export namespace engine::ui::descriptor {
  *
  * @code
  * auto desc = SliderDescriptor{
+ *     .id = "volume_slider",
  *     .bounds = {10, 100, 200, 30},
  *     .min_value = 0.0f,
  *     .max_value = 100.0f,
@@ -28,6 +29,9 @@ export namespace engine::ui::descriptor {
  * @endcode
  */
 struct SliderDescriptor {
+	/// Element ID for event binding (optional)
+	std::string id;
+
 	/// Bounds (position and size)
 	Bounds bounds;
 
@@ -64,6 +68,7 @@ struct SliderDescriptor {
 inline void to_json(nlohmann::json& j, const SliderDescriptor& d) {
 	j = nlohmann::json{
 		{"type", "slider"},
+		{"id", d.id},
 		{"bounds", detail::bounds_to_json(d.bounds)},
 		{"min_value", d.min_value},
 		{"max_value", d.max_value},
@@ -77,6 +82,7 @@ inline void to_json(nlohmann::json& j, const SliderDescriptor& d) {
 }
 
 inline void from_json(const nlohmann::json& j, SliderDescriptor& d) {
+	d.id = j.value("id", "");
 	if (j.contains("bounds")) {
 		d.bounds = detail::bounds_from_json(j["bounds"]);
 	}

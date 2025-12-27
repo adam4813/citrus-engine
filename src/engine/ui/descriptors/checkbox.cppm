@@ -17,6 +17,7 @@ export namespace engine::ui::descriptor {
  *
  * @code
  * auto desc = CheckboxDescriptor{
+ *     .id = "fullscreen_checkbox",
  *     .bounds = {10, 50, 150, 24},
  *     .label = "Enable Feature",
  *     .initial_checked = true,
@@ -27,6 +28,9 @@ export namespace engine::ui::descriptor {
  * @endcode
  */
 struct CheckboxDescriptor {
+	/// Element ID for event binding (optional)
+	std::string id;
+
 	/// Bounds (position and size)
 	Bounds bounds;
 
@@ -60,6 +64,7 @@ struct CheckboxDescriptor {
 inline void to_json(nlohmann::json& j, const CheckboxDescriptor& d) {
 	j = nlohmann::json{
 		{"type", "checkbox"},
+		{"id", d.id},
 		{"bounds", detail::bounds_to_json(d.bounds)},
 		{"label", d.label},
 		{"initial_checked", d.initial_checked},
@@ -72,6 +77,7 @@ inline void to_json(nlohmann::json& j, const CheckboxDescriptor& d) {
 }
 
 inline void from_json(const nlohmann::json& j, CheckboxDescriptor& d) {
+	d.id = j.value("id", "");
 	if (j.contains("bounds")) {
 		d.bounds = detail::bounds_from_json(j["bounds"]);
 	}

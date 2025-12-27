@@ -17,6 +17,7 @@ export namespace engine::ui::descriptor {
  *
  * @code
  * auto desc = ImageDescriptor{
+ *     .id = "player_avatar",
  *     .bounds = {10, 10, 64, 64},
  *     .texture_id = myTexture.GetId(),
  *     .tint = Colors::WHITE
@@ -24,6 +25,9 @@ export namespace engine::ui::descriptor {
  * @endcode
  */
 struct ImageDescriptor {
+	/// Element ID for event binding (optional)
+	std::string id;
+
 	/// Bounds (position and size)
 	Bounds bounds;
 
@@ -45,6 +49,7 @@ struct ImageDescriptor {
 inline void to_json(nlohmann::json& j, const ImageDescriptor& d) {
 	j = nlohmann::json{
 		{"type", "image"},
+		{"id", d.id},
 		{"bounds", detail::bounds_to_json(d.bounds)},
 		{"texture_id", d.texture_id},
 		{"tint", detail::color_to_json(d.tint)},
@@ -56,6 +61,7 @@ inline void to_json(nlohmann::json& j, const ImageDescriptor& d) {
 }
 
 inline void from_json(const nlohmann::json& j, ImageDescriptor& d) {
+	d.id = j.value("id", "");
 	if (j.contains("bounds")) {
 		d.bounds = detail::bounds_from_json(j["bounds"]);
 	}

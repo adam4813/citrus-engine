@@ -41,6 +41,7 @@ using UIDescriptorVariant = std::variant<ButtonDescriptor,
  * Supports nested child descriptors for building complex UI hierarchies:
  * @code
  * auto desc = ContainerDescriptor{
+ *     .id = "settings_container",
  *     .bounds = {100, 100, 300, 400},
  *     .background = Colors::DARK_GRAY,
  *     .padding = 10.0f,
@@ -51,12 +52,14 @@ using UIDescriptorVariant = std::variant<ButtonDescriptor,
  *             .style = {.font_size = 20.0f, .color = Colors::GOLD}
  *         },
  *         SliderDescriptor{
+ *             .id = "volume_slider",
  *             .bounds = {0, 40, 200, 30},
  *             .label = "Volume",
  *             .min_value = 0.0f,
  *             .max_value = 100.0f
  *         },
  *         ButtonDescriptor{
+ *             .id = "apply_button",
  *             .bounds = {0, 100, 100, 40},
  *             .label = "Apply"
  *         }
@@ -66,6 +69,9 @@ using UIDescriptorVariant = std::variant<ButtonDescriptor,
  * @endcode
  */
 struct ContainerDescriptor {
+	/// Element ID for event binding (optional)
+	std::string id;
+
 	/// Bounds (position and size)
 	Bounds bounds;
 
@@ -115,6 +121,7 @@ inline void from_json(const nlohmann::json& j, UIDescriptorVariant& v);
 inline void to_json(nlohmann::json& j, const ContainerDescriptor& d) {
 	j = nlohmann::json{
 		{"type", "container"},
+		{"id", d.id},
 		{"bounds", detail::bounds_to_json(d.bounds)},
 		{"background", detail::color_to_json(d.background)},
 		{"border", detail::border_to_json(d.border)},
@@ -134,6 +141,7 @@ inline void to_json(nlohmann::json& j, const ContainerDescriptor& d) {
 }
 
 inline void from_json(const nlohmann::json& j, ContainerDescriptor& d) {
+	d.id = j.value("id", "");
 	if (j.contains("bounds")) {
 		d.bounds = detail::bounds_from_json(j["bounds"]);
 	}

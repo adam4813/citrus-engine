@@ -606,3 +606,320 @@ TEST_F(UIJsonSerializerTest, ADL_DirectDeserialization) {
 	EXPECT_FLOAT_EQ(desc.bounds.x, 10.0f);
 	EXPECT_FLOAT_EQ(desc.bounds.width, 200.0f);
 }
+
+// ============================================================================
+// UIFactoryRegistry Tests
+// ============================================================================
+
+class UIFactoryRegistryTest : public ::testing::Test {
+protected:
+	void SetUp() override {
+		// Ensure registry is initialized
+		UIFactoryRegistry::Initialize();
+	}
+};
+
+TEST_F(UIFactoryRegistryTest, Initialize_RegistersBuiltinTypes) {
+	EXPECT_TRUE(UIFactoryRegistry::IsRegistered("button"));
+	EXPECT_TRUE(UIFactoryRegistry::IsRegistered("panel"));
+	EXPECT_TRUE(UIFactoryRegistry::IsRegistered("label"));
+	EXPECT_TRUE(UIFactoryRegistry::IsRegistered("slider"));
+	EXPECT_TRUE(UIFactoryRegistry::IsRegistered("checkbox"));
+	EXPECT_TRUE(UIFactoryRegistry::IsRegistered("divider"));
+	EXPECT_TRUE(UIFactoryRegistry::IsRegistered("progress_bar"));
+	EXPECT_TRUE(UIFactoryRegistry::IsRegistered("image"));
+	EXPECT_TRUE(UIFactoryRegistry::IsRegistered("container"));
+}
+
+TEST_F(UIFactoryRegistryTest, CreateFromJson_Button) {
+	nlohmann::json j = {
+		{"type", "button"},
+		{"id", "test_button"},
+		{"bounds", {{"x", 10}, {"y", 20}, {"width", 120}, {"height", 40}}},
+		{"label", "Click Me"}
+	};
+
+	auto element = UIFactoryRegistry::CreateFromJson(j);
+
+	ASSERT_NE(element, nullptr);
+	EXPECT_EQ(element->GetId(), "test_button");
+	EXPECT_FLOAT_EQ(element->GetRelativeX(), 10.0f);
+	EXPECT_FLOAT_EQ(element->GetWidth(), 120.0f);
+}
+
+TEST_F(UIFactoryRegistryTest, CreateFromJson_ContainerWithChildren) {
+	nlohmann::json j = {
+		{"type", "container"},
+		{"id", "settings_container"},
+		{"bounds", {{"x", 0}, {"y", 0}, {"width", 400}, {"height", 300}}},
+		{"children", {
+			{
+				{"type", "label"},
+				{"id", "title"},
+				{"text", "Settings"}
+			},
+			{
+				{"type", "slider"},
+				{"id", "volume_slider"},
+				{"min_value", 0.0f},
+				{"max_value", 100.0f}
+			}
+		}}
+	};
+
+	auto element = UIFactoryRegistry::CreateFromJson(j);
+
+	ASSERT_NE(element, nullptr);
+	EXPECT_EQ(element->GetId(), "settings_container");
+	EXPECT_EQ(element->GetChildren().size(), 2);
+
+	// Check children have IDs
+	auto* title = element->FindChildById("title");
+	EXPECT_NE(title, nullptr);
+
+	auto* slider = element->FindChildById("volume_slider");
+	EXPECT_NE(slider, nullptr);
+}
+
+TEST_F(UIFactoryRegistryTest, CreateFromJson_UnknownType_ReturnsNull) {
+	nlohmann::json j = {
+		{"type", "unknown_widget"},
+		{"bounds", {{"x", 0}, {"y", 0}, {"width", 100}, {"height", 100}}}
+	};
+
+	auto element = UIFactoryRegistry::CreateFromJson(j);
+
+	EXPECT_EQ(element, nullptr);
+}
+
+TEST_F(UIFactoryRegistryTest, GetRegisteredTypes_ContainsAllBuiltins) {
+	auto types = UIFactoryRegistry::GetRegisteredTypes();
+
+	EXPECT_GE(types.size(), 9u); // At least 9 built-in types
+}
+
+// ============================================================================
+// EventBindings Tests
+// ============================================================================
+
+class EventBindingsTest : public ::testing::Test {
+protected:
+	void SetUp() override {}
+};
+
+TEST_F(EventBindingsTest, BindingCount_TracksRegisteredBindings) {
+	EventBindings bindings;
+
+	EXPECT_EQ(bindings.BindingCount(), 0u);
+
+	bindings.OnClick("button1", [](const MouseEvent&) { return true; });
+	EXPECT_EQ(bindings.BindingCount(), 1u);
+
+	bindings.OnSliderChanged("slider1", [](float) {});
+	EXPECT_EQ(bindings.BindingCount(), 2u);
+
+	bindings.OnCheckboxToggled("checkbox1", [](bool) {});
+	EXPECT_EQ(bindings.BindingCount(), 3u);
+}
+
+TEST_F(EventBindingsTest, Clear_RemovesAllBindings) {
+	EventBindings bindings;
+
+	bindings.OnClick("button1", [](const MouseEvent&) { return true; });
+	bindings.OnSliderChanged("slider1", [](float) {});
+
+	bindings.Clear();
+
+	EXPECT_EQ(bindings.BindingCount(), 0u);
+}
+
+TEST_F(EventBindingsTest, ApplyTo_NullRoot_ReturnsZero) {
+	EventBindings bindings;
+	bindings.OnClick("button1", [](const MouseEvent&) { return true; });
+
+	int applied = bindings.ApplyTo(nullptr);
+
+	EXPECT_EQ(applied, 0);
+}
+
+TEST_F(EventBindingsTest, ApplyTo_ButtonBinding) {
+	// Create a button with ID
+	auto button = UIFactory::Create(ButtonDescriptor{
+		.id = "save_button",
+		.bounds = {10, 10, 100, 30},
+		.label = "Save"
+	});
+
+	bool clicked = false;
+	EventBindings bindings;
+	bindings.OnClick("save_button", [&clicked](const MouseEvent&) {
+		clicked = true;
+		return true;
+	});
+
+	int applied = bindings.ApplyTo(button.get());
+
+	EXPECT_EQ(applied, 1);
+
+	// The callback should be wired up - simulate a click
+	MouseEvent event;
+	event.x = 50.0f;
+	event.y = 25.0f;
+	event.left_pressed = true;
+	button->ProcessMouseEvent(event);
+
+	EXPECT_TRUE(clicked);
+}
+
+TEST_F(EventBindingsTest, ApplyTo_SliderBinding) {
+	auto slider = UIFactory::Create(SliderDescriptor{
+		.id = "volume_slider",
+		.bounds = {10, 10, 200, 30},
+		.min_value = 0.0f,
+		.max_value = 100.0f
+	});
+
+	float captured_value = -1.0f;
+	EventBindings bindings;
+	bindings.OnSliderChanged("volume_slider", [&captured_value](float v) {
+		captured_value = v;
+	});
+
+	int applied = bindings.ApplyTo(slider.get());
+
+	EXPECT_EQ(applied, 1);
+}
+
+TEST_F(EventBindingsTest, ApplyTo_CheckboxBinding) {
+	auto checkbox = UIFactory::Create(CheckboxDescriptor{
+		.id = "fullscreen_checkbox",
+		.label = "Fullscreen"
+	});
+
+	bool captured_state = false;
+	EventBindings bindings;
+	bindings.OnCheckboxToggled("fullscreen_checkbox", [&captured_state](bool v) {
+		captured_state = v;
+	});
+
+	int applied = bindings.ApplyTo(checkbox.get());
+
+	EXPECT_EQ(applied, 1);
+}
+
+TEST_F(EventBindingsTest, ApplyTo_ContainerWithMultipleBindings) {
+	auto container = UIFactory::Create(ContainerDescriptor{
+		.id = "settings_panel",
+		.bounds = {0, 0, 400, 300},
+		.children = {
+			ButtonDescriptor{
+				.id = "apply_button",
+				.bounds = {10, 10, 100, 30},
+				.label = "Apply"
+			},
+			SliderDescriptor{
+				.id = "brightness_slider",
+				.bounds = {10, 50, 200, 30}
+			},
+			CheckboxDescriptor{
+				.id = "vsync_checkbox",
+				.label = "VSync"
+			}
+		}
+	});
+
+	EventBindings bindings;
+	bindings.OnClick("apply_button", [](const MouseEvent&) { return true; });
+	bindings.OnSliderChanged("brightness_slider", [](float) {});
+	bindings.OnCheckboxToggled("vsync_checkbox", [](bool) {});
+
+	int applied = bindings.ApplyTo(container.get());
+
+	EXPECT_EQ(applied, 3);
+}
+
+// ============================================================================
+// DataBinder Tests
+// ============================================================================
+
+TEST_F(EventBindingsTest, DataBinder_BindFloat) {
+	float volume = 0.5f;
+
+	DataBinder binder;
+	binder.BindFloat("volume_slider", volume);
+
+	EXPECT_EQ(binder.GetBindings().BindingCount(), 1u);
+}
+
+TEST_F(EventBindingsTest, DataBinder_BindBool) {
+	bool fullscreen = false;
+
+	DataBinder binder;
+	binder.BindBool("fullscreen_checkbox", fullscreen);
+
+	EXPECT_EQ(binder.GetBindings().BindingCount(), 1u);
+}
+
+TEST_F(EventBindingsTest, DataBinder_BindAction) {
+	bool action_called = false;
+
+	DataBinder binder;
+	binder.BindAction("apply_button", [&action_called]() { action_called = true; });
+
+	EXPECT_EQ(binder.GetBindings().BindingCount(), 1u);
+}
+
+TEST_F(EventBindingsTest, DataBinder_Chaining) {
+	float volume = 0.5f;
+	bool muted = false;
+
+	DataBinder binder;
+	binder.BindFloat("volume", volume)
+		  .BindBool("muted", muted)
+		  .BindAction("apply", []() {});
+
+	EXPECT_EQ(binder.GetBindings().BindingCount(), 3u);
+}
+
+// ============================================================================
+// ID Tests
+// ============================================================================
+
+TEST_F(UIFactoryTest, CreateWithId_ButtonHasId) {
+	auto button = UIFactory::Create(ButtonDescriptor{
+		.id = "my_button",
+		.label = "Test"
+	});
+
+	EXPECT_EQ(button->GetId(), "my_button");
+}
+
+TEST_F(UIFactoryTest, CreateWithId_ContainerChildrenHaveIds) {
+	auto container = UIFactory::Create(ContainerDescriptor{
+		.id = "parent",
+		.children = {
+			ButtonDescriptor{.id = "child1", .label = "Button1"},
+			LabelDescriptor{.id = "child2", .text = "Label2"}
+		}
+	});
+
+	EXPECT_EQ(container->GetId(), "parent");
+
+	auto* child1 = container->FindChildById("child1");
+	EXPECT_NE(child1, nullptr);
+
+	auto* child2 = container->FindChildById("child2");
+	EXPECT_NE(child2, nullptr);
+}
+
+TEST_F(UIFactoryTest, FindChildById_ReturnsNullForUnknownId) {
+	auto container = UIFactory::Create(ContainerDescriptor{
+		.id = "parent",
+		.children = {
+			ButtonDescriptor{.id = "child1", .label = "Button1"}
+		}
+	});
+
+	auto* unknown = container->FindChildById("nonexistent");
+	EXPECT_EQ(unknown, nullptr);
+}

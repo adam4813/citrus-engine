@@ -1,5 +1,7 @@
 module;
 
+#include <string>
+
 #include <nlohmann/json.hpp>
 
 export module engine.ui:descriptors.divider;
@@ -13,6 +15,9 @@ export namespace engine::ui::descriptor {
  * @brief Declarative descriptor for Divider elements
  */
 struct DividerDescriptor {
+	/// Element ID for event binding (optional)
+	std::string id;
+
 	/// Bounds (position and size)
 	Bounds bounds;
 
@@ -31,6 +36,7 @@ struct DividerDescriptor {
 inline void to_json(nlohmann::json& j, const DividerDescriptor& d) {
 	j = nlohmann::json{
 		{"type", "divider"},
+		{"id", d.id},
 		{"bounds", detail::bounds_to_json(d.bounds)},
 		{"color", detail::color_to_json(d.color)},
 		{"horizontal", d.horizontal},
@@ -39,6 +45,7 @@ inline void to_json(nlohmann::json& j, const DividerDescriptor& d) {
 }
 
 inline void from_json(const nlohmann::json& j, DividerDescriptor& d) {
+	d.id = j.value("id", "");
 	if (j.contains("bounds")) {
 		d.bounds = detail::bounds_from_json(j["bounds"]);
 	}

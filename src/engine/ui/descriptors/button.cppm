@@ -21,6 +21,7 @@ export namespace engine::ui::descriptor {
  * Use designated initializers for clean, readable construction:
  * @code
  * auto desc = ButtonDescriptor{
+ *     .id = "save_button",
  *     .bounds = {10, 10, 120, 40},
  *     .label = "Click Me",
  *     .on_click = [](const MouseEvent&) {
@@ -32,6 +33,9 @@ export namespace engine::ui::descriptor {
  * @endcode
  */
 struct ButtonDescriptor {
+	/// Element ID for event binding (optional)
+	std::string id;
+
 	/// Bounds (position and size)
 	Bounds bounds;
 
@@ -71,6 +75,7 @@ struct ButtonDescriptor {
 inline void to_json(nlohmann::json& j, const ButtonDescriptor& d) {
 	j = nlohmann::json{
 		{"type", "button"},
+		{"id", d.id},
 		{"bounds", detail::bounds_to_json(d.bounds)},
 		{"label", d.label},
 		{"text_style", detail::textstyle_to_json(d.text_style)},
@@ -85,6 +90,7 @@ inline void to_json(nlohmann::json& j, const ButtonDescriptor& d) {
 }
 
 inline void from_json(const nlohmann::json& j, ButtonDescriptor& d) {
+	d.id = j.value("id", "");
 	if (j.contains("bounds")) {
 		d.bounds = detail::bounds_from_json(j["bounds"]);
 	}

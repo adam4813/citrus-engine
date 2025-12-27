@@ -1,5 +1,7 @@
 module;
 
+#include <string>
+
 #include <nlohmann/json.hpp>
 
 export module engine.ui:descriptors.panel;
@@ -14,6 +16,7 @@ export namespace engine::ui::descriptor {
  *
  * @code
  * auto desc = PanelDescriptor{
+ *     .id = "settings_panel",
  *     .bounds = {0, 0, 400, 300},
  *     .background = Colors::DARK_GRAY,
  *     .padding = 10.0f,
@@ -23,6 +26,9 @@ export namespace engine::ui::descriptor {
  * @endcode
  */
 struct PanelDescriptor {
+	/// Element ID for event binding (optional)
+	std::string id;
+
 	/// Bounds (position and size)
 	Bounds bounds;
 
@@ -50,6 +56,7 @@ struct PanelDescriptor {
 inline void to_json(nlohmann::json& j, const PanelDescriptor& d) {
 	j = nlohmann::json{
 		{"type", "panel"},
+		{"id", d.id},
 		{"bounds", detail::bounds_to_json(d.bounds)},
 		{"background", detail::color_to_json(d.background)},
 		{"border", detail::border_to_json(d.border)},
@@ -61,6 +68,7 @@ inline void to_json(nlohmann::json& j, const PanelDescriptor& d) {
 }
 
 inline void from_json(const nlohmann::json& j, PanelDescriptor& d) {
+	d.id = j.value("id", "");
 	if (j.contains("bounds")) {
 		d.bounds = detail::bounds_from_json(j["bounds"]);
 	}

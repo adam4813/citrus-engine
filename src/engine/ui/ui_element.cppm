@@ -5,6 +5,7 @@ module;
 #include <functional>
 #include <memory>
 #include <ranges>
+#include <string>
 #include <typeindex>
 #include <unordered_map>
 #include <vector>
@@ -329,6 +330,45 @@ public:
          * @return Reference to children vector (read-only)
          */
 	const std::vector<std::unique_ptr<UIElement>>& GetChildren() const { return children_; }
+
+	// === Identifier ===
+
+	/**
+	 * @brief Set the element ID for event binding
+	 *
+	 * The ID is used by EventBindings to locate elements after
+	 * loading UI from JSON. IDs should be unique within a UI tree.
+	 *
+	 * @param id Element identifier string
+	 */
+	void SetId(const std::string& id) { id_ = id; }
+
+	/**
+	 * @brief Get the element ID
+	 * @return Element identifier string (empty if not set)
+	 */
+	const std::string& GetId() const { return id_; }
+
+	/**
+	 * @brief Find a child element by ID (recursive search)
+	 *
+	 * Searches this element and all descendants for an element with
+	 * the given ID.
+	 *
+	 * @param id ID to search for
+	 * @return Pointer to element, or nullptr if not found
+	 */
+	UIElement* FindChildById(const std::string& id) {
+		if (id_ == id) {
+			return this;
+		}
+		for (const auto& child : children_) {
+			if (auto* found = child->FindChildById(id)) {
+				return found;
+			}
+		}
+		return nullptr;
+	}
 
 	// === Bounds Calculation ===
 
@@ -863,6 +903,9 @@ protected:
 	bool is_focused_ = false;
 	bool is_hovered_ = false;
 	bool is_visible_ = true;
+
+	// Element identifier for event binding
+	std::string id_;
 
 	// Event callbacks (optional, for composition-based event handling)
 	ClickCallback click_callback_;

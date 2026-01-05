@@ -109,3 +109,8 @@ add_engine_test(ui_tab_container_test
 add_engine_test(ui_tooltip_test
     ui_tooltip_test.cpp
 )
+
+# Add UI Descriptor and Factory test
+add_engine_test(ui_descriptor_test
+    ui_descriptor_test.cpp
+)

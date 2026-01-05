@@ -1,6 +1,7 @@
 #include "editor_scene.h"
 
 #include <imgui.h>
+#include <imgui_internal.h>
 #include <iostream>
 
 namespace editor {
@@ -16,7 +17,7 @@ void EditorScene::Initialize(engine::Engine& engine) {
 	engine::scene::InitializeSceneSystem(engine.ecs);
 
 	// Create a new empty scene for editing
-	auto& scene_manager = engine::scene::GetSceneManager();
+	const auto& scene_manager = engine::scene::GetSceneManager();
 	editor_scene_id_ = scene_manager.CreateScene("UntitledScene");
 	scene_manager.SetActiveScene(editor_scene_id_);
 
@@ -43,7 +44,7 @@ void EditorScene::Update(engine::Engine& engine, float delta_time) {
 	}
 }
 
-void EditorScene::Render(engine::Engine& engine) {
+void EditorScene::Render(engine::Engine& engine) const {
 	// Render the active scene if in play mode
 	if (state_.is_running) {
 		auto& scene_manager = engine::scene::GetSceneManager();
@@ -52,8 +53,29 @@ void EditorScene::Render(engine::Engine& engine) {
 }
 
 void EditorScene::RenderUI(engine::Engine& engine) {
+	const ImGuiID dockspace_id = ImGui::GetID("My Dockspace");
+	const ImGuiViewport* viewport = ImGui::GetMainViewport();
+
+	// Create settings
+	if (ImGui::DockBuilderGetNode(dockspace_id) == nullptr) {
+		ImGui::DockBuilderAddNode(dockspace_id, ImGuiDockNodeFlags_DockSpace);
+		ImGui::DockBuilderSetNodeSize(dockspace_id, viewport->Size);
+		ImGuiID dock_id_left = 0;
+		ImGuiID dock_id_main = dockspace_id;
+		ImGui::DockBuilderSplitNode(dock_id_main, ImGuiDir_Left, 0.20f, &dock_id_left, &dock_id_main);
+		ImGuiID dock_id_left_top = 0;
+		ImGuiID dock_id_left_bottom = 0;
+		ImGui::DockBuilderSplitNode(dock_id_left, ImGuiDir_Up, 0.50f, &dock_id_left_top, &dock_id_left_bottom);
+		ImGui::DockBuilderDockWindow("Hierarchy", dock_id_left_top);
+		ImGui::DockBuilderDockWindow("Properties", dock_id_left_bottom);
+		ImGui::DockBuilderDockWindow("Viewport", dock_id_main);
+		ImGui::DockBuilderFinish(dockspace_id);
+	}
+
+	// Submit dockspace
+	ImGui::DockSpaceOverViewport(dockspace_id, viewport, ImGuiDockNodeFlags_PassthruCentralNode);
+
 	RenderMenuBar();
-	RenderToolbar();
 	RenderHierarchyPanel();
 	RenderPropertiesPanel();
 	RenderViewportPanel();
@@ -121,6 +143,8 @@ void EditorScene::RenderUI(engine::Engine& engine) {
 }
 
 void EditorScene::RenderMenuBar() {
+	constexpr float MENU_PADDING = 6.0f;
+	ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, {MENU_PADDING, MENU_PADDING});
 	if (ImGui::BeginMainMenuBar()) {
 		if (ImGui::BeginMenu("File")) {
 			if (ImGui::MenuItem("New", "Ctrl+N")) {
@@ -187,7 +211,7 @@ void EditorScene::RenderMenuBar() {
 			if (ImGui::MenuItem("Add Entity")) {
 				// Add a new entity to the scene
 				auto& scene_manager = engine::scene::GetSceneManager();
-				if (auto* scene = scene_manager.TryGetScene(editor_scene_id_)) {
+				if (const auto* scene = scene_manager.TryGetScene(editor_scene_id_)) {
 					scene->CreateEntity("NewEntity");
 					state_.is_dirty = true;
 				}
@@ -195,69 +219,44 @@ void EditorScene::RenderMenuBar() {
 			ImGui::EndMenu();
 		}
 
+		ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 2 - 30); // Centered approx
+		ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, {MENU_PADDING / 2.f, MENU_PADDING / 2.f});
+		ImGui::SetCursorPosY(MENU_PADDING / 2.f);
+		// Play/Stop buttons
+		if (!state_.is_running) {
+			if (ImGui::Button("Play")) {
+				PlayScene();
+			}
+		}
+		else {
+			if (ImGui::Button("Stop")) {
+				StopScene();
+			}
+		}
+		ImGui::PopStyleVar();
+
 		// Display current scene info on the right side of menu bar
 		std::string title = state_.current_file_path.empty() ? "Untitled" : state_.current_file_path;
 		if (state_.is_dirty) {
 			title += " *";
 		}
-		float text_width = ImGui::CalcTextSize(title.c_str()).x;
+		const float text_width = ImGui::CalcTextSize(title.c_str()).x;
 		ImGui::SetCursorPosX(ImGui::GetWindowWidth() - text_width - 20);
 		ImGui::TextDisabled("%s", title.c_str());
 
 		ImGui::EndMainMenuBar();
 	}
-}
-
-void EditorScene::RenderToolbar() {
-	ImGui::Begin("Toolbar", nullptr,
-				 ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
-
-	// Play/Stop buttons
-	if (!state_.is_running) {
-		if (ImGui::Button("Play")) {
-			PlayScene();
-		}
-	}
-	else {
-		if (ImGui::Button("Stop")) {
-			StopScene();
-		}
-	}
-
-	ImGui::SameLine();
-	ImGui::TextDisabled("|");
-	ImGui::SameLine();
-
-	// Quick save button
-	if (ImGui::Button("Save")) {
-		if (state_.current_file_path.empty()) {
-			file_path_buffer_[0] = '\0'; // Clear buffer for new input
-			state_.show_save_as_dialog = true;
-		}
-		else {
-			SaveScene();
-		}
-	}
-
-	ImGui::SameLine();
-
-	// Scene info
-	ImGui::TextDisabled("|");
-	ImGui::SameLine();
-	ImGui::Text("Scene: %s",
-				state_.current_file_path.empty() ? "Untitled" : state_.current_file_path.c_str());
-
-	if (state_.is_dirty) {
-		ImGui::SameLine();
-		ImGui::TextColored(ImVec4(1.0f, 0.5f, 0.0f, 1.0f), "(unsaved)");
-	}
-
-	ImGui::End();
+	ImGui::PopStyleVar();
 }
 
 void EditorScene::RenderHierarchyPanel() {
 	if (!show_hierarchy_)
 		return;
+
+	ImGuiWindowClass winClass;
+	winClass.DockNodeFlagsOverrideSet = ImGuiDockNodeFlags_NoWindowMenuButton | ImGuiDockNodeFlags_NoDockingOverMe
+										| ImGuiDockNodeFlags_NoDockingOverOther | ImGuiDockNodeFlags_NoDockingOverEmpty;
+	ImGui::SetNextWindowClass(&winClass);
 
 	ImGui::Begin("Hierarchy", &show_hierarchy_);
 
@@ -266,12 +265,9 @@ void EditorScene::RenderHierarchyPanel() {
 
 	// Get all entities from the current scene
 	auto& scene_manager = engine::scene::GetSceneManager();
-	auto* scene = scene_manager.TryGetScene(editor_scene_id_);
 
-	if (scene) {
-		auto entities = scene->GetAllEntities();
-
-		if (entities.empty()) {
+	if (auto* scene = scene_manager.TryGetScene(editor_scene_id_)) {
+		if (const auto entities = scene->GetAllEntities(); entities.empty()) {
 			ImGui::TextDisabled("No entities in scene");
 			ImGui::TextDisabled("Use Scene > Add Entity to create one");
 		}
@@ -287,8 +283,8 @@ void EditorScene::RenderHierarchyPanel() {
 					flags |= ImGuiTreeNodeFlags_Selected;
 				}
 
-				if (ImGui::TreeNodeEx(reinterpret_cast<void*>(static_cast<intptr_t>(entity.id())), flags, "%s",
-									  name.c_str())) {
+				if (ImGui::TreeNodeEx(
+							reinterpret_cast<void*>(static_cast<intptr_t>(entity.id())), flags, "%s", name.c_str())) {
 					ImGui::TreePop();
 				}
 
@@ -323,6 +319,12 @@ void EditorScene::RenderHierarchyPanel() {
 void EditorScene::RenderPropertiesPanel() {
 	if (!show_properties_)
 		return;
+
+	ImGuiWindowClass winClass;
+	winClass.DockNodeFlagsOverrideSet = ImGuiDockNodeFlags_NoWindowMenuButton | ImGuiDockNodeFlags_NoCloseButton
+										| ImGuiDockNodeFlags_NoDockingOverMe | ImGuiDockNodeFlags_NoDockingOverOther
+										| ImGuiDockNodeFlags_NoDockingOverEmpty;
+	ImGui::SetNextWindowClass(&winClass);
 
 	ImGui::Begin("Properties", &show_properties_);
 
@@ -392,7 +394,8 @@ void EditorScene::RenderViewportPanel() {
 
 	// Draw background
 	draw_list->AddRectFilled(
-			cursor_pos, ImVec2(cursor_pos.x + content_size.x, cursor_pos.y + content_size.y),
+			cursor_pos,
+			ImVec2(cursor_pos.x + content_size.x, cursor_pos.y + content_size.y),
 			IM_COL32(30, 30, 30, 255));
 
 	// Draw grid lines
@@ -402,13 +405,15 @@ void EditorScene::RenderViewportPanel() {
 	for (float x = 0; x < content_size.x; x += grid_size) {
 		draw_list->AddLine(
 				ImVec2(cursor_pos.x + x, cursor_pos.y),
-				ImVec2(cursor_pos.x + x, cursor_pos.y + content_size.y), grid_color);
+				ImVec2(cursor_pos.x + x, cursor_pos.y + content_size.y),
+				grid_color);
 	}
 
 	for (float y = 0; y < content_size.y; y += grid_size) {
 		draw_list->AddLine(
 				ImVec2(cursor_pos.x, cursor_pos.y + y),
-				ImVec2(cursor_pos.x + content_size.x, cursor_pos.y + y), grid_color);
+				ImVec2(cursor_pos.x + content_size.x, cursor_pos.y + y),
+				grid_color);
 	}
 
 	// Draw center text
@@ -417,15 +422,17 @@ void EditorScene::RenderViewportPanel() {
 	draw_list->AddText(
 			ImVec2(cursor_pos.x + (content_size.x - text_size.x) / 2,
 				   cursor_pos.y + (content_size.y - text_size.y) / 2),
-			IM_COL32(100, 100, 100, 255), text);
+			IM_COL32(100, 100, 100, 255),
+			text);
 
 	// If running, show play mode indicator
 	if (state_.is_running) {
 		const char* play_text = "PLAYING";
 		ImVec2 play_text_size = ImGui::CalcTextSize(play_text);
-		draw_list->AddRectFilled(ImVec2(cursor_pos.x + 5, cursor_pos.y + 5),
-								 ImVec2(cursor_pos.x + play_text_size.x + 15, cursor_pos.y + play_text_size.y + 15),
-								 IM_COL32(0, 100, 0, 200));
+		draw_list->AddRectFilled(
+				ImVec2(cursor_pos.x + 5, cursor_pos.y + 5),
+				ImVec2(cursor_pos.x + play_text_size.x + 15, cursor_pos.y + play_text_size.y + 15),
+				IM_COL32(0, 100, 0, 200));
 		draw_list->AddText(ImVec2(cursor_pos.x + 10, cursor_pos.y + 10), IM_COL32(255, 255, 255, 255), play_text);
 	}
 
@@ -511,7 +518,7 @@ void EditorScene::SaveSceneAs(const std::string& path) {
 
 	// Update the scene file path
 	auto& scene_manager = engine::scene::GetSceneManager();
-	if (auto* scene = scene_manager.TryGetScene(editor_scene_id_)) {
+	if (const auto* scene = scene_manager.TryGetScene(editor_scene_id_)) {
 		scene->SetFilePath(path);
 	}
 

@@ -58,7 +58,7 @@ public:
 	 * Render the editor viewport
 	 * @param engine Reference to the engine instance
 	 */
-	void Render(engine::Engine& engine);
+	void Render(engine::Engine& engine) const;
 
 	/**
 	 * Render the ImGui editor UI
@@ -72,7 +72,6 @@ private:
 	// ========================================================================
 
 	void RenderMenuBar();
-	void RenderToolbar();
 	void RenderHierarchyPanel();
 	void RenderPropertiesPanel();
 	void RenderViewportPanel();

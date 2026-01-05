@@ -4,7 +4,7 @@
 PROJECT_NAME           = "Citrus Engine"
 PROJECT_NUMBER         = 0.0.1
 PROJECT_BRIEF          = "Modern C++20 Game Engine"
-PROJECT_LOGO           = assets/branding/citrus-engine-logo.svg
+PROJECT_LOGO           = docs/assets/citrus-engine-logo.svg
 
 # Output
 OUTPUT_DIRECTORY       = docs/_doxygen

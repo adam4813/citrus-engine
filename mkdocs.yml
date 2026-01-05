@@ -16,8 +16,8 @@ theme:
     - search.suggest
     - search.highlight
     - content.code.copy
-  logo: assets/branding/citrus-engine-logo.svg
-  favicon: assets/branding/citrus-engine-logo.svg
+  logo: assets/citrus-engine-logo.svg
+  favicon: assets/citrus-engine-logo.svg
 
 markdown_extensions:
   - admonition

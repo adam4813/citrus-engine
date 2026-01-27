@@ -18,6 +18,7 @@ struct EditorState {
 	bool show_open_dialog = false;
 	bool show_save_as_dialog = false;
 	bool is_running = false; // Whether the scene is in "play" mode
+	bool show_rename_entity_dialog = false;
 };
 
 /**
@@ -110,6 +111,7 @@ private:
 
 	// Input buffer for dialogs
 	char file_path_buffer_[256] = "";
+	char rename_entity_buffer_[256] = "";
 };
 
 } // namespace editor

@@ -6,6 +6,8 @@
 
 namespace editor {
 
+constexpr unsigned int MAX_ENTITY_NAME_CHECK_COUNT = 1000;
+
 EditorScene::EditorScene() = default;
 
 EditorScene::~EditorScene() = default;
@@ -140,6 +142,29 @@ void EditorScene::RenderUI(engine::Engine& engine) {
 		}
 		ImGui::EndPopup();
 	}
+
+	if (state_.show_rename_entity_dialog) {
+		ImGui::OpenPopup("RenameEntityPopup");
+		const auto& scene_entity = selected_entity_.get<engine::ecs::SceneEntity>();
+		std::strncpy(rename_entity_buffer_, scene_entity.name.c_str(), sizeof(rename_entity_buffer_) - 1);
+		state_.show_rename_entity_dialog = false;
+	}
+
+	if (selected_entity_ && ImGui::BeginPopupModal("RenameEntityPopup", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+		ImGui::InputText("##rename", rename_entity_buffer_, sizeof(rename_entity_buffer_));
+		if (ImGui::Button("Ok", ImVec2(120, 0)) && selected_entity_.set_name(rename_entity_buffer_)) {
+			auto& scene_entity = selected_entity_.get_mut<engine::ecs::SceneEntity>();
+			scene_entity.name = std::string(rename_entity_buffer_);
+			rename_entity_buffer_[0] = '\0';
+			state_.is_dirty = true;
+			ImGui::CloseCurrentPopup();
+		}
+		ImGui::SameLine();
+		if (ImGui::Button("Cancel", ImVec2(120, 0))) {
+			ImGui::CloseCurrentPopup();
+		}
+		ImGui::EndPopup();
+	}
 }
 
 void EditorScene::RenderMenuBar() {
@@ -212,8 +237,15 @@ void EditorScene::RenderMenuBar() {
 				// Add a new entity to the scene
 				auto& scene_manager = engine::scene::GetSceneManager();
 				if (const auto* scene = scene_manager.TryGetScene(editor_scene_id_)) {
-					scene->CreateEntity("NewEntity");
-					state_.is_dirty = true;
+					std::string entity_name = "NewEntity";
+					auto count = 1;
+					while (count <= MAX_ENTITY_NAME_CHECK_COUNT
+						   && scene->GetSceneRoot().lookup(entity_name.c_str()) != flecs::entity::null()) {
+						entity_name = "NewEntity_" + std::to_string(count++);
+					}
+					if (count <= MAX_ENTITY_NAME_CHECK_COUNT && scene->CreateEntity(entity_name)) {
+						state_.is_dirty = true;
+					}
 				}
 			}
 			ImGui::EndMenu();
@@ -290,6 +322,7 @@ void EditorScene::RenderHierarchyPanel() {
 
 				if (ImGui::IsItemClicked()) {
 					selected_entity_ = entity;
+					ImGui::ClearActiveID();
 				}
 
 				// Right-click context menu
@@ -302,7 +335,7 @@ void EditorScene::RenderHierarchyPanel() {
 						state_.is_dirty = true;
 					}
 					if (ImGui::MenuItem("Rename")) {
-						// TODO: Implement rename dialog
+						state_.show_rename_entity_dialog = true;
 					}
 					ImGui::EndPopup();
 				}
@@ -479,6 +512,7 @@ void EditorScene::NewScene() {
 	state_.is_dirty = false;
 	selected_entity_ = {};
 	file_path_buffer_[0] = '\0';
+	rename_entity_buffer_[0] = '\0';
 
 	std::cout << "EditorScene: New scene created" << std::endl;
 }

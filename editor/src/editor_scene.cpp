@@ -339,9 +339,28 @@ void EditorScene::RenderPropertiesPanel() {
 
 		// Transform component (placeholder - will need proper component inspection)
 		if (ImGui::CollapsingHeader("Transform", ImGuiTreeNodeFlags_DefaultOpen)) {
-			ImGui::Text("Position: (0, 0, 0)");
-			ImGui::Text("Rotation: (0, 0, 0)");
-			ImGui::Text("Scale: (1, 1, 1)");
+			if (selected_entity_.has<engine::ecs::SceneEntity>()) {
+				const auto& [name, visible, static_entity, scene_layer] =
+						selected_entity_.get<engine::ecs::SceneEntity>();
+				ImGui::Text("Name: %s", name.c_str());
+				ImGui::Text("Visible: %s", visible ? "Yes" : "No");
+				ImGui::Text("Static: %s", static_entity ? "Yes" : "No");
+				ImGui::Text("Scene Layer: %u", scene_layer);
+			}
+			if (selected_entity_.has<engine::components::Transform>()) {
+				const auto& initial_transform = selected_entity_.get<engine::components::Transform>();
+				auto position = initial_transform.position;
+				auto rotation = initial_transform.rotation;
+				auto scale = initial_transform.scale;
+				if (ImGui::InputFloat3("Position", &position.x) || ImGui::InputFloat3("Rotation", &rotation.x)
+					|| ImGui::InputFloat3("Scale", &scale.x)) {
+					auto& transform = selected_entity_.get_mut<engine::components::Transform>();
+					transform.position = position;
+					transform.rotation = rotation;
+					transform.scale = scale;
+					state_.is_dirty = true;
+				}
+			}
 			ImGui::TextDisabled("(Component editing coming soon)");
 		}
 
@@ -354,10 +373,6 @@ void EditorScene::RenderPropertiesPanel() {
 		if (ImGui::BeginPopup("AddComponentPopup")) {
 			ImGui::TextDisabled("Available Components:");
 			ImGui::Separator();
-			if (ImGui::MenuItem("Transform")) {
-				// TODO: Add transform component
-				state_.is_dirty = true;
-			}
 			if (ImGui::MenuItem("Sprite Renderer")) {
 				// TODO: Add sprite renderer component
 				state_.is_dirty = true;
@@ -383,13 +398,13 @@ void EditorScene::RenderViewportPanel() {
 
 	ImGui::Begin("Viewport", &show_viewport_);
 
-	ImVec2 content_size = ImGui::GetContentRegionAvail();
+	const ImVec2 content_size = ImGui::GetContentRegionAvail();
 
 	// Placeholder viewport content
 	ImGui::BeginChild("ViewportContent", content_size, true);
 
 	// Draw a placeholder grid or message
-	ImVec2 cursor_pos = ImGui::GetCursorScreenPos();
+	const ImVec2 cursor_pos = ImGui::GetCursorScreenPos();
 	ImDrawList* draw_list = ImGui::GetWindowDrawList();
 
 	// Draw background
@@ -399,8 +414,8 @@ void EditorScene::RenderViewportPanel() {
 			IM_COL32(30, 30, 30, 255));
 
 	// Draw grid lines
-	float grid_size = 50.0f;
-	ImU32 grid_color = IM_COL32(50, 50, 50, 255);
+	constexpr float grid_size = 50.0f;
+	constexpr ImU32 grid_color = IM_COL32(50, 50, 50, 255);
 
 	for (float x = 0; x < content_size.x; x += grid_size) {
 		draw_list->AddLine(
@@ -417,8 +432,8 @@ void EditorScene::RenderViewportPanel() {
 	}
 
 	// Draw center text
-	const char* text = "2D Scene Viewport";
-	ImVec2 text_size = ImGui::CalcTextSize(text);
+	const auto text = "2D Scene Viewport";
+	const ImVec2 text_size = ImGui::CalcTextSize(text);
 	draw_list->AddText(
 			ImVec2(cursor_pos.x + (content_size.x - text_size.x) / 2,
 				   cursor_pos.y + (content_size.y - text_size.y) / 2),
@@ -427,8 +442,8 @@ void EditorScene::RenderViewportPanel() {
 
 	// If running, show play mode indicator
 	if (state_.is_running) {
-		const char* play_text = "PLAYING";
-		ImVec2 play_text_size = ImGui::CalcTextSize(play_text);
+		const auto play_text = "PLAYING";
+		const ImVec2 play_text_size = ImGui::CalcTextSize(play_text);
 		draw_list->AddRectFilled(
 				ImVec2(cursor_pos.x + 5, cursor_pos.y + 5),
 				ImVec2(cursor_pos.x + play_text_size.x + 15, cursor_pos.y + play_text_size.y + 15),
@@ -448,7 +463,7 @@ void EditorScene::RenderViewportPanel() {
 void EditorScene::NewScene() {
 	std::cout << "EditorScene: Creating new scene..." << std::endl;
 
-	auto& scene_manager = engine::scene::GetSceneManager();
+	const auto& scene_manager = engine::scene::GetSceneManager();
 
 	// Destroy the old scene
 	if (editor_scene_id_ != engine::scene::INVALID_SCENE) {
@@ -474,7 +489,7 @@ void EditorScene::OpenScene(const std::string& path) {
 	// TODO: Implement actual scene loading from file
 	// For now, just create a new scene with the given name
 
-	auto& scene_manager = engine::scene::GetSceneManager();
+	const auto& scene_manager = engine::scene::GetSceneManager();
 
 	// Destroy the old scene
 	if (editor_scene_id_ != engine::scene::INVALID_SCENE) {

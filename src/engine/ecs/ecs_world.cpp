@@ -18,15 +18,53 @@ namespace engine::ecs {
 
 // === ECSWORLD IMPLEMENTATION ===
 
+// Register GLM types with flecs reflection system for JSON serialization
+void RegisterGlmTypes(const flecs::world& world) {
+	// Register glm::vec2 as a flecs struct type
+	world.component<glm::vec2>().member<float>("x").member<float>("y");
+
+	// Register glm::vec3 as a flecs struct type
+	world.component<glm::vec3>().member<float>("x").member<float>("y").member<float>("z");
+
+	// Register glm::vec4 as a flecs struct type (also used for Color)
+	world.component<glm::vec4>().member<float>("x").member<float>("y").member<float>("z").member<float>("w");
+
+	// Register glm::ivec2 for tilemap tile sizes
+	world.component<glm::ivec2>().member<int>("x").member<int>("y");
+
+	// Register glm::mat4 with all 16 members for proper serialization
+	// mat4 is column-major: [0] = col0, [1] = col1, [2] = col2, [3] = col3
+	world.component<glm::mat4>()
+			.member<glm::vec4>("c0")
+			.member<glm::vec4>("c1")
+			.member<glm::vec4>("c2")
+			.member<glm::vec4>("c3");
+}
+
 ECSWorld::ECSWorld() {
+	// Register GLM types first - required for proper flecs reflection
+	RegisterGlmTypes(world_);
+
+	world_.component<std::string>()
+			.opaque(flecs::String)
+			.serialize([](const flecs::serializer* s, const std::string* data) -> int {
+				const char* str = data->c_str();
+				return s->value(flecs::String, &str);
+			})
+			.assign_string([](std::string* data, const char* value) { *data = value ? value : ""; });
+
 	auto& registry = ComponentRegistry::Instance();
 
 	// Register core components with flecs and registry, including field metadata
+	// IMPORTANT: Fields must be registered in the EXACT same order as they appear in the struct!
+	// All fields must be registered for correct memory layout, even if not shown in editor.
 	registry.Register<Transform>("Transform", world_)
 			.Category("Core")
 			.Field("position", &Transform::position)
 			.Field("rotation", &Transform::rotation)
 			.Field("scale", &Transform::scale)
+			.Field("world_matrix", &Transform::world_matrix, FieldType::ReadOnly)
+			.Field("dirty", &Transform::dirty, FieldType::ReadOnly)
 			.Build();
 
 	registry.Register<WorldTransform>("WorldTransform", world_).Category("Core").Build();
@@ -42,27 +80,46 @@ ECSWorld::ECSWorld() {
 
 	registry.Register<Camera>("Camera", world_)
 			.Category("Rendering")
-			.Field("fov", &Camera::fov)
-			.Field("near_plane", &Camera::near_plane)
-			.Field("far_plane", &Camera::far_plane)
-			.Field("aspect_ratio", &Camera::aspect_ratio)
 			.Field("target", &Camera::target)
 			.Field("up", &Camera::up)
+			.Field("fov", &Camera::fov)
+			.Field("aspect_ratio", &Camera::aspect_ratio)
+			.Field("near_plane", &Camera::near_plane)
+			.Field("far_plane", &Camera::far_plane)
+			.Field("view_matrix", &Camera::view_matrix, FieldType::ReadOnly)
+			.Field("projection_matrix", &Camera::projection_matrix, FieldType::ReadOnly)
+			.Field("dirty", &Camera::dirty, FieldType::ReadOnly)
 			.Build();
 
 	registry.Register<Sprite>("Sprite", world_)
 			.Category("Rendering")
+			.Field("texture", &Sprite::texture)
+			.Field("position", &Sprite::position)
+			.Field("size", &Sprite::size)
+			.Field("rotation", &Sprite::rotation)
 			.Field("color", &Sprite::color, FieldType::Color)
 			.Field("texture_offset", &Sprite::texture_offset)
 			.Field("texture_scale", &Sprite::texture_scale)
 			.Field("layer", &Sprite::layer)
+			.Field("pivot", &Sprite::pivot)
+			.Field("flip_x", &Sprite::flip_x)
+			.Field("flip_y", &Sprite::flip_y)
 			.Build();
+
+	// Register Light::Type enum as a flecs component for proper serialization
+	// Note: Flecs treats enum classes as integers for serialization
+	world_.component<Light::Type>();
 
 	registry.Register<Light>("Light", world_)
 			.Category("Rendering")
+			.Field("type", &Light::type)
 			.Field("color", &Light::color, FieldType::Color)
 			.Field("intensity", &Light::intensity)
 			.Field("range", &Light::range)
+			.Field("attenuation", &Light::attenuation)
+			.Field("spot_angle", &Light::spot_angle)
+			.Field("spot_falloff", &Light::spot_falloff)
+			.Field("direction", &Light::direction)
 			.Build();
 
 	registry.Register<Animation>("Animation", world_)

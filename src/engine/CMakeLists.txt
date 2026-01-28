@@ -58,6 +58,7 @@ target_sources(engine-core
     rendering/renderer.cppm
     rendering/tilemap_renderer.cppm
     rendering/rendering.cppm
+    scene/scene_serializer.cppm
     scene/scene.cppm
     scripting/scripting_backend.cppm
     scripting/scripting_system.cppm
@@ -133,6 +134,7 @@ target_sources(engine-core PRIVATE
 
     # Scene module implementation
     scene/scene_manager.cpp
+    scene/scene_serializer.cpp
 
     # Scripting module implementation
     scripting/lua_backend.cpp

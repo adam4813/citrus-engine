@@ -3,6 +3,7 @@ module;
 #include <cstdint>
 #include <flecs.h>
 #include <string>
+#include <type_traits>
 #include <vector>
 
 export module engine.ecs.component_registry;
@@ -36,9 +37,9 @@ enum class FieldType {
  */
 struct FieldInfo {
 	std::string name;
-	FieldType type;
-	size_t offset; // Byte offset into component struct
-	size_t size; // Size of the field in bytes
+	FieldType type{FieldType::ReadOnly};
+	size_t offset{}; // Byte offset into component struct
+	size_t size{}; // Size of the field in bytes
 };
 
 /**
@@ -133,6 +134,7 @@ public:
 
 	/**
      * @brief Register a field with automatic type deduction
+     * Also registers the field with flecs reflection for JSON serialization
      */
 	template <typename FieldT> ComponentRegistration& Field(const std::string& field_name, FieldT T::* member_ptr) {
 		FieldInfo field;
@@ -141,11 +143,15 @@ public:
 		field.offset = reinterpret_cast<size_t>(&(static_cast<T*>(nullptr)->*member_ptr));
 		field.size = sizeof(FieldT);
 		info_.fields.push_back(std::move(field));
+
+		// Register with flecs reflection for JSON serialization
+		RegisterFlecsMember<FieldT>(field_name);
 		return *this;
 	}
 
 	/**
      * @brief Register a field with explicit type override
+     * Also registers the field with flecs reflection for JSON serialization
      */
 	template <typename FieldT>
 	ComponentRegistration& Field(const std::string& field_name, FieldT T::* member_ptr, const FieldType type_override) {
@@ -155,14 +161,65 @@ public:
 		field.offset = reinterpret_cast<size_t>(&(static_cast<T*>(nullptr)->*member_ptr));
 		field.size = sizeof(FieldT);
 		info_.fields.push_back(std::move(field));
+
+		// Register with flecs reflection for JSON serialization
+		RegisterFlecsMember<FieldT>(field_name);
 		return *this;
 	}
 
 	void Build();
 
 private:
+	/**
+     * @brief Register a member with flecs reflection system
+     */
+	template <typename FieldT> void RegisterFlecsMember(const std::string& field_name) {
+		if constexpr (std::is_same_v<FieldT, bool>) {
+			component_.member<bool>(field_name.c_str());
+		}
+		else if constexpr (std::is_same_v<FieldT, int>) {
+			component_.member<int>(field_name.c_str());
+		}
+		else if constexpr (std::is_same_v<FieldT, uint32_t>) {
+			component_.member<uint32_t>(field_name.c_str());
+		}
+		else if constexpr (std::is_same_v<FieldT, size_t>) {
+			component_.member<size_t>(field_name.c_str());
+		}
+		else if constexpr (std::is_same_v<FieldT, float>) {
+			component_.member<float>(field_name.c_str());
+		}
+		else if constexpr (std::is_same_v<FieldT, double>) {
+			component_.member<double>(field_name.c_str());
+		}
+		else if constexpr (std::is_enum_v<FieldT>) {
+			using UnderlyingT = std::underlying_type_t<FieldT>;
+			component_.member<UnderlyingT>(field_name.c_str());
+		}
+		else if constexpr (std::is_same_v<FieldT, glm::vec2>) {
+			component_.member<glm::vec2>(field_name.c_str());
+		}
+		else if constexpr (std::is_same_v<FieldT, glm::vec3>) {
+			component_.member<glm::vec3>(field_name.c_str());
+		}
+		else if constexpr (std::is_same_v<FieldT, glm::vec4>) {
+			component_.member<glm::vec4>(field_name.c_str());
+		}
+		else if constexpr (std::is_same_v<FieldT, glm::ivec2>) {
+			component_.member<glm::ivec2>(field_name.c_str());
+		}
+		else if constexpr (std::is_same_v<FieldT, glm::mat4>) {
+			component_.member<glm::mat4>(field_name.c_str());
+		}
+		else if constexpr (std::is_same_v<FieldT, std::string>) {
+			component_.member<std::string>(field_name.c_str());
+		}
+		// Unknown types are skipped - they won't be serialized
+	}
+
 	ComponentRegistry& registry_;
 	ComponentInfo info_;
+	flecs::untyped_component component_;
 };
 
 /**
@@ -221,10 +278,11 @@ private:
 // Template implementation
 template <typename T>
 ComponentRegistration<T>::ComponentRegistration(
-		ComponentRegistry& registry, const std::string& name, const flecs::world& world) : registry_(registry) {
+		ComponentRegistry& registry, const std::string& name, const flecs::world& world) :
+		registry_(registry), component_(world.component<T>()) {
 	info_.name = name;
 	info_.category = "Other"; // Default category
-	info_.id = world.component<T>().id();
+	info_.id = component_.id();
 }
 
 template <typename T> void ComponentRegistration<T>::Build() { registry_.AddComponent(std::move(info_)); }

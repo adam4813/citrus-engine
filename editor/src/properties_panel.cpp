@@ -1,14 +1,16 @@
 #include "properties_panel.h"
 
+#include <flecs.h>
 #include <imgui.h>
 #include <imgui_internal.h>
 #include <string>
+#include <vector>
 
 namespace editor {
 
 void PropertiesPanel::SetCallbacks(const EditorCallbacks& callbacks) { callbacks_ = callbacks; }
 
-void PropertiesPanel::Render(const engine::ecs::Entity selected_entity) {
+void PropertiesPanel::Render(const engine::ecs::Entity selected_entity, engine::ecs::ECSWorld& world) {
 	if (!is_visible_)
 		return;
 
@@ -33,8 +35,7 @@ void PropertiesPanel::Render(const engine::ecs::Entity selected_entity) {
 		RenderAddComponentButton(selected_entity);
 	}
 	else {
-		ImGui::TextDisabled("No entity selected");
-		ImGui::TextDisabled("Select an entity in the Hierarchy panel");
+		RenderSceneProperties(world);
 	}
 
 	ImGui::End();
@@ -182,6 +183,79 @@ void PropertiesPanel::RenderAddComponentButton(const engine::ecs::Entity entity)
 
 		ImGui::EndPopup();
 	}
+}
+
+void PropertiesPanel::RenderSceneProperties(engine::ecs::ECSWorld& world) const {
+	ImGui::Text("Scene Properties");
+	ImGui::Separator();
+
+	// Collect all entities with Camera component
+	std::vector<flecs::entity> camera_entities;
+	const flecs::world& flecs_world = world.GetWorld();
+
+	flecs_world.query<engine::components::Camera>().each([&](const flecs::entity entity, const engine::components::Camera&) {
+		camera_entities.push_back(entity);
+	});
+
+	// Active Camera selection
+	if (ImGui::CollapsingHeader("Camera", ImGuiTreeNodeFlags_DefaultOpen)) {
+		const flecs::entity active_camera = world.GetActiveCamera();
+
+		// Build preview string
+		std::string preview = "(None)";
+		int current_index = -1;
+		if (active_camera.is_valid()) {
+			preview = active_camera.name().c_str();
+			if (preview.empty()) {
+				preview = "Entity_" + std::to_string(active_camera.id());
+			}
+			// Find index
+			for (size_t i = 0; i < camera_entities.size(); ++i) {
+				if (camera_entities[i] == active_camera) {
+					current_index = static_cast<int>(i);
+					break;
+				}
+			}
+		}
+
+		if (ImGui::BeginCombo("Active Camera", preview.c_str())) {
+			// Option to clear active camera
+			if (ImGui::Selectable("(None)", current_index == -1)) {
+				// Clear is not directly supported, but could be added
+			}
+
+			for (size_t i = 0; i < camera_entities.size(); ++i) {
+				const auto& cam_entity = camera_entities[i];
+				std::string cam_name = cam_entity.name().c_str();
+				if (cam_name.empty()) {
+					cam_name = "Entity_" + std::to_string(cam_entity.id());
+				}
+
+				const bool is_selected = (static_cast<int>(i) == current_index);
+				if (ImGui::Selectable(cam_name.c_str(), is_selected)) {
+					world.SetActiveCamera(cam_entity);
+					if (callbacks_.on_scene_modified) {
+						callbacks_.on_scene_modified();
+					}
+				}
+
+				if (is_selected) {
+					ImGui::SetItemDefaultFocus();
+				}
+			}
+
+			ImGui::EndCombo();
+		}
+
+		if (camera_entities.empty()) {
+			ImGui::TextDisabled("No cameras in scene");
+			ImGui::TextDisabled("Add a Camera component to an entity");
+		}
+	}
+
+	ImGui::Spacing();
+	ImGui::TextDisabled("Select an entity in the Hierarchy");
+	ImGui::TextDisabled("panel to view its properties");
 }
 
 } // namespace editor

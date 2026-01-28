@@ -93,7 +93,7 @@ void EditorScene::RenderUI(engine::Engine& engine) {
 
 	RenderMenuBar();
 	hierarchy_panel_.Render(editor_scene_id_, selected_entity_);
-	properties_panel_.Render(selected_entity_);
+	properties_panel_.Render(selected_entity_, engine.ecs);
 	viewport_panel_.Render(state_.is_running);
 
 	// Handle dialogs

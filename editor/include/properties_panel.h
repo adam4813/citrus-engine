@@ -10,6 +10,7 @@ namespace editor {
  * @brief Entity properties inspector panel
  *
  * Displays and allows editing of components on the selected entity.
+ * When no entity is selected, shows scene-level properties.
  */
 class PropertiesPanel {
 public:
@@ -24,8 +25,9 @@ public:
 	/**
 	 * @brief Render the properties panel
 	 * @param selected_entity The entity to inspect (may be invalid)
+	 * @param world The ECS world (for scene-level properties)
 	 */
-	void Render(engine::ecs::Entity selected_entity);
+	void Render(engine::ecs::Entity selected_entity, engine::ecs::ECSWorld& world);
 
 	/**
 	 * @brief Check if panel is visible
@@ -46,6 +48,7 @@ private:
 	void RenderComponentSections(engine::ecs::Entity entity) const;
 	void RenderComponentFields(engine::ecs::Entity entity, const engine::ecs::ComponentInfo& comp) const;
 	void RenderAddComponentButton(engine::ecs::Entity entity) const;
+	void RenderSceneProperties(engine::ecs::ECSWorld& world) const;
 
 	EditorCallbacks callbacks_;
 	bool is_visible_ = true;

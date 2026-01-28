@@ -588,5 +588,4 @@ void EditorScene::StopScene() {
 	std::cout << "EditorScene: Stopping scene..." << std::endl;
 	state_.is_running = false;
 }
-
 } // namespace editor

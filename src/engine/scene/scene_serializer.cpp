@@ -28,6 +28,11 @@ bool SceneSerializer::Save(const Scene& scene, ecs::ECSWorld& world, const platf
 		metadata["engine_version"] = "0.0.9";
 		doc["metadata"] = metadata;
 
+		// Save active camera entity path (if any)
+		if (const std::string active_camera_path = GetActiveCameraPath(world); !active_camera_path.empty()) {
+			doc["active_camera"] = active_camera_path;
+		}
+
 		// Serialize entities using flecs
 		const std::string flecs_json = SerializeEntities(scene, world);
 		doc["flecs_data"] = flecs_json;
@@ -103,6 +108,12 @@ SceneId SceneSerializer::Load(const platform::fs::Path& path, SceneManager& mana
 				!DeserializeEntities(flecs_json, world)) {
 				std::cerr << "SceneSerializer: Warning - some entities may not have loaded correctly" << std::endl;
 			}
+		}
+
+		// Restore active camera (must be done after entities are deserialized)
+		if (doc.contains("active_camera")) {
+			const std::string active_camera_path = doc["active_camera"].get<std::string>();
+			SetActiveCameraFromPath(active_camera_path, world);
 		}
 
 		std::cout << "SceneSerializer: Loaded scene '" << name << "' from " << path << std::endl;
@@ -193,6 +204,28 @@ bool SceneSerializer::DeserializeEntities(const std::string& flecs_json, ecs::EC
 	catch (const std::exception& e) {
 		std::cerr << "SceneSerializer: Error deserializing entities: " << e.what() << std::endl;
 		return false;
+	}
+}
+
+std::string SceneSerializer::GetActiveCameraPath(const ecs::ECSWorld& world) {
+	if (const ecs::Entity active_camera = world.GetActiveCamera(); active_camera.is_valid()) {
+		return active_camera.path().c_str();
+	}
+	return "";
+}
+
+void SceneSerializer::SetActiveCameraFromPath(const std::string& path, ecs::ECSWorld& world) {
+	if (path.empty()) {
+		return;
+	}
+
+	const flecs::world& flecs_world = world.GetWorld();
+	if (const ecs::Entity entity = flecs_world.lookup(path.c_str()); entity.is_valid()) {
+		world.SetActiveCamera(entity);
+		std::cout << "SceneSerializer: Set active camera to '" << path << "'" << std::endl;
+	}
+	else {
+		std::cerr << "SceneSerializer: Could not find camera entity at path: " << path << std::endl;
 	}
 }
 

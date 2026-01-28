@@ -264,6 +264,9 @@ bool ECSWorld::IsDescendantOf(const flecs::entity entity, const flecs::entity an
 // === CAMERA MANAGEMENT ===
 
 void ECSWorld::SetActiveCamera(const flecs::entity camera) {
+	// Use deferred operations to avoid modifying tables during iteration
+	world_.defer_begin();
+
 	// Remove ActiveCamera tag from all entities
 	world_.query_builder<>().with<ActiveCamera>().build().each(
 			[](const flecs::entity entity) { entity.remove<ActiveCamera>(); });
@@ -273,6 +276,8 @@ void ECSWorld::SetActiveCamera(const flecs::entity camera) {
 		camera.add<ActiveCamera>();
 		active_camera_ = camera;
 	}
+
+	world_.defer_end();
 }
 
 [[nodiscard]] flecs::entity ECSWorld::GetActiveCamera() const { return active_camera_; }

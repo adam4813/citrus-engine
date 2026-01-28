@@ -23,6 +23,7 @@ inline constexpr int SCENE_FORMAT_VERSION = 1;
 ///     "version": 1,
 ///     "name": "Scene Name",
 ///     "metadata": { ... },
+///     "active_camera": "path/to/camera/entity",  // optional
 ///     "flecs_data": "<flecs world JSON>",
 ///     "assets": ["asset1.png", "asset2.obj"]
 /// }
@@ -48,6 +49,12 @@ private:
 
 	/// Deserialize entities from flecs JSON format
 	static bool DeserializeEntities(const std::string& flecs_json, ecs::ECSWorld& world);
+
+	/// Get the path of the active camera entity (empty string if none)
+	static std::string GetActiveCameraPath(const ecs::ECSWorld& world);
+
+	/// Set the active camera from a saved entity path
+	static void SetActiveCameraFromPath(const std::string& path, ecs::ECSWorld& world);
 };
 
 } // namespace engine::scene

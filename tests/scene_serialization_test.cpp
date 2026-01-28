@@ -358,3 +358,40 @@ TEST_F(SceneSerializationTest, SavedFile_ContainsValidJson) {
 	EXPECT_TRUE(content.find("\"JsonTestScene\"") != std::string::npos);
 	EXPECT_TRUE(content.find("\"flecs_data\"") != std::string::npos);
 }
+
+TEST_F(SceneSerializationTest, SaveAndLoad_ActiveCamera_PreservesSelection) {
+	const SceneId scene_id = scene_manager_->CreateScene("ActiveCameraTestScene");
+	ASSERT_NE(scene_id, INVALID_SCENE);
+
+	const auto& scene = scene_manager_->GetScene(scene_id);
+
+	// Create two cameras
+	const auto camera1 = scene.CreateEntity("Camera1");
+	camera1.set<Camera>({.fov = 60.0f});
+
+	const auto camera2 = scene.CreateEntity("Camera2");
+	camera2.set<Camera>({.fov = 90.0f});
+
+	// Set camera2 as active
+	ecs_world_->SetActiveCamera(camera2);
+	EXPECT_EQ(ecs_world_->GetActiveCamera(), camera2);
+
+	// Save and reload
+	const platform::fs::Path path(temp_file_.string());
+	EXPECT_TRUE(scene_manager_->SaveScene(scene_id, path));
+
+	scene_manager_->DestroyScene(scene_id);
+	const SceneId loaded_id = scene_manager_->LoadSceneFromFile(path);
+	ASSERT_NE(loaded_id, INVALID_SCENE);
+
+	// Verify the active camera was restored
+	const auto loaded_active = ecs_world_->GetActiveCamera();
+	ASSERT_TRUE(loaded_active.is_valid());
+
+	// Should be the entity named "Camera2"
+	EXPECT_STREQ(loaded_active.name().c_str(), "Camera2");
+
+	// Verify it has the correct FOV
+	ASSERT_TRUE(loaded_active.has<Camera>());
+	EXPECT_FLOAT_EQ(loaded_active.get<Camera>().fov, 90.0f);
+}

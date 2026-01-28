@@ -28,12 +28,12 @@ void EditorScene::Initialize(engine::Engine& engine) {
 
 	// Wire up panel callbacks
 	EditorCallbacks callbacks;
-	callbacks.on_entity_selected = [this](engine::ecs::Entity entity) { OnEntitySelected(entity); };
-	callbacks.on_entity_deleted = [this](engine::ecs::Entity entity) { OnEntityDeleted(entity); };
+	callbacks.on_entity_selected = [this](const engine::ecs::Entity entity) { OnEntitySelected(entity); };
+	callbacks.on_entity_deleted = [this](const engine::ecs::Entity entity) { OnEntityDeleted(entity); };
 	callbacks.on_scene_modified = [this]() { OnSceneModified(); };
-	callbacks.on_show_rename_dialog = [this](engine::ecs::Entity entity) { OnShowRenameDialog(entity); };
-	callbacks.on_add_child_entity = [this](engine::ecs::Entity parent) { OnAddChildEntity(parent); };
-	callbacks.on_add_component = [this](engine::ecs::Entity entity, const std::string& component_name) {
+	callbacks.on_show_rename_dialog = [this](const engine::ecs::Entity entity) { OnShowRenameDialog(entity); };
+	callbacks.on_add_child_entity = [this](const engine::ecs::Entity parent) { OnAddChildEntity(parent); };
+	callbacks.on_add_component = [this](const engine::ecs::Entity entity, const std::string& component_name) {
 		OnAddComponent(entity, component_name);
 	};
 
@@ -52,7 +52,7 @@ void EditorScene::Shutdown(engine::Engine& engine) {
 	std::cout << "EditorScene: Shutdown complete" << std::endl;
 }
 
-void EditorScene::Update(engine::Engine& engine, float delta_time) {
+void EditorScene::Update(engine::Engine& engine, const float delta_time) {
 	// Update the active scene if in play mode
 	if (state_.is_running) {
 		auto& scene_manager = engine::scene::GetSceneManager();
@@ -299,26 +299,22 @@ void EditorScene::RenderMenuBar() {
 // Callback Handlers
 // ========================================================================
 
-void EditorScene::OnEntitySelected(engine::ecs::Entity entity) {
-	selected_entity_ = entity;
-}
+void EditorScene::OnEntitySelected(const engine::ecs::Entity entity) { selected_entity_ = entity; }
 
-void EditorScene::OnEntityDeleted(engine::ecs::Entity entity) {
+void EditorScene::OnEntityDeleted(const engine::ecs::Entity entity) {
 	if (selected_entity_ == entity) {
 		selected_entity_ = {};
 	}
 }
 
-void EditorScene::OnSceneModified() {
-	state_.is_dirty = true;
-}
+void EditorScene::OnSceneModified() { state_.is_dirty = true; }
 
-void EditorScene::OnShowRenameDialog(engine::ecs::Entity entity) {
+void EditorScene::OnShowRenameDialog(const engine::ecs::Entity entity) {
 	selected_entity_ = entity;
 	state_.show_rename_entity_dialog = true;
 }
 
-void EditorScene::OnAddChildEntity(engine::ecs::Entity parent) {
+void EditorScene::OnAddChildEntity(const engine::ecs::Entity parent) {
 	auto& scene_manager = engine::scene::GetSceneManager();
 	if (const auto* scene = scene_manager.TryGetScene(editor_scene_id_)) {
 		std::string entity_name = "NewEntity";
@@ -336,7 +332,7 @@ void EditorScene::OnAddChildEntity(engine::ecs::Entity parent) {
 	}
 }
 
-void EditorScene::OnAddComponent(engine::ecs::Entity entity, const std::string& component_name) {
+void EditorScene::OnAddComponent(const engine::ecs::Entity entity, const std::string& component_name) {
 	const auto& registry = engine::ecs::ComponentRegistry::Instance();
 	if (const auto* comp = registry.FindComponent(component_name)) {
 		// Use flecs API directly to add component by ID
@@ -381,18 +377,23 @@ void EditorScene::NewScene() {
 void EditorScene::OpenScene(const std::string& path) {
 	std::cout << "EditorScene: Opening scene from: " << path << std::endl;
 
-	// TODO: Implement actual scene loading from file
-	// For now, just create a new scene with the given name
-
-	const auto& scene_manager = engine::scene::GetSceneManager();
+	auto& scene_manager = engine::scene::GetSceneManager();
 
 	// Destroy the old scene
 	if (editor_scene_id_ != engine::scene::INVALID_SCENE) {
 		scene_manager.DestroyScene(editor_scene_id_);
 	}
 
-	// Create a new scene (placeholder - would load from file)
-	editor_scene_id_ = scene_manager.CreateScene(path);
+	// Load scene from file using engine serializer
+	const engine::platform::fs::Path file_path(path);
+	editor_scene_id_ = scene_manager.LoadSceneFromFile(file_path);
+
+	if (editor_scene_id_ == engine::scene::INVALID_SCENE) {
+		std::cerr << "EditorScene: Failed to load scene from: " << path << std::endl;
+		// Fall back to creating a new empty scene
+		editor_scene_id_ = scene_manager.CreateScene("Untitled");
+	}
+
 	scene_manager.SetActiveScene(editor_scene_id_);
 
 	// Update state
@@ -401,7 +402,7 @@ void EditorScene::OpenScene(const std::string& path) {
 	selected_entity_ = {};
 	hierarchy_panel_.ClearNodeState();
 
-	std::cout << "EditorScene: Scene opened (stub implementation)" << std::endl;
+	std::cout << "EditorScene: Scene loaded from: " << path << std::endl;
 }
 
 void EditorScene::SaveScene() {
@@ -412,13 +413,16 @@ void EditorScene::SaveScene() {
 
 	std::cout << "EditorScene: Saving scene to: " << state_.current_file_path << std::endl;
 
-	// TODO: Implement actual scene saving
-	// auto& scene_manager = engine::scene::GetSceneManager();
-	// scene_manager.SaveScene(editor_scene_id_, state_.current_file_path);
+	auto& scene_manager = engine::scene::GetSceneManager();
 
-	state_.is_dirty = false;
-
-	std::cout << "EditorScene: Scene saved (stub implementation)" << std::endl;
+	if (const engine::platform::fs::Path file_path(state_.current_file_path);
+		scene_manager.SaveScene(editor_scene_id_, file_path)) {
+		state_.is_dirty = false;
+		std::cout << "EditorScene: Scene saved successfully" << std::endl;
+	}
+	else {
+		std::cerr << "EditorScene: Failed to save scene" << std::endl;
+	}
 }
 
 void EditorScene::SaveSceneAs(const std::string& path) {

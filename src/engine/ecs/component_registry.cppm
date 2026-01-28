@@ -1,0 +1,232 @@
+module;
+
+#include <cstdint>
+#include <flecs.h>
+#include <string>
+#include <vector>
+
+export module engine.ecs.component_registry;
+
+import glm;
+
+export namespace engine::ecs {
+
+// === FIELD REFLECTION SYSTEM ===
+
+/**
+ * @brief Supported field types for component editing
+ */
+enum class FieldType {
+	Bool,
+	Int,
+	Float,
+	String,
+	Vec2,
+	Vec3,
+	Vec4,
+	Color, // Vec4 displayed as color picker
+	ListInt,
+	ListFloat,
+	ListString,
+	ReadOnly // Display-only string
+};
+
+/**
+ * @brief Metadata about a single field within a component
+ */
+struct FieldInfo {
+	std::string name;
+	FieldType type;
+	size_t offset; // Byte offset into component struct
+	size_t size; // Size of the field in bytes
+};
+
+/**
+ * @brief Information about a registered component
+ */
+struct ComponentInfo {
+	std::string name;
+	std::string category; // User-defined category string
+	flecs::entity_t id = 0;
+	std::vector<FieldInfo> fields;
+};
+
+// === TYPE DEDUCTION TRAITS ===
+
+template <typename T> struct FieldTypeTraits {
+	static constexpr auto type = FieldType::ReadOnly; // Default fallback
+};
+
+template <> struct FieldTypeTraits<bool> {
+	static constexpr auto type = FieldType::Bool;
+};
+
+template <> struct FieldTypeTraits<int> {
+	static constexpr auto type = FieldType::Int;
+};
+
+template <> struct FieldTypeTraits<uint32_t> {
+	static constexpr auto type = FieldType::Int;
+};
+
+template <> struct FieldTypeTraits<size_t> {
+	static constexpr auto type = FieldType::Int;
+};
+
+template <> struct FieldTypeTraits<float> {
+	static constexpr auto type = FieldType::Float;
+};
+
+template <> struct FieldTypeTraits<double> {
+	static constexpr auto type = FieldType::Float;
+};
+
+template <> struct FieldTypeTraits<std::string> {
+	static constexpr auto type = FieldType::String;
+};
+
+template <> struct FieldTypeTraits<glm::vec2> {
+	static constexpr auto type = FieldType::Vec2;
+};
+
+template <> struct FieldTypeTraits<glm::vec3> {
+	static constexpr auto type = FieldType::Vec3;
+};
+
+template <> struct FieldTypeTraits<glm::vec4> {
+	static constexpr auto type = FieldType::Vec4;
+};
+
+template <> struct FieldTypeTraits<std::vector<int>> {
+	static constexpr auto type = FieldType::ListInt;
+};
+
+template <> struct FieldTypeTraits<std::vector<float>> {
+	static constexpr auto type = FieldType::ListFloat;
+};
+
+template <> struct FieldTypeTraits<std::vector<std::string>> {
+	static constexpr auto type = FieldType::ListString;
+};
+
+// Forward declaration
+class ComponentRegistry;
+
+/**
+ * @brief Builder for registering components with fluent API
+ *
+ * Usage:
+ *   ComponentRegistry::Instance().Register<Transform>("Transform", world)
+ *       .Category("Core")
+ *       .Field("position", &Transform::position)
+ *       .Field("color", &Light::color, FieldType::Color)  // Override type
+ *       .Build();
+ */
+template <typename T> class ComponentRegistration {
+public:
+	ComponentRegistration(ComponentRegistry& registry, const std::string& name, const flecs::world& world);
+
+	ComponentRegistration& Category(const std::string& cat) {
+		info_.category = cat;
+		return *this;
+	}
+
+	/**
+     * @brief Register a field with automatic type deduction
+     */
+	template <typename FieldT> ComponentRegistration& Field(const std::string& field_name, FieldT T::* member_ptr) {
+		FieldInfo field;
+		field.name = field_name;
+		field.type = FieldTypeTraits<FieldT>::type;
+		field.offset = reinterpret_cast<size_t>(&(static_cast<T*>(nullptr)->*member_ptr));
+		field.size = sizeof(FieldT);
+		info_.fields.push_back(std::move(field));
+		return *this;
+	}
+
+	/**
+     * @brief Register a field with explicit type override
+     */
+	template <typename FieldT>
+	ComponentRegistration& Field(const std::string& field_name, FieldT T::* member_ptr, const FieldType type_override) {
+		FieldInfo field;
+		field.name = field_name;
+		field.type = type_override;
+		field.offset = reinterpret_cast<size_t>(&(static_cast<T*>(nullptr)->*member_ptr));
+		field.size = sizeof(FieldT);
+		info_.fields.push_back(std::move(field));
+		return *this;
+	}
+
+	void Build();
+
+private:
+	ComponentRegistry& registry_;
+	ComponentInfo info_;
+};
+
+/**
+ * @brief Singleton registry of all available components
+ *
+ * Components register themselves using the builder pattern in ECSWorld constructor.
+ * Registry only stores metadata - use flecs APIs directly for adding/checking components.
+ */
+class ComponentRegistry {
+public:
+	/**
+     * @brief Get the singleton instance
+     */
+	static ComponentRegistry& Instance();
+
+	/**
+     * @brief Start registering a component with builder pattern
+     */
+	template <typename T> ComponentRegistration<T> Register(const std::string& name, flecs::world& world) {
+		return ComponentRegistration<T>(*this, name, world);
+	}
+
+	/**
+     * @brief Get list of all registered components
+     */
+	[[nodiscard]] const std::vector<ComponentInfo>& GetComponents() const { return components_; }
+
+	/**
+     * @brief Get unique category names (sorted)
+     */
+	[[nodiscard]] std::vector<std::string> GetCategories() const;
+
+	/**
+     * @brief Get components filtered by category
+     */
+	[[nodiscard]] std::vector<const ComponentInfo*> GetComponentsByCategory(const std::string& category) const;
+
+	/**
+     * @brief Find component by name
+     * @return nullptr if not found
+     */
+	[[nodiscard]] const ComponentInfo* FindComponent(const std::string& name) const;
+
+	// Called by ComponentRegistration::Build()
+	void AddComponent(ComponentInfo info) { components_.push_back(std::move(info)); }
+
+private:
+	ComponentRegistry() = default;
+	~ComponentRegistry() = default;
+	ComponentRegistry(const ComponentRegistry&) = delete;
+	ComponentRegistry& operator=(const ComponentRegistry&) = delete;
+
+	std::vector<ComponentInfo> components_;
+};
+
+// Template implementation
+template <typename T>
+ComponentRegistration<T>::ComponentRegistration(
+		ComponentRegistry& registry, const std::string& name, const flecs::world& world) : registry_(registry) {
+	info_.name = name;
+	info_.category = "Other"; // Default category
+	info_.id = world.component<T>().id();
+}
+
+template <typename T> void ComponentRegistration<T>::Build() { registry_.AddComponent(std::move(info_)); }
+
+} // namespace engine::ecs

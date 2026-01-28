@@ -46,6 +46,7 @@ target_sources(engine-core
     assets/tileset.cppm
     platform/platform.cppm
     components/components.cppm
+    ecs/component_registry.cppm
     ecs/flecs_ecs.cppm
     input/input.cppm
     os/os.cppm
@@ -108,6 +109,7 @@ target_sources(engine-core PRIVATE
     assets/asset_manager.cpp
     assets/tileset.cpp
 
+    ecs/component_registry.cpp
     ecs/ecs_world.cpp
 
     input/input.cpp

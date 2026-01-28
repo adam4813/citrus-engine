@@ -9,9 +9,9 @@ AllowShortCaseLabelsOnASingleLine: "true"
 BinPackArguments: "false"
 BinPackParameters: "false"
 BraceWrapping:
-    AfterCaseLabel: "true"
-    BeforeElse: "true"
-    BeforeCatch: "true"
+  AfterCaseLabel: "true"
+  BeforeElse: "true"
+  BeforeCatch: "true"
 BreakBeforeBinaryOperators: NonAssignment
 BreakBeforeBraces: Custom
 BreakBeforeTernaryOperators: "true"
@@ -22,6 +22,7 @@ CompactNamespaces: "false"
 ConstructorInitializerIndentWidth: 8
 ContinuationIndentWidth: 8
 FixNamespaceComments: "true"
+LineEnding: LF
 IndentWidth: "4"
 Language: Cpp
 MaxEmptyLinesToKeep: 1

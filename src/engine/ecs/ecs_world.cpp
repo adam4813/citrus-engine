@@ -1,10 +1,8 @@
 module;
 
-#include <algorithm>
 #include <flecs.h>
 #include <functional>
 #include <glm/gtx/norm.hpp>
-#include <set>
 #include <string>
 #include <vector>
 
@@ -18,66 +16,85 @@ using namespace engine::ui;
 
 namespace engine::ecs {
 
-// === COMPONENT REGISTRY IMPLEMENTATION ===
-
-ComponentRegistry& ComponentRegistry::Instance() {
-	static ComponentRegistry instance;
-	return instance;
-}
-
-std::vector<std::string> ComponentRegistry::GetCategories() const {
-	std::set<std::string> categories;
-	for (const auto& comp : components_) {
-		categories.insert(comp.category);
-	}
-	return {categories.begin(), categories.end()};
-}
-
-std::vector<const ComponentInfo*> ComponentRegistry::GetComponentsByCategory(const std::string& category) const {
-	std::vector<const ComponentInfo*> result;
-	for (const auto& comp : components_) {
-		if (comp.category == category) {
-			result.push_back(&comp);
-		}
-	}
-	return result;
-}
-
-const ComponentInfo* ComponentRegistry::FindComponent(const std::string& name) const {
-	for (const auto& comp : components_) {
-		if (comp.name == name) {
-			return &comp;
-		}
-	}
-	return nullptr;
-}
-
 // === ECSWORLD IMPLEMENTATION ===
 
 ECSWorld::ECSWorld() {
 	auto& registry = ComponentRegistry::Instance();
 
-	// Register core components with flecs and registry
-	registry.Register<Transform>("Transform", world_).Category("Core").Build();
+	// Register core components with flecs and registry, including field metadata
+	registry.Register<Transform>("Transform", world_)
+			.Category("Core")
+			.Field("position", &Transform::position)
+			.Field("rotation", &Transform::rotation)
+			.Field("scale", &Transform::scale)
+			.Build();
+
 	registry.Register<WorldTransform>("WorldTransform", world_).Category("Core").Build();
-	registry.Register<Velocity>("Velocity", world_).Category("Core").Build();
+
+	registry.Register<Velocity>("Velocity", world_)
+			.Category("Core")
+			.Field("linear", &Velocity::linear)
+			.Field("angular", &Velocity::angular)
+			.Build();
 
 	// Register rendering components
 	registry.Register<Renderable>("Renderable", world_).Category("Rendering").Build();
-	registry.Register<Camera>("Camera", world_).Category("Rendering").Build();
-	registry.Register<Sprite>("Sprite", world_).Category("Rendering").Build();
-	registry.Register<Light>("Light", world_).Category("Rendering").Build();
-	registry.Register<Animation>("Animation", world_).Category("Rendering").Build();
+
+	registry.Register<Camera>("Camera", world_)
+			.Category("Rendering")
+			.Field("fov", &Camera::fov)
+			.Field("near_plane", &Camera::near_plane)
+			.Field("far_plane", &Camera::far_plane)
+			.Field("aspect_ratio", &Camera::aspect_ratio)
+			.Field("target", &Camera::target)
+			.Field("up", &Camera::up)
+			.Build();
+
+	registry.Register<Sprite>("Sprite", world_)
+			.Category("Rendering")
+			.Field("color", &Sprite::color, FieldType::Color)
+			.Field("texture_offset", &Sprite::texture_offset)
+			.Field("texture_scale", &Sprite::texture_scale)
+			.Field("layer", &Sprite::layer)
+			.Build();
+
+	registry.Register<Light>("Light", world_)
+			.Category("Rendering")
+			.Field("color", &Light::color, FieldType::Color)
+			.Field("intensity", &Light::intensity)
+			.Field("range", &Light::range)
+			.Build();
+
+	registry.Register<Animation>("Animation", world_)
+			.Category("Rendering")
+			.Field("animation_time", &Animation::animation_time)
+			.Field("animation_speed", &Animation::animation_speed)
+			.Field("looping", &Animation::looping)
+			.Field("playing", &Animation::playing)
+			.Build();
+
 	registry.Register<ParticleSystem>("ParticleSystem", world_).Category("Rendering").Build();
 
 	// Register scene components
-	registry.Register<SceneEntity>("SceneEntity", world_).Category("Scene").Build();
-	registry.Register<Spatial>("Spatial", world_).Category("Scene").Build();
+	registry.Register<SceneEntity>("SceneEntity", world_)
+			.Category("Scene")
+			.Field("name", &SceneEntity::name)
+			.Field("visible", &SceneEntity::visible)
+			.Field("static_entity", &SceneEntity::static_entity)
+			.Field("scene_layer", &SceneEntity::scene_layer)
+			.Build();
 
-	// Register tag components
+	registry.Register<Spatial>("Spatial", world_)
+			.Category("Scene")
+			.Field("bounding_min", &Spatial::bounding_min)
+			.Field("bounding_max", &Spatial::bounding_max)
+			.Field("spatial_layer", &Spatial::spatial_layer)
+			.Build();
+
+	// Register tag components (no fields)
 	registry.Register<Rotating>("Rotating", world_).Category("Tags").Build();
 
-	// Register relationship tags
+	// Register relationship tags (no fields)
 	registry.Register<SceneRoot>("SceneRoot", world_).Category("Tags").Build();
 	registry.Register<ActiveCamera>("ActiveCamera", world_).Category("Tags").Build();
 	registry.Register<Tilemap>("Tilemap", world_).Category("Rendering").Build();
@@ -257,7 +274,7 @@ void ECSWorld::SubmitRenderCommands(const rendering::Renderer& renderer) {
 	// Static default camera to avoid recreation every frame
 	static const Camera default_camera = []() {
 		Camera cam;
-		const glm::vec3 default_position(0.0f, 0.0f, 10.0f);
+		constexpr glm::vec3 default_position(0.0f, 0.0f, 10.0f);
 		cam.view_matrix = glm::lookAt(default_position, cam.target, cam.up);
 		cam.projection_matrix =
 				glm::perspective(glm::radians(cam.fov), cam.aspect_ratio, cam.near_plane, cam.far_plane);

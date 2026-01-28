@@ -89,18 +89,25 @@ void PropertiesPanel::RenderAddComponentButton(engine::ecs::Entity entity) {
 	if (ImGui::BeginPopup("AddComponentPopup")) {
 		ImGui::TextDisabled("Available Components:");
 		ImGui::Separator();
-		if (ImGui::MenuItem("Sprite Renderer")) {
-			// TODO: Add sprite renderer component
-			if (callbacks_.on_scene_modified) {
-				callbacks_.on_scene_modified();
+
+		const auto& registry = engine::ecs::ComponentRegistry::Instance();
+		for (const auto& category : registry.GetCategories()) {
+			if (ImGui::BeginMenu(category.c_str())) {
+				for (const auto* comp : registry.GetComponentsByCategory(category)) {
+					const bool has_component = entity.has(comp->id);
+					if (has_component) {
+						ImGui::TextDisabled("%s (already added)", comp->name.c_str());
+					}
+					else if (ImGui::MenuItem(comp->name.c_str())) {
+						if (callbacks_.on_add_component) {
+							callbacks_.on_add_component(entity, comp->name);
+						}
+					}
+				}
+				ImGui::EndMenu();
 			}
 		}
-		if (ImGui::MenuItem("Camera")) {
-			// TODO: Add camera component
-			if (callbacks_.on_scene_modified) {
-				callbacks_.on_scene_modified();
-			}
-		}
+
 		ImGui::EndPopup();
 	}
 }

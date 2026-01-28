@@ -104,6 +104,7 @@ private:
 	void OnSceneModified();
 	void OnShowRenameDialog(engine::ecs::Entity entity);
 	void OnAddChildEntity(engine::ecs::Entity parent);
+	void OnAddComponent(engine::ecs::Entity entity, const std::string& component_name);
 
 	// ========================================================================
 	// State

@@ -106,6 +106,30 @@ void HierarchyPanel::RenderEntityNode(
 				callbacks_.on_add_child_entity(entity);
 			}
 		}
+		
+		// Add Component submenu - grouped by category
+		if (ImGui::BeginMenu("Add Component")) {
+			const auto& registry = engine::ecs::ComponentRegistry::Instance();
+			for (const auto& category : registry.GetCategories()) {
+				if (ImGui::BeginMenu(category.c_str())) {
+					for (const auto* comp : registry.GetComponentsByCategory(category)) {
+						// Check if entity already has this component
+						const bool has_component = entity.has(comp->id);
+						if (has_component) {
+							ImGui::TextDisabled("%s (already added)", comp->name.c_str());
+						}
+						else if (ImGui::MenuItem(comp->name.c_str())) {
+							if (callbacks_.on_add_component) {
+								callbacks_.on_add_component(entity, comp->name);
+							}
+						}
+					}
+					ImGui::EndMenu();
+				}
+			}
+			ImGui::EndMenu();
+		}
+		
 		ImGui::Separator();
 		if (ImGui::MenuItem("Rename")) {
 			if (callbacks_.on_show_rename_dialog) {

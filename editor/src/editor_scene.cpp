@@ -33,6 +33,9 @@ void EditorScene::Initialize(engine::Engine& engine) {
 	callbacks.on_scene_modified = [this]() { OnSceneModified(); };
 	callbacks.on_show_rename_dialog = [this](engine::ecs::Entity entity) { OnShowRenameDialog(entity); };
 	callbacks.on_add_child_entity = [this](engine::ecs::Entity parent) { OnAddChildEntity(parent); };
+	callbacks.on_add_component = [this](engine::ecs::Entity entity, const std::string& component_name) {
+		OnAddComponent(entity, component_name);
+	};
 
 	hierarchy_panel_.SetCallbacks(callbacks);
 	properties_panel_.SetCallbacks(callbacks);
@@ -330,6 +333,19 @@ void EditorScene::OnAddChildEntity(engine::ecs::Entity parent) {
 				selected_entity_ = new_entity;
 			}
 		}
+	}
+}
+
+void EditorScene::OnAddComponent(engine::ecs::Entity entity, const std::string& component_name) {
+	const auto& registry = engine::ecs::ComponentRegistry::Instance();
+	if (const auto* comp = registry.FindComponent(component_name)) {
+		// Use flecs API directly to add component by ID
+		entity.add(comp->id);
+		state_.is_dirty = true;
+		std::cout << "EditorScene: Added component '" << component_name << "' to entity" << std::endl;
+	}
+	else {
+		std::cerr << "EditorScene: Component '" << component_name << "' not found in registry" << std::endl;
 	}
 }
 

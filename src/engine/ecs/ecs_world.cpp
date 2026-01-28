@@ -1,8 +1,10 @@
 module;
 
+#include <algorithm>
 #include <flecs.h>
 #include <functional>
 #include <glm/gtx/norm.hpp>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -15,31 +17,70 @@ using namespace engine::rendering;
 using namespace engine::ui;
 
 namespace engine::ecs {
+
+// === COMPONENT REGISTRY IMPLEMENTATION ===
+
+ComponentRegistry& ComponentRegistry::Instance() {
+	static ComponentRegistry instance;
+	return instance;
+}
+
+std::vector<std::string> ComponentRegistry::GetCategories() const {
+	std::set<std::string> categories;
+	for (const auto& comp : components_) {
+		categories.insert(comp.category);
+	}
+	return {categories.begin(), categories.end()};
+}
+
+std::vector<const ComponentInfo*> ComponentRegistry::GetComponentsByCategory(const std::string& category) const {
+	std::vector<const ComponentInfo*> result;
+	for (const auto& comp : components_) {
+		if (comp.category == category) {
+			result.push_back(&comp);
+		}
+	}
+	return result;
+}
+
+const ComponentInfo* ComponentRegistry::FindComponent(const std::string& name) const {
+	for (const auto& comp : components_) {
+		if (comp.name == name) {
+			return &comp;
+		}
+	}
+	return nullptr;
+}
+
+// === ECSWORLD IMPLEMENTATION ===
+
 ECSWorld::ECSWorld() {
-	// Register core components with flecs
-	world_.component<Transform>();
-	world_.component<WorldTransform>();
-	world_.component<Velocity>();
+	auto& registry = ComponentRegistry::Instance();
+
+	// Register core components with flecs and registry
+	registry.Register<Transform>("Transform", world_).Category("Core").Build();
+	registry.Register<WorldTransform>("WorldTransform", world_).Category("Core").Build();
+	registry.Register<Velocity>("Velocity", world_).Category("Core").Build();
+
 	// Register rendering components
-	world_.component<Renderable>();
-	world_.component<Camera>();
-	world_.component<Sprite>();
-	world_.component<Light>();
-	world_.component<Animation>();
-	world_.component<ParticleSystem>();
+	registry.Register<Renderable>("Renderable", world_).Category("Rendering").Build();
+	registry.Register<Camera>("Camera", world_).Category("Rendering").Build();
+	registry.Register<Sprite>("Sprite", world_).Category("Rendering").Build();
+	registry.Register<Light>("Light", world_).Category("Rendering").Build();
+	registry.Register<Animation>("Animation", world_).Category("Rendering").Build();
+	registry.Register<ParticleSystem>("ParticleSystem", world_).Category("Rendering").Build();
 
 	// Register scene components
-	world_.component<SceneEntity>();
-	world_.component<Spatial>();
+	registry.Register<SceneEntity>("SceneEntity", world_).Category("Scene").Build();
+	registry.Register<Spatial>("Spatial", world_).Category("Scene").Build();
 
 	// Register tag components
-	world_.component<Rotating>();
+	registry.Register<Rotating>("Rotating", world_).Category("Tags").Build();
 
 	// Register relationship tags
-	world_.component<SceneRoot>();
-	world_.component<ActiveCamera>();
-
-	world_.component<Tilemap>();
+	registry.Register<SceneRoot>("SceneRoot", world_).Category("Tags").Build();
+	registry.Register<ActiveCamera>("ActiveCamera", world_).Category("Tags").Build();
+	registry.Register<Tilemap>("Tilemap", world_).Category("Rendering").Build();
 
 	// Register WorldTransform and propagation system
 	RegisterTransformSystem();

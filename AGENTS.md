@@ -51,6 +51,16 @@ The editor is a **separate CMake project** located in the `editor/` directory. I
 3. Build: `cmake --build --preset cli-native-debug`
 4. The editor executable will be at `editor/build/cli-native/Debug/citrus-scene-editor.exe`
 
+**After modifying engine code:**
+When you modify engine source files (`src/engine/**`), you must:
+1. **Bump the version** in `ports/citrus-engine/vcpkg.json` (e.g., `0.0.7` → `0.0.8`)
+2. **Reconfigure** the editor project to pick up the new engine:
+   ```bash
+   cd editor && cmake --preset cli-native -DVCPKG_TARGET_TRIPLET=x64-windows
+   ```
+
+The engine is installed via vcpkg manifest mode using an overlay port (`../ports/citrus-engine`). Bumping the version and reconfiguring triggers vcpkg to rebuild and reinstall the engine package.
+
 **Note**: On Windows, building from CLI requires a Visual Studio Developer environment. Building from CLion or Visual Studio IDE works without additional setup.
 
 ### Step 1: Install System Dependencies

@@ -1,5 +1,9 @@
 #pragma once
 
+#include "hierarchy_panel.h"
+#include "properties_panel.h"
+#include "viewport_panel.h"
+
 #include <flecs.h>
 #include <memory>
 #include <string>
@@ -74,9 +78,6 @@ private:
 	// ========================================================================
 
 	void RenderMenuBar();
-	void RenderHierarchyPanel();
-	void RenderPropertiesPanel();
-	void RenderViewportPanel();
 
 	// ========================================================================
 	// File Operations (stubs for now)
@@ -95,6 +96,16 @@ private:
 	void StopScene();
 
 	// ========================================================================
+	// Callback Handlers
+	// ========================================================================
+
+	void OnEntitySelected(engine::ecs::Entity entity);
+	void OnEntityDeleted(engine::ecs::Entity entity);
+	void OnSceneModified();
+	void OnShowRenameDialog(engine::ecs::Entity entity);
+	void OnAddChildEntity(engine::ecs::Entity parent);
+
+	// ========================================================================
 	// State
 	// ========================================================================
 
@@ -104,10 +115,10 @@ private:
 	// Selected entity in hierarchy
 	engine::ecs::Entity selected_entity_;
 
-	// Window state tracking
-	bool show_hierarchy_ = true;
-	bool show_properties_ = true;
-	bool show_viewport_ = true;
+	// Panels (composition)
+	HierarchyPanel hierarchy_panel_;
+	PropertiesPanel properties_panel_;
+	ViewportPanel viewport_panel_;
 
 	// Input buffer for dialogs
 	char file_path_buffer_[256] = "";

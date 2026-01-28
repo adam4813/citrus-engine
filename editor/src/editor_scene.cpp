@@ -26,6 +26,17 @@ void EditorScene::Initialize(engine::Engine& engine) {
 	state_.current_file_path = "";
 	state_.is_dirty = false;
 
+	// Wire up panel callbacks
+	EditorCallbacks callbacks;
+	callbacks.on_entity_selected = [this](engine::ecs::Entity entity) { OnEntitySelected(entity); };
+	callbacks.on_entity_deleted = [this](engine::ecs::Entity entity) { OnEntityDeleted(entity); };
+	callbacks.on_scene_modified = [this]() { OnSceneModified(); };
+	callbacks.on_show_rename_dialog = [this](engine::ecs::Entity entity) { OnShowRenameDialog(entity); };
+	callbacks.on_add_child_entity = [this](engine::ecs::Entity parent) { OnAddChildEntity(parent); };
+
+	hierarchy_panel_.SetCallbacks(callbacks);
+	properties_panel_.SetCallbacks(callbacks);
+
 	std::cout << "EditorScene: Initialized with new scene" << std::endl;
 }
 
@@ -78,9 +89,9 @@ void EditorScene::RenderUI(engine::Engine& engine) {
 	ImGui::DockSpaceOverViewport(dockspace_id, viewport, ImGuiDockNodeFlags_PassthruCentralNode);
 
 	RenderMenuBar();
-	RenderHierarchyPanel();
-	RenderPropertiesPanel();
-	RenderViewportPanel();
+	hierarchy_panel_.Render(editor_scene_id_, selected_entity_);
+	properties_panel_.Render(selected_entity_);
+	viewport_panel_.Render(state_.is_running);
 
 	// Handle dialogs
 	if (state_.show_new_scene_dialog) {
@@ -226,9 +237,9 @@ void EditorScene::RenderMenuBar() {
 		}
 
 		if (ImGui::BeginMenu("View")) {
-			ImGui::MenuItem("Hierarchy", nullptr, &show_hierarchy_);
-			ImGui::MenuItem("Properties", nullptr, &show_properties_);
-			ImGui::MenuItem("Viewport", nullptr, &show_viewport_);
+			ImGui::MenuItem("Hierarchy", nullptr, &hierarchy_panel_.VisibleRef());
+			ImGui::MenuItem("Properties", nullptr, &properties_panel_.VisibleRef());
+			ImGui::MenuItem("Viewport", nullptr, &viewport_panel_.VisibleRef());
 			ImGui::EndMenu();
 		}
 
@@ -281,212 +292,45 @@ void EditorScene::RenderMenuBar() {
 	ImGui::PopStyleVar();
 }
 
-void EditorScene::RenderHierarchyPanel() {
-	if (!show_hierarchy_)
-		return;
+// ========================================================================
+// Callback Handlers
+// ========================================================================
 
-	ImGuiWindowClass winClass;
-	winClass.DockNodeFlagsOverrideSet = ImGuiDockNodeFlags_NoWindowMenuButton | ImGuiDockNodeFlags_NoDockingOverMe
-										| ImGuiDockNodeFlags_NoDockingOverOther | ImGuiDockNodeFlags_NoDockingOverEmpty;
-	ImGui::SetNextWindowClass(&winClass);
+void EditorScene::OnEntitySelected(engine::ecs::Entity entity) {
+	selected_entity_ = entity;
+}
 
-	ImGui::Begin("Hierarchy", &show_hierarchy_);
+void EditorScene::OnEntityDeleted(engine::ecs::Entity entity) {
+	if (selected_entity_ == entity) {
+		selected_entity_ = {};
+	}
+}
 
-	ImGui::Text("Scene Entities");
-	ImGui::Separator();
+void EditorScene::OnSceneModified() {
+	state_.is_dirty = true;
+}
 
-	// Get all entities from the current scene
+void EditorScene::OnShowRenameDialog(engine::ecs::Entity entity) {
+	selected_entity_ = entity;
+	state_.show_rename_entity_dialog = true;
+}
+
+void EditorScene::OnAddChildEntity(engine::ecs::Entity parent) {
 	auto& scene_manager = engine::scene::GetSceneManager();
-
-	if (auto* scene = scene_manager.TryGetScene(editor_scene_id_)) {
-		if (const auto entities = scene->GetAllEntities(); entities.empty()) {
-			ImGui::TextDisabled("No entities in scene");
-			ImGui::TextDisabled("Use Scene > Add Entity to create one");
+	if (const auto* scene = scene_manager.TryGetScene(editor_scene_id_)) {
+		std::string entity_name = "NewEntity";
+		auto count = 1;
+		while (count <= MAX_ENTITY_NAME_CHECK_COUNT
+			   && scene->GetSceneRoot().lookup(entity_name.c_str()) != flecs::entity::null()) {
+			entity_name = "NewEntity_" + std::to_string(count++);
 		}
-		else {
-			for (const auto& entity : entities) {
-				std::string name = entity.name().c_str();
-				if (name.empty()) {
-					name = "Entity_" + std::to_string(entity.id());
-				}
-
-				ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_SpanAvailWidth;
-				if (entity == selected_entity_) {
-					flags |= ImGuiTreeNodeFlags_Selected;
-				}
-
-				if (ImGui::TreeNodeEx(
-							reinterpret_cast<void*>(static_cast<intptr_t>(entity.id())), flags, "%s", name.c_str())) {
-					ImGui::TreePop();
-				}
-
-				if (ImGui::IsItemClicked()) {
-					selected_entity_ = entity;
-					ImGui::ClearActiveID();
-				}
-
-				// Right-click context menu
-				if (ImGui::BeginPopupContextItem()) {
-					if (ImGui::MenuItem("Delete")) {
-						scene->DestroyEntity(entity);
-						if (selected_entity_ == entity) {
-							selected_entity_ = {};
-						}
-						state_.is_dirty = true;
-					}
-					if (ImGui::MenuItem("Rename")) {
-						state_.show_rename_entity_dialog = true;
-					}
-					ImGui::EndPopup();
-				}
-			}
-		}
-	}
-	else {
-		ImGui::TextDisabled("No active scene");
-	}
-
-	ImGui::End();
-}
-
-void EditorScene::RenderPropertiesPanel() {
-	if (!show_properties_)
-		return;
-
-	ImGuiWindowClass winClass;
-	winClass.DockNodeFlagsOverrideSet = ImGuiDockNodeFlags_NoWindowMenuButton | ImGuiDockNodeFlags_NoCloseButton
-										| ImGuiDockNodeFlags_NoDockingOverMe | ImGuiDockNodeFlags_NoDockingOverOther
-										| ImGuiDockNodeFlags_NoDockingOverEmpty;
-	ImGui::SetNextWindowClass(&winClass);
-
-	ImGui::Begin("Properties", &show_properties_);
-
-	if (selected_entity_.is_valid()) {
-		std::string name = selected_entity_.name().c_str();
-		if (name.empty()) {
-			name = "Entity_" + std::to_string(selected_entity_.id());
-		}
-
-		ImGui::Text("Entity: %s", name.c_str());
-		ImGui::Separator();
-
-		// Transform component (placeholder - will need proper component inspection)
-		if (ImGui::CollapsingHeader("Transform", ImGuiTreeNodeFlags_DefaultOpen)) {
-			if (selected_entity_.has<engine::ecs::SceneEntity>()) {
-				const auto& [name, visible, static_entity, scene_layer] =
-						selected_entity_.get<engine::ecs::SceneEntity>();
-				ImGui::Text("Name: %s", name.c_str());
-				ImGui::Text("Visible: %s", visible ? "Yes" : "No");
-				ImGui::Text("Static: %s", static_entity ? "Yes" : "No");
-				ImGui::Text("Scene Layer: %u", scene_layer);
-			}
-			if (selected_entity_.has<engine::components::Transform>()) {
-				const auto& initial_transform = selected_entity_.get<engine::components::Transform>();
-				auto position = initial_transform.position;
-				auto rotation = initial_transform.rotation;
-				auto scale = initial_transform.scale;
-				if (ImGui::InputFloat3("Position", &position.x) || ImGui::InputFloat3("Rotation", &rotation.x)
-					|| ImGui::InputFloat3("Scale", &scale.x)) {
-					auto& transform = selected_entity_.get_mut<engine::components::Transform>();
-					transform.position = position;
-					transform.rotation = rotation;
-					transform.scale = scale;
-					state_.is_dirty = true;
-				}
-			}
-			ImGui::TextDisabled("(Component editing coming soon)");
-		}
-
-		// Add component button
-		ImGui::Spacing();
-		if (ImGui::Button("Add Component")) {
-			ImGui::OpenPopup("AddComponentPopup");
-		}
-
-		if (ImGui::BeginPopup("AddComponentPopup")) {
-			ImGui::TextDisabled("Available Components:");
-			ImGui::Separator();
-			if (ImGui::MenuItem("Sprite Renderer")) {
-				// TODO: Add sprite renderer component
+		if (count <= MAX_ENTITY_NAME_CHECK_COUNT) {
+			if (auto new_entity = scene->CreateEntity(entity_name, parent)) {
 				state_.is_dirty = true;
+				selected_entity_ = new_entity;
 			}
-			if (ImGui::MenuItem("Camera")) {
-				// TODO: Add camera component
-				state_.is_dirty = true;
-			}
-			ImGui::EndPopup();
 		}
 	}
-	else {
-		ImGui::TextDisabled("No entity selected");
-		ImGui::TextDisabled("Select an entity in the Hierarchy panel");
-	}
-
-	ImGui::End();
-}
-
-void EditorScene::RenderViewportPanel() {
-	if (!show_viewport_)
-		return;
-
-	ImGui::Begin("Viewport", &show_viewport_);
-
-	const ImVec2 content_size = ImGui::GetContentRegionAvail();
-
-	// Placeholder viewport content
-	ImGui::BeginChild("ViewportContent", content_size, true);
-
-	// Draw a placeholder grid or message
-	const ImVec2 cursor_pos = ImGui::GetCursorScreenPos();
-	ImDrawList* draw_list = ImGui::GetWindowDrawList();
-
-	// Draw background
-	draw_list->AddRectFilled(
-			cursor_pos,
-			ImVec2(cursor_pos.x + content_size.x, cursor_pos.y + content_size.y),
-			IM_COL32(30, 30, 30, 255));
-
-	// Draw grid lines
-	constexpr float grid_size = 50.0f;
-	constexpr ImU32 grid_color = IM_COL32(50, 50, 50, 255);
-
-	for (float x = 0; x < content_size.x; x += grid_size) {
-		draw_list->AddLine(
-				ImVec2(cursor_pos.x + x, cursor_pos.y),
-				ImVec2(cursor_pos.x + x, cursor_pos.y + content_size.y),
-				grid_color);
-	}
-
-	for (float y = 0; y < content_size.y; y += grid_size) {
-		draw_list->AddLine(
-				ImVec2(cursor_pos.x, cursor_pos.y + y),
-				ImVec2(cursor_pos.x + content_size.x, cursor_pos.y + y),
-				grid_color);
-	}
-
-	// Draw center text
-	const auto text = "2D Scene Viewport";
-	const ImVec2 text_size = ImGui::CalcTextSize(text);
-	draw_list->AddText(
-			ImVec2(cursor_pos.x + (content_size.x - text_size.x) / 2,
-				   cursor_pos.y + (content_size.y - text_size.y) / 2),
-			IM_COL32(100, 100, 100, 255),
-			text);
-
-	// If running, show play mode indicator
-	if (state_.is_running) {
-		const auto play_text = "PLAYING";
-		const ImVec2 play_text_size = ImGui::CalcTextSize(play_text);
-		draw_list->AddRectFilled(
-				ImVec2(cursor_pos.x + 5, cursor_pos.y + 5),
-				ImVec2(cursor_pos.x + play_text_size.x + 15, cursor_pos.y + play_text_size.y + 15),
-				IM_COL32(0, 100, 0, 200));
-		draw_list->AddText(ImVec2(cursor_pos.x + 10, cursor_pos.y + 10), IM_COL32(255, 255, 255, 255), play_text);
-	}
-
-	ImGui::EndChild();
-
-	ImGui::End();
 }
 
 // ========================================================================
@@ -513,6 +357,7 @@ void EditorScene::NewScene() {
 	selected_entity_ = {};
 	file_path_buffer_[0] = '\0';
 	rename_entity_buffer_[0] = '\0';
+	hierarchy_panel_.ClearNodeState();
 
 	std::cout << "EditorScene: New scene created" << std::endl;
 }
@@ -538,6 +383,7 @@ void EditorScene::OpenScene(const std::string& path) {
 	state_.current_file_path = path;
 	state_.is_dirty = false;
 	selected_entity_ = {};
+	hierarchy_panel_.ClearNodeState();
 
 	std::cout << "EditorScene: Scene opened (stub implementation)" << std::endl;
 }

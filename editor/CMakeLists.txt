@@ -14,7 +14,10 @@ find_package(citrus-engine CONFIG REQUIRED)
 add_executable(
     citrus-scene-editor
     src/main.cpp
-    src/editor_scene.cpp)
+    src/editor_scene.cpp
+    src/hierarchy_panel.cpp
+    src/properties_panel.cpp
+    src/viewport_panel.cpp)
 
 target_include_directories(citrus-scene-editor
                            PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)

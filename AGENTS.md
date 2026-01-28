@@ -543,6 +543,12 @@ After successful build, run tests before completing work:
 
 ### Code Standards
 
+#### Code Formatting
+
+- **Line endings**: Use LF (Unix-style), not CRLF
+- **Formatting**: Use `clang-format` - the project includes a `.clang-format` configuration
+- **Run formatter**: Before committing, run `clang-format -i <files>` or use IDE integration
+
 #### Modern C++20 Requirements
 
 - **C++20 features**: Use ranges, concepts, modules (when stable), coroutines (when appropriate)

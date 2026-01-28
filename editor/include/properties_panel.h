@@ -2,8 +2,6 @@
 
 #include "editor_callbacks.h"
 
-#include <flecs.h>
-
 import engine;
 
 namespace editor {
@@ -45,8 +43,9 @@ public:
 	bool& VisibleRef() { return is_visible_; }
 
 private:
-	void RenderTransformSection(engine::ecs::Entity entity);
-	void RenderAddComponentButton(engine::ecs::Entity entity);
+	void RenderComponentSections(engine::ecs::Entity entity) const;
+	void RenderComponentFields(engine::ecs::Entity entity, const engine::ecs::ComponentInfo& comp) const;
+	void RenderAddComponentButton(engine::ecs::Entity entity) const;
 
 	EditorCallbacks callbacks_;
 	bool is_visible_ = true;

@@ -41,6 +41,35 @@ std::unique_ptr<AssetInfo> AssetRegistry::Create(const nlohmann::json& j) const 
 
 bool AssetRegistry::IsRegistered(const std::string& type_name) const { return factories_.contains(type_name); }
 
+std::shared_ptr<AssetInfo> AssetRegistry::CreateDefault(const AssetType type) const {
+	for (const auto& info : types_) {
+		if (info.asset_type == type && info.create_default_factory) {
+			return info.create_default_factory();
+		}
+	}
+	return nullptr;
+}
+
+const AssetTypeInfo* AssetRegistry::GetTypeInfo(const AssetType type) const {
+	for (const auto& info : types_) {
+		if (info.asset_type == type) {
+			return &info;
+		}
+	}
+	return nullptr;
+}
+
+const AssetTypeInfo* AssetRegistry::GetTypeInfo(const std::string& type_name) const {
+	for (const auto& info : types_) {
+		if (info.type_name == type_name) {
+			return &info;
+		}
+	}
+	return nullptr;
+}
+
+void AssetRegistry::AddTypeInfo(AssetTypeInfo info) { types_.push_back(std::move(info)); }
+
 void AssetInfo::ToJson(nlohmann::json& j) const { j["name"] = name; }
 
 void AssetInfo::Initialize() {
@@ -97,13 +126,24 @@ bool ShaderAssetInfo::DoLoad() {
 }
 
 void ShaderAssetInfo::RegisterType() {
-	AssetRegistry::Instance().Register("shader", [](const nlohmann::json& j) -> std::unique_ptr<AssetInfo> {
-		auto asset = std::make_unique<ShaderAssetInfo>();
-		asset->name = j.value("name", "");
-		asset->vertex_path = j.value("vertex_path", "");
-		asset->fragment_path = j.value("fragment_path", "");
-		return asset;
-	});
+	AssetRegistry::Instance()
+			.RegisterType<ShaderAssetInfo>("shader", AssetType::SHADER)
+			.DisplayName("Shader")
+			.Category("Rendering")
+			.Field("name", &ShaderAssetInfo::name, "Name")
+			.Field("vertex_path", &ShaderAssetInfo::vertex_path, "Vertex Shader", AssetFieldType::FilePath)
+			.Field("fragment_path", &ShaderAssetInfo::fragment_path, "Fragment Shader", AssetFieldType::FilePath)
+			.FromJson([](const nlohmann::json& j) -> std::unique_ptr<AssetInfo> {
+				auto asset = std::make_unique<ShaderAssetInfo>();
+				asset->name = j.value("name", "");
+				asset->vertex_path = j.value("vertex_path", "");
+				asset->fragment_path = j.value("fragment_path", "");
+				return asset;
+			})
+			.CreateDefault([]() -> std::shared_ptr<AssetInfo> {
+				return std::make_shared<ShaderAssetInfo>("NewShader", "", "");
+			})
+			.Build();
 }
 
 void SceneAssets::Add(AssetPtr asset) {

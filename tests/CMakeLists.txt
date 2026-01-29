@@ -114,3 +114,8 @@ add_engine_test(ui_tooltip_test
 add_engine_test(scene_serialization_test
     scene_serialization_test.cpp
 )
+
+# Add scene assets test
+add_engine_test(scene_assets_test
+    scene_assets_test.cpp
+)

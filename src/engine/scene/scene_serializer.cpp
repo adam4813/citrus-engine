@@ -28,21 +28,25 @@ bool SceneSerializer::Save(const Scene& scene, ecs::ECSWorld& world, const platf
 		metadata["engine_version"] = "0.0.9";
 		doc["metadata"] = metadata;
 
-		// Save active camera entity path (if any)
-		if (const std::string active_camera_path = GetActiveCameraPath(world); !active_camera_path.empty()) {
-			doc["active_camera"] = active_camera_path;
+		// Serialize assets (before entities - order matters for loading)
+		json assets_array = json::array();
+		for (const auto& asset_ptr : scene.GetAssets().GetAll()) {
+			if (asset_ptr) {
+				json asset_json;
+				asset_ptr->ToJson(asset_json);
+				assets_array.push_back(asset_json);
+			}
 		}
+		doc["assets"] = assets_array;
 
 		// Serialize entities using flecs
 		const std::string flecs_json = SerializeEntities(scene, world);
 		doc["flecs_data"] = flecs_json;
 
-		// Required assets
-		json assets_array = json::array();
-		for (const auto& asset : scene.GetRequiredAssets()) {
-			assets_array.push_back(asset);
+		// Save active camera entity path (if any) - after entities
+		if (const std::string active_camera_path = GetActiveCameraPath(world); !active_camera_path.empty()) {
+			doc["active_camera"] = active_camera_path;
 		}
-		doc["assets"] = assets_array;
 
 		// Write to file
 		std::ofstream file(path);
@@ -92,13 +96,19 @@ SceneId SceneSerializer::Load(const platform::fs::Path& path, SceneManager& mana
 			return INVALID_SCENE;
 		}
 
-		const auto& scene = manager.GetScene(scene_id);
+		auto& scene = manager.GetScene(scene_id);
 		scene.SetFilePath(path);
 
-		// Load required assets
-		if (doc.contains("assets")) {
-			for (const auto& asset : doc["assets"]) {
-				scene.AddRequiredAsset(asset.get<std::string>());
+		// Load assets BEFORE entities (order matters - entities may reference assets)
+		if (doc.contains("assets") && doc["assets"].is_array()) {
+			for (const auto& asset_json : doc["assets"]) {
+				if (auto asset = AssetInfo::FromJson(asset_json)) {
+					// Load the asset (e.g., compile shader)
+					if (!asset->Load()) {
+						std::cerr << "SceneSerializer: Warning - failed to load asset '" << asset->name << "'" << std::endl;
+					}
+					scene.GetAssets().Add(std::move(asset));
+				}
 			}
 		}
 

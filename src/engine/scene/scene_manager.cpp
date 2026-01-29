@@ -34,6 +34,7 @@ struct Scene::Impl {
 
 	// Asset management
 	std::vector<std::string> required_assets; // Asset IDs or paths
+	SceneAssets scene_assets;  // Shader, texture, and other asset definitions
 
 	// Lifecycle callbacks
 	InitializeCallback initialize_callback;
@@ -235,6 +236,9 @@ void Scene::UnloadAssets() const {
 		// AssetManager::Get().Unload(asset);
 	}
 }
+
+SceneAssets& Scene::GetAssets() { return pimpl_->scene_assets; }
+const SceneAssets& Scene::GetAssets() const { return pimpl_->scene_assets; }
 
 // SceneManager implementation
 struct SceneManager::Impl {
@@ -495,7 +499,12 @@ SceneManager& GetSceneManager() {
 	return *g_scene_manager;
 }
 
-void InitializeSceneSystem(ecs::ECSWorld& ecs_world) { g_scene_manager = std::make_unique<SceneManager>(ecs_world); }
+void InitializeSceneSystem(ecs::ECSWorld& ecs_world) {
+	// Register built-in asset types
+	ShaderAssetInfo::RegisterType();
+
+	g_scene_manager = std::make_unique<SceneManager>(ecs_world);
+}
 
 void ShutdownSceneSystem() { g_scene_manager.reset(); }
 } // namespace engine::scene

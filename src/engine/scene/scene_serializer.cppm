@@ -23,9 +23,11 @@ inline constexpr int SCENE_FORMAT_VERSION = 1;
 ///     "version": 1,
 ///     "name": "Scene Name",
 ///     "metadata": { ... },
-///     "active_camera": "path/to/camera/entity",  // optional
+///     "assets": [
+///         { "type": "shader", "name": "...", "vertex_path": "...", "fragment_path": "..." }
+///     ],
 ///     "flecs_data": "<flecs world JSON>",
-///     "assets": ["asset1.png", "asset2.obj"]
+///     "active_camera": "path/to/camera/entity"  // optional
 /// }
 class SceneSerializer {
 public:

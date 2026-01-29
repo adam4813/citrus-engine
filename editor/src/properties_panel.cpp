@@ -110,7 +110,8 @@ void PropertiesPanel::RenderComponentFields(
 		{
 			auto* str = static_cast<std::string*>(field_ptr);
 			char buffer[256];
-			strncpy_s(buffer, str->c_str(), sizeof(buffer) - 1);
+			std::strncpy(buffer, str->c_str(), sizeof(buffer) - 1);
+			buffer[sizeof(buffer) - 1] = '\0';
 			if (ImGui::InputText(field.name.c_str(), buffer, sizeof(buffer))) {
 				*str = buffer;
 				modified = true;

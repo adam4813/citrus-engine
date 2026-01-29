@@ -33,8 +33,7 @@ struct Scene::Impl {
 	std::pair<Vec3, Vec3> world_bounds{{-1000.0f, -1000.0f, -1000.0f}, {1000.0f, 1000.0f, 1000.0f}};
 
 	// Asset management
-	std::vector<std::string> required_assets; // Asset IDs or paths
-	SceneAssets scene_assets;  // Shader, texture, and other asset definitions
+	SceneAssets scene_assets; // Shader, texture, and other asset definitions
 
 	// Lifecycle callbacks
 	InitializeCallback initialize_callback;
@@ -196,45 +195,16 @@ void Scene::Render() {
 }
 
 // === ASSET MANAGEMENT ===
-void Scene::AddRequiredAsset(const std::string& asset_id) const {
-	if (std::ranges::find(pimpl_->required_assets, asset_id) == pimpl_->required_assets.end()) {
-		pimpl_->required_assets.push_back(asset_id);
-	}
-}
-
-void Scene::RemoveRequiredAsset(const std::string& asset_id) const {
-	auto& assets = pimpl_->required_assets;
-	std::erase(assets, asset_id);
-}
-
-const std::vector<std::string>& Scene::GetRequiredAssets() const { return pimpl_->required_assets; }
 
 bool Scene::LoadAssets() const {
-	// TODO: Integrate with asset manager to load assets
-	for (const auto& asset : pimpl_->required_assets) {
-		// Get file extension for asset type by splitting on the last dot
-		const auto ext_pos = asset.find_last_of('.');
-		if (ext_pos == std::string::npos) {
-			continue; // Invalid asset reference
-		}
-		// TODO: Come back when asset manager can preload assets
-		const std::string ext = asset.substr(ext_pos + 1);
-		if (ext == "png" || ext == "jpg" || ext == "jpeg" || ext == "bmp" || ext == "tga") {
-			// assets::AssetManager::Instance().LoadImage(asset);
-		}
-		else if (ext == "vert" || ext == "frag" || ext == "glsl") {
-			// assets::AssetManager::Instance().LoadTextFile(asset);
+	bool all_succeeded = true;
+	for (const auto& asset : pimpl_->scene_assets.GetAll()) {
+		if (!asset->Load()) {
+			std::cerr << "Scene: Failed to load asset '" << asset->name << "'" << std::endl;
+			all_succeeded = false;
 		}
 	}
-
-	return true;
-}
-
-void Scene::UnloadAssets() const {
-	// TODO: Integrate with asset manager to unload assets
-	for ([[maybe_unused]] const auto& asset : pimpl_->required_assets) {
-		// AssetManager::Get().Unload(asset);
-	}
+	return all_succeeded;
 }
 
 SceneAssets& Scene::GetAssets() { return pimpl_->scene_assets; }
@@ -261,23 +231,9 @@ SceneId SceneManager::CreateScene(const std::string& name) const {
 	return id;
 }
 
-SceneId SceneManager::LoadScene(const platform::fs::Path& file_path) {
-	// TODO: Load scene from file
-	return INVALID_SCENE;
-}
-
-void SceneManager::UnloadScene(const SceneId scene_id) const {
-	const auto it = pimpl_->scenes.find(scene_id);
-	if (it != pimpl_->scenes.end()) {
-		it->second->SetLoaded(false);
-	}
-}
-
 void SceneManager::DestroyScene(const SceneId scene_id) const {
 	const auto it = pimpl_->scenes.find(scene_id);
 	if (it != pimpl_->scenes.end()) {
-		// Unload assets before destroying scene
-		it->second->UnloadAssets();
 		// Destroy all entities in the scene
 		const auto entities = it->second->GetAllEntities();
 		for (auto entity : entities) {
@@ -360,16 +316,11 @@ void SceneManager::SetActiveScene(const SceneId scene_id) const {
 		if (const auto prev_scene = pimpl_->scenes.find(pimpl_->active_scene); prev_scene != pimpl_->scenes.end()) {
 			prev_scene->second->Shutdown(); // Call shutdown callback
 			prev_scene->second->SetActive(false);
-			prev_scene->second->UnloadAssets(); // Unload assets of previous scene
 		}
 	}
 	// Activate new scene
 	if (const auto it = pimpl_->scenes.find(scene_id); it != pimpl_->scenes.end()) {
 		it->second->SetActive(true);
-		if (!it->second->LoadAssets()) {
-			// Failed to load assets, log error and do not activate
-			std::cerr << "Failed to load assets for scene: " << it->second->GetName() << '\n';
-		}
 		it->second->Initialize(); // Call initialize callback
 		pimpl_->active_scene = scene_id;
 	}
@@ -384,7 +335,6 @@ void SceneManager::DeactivateScene(const SceneId scene_id) {
 		if (const auto scene = TryGetScene(scene_id)) {
 			scene->Shutdown(); // Call shutdown callback
 			scene->SetActive(false);
-			scene->UnloadAssets(); // Unload assets when deactivating
 		}
 		pimpl_->active_scene = INVALID_SCENE;
 	}
@@ -408,7 +358,6 @@ void SceneManager::DeactivateAdditionalScene(const SceneId scene_id) {
 		if (const auto scene = TryGetScene(scene_id)) {
 			scene->Shutdown(); // Call shutdown callback
 			scene->SetActive(false);
-			scene->UnloadAssets(); // Unload assets for additional scene
 		}
 	}
 }
@@ -436,6 +385,21 @@ bool SceneManager::SaveScene(const SceneId scene_id, const platform::fs::Path& f
 
 SceneId SceneManager::LoadSceneFromFile(const platform::fs::Path& file_path) {
 	return SceneSerializer::Load(file_path, *this, pimpl_->ecs_world);
+}
+
+bool SceneManager::LoadScene(const SceneId scene_id) const {
+	if (const auto it = pimpl_->scenes.find(scene_id); it != pimpl_->scenes.end()) {
+		if (it->second->LoadAssets()) {
+			it->second->SetLoaded(false);
+		}
+	}
+	return false;
+}
+
+void SceneManager::UnloadScene(const SceneId scene_id) const {
+	if (const auto it = pimpl_->scenes.find(scene_id); it != pimpl_->scenes.end()) {
+		it->second->SetLoaded(false);
+	}
 }
 
 std::vector<ecs::Entity> SceneManager::QueryPoint(const Vec3& point, const uint32_t layer_mask) const {

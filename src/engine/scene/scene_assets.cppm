@@ -54,28 +54,46 @@ private:
 struct AssetInfo {
 	std::string name;
 	AssetType type{};
+	bool loaded_{false}; // Track whether this asset has been loaded
+	bool initialized_{false}; // Track whether OnAdd has been called
 
 	virtual ~AssetInfo() = default;
 
 	AssetInfo() = default;
 	AssetInfo(std::string asset_name, const AssetType asset_type) : name(std::move(asset_name)), type(asset_type) {}
 
+	/// Called when asset is added to a SceneAssets container
+	/// Use this to allocate resources (e.g., reserve shader IDs) before Load()
+	void Initialize();
+
+	/// Returns true if Initialize() has been called
+	[[nodiscard]] bool IsInitialized() const { return initialized_; }
+
+	/// Load/compile this asset. Returns true if already loaded or successfully loaded.
+	bool Load();
+
+	/// Check if this asset has been loaded
+	[[nodiscard]] bool IsLoaded() const { return loaded_; }
+
 	/// Serialize this asset to JSON
 	virtual void ToJson(nlohmann::json& j) const;
 
-	/// Load/initialize this asset (called after deserialization)
-	/// Each asset type knows how to load itself
-	virtual bool Load() { return true; }
-
 	/// Create an asset from JSON (delegates to AssetRegistry)
 	static std::unique_ptr<AssetInfo> FromJson(const nlohmann::json& j);
+
+protected:
+	/// Override to allocate resources before Load (e.g., reserve shader ID)
+	virtual void DoInitialize() {}
+
+	/// Override to implement asset-specific loading logic
+	virtual bool DoLoad() { return true; }
 };
 
 /// Shader asset definition
 struct ShaderAssetInfo : AssetInfo {
 	std::string vertex_path;
 	std::string fragment_path;
-	rendering::ShaderId id{rendering::INVALID_SHADER}; // Transient - populated at load time
+	rendering::ShaderId id{rendering::INVALID_SHADER}; // Populated in DoInitialize, compiled in DoLoad
 
 	ShaderAssetInfo() : AssetInfo("", AssetType::SHADER) {}
 	ShaderAssetInfo(std::string asset_name, std::string vert, std::string frag) :
@@ -83,10 +101,13 @@ struct ShaderAssetInfo : AssetInfo {
 			fragment_path(std::move(frag)) {}
 
 	void ToJson(nlohmann::json& j) const override;
-	bool Load() override;
 
 	/// Register this asset type with the AssetRegistry
 	static void RegisterType();
+
+protected:
+	void DoInitialize() override;
+	bool DoLoad() override;
 };
 
 /// Polymorphic asset storage using shared_ptr (allows editor to hold references)
@@ -95,8 +116,8 @@ using AssetPtr = std::shared_ptr<AssetInfo>;
 /// Asset list owned by a scene
 class SceneAssets {
 public:
-    /// Add an asset (shares ownership)
-    void Add(AssetPtr asset);
+	/// Add an asset (shares ownership)
+	void Add(AssetPtr asset);
 
 	/// Remove an asset by name and type
 	bool Remove(const std::string& name, AssetType type);

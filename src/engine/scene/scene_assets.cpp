@@ -43,6 +43,29 @@ bool AssetRegistry::IsRegistered(const std::string& type_name) const { return fa
 
 void AssetInfo::ToJson(nlohmann::json& j) const { j["name"] = name; }
 
+void AssetInfo::Initialize() {
+	if (initialized_) {
+		return; // Already initialized
+	}
+	DoInitialize();
+	initialized_ = true;
+}
+
+bool AssetInfo::Load() {
+	if (loaded_) {
+		return true; // Already loaded
+	}
+	// Ensure initialized before loading
+	if (!initialized_) {
+		Initialize();
+	}
+	if (DoLoad()) {
+		loaded_ = true;
+		return true;
+	}
+	return false;
+}
+
 std::unique_ptr<AssetInfo> AssetInfo::FromJson(const nlohmann::json& j) { return AssetRegistry::Instance().Create(j); }
 
 void ShaderAssetInfo::ToJson(nlohmann::json& j) const {
@@ -52,14 +75,24 @@ void ShaderAssetInfo::ToJson(nlohmann::json& j) const {
 	j["fragment_path"] = fragment_path;
 }
 
-bool ShaderAssetInfo::Load() {
+void ShaderAssetInfo::DoInitialize() {
 	const auto& shader_mgr = rendering::GetRenderer().GetShaderManager();
-	id = shader_mgr.LoadShader(name, vertex_path, fragment_path);
+	id = shader_mgr.CreateShader(name);
+	std::cout << "ShaderAssetInfo: Created shader slot '" << name << "' (id=" << id << ")" << std::endl;
+}
+
+bool ShaderAssetInfo::DoLoad() {
 	if (id == rendering::INVALID_SHADER) {
-		std::cerr << "ShaderAssetInfo: Failed to load shader '" << name << "'" << std::endl;
+		std::cerr << "ShaderAssetInfo: Cannot load - shader not initialized" << std::endl;
 		return false;
 	}
-	std::cout << "ShaderAssetInfo: Loaded shader '" << name << "' (id=" << id << ")" << std::endl;
+
+	if (const auto& shader_mgr = rendering::GetRenderer().GetShaderManager();
+		!shader_mgr.CompileShader(id, vertex_path, fragment_path)) {
+		std::cerr << "ShaderAssetInfo: Failed to compile shader '" << name << "'" << std::endl;
+		return false;
+	}
+	std::cout << "ShaderAssetInfo: Compiled shader '" << name << "' (id=" << id << ")" << std::endl;
 	return true;
 }
 
@@ -75,6 +108,7 @@ void ShaderAssetInfo::RegisterType() {
 
 void SceneAssets::Add(AssetPtr asset) {
 	if (asset) {
+		asset->Initialize(); // Allocate resources (e.g., reserve shader ID)
 		assets_.push_back(std::move(asset));
 	}
 }

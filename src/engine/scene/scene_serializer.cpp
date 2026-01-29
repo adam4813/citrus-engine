@@ -99,17 +99,17 @@ SceneId SceneSerializer::Load(const platform::fs::Path& path, SceneManager& mana
 		auto& scene = manager.GetScene(scene_id);
 		scene.SetFilePath(path);
 
-		// Load assets BEFORE entities (order matters - entities may reference assets)
+		// Add assets BEFORE entities (order matters - entities may reference assets)
 		if (doc.contains("assets") && doc["assets"].is_array()) {
 			for (const auto& asset_json : doc["assets"]) {
 				if (auto asset = AssetInfo::FromJson(asset_json)) {
-					// Load the asset (e.g., compile shader)
-					if (!asset->Load()) {
-						std::cerr << "SceneSerializer: Warning - failed to load asset '" << asset->name << "'" << std::endl;
-					}
 					scene.GetAssets().Add(std::move(asset));
 				}
 			}
+		}
+
+		if (!scene.LoadAssets()) {
+			std::cerr << "SceneSerializer: Warning - some assets failed to load" << std::endl;
 		}
 
 		// Deserialize entities
@@ -127,6 +127,7 @@ SceneId SceneSerializer::Load(const platform::fs::Path& path, SceneManager& mana
 		}
 
 		std::cout << "SceneSerializer: Loaded scene '" << name << "' from " << path << std::endl;
+		scene.SetLoaded(true);
 		return scene_id;
 	}
 	catch (const std::exception& e) {

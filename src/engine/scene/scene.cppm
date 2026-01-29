@@ -104,18 +104,10 @@ public:
 
 	platform::fs::Path GetFilePath() const;
 
-	void AddRequiredAsset(const std::string& asset_id) const;
-
-	void RemoveRequiredAsset(const std::string& asset_id) const;
-
-	const std::vector<std::string>& GetRequiredAssets() const;
-
 	bool LoadAssets() const;
 
-	void UnloadAssets() const;
-
-	// Scene assets (shaders, textures, etc.)
 	SceneAssets& GetAssets();
+
 	const SceneAssets& GetAssets() const;
 
 	// Update scene (called each frame)
@@ -158,10 +150,6 @@ public:
 	// Scene creation and management
 	SceneId CreateScene(const std::string& name) const;
 
-	SceneId LoadScene(const platform::fs::Path& file_path);
-
-	void UnloadScene(SceneId scene_id) const;
-
 	void DestroyScene(SceneId scene_id) const;
 
 	// Scene access
@@ -200,10 +188,13 @@ public:
 
 	float GetTransitionProgress() const;
 
-	// Scene serialization
+	// Used for file-based scenes
 	bool SaveScene(SceneId scene_id, const platform::fs::Path& file_path);
-
 	SceneId LoadSceneFromFile(const platform::fs::Path& file_path);
+
+	// Used for in-memory scenes
+	bool LoadScene(SceneId scene_id) const;
+	void UnloadScene(SceneId scene_id) const;
 
 	// Global spatial queries (across all active scenes)
 	std::vector<ecs::Entity> QueryPoint(const Vec3& point, uint32_t layer_mask = 0xFFFFFFFF) const;

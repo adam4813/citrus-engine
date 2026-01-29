@@ -194,11 +194,11 @@ TEST_F(SceneAssetsTest, AssetRegistry_Create_EmptyType_ReturnsNull) {
 TEST_F(SceneAssetsTest, FindTypedIf_WithMatchingPredicate_ReturnsSharedPtr) {
 	SceneAssets assets;
 	const auto shader = std::make_shared<ShaderAssetInfo>("target", "v.vert", "f.frag");
-	shader->id = 42; // Set a test ID
 	assets.Add(shader);
 	assets.Add(std::make_shared<ShaderAssetInfo>("other", "v2.vert", "f2.frag"));
 
-	const auto found = assets.FindTypedIf<ShaderAssetInfo>([](const ShaderAssetInfo& s) { return s.id == 42; });
+	const auto found = assets.FindTypedIf<ShaderAssetInfo>(
+			[target_id = shader->id](const ShaderAssetInfo& s) { return s.id == target_id; });
 
 	ASSERT_NE(found, nullptr);
 	EXPECT_EQ(found->name, "target");

@@ -147,6 +147,75 @@ void ShaderAssetInfo::RegisterType() {
 			.Build();
 }
 
+void MeshAssetInfo::ToJson(nlohmann::json& j) const {
+	AssetInfo::ToJson(j);
+	j["type"] = "mesh";
+	j["mesh_type"] = mesh_type;
+	j["params"] = {params[0], params[1], params[2]};
+	j["file_path"] = file_path;
+}
+
+bool MeshAssetInfo::DoLoad() {
+	auto& mesh_mgr = rendering::GetRenderer().GetMeshManager();
+
+	if (mesh_type == mesh_types::QUAD) {
+		id = mesh_mgr.CreateQuad(params[0], params[1]);
+	}
+	else if (mesh_type == mesh_types::CUBE) {
+		id = mesh_mgr.CreateCube(params[0], params[1], params[2]);
+	}
+	else if (mesh_type == mesh_types::SPHERE) {
+		id = mesh_mgr.CreateSphere(params[0], static_cast<uint32_t>(params[1]));
+	}
+	else if (mesh_type == mesh_types::CAPSULE) {
+		std::cerr << "MeshAssetInfo: Capsule mesh not yet implemented" << std::endl;
+		return false;
+	}
+	else if (mesh_type == mesh_types::FILE) {
+		std::cerr << "MeshAssetInfo: File mesh loading not yet implemented: " << file_path << std::endl;
+		return false;
+	}
+	else {
+		std::cerr << "MeshAssetInfo: Unknown mesh type: " << mesh_type << std::endl;
+		return false;
+	}
+
+	if (id == rendering::INVALID_MESH) {
+		std::cerr << "MeshAssetInfo: Failed to create mesh '" << name << "'" << std::endl;
+		return false;
+	}
+
+	std::cout << "MeshAssetInfo: Created mesh '" << name << "' (type=" << mesh_type << ", id=" << id << ")" << std::endl;
+	return true;
+}
+
+void MeshAssetInfo::RegisterType() {
+	AssetRegistry::Instance()
+			.RegisterType<MeshAssetInfo>("mesh", AssetType::MESH)
+			.DisplayName("Mesh")
+			.Category("Rendering")
+			.Field("name", &MeshAssetInfo::name, "Name")
+			.Field("mesh_type", &MeshAssetInfo::mesh_type, "Mesh Type")
+			.Field("file_path", &MeshAssetInfo::file_path, "File Path", AssetFieldType::FilePath)
+			.FromJson([](const nlohmann::json& j) -> std::unique_ptr<AssetInfo> {
+				auto asset = std::make_unique<MeshAssetInfo>();
+				asset->name = j.value("name", "");
+				asset->mesh_type = j.value("mesh_type", mesh_types::QUAD);
+				if (j.contains("params") && j["params"].is_array()) {
+					const auto& arr = j["params"];
+					if (arr.size() >= 1) asset->params[0] = arr[0].get<float>();
+					if (arr.size() >= 2) asset->params[1] = arr[1].get<float>();
+					if (arr.size() >= 3) asset->params[2] = arr[2].get<float>();
+				}
+				asset->file_path = j.value("file_path", "");
+				return asset;
+			})
+			.CreateDefault([]() -> std::shared_ptr<AssetInfo> {
+				return std::make_shared<MeshAssetInfo>("NewMesh", mesh_types::QUAD);
+			})
+			.Build();
+}
+
 void SceneAssets::Add(AssetPtr asset) {
 	if (asset) {
 		asset->Initialize(); // Allocate resources (e.g., reserve shader ID)

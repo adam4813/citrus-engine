@@ -121,6 +121,12 @@ struct ShaderRef {
 	std::string name;
 };
 
+// Asset reference component for mesh - stores mesh asset name for serialization
+// An observer resolves the name to MeshId and updates Renderable::mesh
+struct MeshRef {
+	std::string name;
+};
+
 // Light component for lighting calculations
 struct Light {
 	enum class Type : int { Directional = 0, Point = 1, Spot = 2 };

@@ -18,7 +18,8 @@ export namespace engine::scene {
 /// Type of asset in the scene
 enum class AssetType : uint8_t {
 	SHADER,
-	// Future: TEXTURE, MESH, MATERIAL, etc.
+	MESH,
+	// Future: TEXTURE, MATERIAL, etc.
 };
 
 // === ASSET FIELD REFLECTION SYSTEM ===
@@ -287,6 +288,36 @@ struct ShaderAssetInfo : AssetInfo {
 
 protected:
 	void DoInitialize() override;
+	bool DoLoad() override;
+};
+
+/// Built-in mesh type names (used as mesh_type field value)
+namespace mesh_types {
+constexpr const char* QUAD = "quad";
+constexpr const char* CUBE = "cube";
+constexpr const char* SPHERE = "sphere";
+constexpr const char* CAPSULE = "capsule"; // Future
+constexpr const char* FILE = "file";
+} // namespace mesh_types
+
+/// Mesh asset definition
+/// Can be a built-in type (quad, cube, sphere) with parameters, or a file reference
+struct MeshAssetInfo : AssetInfo {
+	std::string mesh_type;    // "quad", "cube", "sphere", "capsule", "file"
+	float params[3]{1.0f, 1.0f, 1.0f}; // Interpreted based on mesh_type
+	std::string file_path;    // Only used when mesh_type == "file"
+	rendering::MeshId id{rendering::INVALID_MESH}; // Populated in DoLoad
+
+	MeshAssetInfo() : AssetInfo("", AssetType::MESH), mesh_type(mesh_types::QUAD) {}
+	MeshAssetInfo(std::string asset_name, std::string type) :
+			AssetInfo(std::move(asset_name), AssetType::MESH), mesh_type(std::move(type)) {}
+
+	void ToJson(nlohmann::json& j) const override;
+
+	/// Register this asset type with the AssetRegistry
+	static void RegisterType();
+
+protected:
 	bool DoLoad() override;
 };
 

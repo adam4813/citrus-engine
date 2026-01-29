@@ -285,12 +285,18 @@ bool ShaderManager::CompileShader(
 
 ShaderId ShaderManager::LoadShaderFromString(
 		const std::string& name, const std::string& vertex_source, const std::string& fragment_source) const {
-	return CompileShader(CreateShader(name), vertex_source, fragment_source);
+	if (const auto shader_id = CreateShader(name); CompileShader(shader_id, vertex_source, fragment_source)) {
+		return shader_id;
+	}
+	return INVALID_SHADER;
 }
 
 ShaderId ShaderManager::LoadShader(
 		const std::string& name, const platform::fs::Path& vertex_path, const platform::fs::Path& fragment_path) const {
-	return CompileShader(CreateShader(name), vertex_path, fragment_path);
+	if (const auto shader_id = CreateShader(name); CompileShader(shader_id, vertex_path, fragment_path)) {
+		return shader_id;
+	}
+	return INVALID_SHADER;
 }
 
 Shader& ShaderManager::GetShader(const ShaderId id) {

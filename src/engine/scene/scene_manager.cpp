@@ -390,7 +390,8 @@ SceneId SceneManager::LoadSceneFromFile(const platform::fs::Path& file_path) {
 bool SceneManager::LoadScene(const SceneId scene_id) const {
 	if (const auto it = pimpl_->scenes.find(scene_id); it != pimpl_->scenes.end()) {
 		if (it->second->LoadAssets()) {
-			it->second->SetLoaded(false);
+			it->second->SetLoaded(true);
+			return true;
 		}
 	}
 	return false;
@@ -466,6 +467,7 @@ SceneManager& GetSceneManager() {
 void InitializeSceneSystem(ecs::ECSWorld& ecs_world) {
 	// Register built-in asset types
 	ShaderAssetInfo::RegisterType();
+	MeshAssetInfo::RegisterType();
 
 	g_scene_manager = std::make_unique<SceneManager>(ecs_world);
 }

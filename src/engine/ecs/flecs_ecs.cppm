@@ -189,5 +189,7 @@ private:
 	void RegisterTransformSystem() const;
 
 	void SetupShaderRefIntegration();
+
+	void SetupMeshRefIntegration();
 };
 } // namespace engine::ecs

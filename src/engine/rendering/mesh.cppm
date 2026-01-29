@@ -53,6 +53,7 @@ export namespace engine::rendering {
         MeshId CreateQuad(float width = 1.0f, float height = 1.0f) const;
 
         MeshId CreateCube(float size = 1.0f) const;
+        MeshId CreateCube(float width, float height, float depth) const;
 
         MeshId CreateSphere(float radius = 1.0f, uint32_t segments = 32);
 

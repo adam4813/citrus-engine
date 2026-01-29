@@ -1,5 +1,6 @@
 #include "properties_panel.h"
 
+#include <cstring>
 #include <flecs.h>
 #include <imgui.h>
 #include <imgui_internal.h>
@@ -10,7 +11,11 @@ namespace editor {
 
 void PropertiesPanel::SetCallbacks(const EditorCallbacks& callbacks) { callbacks_ = callbacks; }
 
-void PropertiesPanel::Render(const engine::ecs::Entity selected_entity, engine::ecs::ECSWorld& world) {
+void PropertiesPanel::Render(
+		const engine::ecs::Entity selected_entity,
+		engine::ecs::ECSWorld& world,
+		engine::scene::Scene* scene,
+		const AssetSelection& selected_asset) {
 	if (!is_visible_)
 		return;
 
@@ -33,6 +38,9 @@ void PropertiesPanel::Render(const engine::ecs::Entity selected_entity, engine::
 
 		RenderComponentSections(selected_entity);
 		RenderAddComponentButton(selected_entity);
+	}
+	else if (selected_asset.IsValid() && scene) {
+		RenderAssetProperties(scene, selected_asset);
 	}
 	else {
 		RenderSceneProperties(world);
@@ -67,6 +75,9 @@ void PropertiesPanel::RenderComponentFields(
 		ImGui::TextDisabled("(Cannot access component data)");
 		return;
 	}
+
+	// Push component name as ID to avoid conflicts with same-named fields in different components
+	ImGui::PushID(comp.name.c_str());
 
 	bool modified = false;
 
@@ -149,6 +160,8 @@ void PropertiesPanel::RenderComponentFields(
 		}
 	}
 
+	ImGui::PopID(); // Pop component ID
+
 	if (modified && callbacks_.on_scene_modified) {
 		callbacks_.on_scene_modified();
 	}
@@ -193,9 +206,8 @@ void PropertiesPanel::RenderSceneProperties(engine::ecs::ECSWorld& world) const 
 	std::vector<flecs::entity> camera_entities;
 	const flecs::world& flecs_world = world.GetWorld();
 
-	flecs_world.query<engine::components::Camera>().each([&](const flecs::entity entity, const engine::components::Camera&) {
-		camera_entities.push_back(entity);
-	});
+	flecs_world.query<engine::components::Camera>().each(
+			[&](const flecs::entity entity, const engine::components::Camera&) { camera_entities.push_back(entity); });
 
 	// Active Camera selection
 	if (ImGui::CollapsingHeader("Camera", ImGuiTreeNodeFlags_DefaultOpen)) {
@@ -256,6 +268,95 @@ void PropertiesPanel::RenderSceneProperties(engine::ecs::ECSWorld& world) const 
 	ImGui::Spacing();
 	ImGui::TextDisabled("Select an entity in the Hierarchy");
 	ImGui::TextDisabled("panel to view its properties");
+}
+
+void PropertiesPanel::RenderAssetProperties(engine::scene::Scene* scene, const AssetSelection& selected_asset) const {
+	if (!scene || !selected_asset.IsValid()) {
+		return;
+	}
+
+	// Find the asset
+	const auto asset = scene->GetAssets().Find(selected_asset.name, selected_asset.type);
+	if (!asset) {
+		ImGui::TextDisabled("Asset not found");
+		return;
+	}
+
+	// Get type info for field metadata
+	const auto* type_info = engine::scene::AssetRegistry::Instance().GetTypeInfo(selected_asset.type);
+	if (!type_info) {
+		ImGui::TextDisabled("Unknown asset type");
+		return;
+	}
+
+	ImGui::Text("%s: %s", type_info->display_name.c_str(), asset->name.c_str());
+	ImGui::Separator();
+
+	if (type_info->fields.empty()) {
+		ImGui::TextDisabled("(No editable fields)");
+		return;
+	}
+
+	bool modified = false;
+
+	// Render each field based on its type and offset
+	for (const auto& field : type_info->fields) {
+		void* field_ptr = reinterpret_cast<char*>(asset.get()) + field.offset;
+
+		switch (field.type) {
+		case engine::scene::AssetFieldType::String:
+		case engine::scene::AssetFieldType::FilePath:
+		{
+			auto* str = static_cast<std::string*>(field_ptr);
+			char buffer[256];
+			std::strncpy(buffer, str->c_str(), sizeof(buffer) - 1);
+			buffer[sizeof(buffer) - 1] = '\0';
+			if (ImGui::InputText(field.display_name.c_str(), buffer, sizeof(buffer))) {
+				*str = buffer;
+				modified = true;
+			}
+			// For file paths, add a hint
+			if (field.type == engine::scene::AssetFieldType::FilePath) {
+				ImGui::SameLine();
+				ImGui::TextDisabled("(?)");
+				if (ImGui::IsItemHovered()) {
+					ImGui::SetTooltip("Relative path to file");
+				}
+			}
+			break;
+		}
+		case engine::scene::AssetFieldType::Int:
+		{
+			if (ImGui::InputInt(field.display_name.c_str(), static_cast<int*>(field_ptr))) {
+				modified = true;
+			}
+			break;
+		}
+		case engine::scene::AssetFieldType::Float:
+		{
+			if (ImGui::InputFloat(field.display_name.c_str(), static_cast<float*>(field_ptr))) {
+				modified = true;
+			}
+			break;
+		}
+		case engine::scene::AssetFieldType::Bool:
+		{
+			if (ImGui::Checkbox(field.display_name.c_str(), static_cast<bool*>(field_ptr))) {
+				modified = true;
+			}
+			break;
+		}
+		case engine::scene::AssetFieldType::ReadOnly:
+		{
+			ImGui::Text("%s: (read-only)", field.display_name.c_str());
+			break;
+		}
+		}
+	}
+
+	if (modified && callbacks_.on_scene_modified) {
+		callbacks_.on_scene_modified();
+	}
 }
 
 } // namespace editor

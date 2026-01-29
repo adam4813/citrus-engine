@@ -15,9 +15,7 @@ EditorScene::~EditorScene() = default;
 void EditorScene::Initialize(engine::Engine& engine) {
 	std::cout << "EditorScene: Initializing 2D Scene Editor..." << std::endl;
 
-	// Initialize the scene system
-	engine::scene::InitializeSceneSystem(engine.ecs);
-
+	// Scene system is already initialized by Engine::Initialize()
 	// Create a new empty scene for editing
 	const auto& scene_manager = engine::scene::GetSceneManager();
 	editor_scene_id_ = scene_manager.CreateScene("UntitledScene");
@@ -36,9 +34,16 @@ void EditorScene::Initialize(engine::Engine& engine) {
 	callbacks.on_add_component = [this](const engine::ecs::Entity entity, const std::string& component_name) {
 		OnAddComponent(entity, component_name);
 	};
+	callbacks.on_asset_selected = [this](const engine::scene::AssetType type, const std::string& name) {
+		OnAssetSelected(type, name);
+	};
+	callbacks.on_asset_deleted = [this](const engine::scene::AssetType type, const std::string& name) {
+		OnAssetDeleted(type, name);
+	};
 
 	hierarchy_panel_.SetCallbacks(callbacks);
 	properties_panel_.SetCallbacks(callbacks);
+	asset_browser_panel_.SetCallbacks(callbacks);
 
 	std::cout << "EditorScene: Initialized with new scene" << std::endl;
 }
@@ -78,23 +83,31 @@ void EditorScene::RenderUI(engine::Engine& engine) {
 		ImGui::DockBuilderSetNodeSize(dockspace_id, viewport->Size);
 		ImGuiID dock_id_left = 0;
 		ImGuiID dock_id_main = dockspace_id;
+		ImGuiID dock_id_bottom = 0;
 		ImGui::DockBuilderSplitNode(dock_id_main, ImGuiDir_Left, 0.20f, &dock_id_left, &dock_id_main);
+		ImGui::DockBuilderSplitNode(dock_id_main, ImGuiDir_Down, 0.25f, &dock_id_bottom, &dock_id_main);
 		ImGuiID dock_id_left_top = 0;
 		ImGuiID dock_id_left_bottom = 0;
 		ImGui::DockBuilderSplitNode(dock_id_left, ImGuiDir_Up, 0.50f, &dock_id_left_top, &dock_id_left_bottom);
 		ImGui::DockBuilderDockWindow("Hierarchy", dock_id_left_top);
 		ImGui::DockBuilderDockWindow("Properties", dock_id_left_bottom);
 		ImGui::DockBuilderDockWindow("Viewport", dock_id_main);
+		ImGui::DockBuilderDockWindow("Assets", dock_id_bottom);
 		ImGui::DockBuilderFinish(dockspace_id);
 	}
 
 	// Submit dockspace
 	ImGui::DockSpaceOverViewport(dockspace_id, viewport, ImGuiDockNodeFlags_PassthruCentralNode);
 
+	// Get current scene for asset browser
+	auto& scene_manager = engine::scene::GetSceneManager();
+	auto* scene = scene_manager.TryGetScene(editor_scene_id_);
+
 	RenderMenuBar();
 	hierarchy_panel_.Render(editor_scene_id_, selected_entity_);
-	properties_panel_.Render(selected_entity_, engine.ecs);
+	properties_panel_.Render(selected_entity_, engine.ecs, scene, selected_asset_);
 	viewport_panel_.Render(state_.is_running);
+	asset_browser_panel_.Render(scene, selected_asset_);
 
 	// Handle dialogs
 	if (state_.show_new_scene_dialog) {
@@ -243,6 +256,7 @@ void EditorScene::RenderMenuBar() {
 			ImGui::MenuItem("Hierarchy", nullptr, &hierarchy_panel_.VisibleRef());
 			ImGui::MenuItem("Properties", nullptr, &properties_panel_.VisibleRef());
 			ImGui::MenuItem("Viewport", nullptr, &viewport_panel_.VisibleRef());
+			ImGui::MenuItem("Assets", nullptr, &asset_browser_panel_.VisibleRef());
 			ImGui::EndMenu();
 		}
 
@@ -299,7 +313,12 @@ void EditorScene::RenderMenuBar() {
 // Callback Handlers
 // ========================================================================
 
-void EditorScene::OnEntitySelected(const engine::ecs::Entity entity) { selected_entity_ = entity; }
+void EditorScene::OnEntitySelected(const engine::ecs::Entity entity) {
+	selected_entity_ = entity;
+	// Clear asset selection when entity is selected
+	selected_asset_.Clear();
+	selection_type_ = entity.is_valid() ? SelectionType::Entity : SelectionType::None;
+}
 
 void EditorScene::OnEntityDeleted(const engine::ecs::Entity entity) {
 	if (selected_entity_ == entity) {
@@ -345,6 +364,22 @@ void EditorScene::OnAddComponent(const engine::ecs::Entity entity, const std::st
 	}
 }
 
+void EditorScene::OnAssetSelected(const engine::scene::AssetType type, const std::string& name) {
+	// Clear entity selection when asset is selected
+	selected_entity_ = {};
+	selection_type_ = SelectionType::Asset;
+	selected_asset_.type = type;
+	selected_asset_.name = name;
+}
+
+void EditorScene::OnAssetDeleted(const engine::scene::AssetType type, const std::string& name) {
+	// Clear selection if the deleted asset was selected
+	if (selected_asset_.type == type && selected_asset_.name == name) {
+		selected_asset_.Clear();
+		selection_type_ = SelectionType::None;
+	}
+}
+
 // ========================================================================
 // File Operations
 // ========================================================================
@@ -367,6 +402,8 @@ void EditorScene::NewScene() {
 	state_.current_file_path = "";
 	state_.is_dirty = false;
 	selected_entity_ = {};
+	selected_asset_.Clear();
+	selection_type_ = SelectionType::None;
 	file_path_buffer_[0] = '\0';
 	rename_entity_buffer_[0] = '\0';
 	hierarchy_panel_.ClearNodeState();
@@ -400,6 +437,8 @@ void EditorScene::OpenScene(const std::string& path) {
 	state_.current_file_path = path;
 	state_.is_dirty = false;
 	selected_entity_ = {};
+	selected_asset_.Clear();
+	selection_type_ = SelectionType::None;
 	hierarchy_panel_.ClearNodeState();
 
 	std::cout << "EditorScene: Scene loaded from: " << path << std::endl;

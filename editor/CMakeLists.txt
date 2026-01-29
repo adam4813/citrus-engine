@@ -14,6 +14,7 @@ find_package(citrus-engine CONFIG REQUIRED)
 add_executable(
     citrus-scene-editor
     src/main.cpp
+    src/asset_browser_panel.cpp
     src/editor_scene.cpp
     src/hierarchy_panel.cpp
     src/properties_panel.cpp

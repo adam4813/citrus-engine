@@ -1,5 +1,6 @@
 #pragma once
 
+#include "asset_browser_panel.h"
 #include "hierarchy_panel.h"
 #include "properties_panel.h"
 #include "viewport_panel.h"
@@ -11,6 +12,13 @@
 import engine;
 
 namespace editor {
+
+/**
+ * @brief Selection state for tracking what's selected in the editor
+ *
+ * Shared between panels to coordinate entity vs asset selection.
+ */
+enum class SelectionType { None, Entity, Asset };
 
 /**
  * @brief Editor state for tracking scene modifications and file path
@@ -105,6 +113,8 @@ private:
 	void OnShowRenameDialog(engine::ecs::Entity entity);
 	void OnAddChildEntity(engine::ecs::Entity parent);
 	void OnAddComponent(engine::ecs::Entity entity, const std::string& component_name);
+	void OnAssetSelected(engine::scene::AssetType type, const std::string& name);
+	void OnAssetDeleted(engine::scene::AssetType type, const std::string& name);
 
 	// ========================================================================
 	// State
@@ -113,13 +123,16 @@ private:
 	EditorState state_;
 	engine::scene::SceneId editor_scene_id_ = engine::scene::INVALID_SCENE;
 
-	// Selected entity in hierarchy
+	// Selection state (mutually exclusive: entity or asset)
+	SelectionType selection_type_ = SelectionType::None;
 	engine::ecs::Entity selected_entity_;
+	AssetSelection selected_asset_;
 
 	// Panels (composition)
 	HierarchyPanel hierarchy_panel_;
 	PropertiesPanel properties_panel_;
 	ViewportPanel viewport_panel_;
+	AssetBrowserPanel asset_browser_panel_;
 
 	// Input buffer for dialogs
 	char file_path_buffer_[256] = "";

@@ -395,3 +395,51 @@ TEST_F(SceneSerializationTest, SaveAndLoad_ActiveCamera_PreservesSelection) {
 	ASSERT_TRUE(loaded_active.has<Camera>());
 	EXPECT_FLOAT_EQ(loaded_active.get<Camera>().fov, 90.0f);
 }
+
+TEST_F(SceneSerializationTest, Renderable_AutomaticallyAddsShaderRef) {
+	// When Renderable is added to an entity, ShaderRef should be automatically added via the With trait
+	const SceneId scene_id = scene_manager_->CreateScene("ShaderRefTestScene");
+	ASSERT_NE(scene_id, INVALID_SCENE);
+
+	const auto& scene = scene_manager_->GetScene(scene_id);
+	const auto entity = scene.CreateEntity("RenderableEntity");
+
+	// Add Renderable
+	entity.add<Renderable>();
+
+	// ShaderRef should be automatically added via the (With, ShaderRef) trait on Renderable
+	EXPECT_TRUE(entity.has<Renderable>());
+	EXPECT_TRUE(entity.has<ShaderRef>());
+}
+
+TEST_F(SceneSerializationTest, SaveAndLoad_EntityWithShaderRef_PreservesShaderName) {
+	const SceneId scene_id = scene_manager_->CreateScene("ShaderRefSaveLoadTest");
+	ASSERT_NE(scene_id, INVALID_SCENE);
+
+	const auto& scene = scene_manager_->GetScene(scene_id);
+	const auto entity = scene.CreateEntity("EntityWithShader");
+
+	// Add Renderable (which auto-adds ShaderRef) and set the shader name
+	entity.add<Renderable>();
+	entity.set<ShaderRef>({.name = "test_shader"});
+
+	// Verify ShaderRef was set
+	ASSERT_TRUE(entity.has<ShaderRef>());
+	EXPECT_EQ(entity.get<ShaderRef>().name, "test_shader");
+
+	// Save and reload
+	const platform::fs::Path path(temp_file_.string());
+	EXPECT_TRUE(scene_manager_->SaveScene(scene_id, path));
+
+	scene_manager_->DestroyScene(scene_id);
+	const SceneId loaded_id = scene_manager_->LoadSceneFromFile(path);
+	ASSERT_NE(loaded_id, INVALID_SCENE);
+
+	// Verify the ShaderRef name was preserved
+	const auto& loaded_scene = scene_manager_->GetScene(loaded_id);
+	const auto loaded_entity = loaded_scene.FindEntityByName("EntityWithShader");
+	ASSERT_TRUE(loaded_entity.is_valid());
+	ASSERT_TRUE(loaded_entity.has<Renderable>());
+	ASSERT_TRUE(loaded_entity.has<ShaderRef>());
+	EXPECT_EQ(loaded_entity.get<ShaderRef>().name, "test_shader");
+}

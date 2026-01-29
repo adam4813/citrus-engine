@@ -314,6 +314,15 @@ ShaderId ShaderManager::FindShader(const std::string& name) const {
 	return it != pimpl_->name_to_id.end() ? it->second : INVALID_SHADER;
 }
 
+std::string ShaderManager::GetShaderName(const ShaderId id) const {
+	for (const auto& [name, shader_id] : pimpl_->name_to_id) {
+		if (shader_id == id) {
+			return name;
+		}
+	}
+	return "";
+}
+
 void ShaderManager::ReloadShader(ShaderId id) {
 	// TODO: Implement shader reloading
 }

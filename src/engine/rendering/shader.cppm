@@ -104,7 +104,9 @@ public:
 
 	const Shader& GetShader(ShaderId id) const;
 
-	ShaderId FindShader(const std::string& name) const;
+	[[nodiscard]] ShaderId FindShader(const std::string& name) const;
+
+	[[nodiscard]] std::string GetShaderName(ShaderId id) const;
 
 	// Hot-reload support
 	void ReloadShader(ShaderId id);

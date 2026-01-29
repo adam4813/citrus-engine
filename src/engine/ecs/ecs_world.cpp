@@ -75,8 +75,13 @@ ECSWorld::ECSWorld() {
 			.Field("angular", &Velocity::angular)
 			.Build();
 
-	// Register rendering components
-	registry.Register<Renderable>("Renderable", world_).Category("Rendering").Build();
+	// Renderable component (basic registration - ShaderRef integration added in SetupShaderRefIntegration)
+	registry.Register<Renderable>("Renderable", world_)
+			.Category("Rendering")
+			.Field("visible", &Renderable::visible)
+			.Field("render_layer", &Renderable::render_layer)
+			.Field("alpha", &Renderable::alpha)
+			.Build();
 
 	registry.Register<Camera>("Camera", world_)
 			.Category("Rendering")
@@ -158,6 +163,9 @@ ECSWorld::ECSWorld() {
 
 	// Register WorldTransform and propagation system
 	RegisterTransformSystem();
+
+	// Set up shader reference integration (ShaderRef component, With trait, observers)
+	SetupShaderRefIntegration();
 
 	// Set up built-in systems
 	SetupMovementSystem();
@@ -448,6 +456,46 @@ void ECSWorld::RegisterTransformSystem() const {
 				}
 				else {
 					world_transform.matrix = local;
+				}
+			});
+}
+
+// === SHADER REFERENCE INTEGRATION ===
+// Co-located shader-related ECS setup: ShaderRef component, With trait, and bidirectional observers
+
+void ECSWorld::SetupShaderRefIntegration() {
+	auto& registry = ComponentRegistry::Instance();
+
+	// Register ShaderRef component - stores shader asset name for serialization
+	registry.Register<ShaderRef>("ShaderRef", world_).Category("Rendering").Field("name", &ShaderRef::name).Build();
+
+	// Add (With, ShaderRef) trait to Renderable - auto-adds ShaderRef when Renderable is added
+	if (!world_.component<Renderable>().add(flecs::With, world_.component<ShaderRef>()))
+		return;
+
+	// Observer: ShaderRef.name → Renderable.shader (resolve name to ID)
+	// Only updates Renderable if the shader name resolves to a valid shader
+	world_.observer<ShaderRef, Renderable>("ShaderRefToRenderable")
+			.event(flecs::OnSet)
+			.each([](flecs::entity, const ShaderRef& ref, Renderable& renderable) {
+				if (!ref.name.empty()) {
+					if (const ShaderId id = GetRenderer().GetShaderManager().FindShader(ref.name);
+						id != INVALID_SHADER) {
+						renderable.shader = id;
+					}
+				}
+			});
+
+	// Observer: Renderable.shader → ShaderRef.name (sync ID back to name)
+	// Only updates ShaderRef if the shader ID is valid and has a name
+	world_.observer<Renderable, ShaderRef>("RenderableToShaderRef")
+			.event(flecs::OnSet)
+			.each([](flecs::entity, const Renderable& renderable, ShaderRef& ref) {
+				if (renderable.shader != INVALID_SHADER) {
+					if (const std::string name = GetRenderer().GetShaderManager().GetShaderName(renderable.shader);
+						!name.empty() && ref.name != name) {
+						ref.name = name;
+					}
 				}
 			});
 }

@@ -12,6 +12,7 @@ module;
 module engine.scene.assets;
 
 import engine.rendering;
+import engine.platform;
 
 namespace engine::scene {
 
@@ -117,7 +118,7 @@ bool ShaderAssetInfo::DoLoad() {
 	}
 
 	if (const auto& shader_mgr = rendering::GetRenderer().GetShaderManager();
-		!shader_mgr.CompileShader(id, vertex_path, fragment_path)) {
+		!shader_mgr.CompileShader(id, platform::fs::Path(vertex_path), platform::fs::Path(fragment_path))) {
 		std::cerr << "ShaderAssetInfo: Failed to compile shader '" << name << "'" << std::endl;
 		return false;
 	}

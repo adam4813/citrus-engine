@@ -347,6 +347,33 @@ void PropertiesPanel::RenderAssetProperties(engine::scene::Scene* scene, const A
 			}
 			break;
 		}
+		case engine::scene::AssetFieldType::Selection:
+		{
+			auto* str = static_cast<std::string*>(field_ptr);
+			// Find current selection index
+			int current_index = 0;
+			for (size_t i = 0; i < field.options.size(); ++i) {
+				if (field.options[i] == *str) {
+					current_index = static_cast<int>(i);
+					break;
+				}
+			}
+			// Build combo items
+			if (ImGui::BeginCombo(field.display_name.c_str(), str->c_str())) {
+				for (size_t i = 0; i < field.options.size(); ++i) {
+					const bool is_selected = (current_index == static_cast<int>(i));
+					if (ImGui::Selectable(field.options[i].c_str(), is_selected)) {
+						*str = field.options[i];
+						modified = true;
+					}
+					if (is_selected) {
+						ImGui::SetItemDefaultFocus();
+					}
+				}
+				ImGui::EndCombo();
+			}
+			break;
+		}
 		case engine::scene::AssetFieldType::ReadOnly:
 		{
 			ImGui::Text("%s: (read-only)", field.display_name.c_str());

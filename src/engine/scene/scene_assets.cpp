@@ -221,7 +221,8 @@ void MeshAssetInfo::RegisterType() {
 			.DisplayName("Mesh")
 			.Category("Rendering")
 			.Field("name", &MeshAssetInfo::name, "Name")
-			.Field("mesh_type", &MeshAssetInfo::mesh_type, "Mesh Type")
+			.Field("mesh_type", &MeshAssetInfo::mesh_type, "Mesh Type", AssetFieldType::Selection)
+			.Options({mesh_types::QUAD, mesh_types::CUBE, mesh_types::SPHERE, mesh_types::CAPSULE, mesh_types::FILE})
 			.Field("file_path", &MeshAssetInfo::file_path, "File Path", AssetFieldType::FilePath)
 			.FromJson([](const nlohmann::json& j) -> std::unique_ptr<AssetInfo> {
 				auto asset = std::make_unique<MeshAssetInfo>();

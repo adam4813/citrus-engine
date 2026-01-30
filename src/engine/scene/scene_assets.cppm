@@ -29,11 +29,12 @@ enum class AssetType : uint8_t {
  */
 enum class AssetFieldType {
 	String,
-	FilePath, // String displayed with file browser hint
+	FilePath,  // String displayed with file browser hint
 	Int,
 	Float,
 	Bool,
-	ReadOnly // Display-only
+	ReadOnly,  // Display-only
+	Selection  // Dropdown with fixed options
 };
 
 /**
@@ -41,10 +42,11 @@ enum class AssetFieldType {
  */
 struct AssetFieldInfo {
 	std::string name;
-	std::string display_name; // Human-readable label
+	std::string display_name;                // Human-readable label
 	AssetFieldType type{AssetFieldType::ReadOnly};
-	size_t offset{}; // Byte offset into asset struct
-	size_t size{}; // Size of the field in bytes
+	size_t offset{};                         // Byte offset into asset struct
+	size_t size{};                           // Size of the field in bytes
+	std::vector<std::string> options;        // For Selection type: valid choices
 };
 
 // Forward declarations
@@ -125,6 +127,14 @@ public:
 		field.offset = reinterpret_cast<size_t>(&(static_cast<T*>(nullptr)->*member_ptr));
 		field.size = sizeof(FieldT);
 		info_.fields.push_back(std::move(field));
+		return *this;
+	}
+
+	/// Add options to the last registered field (for Selection type)
+	AssetTypeRegistration& Options(std::vector<std::string> opts) {
+		if (!info_.fields.empty()) {
+			info_.fields.back().options = std::move(opts);
+		}
 		return *this;
 	}
 

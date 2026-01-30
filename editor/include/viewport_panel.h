@@ -1,13 +1,17 @@
 #pragma once
 
+#include <flecs.h>
 #include <imgui.h>
+
+import engine;
 
 namespace editor {
 
 /**
- * @brief 2D scene viewport panel
+ * @brief Scene viewport panel
  *
- * Displays the scene view with grid and play mode indicator.
+ * Renders the scene to a framebuffer and displays it in the viewport.
+ * Uses the editor camera for rendering in edit mode.
  */
 class ViewportPanel {
 public:
@@ -16,9 +20,11 @@ public:
 
 	/**
 	 * @brief Render the viewport panel
+	 * @param engine Reference to the engine for scene rendering
+	 * @param scene
 	 * @param is_running Whether the scene is in play mode
 	 */
-	void Render(bool is_running);
+	void Render(engine::Engine& engine, engine::scene::Scene* scene, bool is_running);
 
 	/**
 	 * @brief Check if panel is visible
@@ -36,10 +42,12 @@ public:
 	bool& VisibleRef() { return is_visible_; }
 
 private:
-	void RenderGrid(const ImVec2& cursor_pos, const ImVec2& content_size);
 	void RenderPlayModeIndicator(const ImVec2& cursor_pos);
 
+	engine::rendering::Framebuffer framebuffer_;
 	bool is_visible_ = true;
+	uint32_t last_width_ = 0;
+	uint32_t last_height_ = 0;
 };
 
 } // namespace editor

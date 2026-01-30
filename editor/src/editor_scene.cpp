@@ -24,6 +24,20 @@ void EditorScene::Initialize(engine::Engine& engine) {
 	state_.current_file_path = "";
 	state_.is_dirty = false;
 
+	// Create editor camera (not part of the scene, used for viewport navigation)
+	// TODO: Ensure this is excluded from scene serialization (Phase 1.5)
+	editor_camera_ = engine.ecs.CreateEntity("EditorCamera");
+	editor_camera_.set<engine::components::Transform>({{0.0f, 0.0f, 5.0f}}); // Position at z=5
+	editor_camera_.set<engine::components::Camera>(
+			{.target = {0.0f, 0.0f, 0.0f},
+			 .up = {0.0f, 1.0f, 0.0f},
+			 .fov = 60.0f,
+			 .aspect_ratio = 16.0f / 9.0f,
+			 .near_plane = 0.1f,
+			 .far_plane = 100.0f,
+			 .dirty = true});
+	engine.ecs.SetActiveCamera(editor_camera_);
+
 	// Wire up panel callbacks
 	EditorCallbacks callbacks;
 	callbacks.on_entity_selected = [this](const engine::ecs::Entity entity) { OnEntitySelected(entity); };
@@ -50,6 +64,11 @@ void EditorScene::Initialize(engine::Engine& engine) {
 
 void EditorScene::Shutdown(engine::Engine& engine) {
 	std::cout << "EditorScene: Shutting down..." << std::endl;
+
+	// Destroy editor camera
+	if (editor_camera_.is_valid()) {
+		editor_camera_.destruct();
+	}
 
 	// Cleanup scene system
 	engine::scene::ShutdownSceneSystem();
@@ -106,7 +125,7 @@ void EditorScene::RenderUI(engine::Engine& engine) {
 	RenderMenuBar();
 	hierarchy_panel_.Render(editor_scene_id_, selected_entity_);
 	properties_panel_.Render(selected_entity_, engine.ecs, scene, selected_asset_);
-	viewport_panel_.Render(state_.is_running);
+	viewport_panel_.Render(engine, scene, state_.is_running);
 	asset_browser_panel_.Render(scene, selected_asset_);
 
 	// Handle dialogs

@@ -123,6 +123,9 @@ private:
 	EditorState state_;
 	engine::scene::SceneId editor_scene_id_ = engine::scene::INVALID_SCENE;
 
+	// Editor camera (separate from scene cameras, used for viewport navigation in edit mode)
+	flecs::entity editor_camera_;
+
 	// Selection state (mutually exclusive: entity or asset)
 	SelectionType selection_type_ = SelectionType::None;
 	engine::ecs::Entity selected_entity_;

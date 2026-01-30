@@ -1,61 +1,83 @@
 #include "viewport_panel.h"
 
+#include <cstdint>
 #include <imgui.h>
+#ifndef __EMSCRIPTEN__
+#include <glad/glad.h>
+#else
+#include <GLES3/gl3.h>
+#endif
 
 namespace editor {
 
-void ViewportPanel::Render(bool is_running) {
-	if (!is_visible_)
+void ViewportPanel::Render(engine::Engine& engine, engine::scene::Scene* scene, const bool is_running) {
+	if (!is_visible_) {
 		return;
+	}
 
 	ImGui::Begin("Viewport", &is_visible_);
 
 	const ImVec2 content_size = ImGui::GetContentRegionAvail();
+	const auto viewport_width = static_cast<std::uint32_t>(content_size.x);
+	const auto viewport_height = static_cast<uint32_t>(content_size.y);
 
-	ImGui::BeginChild("ViewportContent", content_size, true);
+	// Resize framebuffer if viewport size changed
+	if (viewport_width > 0 && viewport_height > 0
+		&& (viewport_width != last_width_ || viewport_height != last_height_)) {
+		framebuffer_.Resize(viewport_width, viewport_height);
+		last_width_ = viewport_width;
+		last_height_ = viewport_height;
 
-	const ImVec2 cursor_pos = ImGui::GetCursorScreenPos();
+		// Update camera aspect ratio
+		auto active_camera = engine.ecs.GetActiveCamera();
+		if (active_camera.is_valid() && active_camera.has<engine::components::Camera>()) {
+			auto& camera = active_camera.get_mut<engine::components::Camera>();
+			camera.aspect_ratio = static_cast<float>(viewport_width) / static_cast<float>(viewport_height);
+			camera.dirty = true;
+		}
+	}
 
-	RenderGrid(cursor_pos, content_size);
+	// Render scene to framebuffer
+	if (framebuffer_.IsValid()) {
+		framebuffer_.Bind();
 
-	// Draw center text
-	const auto text = "2D Scene Viewport";
-	const ImVec2 text_size = ImGui::CalcTextSize(text);
-	ImDrawList* draw_list = ImGui::GetWindowDrawList();
-	draw_list->AddText(
-			ImVec2(cursor_pos.x + (content_size.x - text_size.x) / 2, cursor_pos.y + (content_size.y - text_size.y) / 2),
-			IM_COL32(100, 100, 100, 255),
-			text);
+		// Clear the framebuffer
+		glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+		// Render the scene
+		//auto& scene_manager = engine::scene::GetSceneManager();
+		// The active scene isn't set in edit mode. So we directly render the provided scene.
+		// This needs to be improved later.
+		scene->Render();
+		// The scene's render method isn't set up to call the ECS render submission directly.
+		// So we manually submit the render commands from the ECS world.
+		engine.ecs.SubmitRenderCommands(engine::rendering::GetRenderer());
+
+		engine::rendering::Framebuffer::Unbind();
+
+		// Restore main viewport
+		uint32_t main_width = 0;
+		uint32_t main_height = 0;
+		engine.renderer->GetFramebufferSize(main_width, main_height);
+		glViewport(0, 0, static_cast<GLsizei>(main_width), static_cast<GLsizei>(main_height));
+	}
+
+	// Display the framebuffer texture in ImGui
+	if (framebuffer_.IsValid()) {
+		// ImGui expects texture ID as void*, OpenGL textures are uint32
+		const auto texture_id = static_cast<ImTextureID>(static_cast<uintptr_t>(framebuffer_.GetColorTextureId()));
+		// Flip UV vertically because OpenGL textures are bottom-up
+		ImGui::Image(texture_id, content_size, ImVec2(0, 1), ImVec2(1, 0));
+	}
+
+	// Show play mode indicator overlay
 	if (is_running) {
+		const ImVec2 cursor_pos = ImGui::GetItemRectMin();
 		RenderPlayModeIndicator(cursor_pos);
 	}
 
-	ImGui::EndChild();
-
 	ImGui::End();
-}
-
-void ViewportPanel::RenderGrid(const ImVec2& cursor_pos, const ImVec2& content_size) {
-	ImDrawList* draw_list = ImGui::GetWindowDrawList();
-
-	// Draw background
-	draw_list->AddRectFilled(
-			cursor_pos, ImVec2(cursor_pos.x + content_size.x, cursor_pos.y + content_size.y), IM_COL32(30, 30, 30, 255));
-
-	// Draw grid lines
-	constexpr float grid_size = 50.0f;
-	constexpr ImU32 grid_color = IM_COL32(50, 50, 50, 255);
-
-	for (float x = 0; x < content_size.x; x += grid_size) {
-		draw_list->AddLine(
-				ImVec2(cursor_pos.x + x, cursor_pos.y), ImVec2(cursor_pos.x + x, cursor_pos.y + content_size.y), grid_color);
-	}
-
-	for (float y = 0; y < content_size.y; y += grid_size) {
-		draw_list->AddLine(
-				ImVec2(cursor_pos.x, cursor_pos.y + y), ImVec2(cursor_pos.x + content_size.x, cursor_pos.y + y), grid_color);
-	}
 }
 
 void ViewportPanel::RenderPlayModeIndicator(const ImVec2& cursor_pos) {

@@ -365,6 +365,11 @@ void ECSWorld::SubmitRenderCommands(const rendering::Renderer& renderer) {
 		active_camera = &camera_data;
 	}
 
+	// Set up lighting uniforms from first Light component in scene
+	auto& shader_mgr = renderer.GetShaderManager();
+	glm::vec3 light_dir{0.2f, -1.0f, -0.3f}; // Default fallback
+	world_.query<const Light>().each([&light_dir](const Light& light) { light_dir = glm::normalize(light.direction); });
+
 	// Single query loop for all renderables
 	const auto renderable_query = world_.query<const WorldTransform, const rendering::Renderable>();
 	renderable_query.each(
@@ -378,6 +383,11 @@ void ECSWorld::SubmitRenderCommands(const rendering::Renderer& renderer) {
 						.material = renderable.material,
 						.render_state_stack = renderable.render_state_stack,
 						.camera_view = active_camera->view_matrix};
+
+				// Short term: set light direction uniform here
+				const auto& shader = shader_mgr.GetShader(renderable.shader);
+				shader.Use();
+				shader.SetUniform("u_LightDir", light_dir);
 
 				cmd.transform = transform.matrix;
 
@@ -506,7 +516,7 @@ void ECSWorld::SetupShaderRefIntegration() {
 				if (ref.name.empty()) {
 					return;
 				}
-				
+
 				if (renderable.shader == INVALID_SHADER) {
 					return;
 				}
@@ -562,7 +572,7 @@ void ECSWorld::SetupMeshRefIntegration() {
 				if (ref.name.empty()) {
 					return;
 				}
-				
+
 				if (renderable.mesh == INVALID_MESH) {
 					return;
 				}

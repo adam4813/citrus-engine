@@ -29,7 +29,8 @@ enum class FieldType {
 	ListInt,
 	ListFloat,
 	ListString,
-	ReadOnly // Display-only string
+	ReadOnly, // Display-only string
+	AssetRef  // Reference to a scene asset (dropdown)
 };
 
 /**
@@ -40,6 +41,7 @@ struct FieldInfo {
 	FieldType type{FieldType::ReadOnly};
 	size_t offset{}; // Byte offset into component struct
 	size_t size{}; // Size of the field in bytes
+	std::string asset_type; // For AssetRef: the asset type key (e.g., "shader", "mesh")
 };
 
 /**
@@ -164,6 +166,18 @@ public:
 
 		// Register with flecs reflection for JSON serialization
 		RegisterFlecsMember<FieldT>(field_name);
+		return *this;
+	}
+
+	/**
+	 * @brief Mark the last field as an asset reference with the given asset type key
+	 * Should be chained after Field() for AssetRef fields
+	 */
+	ComponentRegistration& AssetRef(const std::string& asset_type_key) {
+		if (!info_.fields.empty()) {
+			info_.fields.back().type = FieldType::AssetRef;
+			info_.fields.back().asset_type = asset_type_key;
+		}
 		return *this;
 	}
 

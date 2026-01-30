@@ -471,7 +471,11 @@ void ECSWorld::SetupShaderRefIntegration() {
 	auto& registry = ComponentRegistry::Instance();
 
 	// Register ShaderRef component - stores shader asset name for serialization
-	registry.Register<ShaderRef>("ShaderRef", world_).Category("Rendering").Field("name", &ShaderRef::name).Build();
+	registry.Register<ShaderRef>("ShaderRef", world_)
+			.Category("Rendering")
+			.Field("name", &ShaderRef::name)
+			.AssetRef("shader")
+			.Build();
 
 	// Add (With, ShaderRef) trait to Renderable - auto-adds ShaderRef when Renderable is added
 	if (!world_.component<Renderable>().add(flecs::With, world_.component<ShaderRef>())) {
@@ -479,11 +483,12 @@ void ECSWorld::SetupShaderRefIntegration() {
 	}
 
 	// Observer: ShaderRef.name → Renderable.shader (resolve name to ID)
-	// Only updates Renderable if the shader name resolves to a valid shader
+	// Updates Renderable shader ID: valid name → lookup ID, empty name → INVALID_SHADER
 	world_.observer<ShaderRef, Renderable>("ShaderRefToRenderable")
 			.event(flecs::OnSet)
 			.each([](flecs::entity, const ShaderRef& ref, Renderable& renderable) {
 				if (ref.name.empty()) {
+					renderable.shader = INVALID_SHADER;
 					return;
 				}
 
@@ -493,10 +498,15 @@ void ECSWorld::SetupShaderRefIntegration() {
 			});
 
 	// Observer: Renderable.shader → ShaderRef.name (sync ID back to name)
-	// Only updates ShaderRef if the shader ID is valid and has a name
+	// Respects empty ref.name as intentional (user chose "(None)")
 	world_.observer<Renderable, ShaderRef>("RenderableToShaderRef")
 			.event(flecs::OnSet)
 			.each([](flecs::entity, const Renderable& renderable, ShaderRef& ref) {
+				// If user cleared the name, respect that choice - don't overwrite
+				if (ref.name.empty()) {
+					return;
+				}
+				
 				if (renderable.shader == INVALID_SHADER) {
 					return;
 				}
@@ -515,7 +525,11 @@ void ECSWorld::SetupMeshRefIntegration() {
 	auto& registry = ComponentRegistry::Instance();
 
 	// Register MeshRef component - stores mesh asset name for serialization
-	registry.Register<MeshRef>("MeshRef", world_).Category("Rendering").Field("name", &MeshRef::name).Build();
+	registry.Register<MeshRef>("MeshRef", world_)
+			.Category("Rendering")
+			.Field("name", &MeshRef::name)
+			.AssetRef("mesh")
+			.Build();
 
 	// Add (With, MeshRef) trait to Renderable - auto-adds MeshRef when Renderable is added
 	if (!world_.component<Renderable>().add(flecs::With, world_.component<MeshRef>())) {
@@ -523,11 +537,12 @@ void ECSWorld::SetupMeshRefIntegration() {
 	}
 
 	// Observer: MeshRef.name → Renderable.mesh (resolve name to mesh ID)
-	// Uses MeshManager's global name registry (like ShaderRef uses ShaderManager)
+	// Updates Renderable mesh ID: valid name → lookup ID, empty name → INVALID_MESH
 	world_.observer<MeshRef, Renderable>("MeshRefToRenderable")
 			.event(flecs::OnSet)
 			.each([](flecs::entity, const MeshRef& ref, Renderable& renderable) {
 				if (ref.name.empty()) {
+					renderable.mesh = INVALID_MESH;
 					return;
 				}
 
@@ -539,9 +554,15 @@ void ECSWorld::SetupMeshRefIntegration() {
 
 	// Observer: Renderable.mesh → MeshRef.name (sync ID back to name)
 	// Uses MeshManager's global name registry
+	// Respects empty ref.name as intentional (user chose "(None)")
 	world_.observer<Renderable, MeshRef>("RenderableToMeshRef")
 			.event(flecs::OnSet)
 			.each([](flecs::entity, const Renderable& renderable, MeshRef& ref) {
+				// If user cleared the name, respect that choice - don't overwrite
+				if (ref.name.empty()) {
+					return;
+				}
+				
 				if (renderable.mesh == INVALID_MESH) {
 					return;
 				}

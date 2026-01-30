@@ -474,7 +474,7 @@ void ECSWorld::SetupShaderRefIntegration() {
 	registry.Register<ShaderRef>("ShaderRef", world_)
 			.Category("Rendering")
 			.Field("name", &ShaderRef::name)
-			.AssetRef("shader")
+			.AssetRef(scene::ShaderAssetInfo::TYPE_NAME)
 			.Build();
 
 	// Add (With, ShaderRef) trait to Renderable - auto-adds ShaderRef when Renderable is added
@@ -528,7 +528,7 @@ void ECSWorld::SetupMeshRefIntegration() {
 	registry.Register<MeshRef>("MeshRef", world_)
 			.Category("Rendering")
 			.Field("name", &MeshRef::name)
-			.AssetRef("mesh")
+			.AssetRef(scene::MeshAssetInfo::TYPE_NAME)
 			.Build();
 
 	// Add (With, MeshRef) trait to Renderable - auto-adds MeshRef when Renderable is added

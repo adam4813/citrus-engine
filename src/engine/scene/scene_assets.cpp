@@ -141,7 +141,7 @@ void ShaderAssetInfo::DoUnload() {
 
 void ShaderAssetInfo::RegisterType() {
 	AssetRegistry::Instance()
-			.RegisterType<ShaderAssetInfo>("shader", AssetType::SHADER)
+			.RegisterType<ShaderAssetInfo>(ShaderAssetInfo::TYPE_NAME, AssetType::SHADER)
 			.DisplayName("Shader")
 			.Category("Rendering")
 			.Field("name", &ShaderAssetInfo::name, "Name")
@@ -217,7 +217,7 @@ void MeshAssetInfo::DoUnload() {
 
 void MeshAssetInfo::RegisterType() {
 	AssetRegistry::Instance()
-			.RegisterType<MeshAssetInfo>("mesh", AssetType::MESH)
+			.RegisterType<MeshAssetInfo>(MeshAssetInfo::TYPE_NAME, AssetType::MESH)
 			.DisplayName("Mesh")
 			.Category("Rendering")
 			.Field("name", &MeshAssetInfo::name, "Name")

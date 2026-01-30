@@ -29,12 +29,12 @@ enum class AssetType : uint8_t {
  */
 enum class AssetFieldType {
 	String,
-	FilePath,  // String displayed with file browser hint
+	FilePath, // String displayed with file browser hint
 	Int,
 	Float,
 	Bool,
-	ReadOnly,  // Display-only
-	Selection  // Dropdown with fixed options
+	ReadOnly, // Display-only
+	Selection // Dropdown with fixed options
 };
 
 /**
@@ -42,11 +42,11 @@ enum class AssetFieldType {
  */
 struct AssetFieldInfo {
 	std::string name;
-	std::string display_name;                // Human-readable label
+	std::string display_name; // Human-readable label
 	AssetFieldType type{AssetFieldType::ReadOnly};
-	size_t offset{};                         // Byte offset into asset struct
-	size_t size{};                           // Size of the field in bytes
-	std::vector<std::string> options;        // For Selection type: valid choices
+	size_t offset{}; // Byte offset into asset struct
+	size_t size{}; // Size of the field in bytes
+	std::vector<std::string> options; // For Selection type: valid choices
 };
 
 // Forward declarations
@@ -189,6 +189,11 @@ public:
 		return AssetTypeRegistration<T>(*this, type_name, asset_type);
 	}
 
+	template <typename T>
+	AssetTypeRegistration<T> RegisterType(const std::string_view type_name, const AssetType asset_type) {
+		return RegisterType<T>(std::string(type_name), asset_type);
+	}
+
 	/// Legacy: Register an asset type factory only (for backward compat)
 	/// @param type_name The "type" string in JSON (e.g., "shader")
 	/// @param factory Function that creates the asset from JSON
@@ -286,6 +291,8 @@ protected:
 
 /// Shader asset definition
 struct ShaderAssetInfo : AssetInfo {
+	static constexpr std::string_view TYPE_NAME = "shader";
+
 	std::string vertex_path;
 	std::string fragment_path;
 	rendering::ShaderId id{rendering::INVALID_SHADER}; // Populated in DoInitialize, compiled in DoLoad
@@ -318,6 +325,8 @@ constexpr const char* FILE = "file";
 /// Mesh asset definition
 /// Can be a built-in type (quad, cube, sphere) with parameters, or a file reference
 struct MeshAssetInfo : AssetInfo {
+	static constexpr std::string_view TYPE_NAME = "mesh";
+
 	std::string mesh_type; // "quad", "cube", "sphere", "capsule", "file"
 	float params[3]{1.0f, 1.0f, 1.0f}; // Interpreted based on mesh_type
 	std::string file_path; // Only used when mesh_type == "file"

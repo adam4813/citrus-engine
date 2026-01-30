@@ -30,7 +30,7 @@ enum class FieldType {
 	ListFloat,
 	ListString,
 	ReadOnly, // Display-only string
-	AssetRef  // Reference to a scene asset (dropdown)
+	AssetRef // Reference to a scene asset (dropdown)
 };
 
 /**
@@ -179,6 +179,9 @@ public:
 			info_.fields.back().asset_type = asset_type_key;
 		}
 		return *this;
+	}
+	ComponentRegistration& AssetRef(const std::string_view asset_type_key) {
+		return AssetRef(std::string(asset_type_key));
 	}
 
 	void Build();

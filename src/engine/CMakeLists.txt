@@ -55,6 +55,7 @@ target_sources(engine-core
     rendering/shader.cppm
     rendering/mesh.cppm
     rendering/material.cppm
+    rendering/framebuffer.cppm
     rendering/renderer.cppm
     rendering/tilemap_renderer.cppm
     rendering/rendering.cppm
@@ -131,6 +132,7 @@ target_sources(engine-core PRIVATE
     rendering/texture.cpp
     rendering/mesh.cpp
     rendering/material.cpp
+    rendering/framebuffer.cpp
     rendering/tilemap_renderer.cpp
 
     # Scene module implementation

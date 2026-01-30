@@ -22,7 +22,6 @@ private:
 	ShaderId cube_shader_id_{INVALID_SHADER};
 	MeshId cube_mesh_id_{INVALID_MESH};
 	flecs::entity cube_entity_;
-	flecs::entity camera_entity_;
 	glm::vec3 light_dir_{0.2f, -1.0f, -0.3f};
 
 public:
@@ -36,29 +35,16 @@ public:
 		// Create cube mesh using MeshManager
 		cube_mesh_id_ = engine.renderer->GetMeshManager().CreateCube(1.0f);
 
-		// Load the colored 3D shader
-		cube_shader_id_ = engine.renderer->GetShaderManager().LoadShader(
-				"colored_3d", "shaders/colored_3d.vert", "shaders/colored_3d.frag");
-
-		auto& ecs = engine.ecs;
-		camera_entity_ = ecs.CreateEntity("MainCamera");
-		camera_entity_.set<Transform>({{0.0f, 0.0f, 5.0f}});
-		camera_entity_.set<Camera>({.target = {0.0f, 0.0f, 4.0f}});
-		ecs.SetActiveCamera(camera_entity_);
-
-		cube_entity_ = ecs.CreateEntity();
-		cube_entity_.set<Transform>({.position = {0.0f, 0.0f, -5.0f}});
-		cube_entity_.set<Renderable>({.mesh = cube_mesh_id_, .shader = cube_shader_id_});
-		cube_entity_.set<Velocity>({});
+		engine::scene::GetSceneManager().LoadSceneFromFile("assets/scenes/cube-3d.json");
+		cube_shader_id_ = engine.renderer->GetShaderManager().FindShader("colored_3d");
+		cube_entity_ = engine.ecs.FindEntityByName("Cube");
+		cube_entity_.get_mut<Renderable>().mesh = cube_mesh_id_;
 
 		std::cout << "Cube3DScene: Initialized successfully" << std::endl;
 	}
 
 	void Shutdown(engine::Engine& engine) override {
 		std::cout << "Cube3DScene: Shutdown" << std::endl;
-
-		cube_entity_.destruct();
-		camera_entity_.destruct();
 
 		const auto renderer = engine.renderer;
 		const auto& shader_manager = renderer->GetShaderManager();

@@ -33,7 +33,7 @@ std::unique_ptr<AssetInfo> AssetRegistry::Create(const nlohmann::json& j) const 
 
 	const auto it = factories_.find(type_str);
 	if (it == factories_.end()) {
-		std::cerr << "AssetRegistry: Unknown asset type '" << type_str << "'" << std::endl;
+		std::cerr << "AssetRegistry: Unknown asset type '" << type_str << "'" << '\n';
 		return nullptr;
 	}
 
@@ -108,21 +108,21 @@ void ShaderAssetInfo::ToJson(nlohmann::json& j) const {
 void ShaderAssetInfo::DoInitialize() {
 	const auto& shader_mgr = rendering::GetRenderer().GetShaderManager();
 	id = shader_mgr.CreateShader(name);
-	std::cout << "ShaderAssetInfo: Created shader slot '" << name << "' (id=" << id << ")" << std::endl;
+	std::cout << "ShaderAssetInfo: Created shader slot '" << name << "' (id=" << id << ")" << '\n';
 }
 
 bool ShaderAssetInfo::DoLoad() {
 	if (id == rendering::INVALID_SHADER) {
-		std::cerr << "ShaderAssetInfo: Cannot load - shader not initialized" << std::endl;
+		std::cerr << "ShaderAssetInfo: Cannot load - shader not initialized" << '\n';
 		return false;
 	}
 
 	if (const auto& shader_mgr = rendering::GetRenderer().GetShaderManager();
 		!shader_mgr.CompileShader(id, platform::fs::Path(vertex_path), platform::fs::Path(fragment_path))) {
-		std::cerr << "ShaderAssetInfo: Failed to compile shader '" << name << "'" << std::endl;
+		std::cerr << "ShaderAssetInfo: Failed to compile shader '" << name << "'" << '\n';
 		return false;
 	}
-	std::cout << "ShaderAssetInfo: Compiled shader '" << name << "' (id=" << id << ")" << std::endl;
+	std::cout << "ShaderAssetInfo: Compiled shader '" << name << "' (id=" << id << ")" << '\n';
 	return true;
 }
 
@@ -155,37 +155,44 @@ void MeshAssetInfo::ToJson(nlohmann::json& j) const {
 	j["file_path"] = file_path;
 }
 
+void MeshAssetInfo::DoInitialize() {
+	const auto& mesh_mgr = rendering::GetRenderer().GetMeshManager();
+	id = mesh_mgr.CreateNamedMesh(name);
+	std::cout << "MeshAssetInfo: Reserved mesh slot '" << name << "' (id=" << id << ")" << '\n';
+}
+
 bool MeshAssetInfo::DoLoad() {
 	auto& mesh_mgr = rendering::GetRenderer().GetMeshManager();
 
+	bool success = false;
 	if (mesh_type == mesh_types::QUAD) {
-		id = mesh_mgr.CreateQuad(params[0], params[1]);
+		success = mesh_mgr.GenerateQuad(id, params[0], params[1]);
 	}
 	else if (mesh_type == mesh_types::CUBE) {
-		id = mesh_mgr.CreateCube(params[0], params[1], params[2]);
+		success = mesh_mgr.GenerateCube(id, params[0], params[1], params[2]);
 	}
 	else if (mesh_type == mesh_types::SPHERE) {
-		id = mesh_mgr.CreateSphere(params[0], static_cast<uint32_t>(params[1]));
+		success = mesh_mgr.GenerateSphere(id, params[0], static_cast<uint32_t>(params[1]));
 	}
 	else if (mesh_type == mesh_types::CAPSULE) {
-		std::cerr << "MeshAssetInfo: Capsule mesh not yet implemented" << std::endl;
+		std::cerr << "MeshAssetInfo: Capsule mesh not yet implemented" << '\n';
 		return false;
 	}
 	else if (mesh_type == mesh_types::FILE) {
-		std::cerr << "MeshAssetInfo: File mesh loading not yet implemented: " << file_path << std::endl;
+		std::cerr << "MeshAssetInfo: File mesh loading not yet implemented: " << file_path << '\n';
 		return false;
 	}
 	else {
-		std::cerr << "MeshAssetInfo: Unknown mesh type: " << mesh_type << std::endl;
+		std::cerr << "MeshAssetInfo: Unknown mesh type: " << mesh_type << '\n';
 		return false;
 	}
 
-	if (id == rendering::INVALID_MESH) {
-		std::cerr << "MeshAssetInfo: Failed to create mesh '" << name << "'" << std::endl;
+	if (!success) {
+		std::cerr << "MeshAssetInfo: Failed to generate mesh geometry for '" << name << "'" << '\n';
 		return false;
 	}
 
-	std::cout << "MeshAssetInfo: Created mesh '" << name << "' (type=" << mesh_type << ", id=" << id << ")" << std::endl;
+	std::cout << "MeshAssetInfo: Generated mesh '" << name << "' (type=" << mesh_type << ", id=" << id << ")" << '\n';
 	return true;
 }
 
@@ -203,9 +210,15 @@ void MeshAssetInfo::RegisterType() {
 				asset->mesh_type = j.value("mesh_type", mesh_types::QUAD);
 				if (j.contains("params") && j["params"].is_array()) {
 					const auto& arr = j["params"];
-					if (arr.size() >= 1) asset->params[0] = arr[0].get<float>();
-					if (arr.size() >= 2) asset->params[1] = arr[1].get<float>();
-					if (arr.size() >= 3) asset->params[2] = arr[2].get<float>();
+					if (!arr.empty()) {
+						asset->params[0] = arr[0].get<float>();
+					}
+					if (arr.size() >= 2) {
+						asset->params[1] = arr[1].get<float>();
+					}
+					if (arr.size() >= 3) {
+						asset->params[2] = arr[2].get<float>();
+					}
 				}
 				asset->file_path = j.value("file_path", "");
 				return asset;

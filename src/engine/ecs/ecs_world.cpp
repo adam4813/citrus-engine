@@ -3,6 +3,7 @@ module;
 #include <flecs.h>
 #include <functional>
 #include <glm/gtx/norm.hpp>
+#include <iostream>
 #include <string>
 #include <vector>
 
@@ -473,19 +474,21 @@ void ECSWorld::SetupShaderRefIntegration() {
 	registry.Register<ShaderRef>("ShaderRef", world_).Category("Rendering").Field("name", &ShaderRef::name).Build();
 
 	// Add (With, ShaderRef) trait to Renderable - auto-adds ShaderRef when Renderable is added
-	if (!world_.component<Renderable>().add(flecs::With, world_.component<ShaderRef>()))
+	if (!world_.component<Renderable>().add(flecs::With, world_.component<ShaderRef>())) {
 		return;
+	}
 
 	// Observer: ShaderRef.name → Renderable.shader (resolve name to ID)
 	// Only updates Renderable if the shader name resolves to a valid shader
 	world_.observer<ShaderRef, Renderable>("ShaderRefToRenderable")
 			.event(flecs::OnSet)
 			.each([](flecs::entity, const ShaderRef& ref, Renderable& renderable) {
-				if (!ref.name.empty()) {
-					if (const ShaderId id = GetRenderer().GetShaderManager().FindShader(ref.name);
-						id != INVALID_SHADER) {
-						renderable.shader = id;
-					}
+				if (ref.name.empty()) {
+					return;
+				}
+
+				if (const ShaderId id = GetRenderer().GetShaderManager().FindShader(ref.name); id != INVALID_SHADER) {
+					renderable.shader = id;
 				}
 			});
 
@@ -494,11 +497,13 @@ void ECSWorld::SetupShaderRefIntegration() {
 	world_.observer<Renderable, ShaderRef>("RenderableToShaderRef")
 			.event(flecs::OnSet)
 			.each([](flecs::entity, const Renderable& renderable, ShaderRef& ref) {
-				if (renderable.shader != INVALID_SHADER) {
-					if (const std::string name = GetRenderer().GetShaderManager().GetShaderName(renderable.shader);
-						!name.empty() && ref.name != name) {
-						ref.name = name;
-					}
+				if (renderable.shader == INVALID_SHADER) {
+					return;
+				}
+
+				if (const std::string name = GetRenderer().GetShaderManager().GetShaderName(renderable.shader);
+					!name.empty() && ref.name != name) {
+					ref.name = name;
 				}
 			});
 }
@@ -513,48 +518,38 @@ void ECSWorld::SetupMeshRefIntegration() {
 	registry.Register<MeshRef>("MeshRef", world_).Category("Rendering").Field("name", &MeshRef::name).Build();
 
 	// Add (With, MeshRef) trait to Renderable - auto-adds MeshRef when Renderable is added
-	if (!world_.component<Renderable>().add(flecs::With, world_.component<MeshRef>()))
+	if (!world_.component<Renderable>().add(flecs::With, world_.component<MeshRef>())) {
 		return;
+	}
 
 	// Observer: MeshRef.name → Renderable.mesh (resolve name to mesh ID)
-	// Looks up mesh asset, generates mesh if needed, updates Renderable.mesh
+	// Uses MeshManager's global name registry (like ShaderRef uses ShaderManager)
 	world_.observer<MeshRef, Renderable>("MeshRefToRenderable")
 			.event(flecs::OnSet)
 			.each([](flecs::entity, const MeshRef& ref, Renderable& renderable) {
-				if (ref.name.empty())
+				if (ref.name.empty()) {
 					return;
+				}
 
-				// Look up mesh asset from scene's assets
-				const auto& scene_mgr = scene::GetSceneManager();
-				const auto active_id = scene_mgr.GetActiveScene();
-				if (auto* scene_obj = scene_mgr.TryGetScene(active_id)) {
-					if (const auto asset = scene_obj->GetAssets().FindTyped<scene::MeshAssetInfo>(ref.name)) {
-						// Use cached mesh ID if available
-						if (asset->id != INVALID_MESH) {
-							renderable.mesh = asset->id;
-						}
-					}
+				// Look up mesh by name in MeshManager (global, not scene-specific)
+				if (const MeshId id = GetRenderer().GetMeshManager().FindMesh(ref.name); id != INVALID_MESH) {
+					renderable.mesh = id;
 				}
 			});
 
 	// Observer: Renderable.mesh → MeshRef.name (sync ID back to name)
-	// Finds which mesh asset has this ID and updates MeshRef.name
+	// Uses MeshManager's global name registry
 	world_.observer<Renderable, MeshRef>("RenderableToMeshRef")
 			.event(flecs::OnSet)
 			.each([](flecs::entity, const Renderable& renderable, MeshRef& ref) {
-				if (renderable.mesh == INVALID_MESH)
+				if (renderable.mesh == INVALID_MESH) {
 					return;
+				}
 
-				// Find mesh asset with matching ID
-				const auto& scene_mgr = scene::GetSceneManager();
-				const auto active_id = scene_mgr.GetActiveScene();
-				if (auto* scene_obj = scene_mgr.TryGetScene(active_id)) {
-					for (const auto& asset : scene_obj->GetAssets().GetAllOfType<scene::MeshAssetInfo>()) {
-						if (asset->id == renderable.mesh && ref.name != asset->name) {
-							ref.name = asset->name;
-							return;
-						}
-					}
+				// Look up mesh name by ID in MeshManager
+				if (const std::string name = GetRenderer().GetMeshManager().GetMeshName(renderable.mesh);
+					!name.empty() && ref.name != name) {
+					ref.name = name;
 				}
 			});
 }

@@ -306,7 +306,7 @@ struct MeshAssetInfo : AssetInfo {
 	std::string mesh_type;    // "quad", "cube", "sphere", "capsule", "file"
 	float params[3]{1.0f, 1.0f, 1.0f}; // Interpreted based on mesh_type
 	std::string file_path;    // Only used when mesh_type == "file"
-	rendering::MeshId id{rendering::INVALID_MESH}; // Populated in DoLoad
+	rendering::MeshId id{rendering::INVALID_MESH}; // Populated in DoInitialize, geometry in DoLoad
 
 	MeshAssetInfo() : AssetInfo("", AssetType::MESH), mesh_type(mesh_types::QUAD) {}
 	MeshAssetInfo(std::string asset_name, std::string type) :
@@ -318,6 +318,7 @@ struct MeshAssetInfo : AssetInfo {
 	static void RegisterType();
 
 protected:
+	void DoInitialize() override;
 	bool DoLoad() override;
 };
 

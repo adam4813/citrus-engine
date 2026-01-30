@@ -4,6 +4,7 @@ module;
 #include <cmath>
 #include <memory>
 #include <span>
+#include <string>
 #include <unordered_map>
 #include <vector>
 #ifdef __EMSCRIPTEN__
@@ -23,6 +24,8 @@ namespace engine::rendering {
 // MeshManager implementation
 struct MeshManager::Impl {
 	std::unordered_map<MeshId, MeshCreateInfo> meshes;
+	std::unordered_map<std::string, MeshId> name_to_id;
+	std::unordered_map<MeshId, std::string> id_to_name;
 	MeshId next_id = 1;
 };
 
@@ -39,11 +42,52 @@ MeshManager::MeshManager() : pimpl_(std::make_unique<Impl>()) {}
 
 MeshManager::~MeshManager() = default;
 
-MeshId MeshManager::CreateMesh(const MeshCreateInfo& info) const {
-	const MeshId id = pimpl_->next_id++;
-	pimpl_->meshes[id] = info;
+MeshId MeshManager::CreateNamedMesh(const std::string& name) const {
+	// Check if already exists
+	if (const auto it = pimpl_->name_to_id.find(name); it != pimpl_->name_to_id.end()) {
+		return it->second;
+	}
 
-	// OpenGL buffer setup
+	// Reserve a new ID for this named mesh (geometry not yet created)
+	const MeshId id = pimpl_->next_id++;
+	pimpl_->name_to_id[name] = id;
+	pimpl_->id_to_name[id] = name;
+
+	return id;
+}
+
+MeshId MeshManager::FindMesh(const std::string& name) const {
+	if (const auto it = pimpl_->name_to_id.find(name); it != pimpl_->name_to_id.end()) {
+		return it->second;
+	}
+	return INVALID_MESH;
+}
+
+std::string MeshManager::GetMeshName(const MeshId id) const {
+	if (const auto it = pimpl_->id_to_name.find(id); it != pimpl_->id_to_name.end()) {
+		return it->second;
+	}
+	return "";
+}
+
+namespace {
+// Helper to create or update GL mesh resources
+void SetupGLMesh(const MeshId id, const MeshCreateInfo& info) {
+	if (const auto it = g_mesh_gl.find(id); it != g_mesh_gl.end()) {
+		auto& [vao, vbo, ebo, index_count] = it->second;
+		index_count = static_cast<uint32_t>(info.indices.size());
+
+		glBindVertexArray(vao);
+		glBindBuffer(GL_ARRAY_BUFFER, vbo);
+		glBufferData(GL_ARRAY_BUFFER, info.vertices.size() * sizeof(Vertex), info.vertices.data(), GL_STATIC_DRAW);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+		glBufferData(
+				GL_ELEMENT_ARRAY_BUFFER, info.indices.size() * sizeof(uint32_t), info.indices.data(), GL_STATIC_DRAW);
+		glBindVertexArray(0);
+		return;
+	}
+
+	// Create new GL resources
 	GLMesh gl_mesh;
 	glGenVertexArrays(1, &gl_mesh.vao);
 	glGenBuffers(1, &gl_mesh.vbo);
@@ -72,12 +116,37 @@ MeshId MeshManager::CreateMesh(const MeshCreateInfo& info) const {
 	glBindVertexArray(0);
 
 	g_mesh_gl[id] = gl_mesh;
+}
+} // namespace
 
+bool MeshManager::GenerateMeshGeometry(const MeshId id, const MeshCreateInfo& info) const {
+	if (id == INVALID_MESH) {
+		return false;
+	}
+	pimpl_->meshes[id] = info;
+	SetupGLMesh(id, info);
+	return true;
+}
+
+MeshId MeshManager::CreateMesh(const MeshCreateInfo& info) const {
+	const MeshId id = pimpl_->next_id++;
+	pimpl_->meshes[id] = info;
+	SetupGLMesh(id, info);
 	return id;
 }
 
-MeshId MeshManager::CreateQuad(const float width, const float height) const {
-	// Create hardcoded quad mesh for MVP
+MeshId MeshManager::CreateQuad(const float width, const float height) {
+	const MeshId id = pimpl_->next_id++;
+	pimpl_->meshes[id] = {}; // Will be filled by GenerateQuad
+	GenerateQuad(id, width, height);
+	return id;
+}
+
+bool MeshManager::GenerateQuad(const MeshId id, const float width, const float height) const {
+	if (id == INVALID_MESH) {
+		return false;
+	}
+
 	const std::vector<Vertex> vertices = {
 			{{-width / 2, -height / 2, 0}, {0, 0, 1}, {0, 0}},
 			{{width / 2, -height / 2, 0}, {0, 0, 1}, {1, 0}},
@@ -90,25 +159,29 @@ MeshId MeshManager::CreateQuad(const float width, const float height) const {
 	info.vertices = vertices;
 	info.indices = indices;
 
-	return CreateMesh(info);
+	return GenerateMeshGeometry(id, info);
 }
 
 MeshId MeshManager::CreateCube(const float size) const { return CreateCube(size, size, size); }
 
 MeshId MeshManager::CreateCube(const float width, const float height, const float depth) const {
-	// Cube mesh with separate dimensions (24 vertices, 36 indices, unique color per face)
-	const float hw = width * 0.5f; // half width (X)
-	const float hh = height * 0.5f; // half height (Y)
-	const float hd = depth * 0.5f; // half depth (Z)
-	// ReSharper disable once CppVariableCanBeMadeConstexpr - constexpr not supported for color
+	const MeshId id = pimpl_->next_id++;
+	pimpl_->meshes[id] = {};
+	GenerateCube(id, width, height, depth);
+	return id;
+}
+
+bool MeshManager::GenerateCube(const MeshId id, const float width, const float height, const float depth) const {
+	if (id == INVALID_MESH) {
+		return false;
+	}
+
+	const float hw = width * 0.5f;
+	const float hh = height * 0.5f;
+	const float hd = depth * 0.5f;
 	const Color face_colors[6] = {
-			colors::red, // Front
-			colors::green, // Back
-			colors::blue, // Left
-			colors::yellow, // Right
-			colors::magenta, // Top
-			colors::cyan // Bottom
-	};
+			colors::red, colors::green, colors::blue, colors::yellow, colors::magenta, colors::cyan};
+
 	// clang-format off
 	const std::vector<Vertex> vertices = {
 		// Front face (red) - Z+
@@ -142,28 +215,36 @@ MeshId MeshManager::CreateCube(const float width, const float height, const floa
 		{{hw, -hh, hd}, {0, -1, 0}, {1, 1}, {0, 0, 0}, {0, 0, 0}, face_colors[5]},
 		{{-hw, -hh, hd}, {0, -1, 0}, {0, 1}, {0, 0, 0}, {0, 0, 0}, face_colors[5]},
 	};
+
 	const std::vector<uint32_t> indices = {
-		// Front face
-		0, 1, 2, 0, 2, 3,
-		// Back face
-		4, 5, 6, 4, 6, 7,
-		// Left face
-		8, 9, 10, 8, 10, 11,
-		// Right face
-		12, 13, 14, 12, 14, 15,
-		// Top face
-		16, 17, 18, 16, 18, 19,
-		// Bottom face
-		20, 21, 22, 20, 22, 23
+		0, 1, 2, 0, 2, 3,       // Front
+		4, 5, 6, 4, 6, 7,       // Back
+		8, 9, 10, 8, 10, 11,    // Left
+		12, 13, 14, 12, 14, 15, // Right
+		16, 17, 18, 16, 18, 19, // Top
+		20, 21, 22, 20, 22, 23  // Bottom
 	};
 	// clang-format on
+
 	MeshCreateInfo info;
 	info.vertices = vertices;
 	info.indices = indices;
-	return CreateMesh(info);
+
+	return GenerateMeshGeometry(id, info);
 }
 
-MeshId MeshManager::CreateSphere(float radius, uint32_t segments) {
+MeshId MeshManager::CreateSphere(const float radius, const uint32_t segments) {
+	const MeshId id = pimpl_->next_id++;
+	pimpl_->meshes[id] = {};
+	GenerateSphere(id, radius, segments);
+	return id;
+}
+
+bool MeshManager::GenerateSphere(MeshId id, float radius, uint32_t segments) {
+	if (id == INVALID_MESH) {
+		return false;
+	}
+
 	std::vector<Vertex> vertices;
 	std::vector<uint32_t> indices;
 
@@ -244,7 +325,7 @@ MeshId MeshManager::CreateSphere(float radius, uint32_t segments) {
 	info.vertices = vertices;
 	info.indices = indices;
 
-	return CreateMesh(info);
+	return GenerateMeshGeometry(id, info);
 }
 
 void MeshManager::UpdateMesh(MeshId id, std::span<const Vertex> vertices, std::span<const uint32_t> indices) {

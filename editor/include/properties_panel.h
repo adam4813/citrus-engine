@@ -53,8 +53,8 @@ public:
 	bool& VisibleRef() { return is_visible_; }
 
 private:
-	void RenderComponentSections(engine::ecs::Entity entity) const;
-	void RenderComponentFields(engine::ecs::Entity entity, const engine::ecs::ComponentInfo& comp) const;
+	void RenderComponentSections(engine::ecs::Entity entity, engine::scene::Scene* scene) const;
+	void RenderComponentFields(engine::ecs::Entity entity, const engine::ecs::ComponentInfo& comp, engine::scene::Scene* scene) const;
 	void RenderAddComponentButton(engine::ecs::Entity entity) const;
 	void RenderSceneProperties(engine::ecs::ECSWorld& world) const;
 	void RenderAssetProperties(engine::scene::Scene* scene, const AssetSelection& selected_asset) const;

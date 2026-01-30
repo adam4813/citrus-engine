@@ -4,6 +4,7 @@
 #include <flecs.h>
 #include <imgui.h>
 #include <imgui_internal.h>
+#include <iostream>
 #include <string>
 #include <vector>
 
@@ -36,7 +37,7 @@ void PropertiesPanel::Render(
 		ImGui::Text("Entity: %s", name.c_str());
 		ImGui::Separator();
 
-		RenderComponentSections(selected_entity);
+		RenderComponentSections(selected_entity, scene);
 		RenderAddComponentButton(selected_entity);
 	}
 	else if (selected_asset.IsValid() && scene) {
@@ -49,7 +50,7 @@ void PropertiesPanel::Render(
 	ImGui::End();
 }
 
-void PropertiesPanel::RenderComponentSections(const engine::ecs::Entity entity) const {
+void PropertiesPanel::RenderComponentSections(const engine::ecs::Entity entity, engine::scene::Scene* scene) const {
 	for (const auto& registry = engine::ecs::ComponentRegistry::Instance();
 		 const auto& comp : registry.GetComponents()) {
 		if (!entity.has(comp.id)) {
@@ -61,14 +62,14 @@ void PropertiesPanel::RenderComponentSections(const engine::ecs::Entity entity) 
 				ImGui::TextDisabled("(No editable fields)");
 			}
 			else {
-				RenderComponentFields(entity, comp);
+				RenderComponentFields(entity, comp, scene);
 			}
 		}
 	}
 }
 
 void PropertiesPanel::RenderComponentFields(
-		const engine::ecs::Entity entity, const engine::ecs::ComponentInfo& comp) const {
+		const engine::ecs::Entity entity, const engine::ecs::ComponentInfo& comp, engine::scene::Scene* scene) const {
 	// Get raw pointer to component data
 	void* comp_ptr = entity.try_get_mut(comp.id);
 	if (!comp_ptr) {
@@ -156,6 +157,51 @@ void PropertiesPanel::RenderComponentFields(
 		case engine::ecs::FieldType::ListString:
 		{
 			ImGui::TextDisabled("%s: (list editing not yet implemented)", field.name.c_str());
+			break;
+		}
+		case engine::ecs::FieldType::AssetRef:
+		{
+			auto* str = static_cast<std::string*>(field_ptr);
+
+			// Get list of assets of this type from the scene
+			std::vector<std::string> asset_names;
+			asset_names.push_back(""); // Allow empty/none selection
+			if (scene) {
+				for (const auto& asset : scene->GetAssets().GetAll()) {
+					// Get type_key for this asset's type
+					if (const auto* type_info = engine::scene::AssetRegistry::Instance().GetTypeInfo(asset->type);
+						type_info && type_info->type_name == field.asset_type) {
+						asset_names.push_back(asset->name);
+					}
+				}
+			}
+
+			// Find current selection index
+			int current_index = 0;
+			for (size_t i = 0; i < asset_names.size(); ++i) {
+				if (asset_names[i] == *str) {
+					current_index = static_cast<int>(i);
+					break;
+				}
+			}
+
+			// Render combo
+			const char* preview = str->empty() ? "(None)" : str->c_str();
+			if (ImGui::BeginCombo(field.name.c_str(), preview)) {
+				for (size_t i = 0; i < asset_names.size(); ++i) {
+					const bool is_selected = (current_index == static_cast<int>(i));
+					const char* label = asset_names[i].empty() ? "(None)" : asset_names[i].c_str();
+					if (ImGui::Selectable(label, is_selected)) {
+						*str = asset_names[i];
+						modified = true;
+						entity.modified(comp.id);
+					}
+					if (is_selected) {
+						ImGui::SetItemDefaultFocus();
+					}
+				}
+				ImGui::EndCombo();
+			}
 			break;
 		}
 		}

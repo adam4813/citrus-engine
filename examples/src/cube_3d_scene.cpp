@@ -20,7 +20,7 @@ constexpr float AUTO_ROTATE_SPEED_X = 0.3f;
 class Cube3DScene : public examples::ExampleScene {
 private:
 	ShaderId cube_shader_id_{INVALID_SHADER};
-	MeshId cube_mesh_id_{INVALID_MESH};
+	//MeshId cube_mesh_id_{INVALID_MESH};
 	flecs::entity cube_entity_;
 	glm::vec3 light_dir_{0.2f, -1.0f, -0.3f};
 
@@ -32,13 +32,10 @@ public:
 	void Initialize(engine::Engine& engine) override {
 		std::cout << "Cube3DScene: Initialize" << std::endl;
 
-		// Create cube mesh using MeshManager
-		cube_mesh_id_ = engine.renderer->GetMeshManager().CreateCube(1.0f);
-
 		engine::scene::GetSceneManager().LoadSceneFromFile("assets/scenes/cube-3d.json");
 		cube_shader_id_ = engine.renderer->GetShaderManager().FindShader("colored_3d");
 		cube_entity_ = engine.ecs.FindEntityByName("Cube");
-		cube_entity_.get_mut<Renderable>().mesh = cube_mesh_id_;
+		std::cout << "Cube mesh ID " << cube_entity_.get_mut<Renderable>().mesh;
 
 		std::cout << "Cube3DScene: Initialized successfully" << std::endl;
 	}
@@ -49,8 +46,8 @@ public:
 		const auto renderer = engine.renderer;
 		const auto& shader_manager = renderer->GetShaderManager();
 		shader_manager.DestroyShader(cube_shader_id_);
-		const auto& mesh_manager = renderer->GetMeshManager();
-		mesh_manager.DestroyMesh(cube_mesh_id_);
+		//const auto& mesh_manager = renderer->GetMeshManager();
+		//mesh_manager.DestroyMesh(cube_mesh_id_);
 	}
 
 	void Update(engine::Engine& engine, float delta_time) override {

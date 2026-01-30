@@ -106,6 +106,8 @@ public:
 
 	bool LoadAssets() const;
 
+	void UnloadAssets() const;
+
 	SceneAssets& GetAssets();
 
 	const SceneAssets& GetAssets() const;

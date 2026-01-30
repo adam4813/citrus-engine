@@ -207,6 +207,12 @@ bool Scene::LoadAssets() const {
 	return all_succeeded;
 }
 
+void Scene::UnloadAssets() const {
+	for (const auto& asset : pimpl_->scene_assets.GetAll() | std::views::reverse) {
+		asset->Unload();
+	}
+}
+
 SceneAssets& Scene::GetAssets() { return pimpl_->scene_assets; }
 const SceneAssets& Scene::GetAssets() const { return pimpl_->scene_assets; }
 
@@ -234,6 +240,8 @@ SceneId SceneManager::CreateScene(const std::string& name) const {
 void SceneManager::DestroyScene(const SceneId scene_id) const {
 	const auto it = pimpl_->scenes.find(scene_id);
 	if (it != pimpl_->scenes.end()) {
+		UnloadScene(scene_id);
+
 		// Destroy all entities in the scene
 		const auto entities = it->second->GetAllEntities();
 		for (auto entity : entities) {
@@ -399,6 +407,7 @@ bool SceneManager::LoadScene(const SceneId scene_id) const {
 
 void SceneManager::UnloadScene(const SceneId scene_id) const {
 	if (const auto it = pimpl_->scenes.find(scene_id); it != pimpl_->scenes.end()) {
+		it->second->UnloadAssets();
 		it->second->SetLoaded(false);
 	}
 }

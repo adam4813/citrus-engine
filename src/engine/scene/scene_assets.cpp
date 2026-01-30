@@ -95,6 +95,13 @@ bool AssetInfo::Load() {
 	}
 	return false;
 }
+void AssetInfo::Unload() {
+	if (!loaded_) {
+		return; // Not loaded
+	}
+	DoUnload();
+	loaded_ = false;
+}
 
 std::unique_ptr<AssetInfo> AssetInfo::FromJson(const nlohmann::json& j) { return AssetRegistry::Instance().Create(j); }
 
@@ -124,6 +131,12 @@ bool ShaderAssetInfo::DoLoad() {
 	}
 	std::cout << "ShaderAssetInfo: Compiled shader '" << name << "' (id=" << id << ")" << '\n';
 	return true;
+}
+
+void ShaderAssetInfo::DoUnload() {
+	const auto& shader_mgr = rendering::GetRenderer().GetShaderManager();
+	shader_mgr.DestroyShader(id);
+	std::cout << "ShaderAssetInfo: Unloaded shader '" << name << "' (id=" << id << ")" << '\n';
 }
 
 void ShaderAssetInfo::RegisterType() {
@@ -194,6 +207,12 @@ bool MeshAssetInfo::DoLoad() {
 
 	std::cout << "MeshAssetInfo: Generated mesh '" << name << "' (type=" << mesh_type << ", id=" << id << ")" << '\n';
 	return true;
+}
+
+void MeshAssetInfo::DoUnload() {
+	const auto& mesh_mgr = rendering::GetRenderer().GetMeshManager();
+	mesh_mgr.DestroyMesh(id);
+	std::cout << "MeshAssetInfo: Unloaded mesh '" << name << "' (id=" << id << ")" << '\n';
 }
 
 void MeshAssetInfo::RegisterType() {

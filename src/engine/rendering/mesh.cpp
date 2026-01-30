@@ -350,7 +350,13 @@ uint32_t MeshManager::GetIndexCount(const MeshId id) const {
 	return it != pimpl_->meshes.end() ? static_cast<uint32_t>(it->second.indices.size()) : 0;
 }
 
-void MeshManager::DestroyMesh(const MeshId id) const { pimpl_->meshes.erase(id); }
+void MeshManager::DestroyMesh(const MeshId id) const {
+	pimpl_->meshes.erase(id);
+	if (const auto mesh_name = GetMeshName(id); !mesh_name.empty()) {
+		pimpl_->name_to_id.erase(mesh_name);
+		pimpl_->id_to_name.erase(id);
+	}
+}
 
 bool MeshManager::IsValid(const MeshId id) const { return pimpl_->meshes.contains(id); }
 

@@ -252,6 +252,8 @@ struct AssetInfo {
 
 	/// Load/compile this asset. Returns true if already loaded or successfully loaded.
 	bool Load();
+	/// Unload/release this asset
+	void Unload();
 
 	/// Check if this asset has been loaded
 	[[nodiscard]] bool IsLoaded() const { return loaded_; }
@@ -268,6 +270,8 @@ protected:
 
 	/// Override to implement asset-specific loading logic
 	virtual bool DoLoad() { return true; }
+
+	virtual void DoUnload() {}
 };
 
 /// Shader asset definition
@@ -289,6 +293,7 @@ struct ShaderAssetInfo : AssetInfo {
 protected:
 	void DoInitialize() override;
 	bool DoLoad() override;
+	void DoUnload() override;
 };
 
 /// Built-in mesh type names (used as mesh_type field value)
@@ -303,9 +308,9 @@ constexpr const char* FILE = "file";
 /// Mesh asset definition
 /// Can be a built-in type (quad, cube, sphere) with parameters, or a file reference
 struct MeshAssetInfo : AssetInfo {
-	std::string mesh_type;    // "quad", "cube", "sphere", "capsule", "file"
+	std::string mesh_type; // "quad", "cube", "sphere", "capsule", "file"
 	float params[3]{1.0f, 1.0f, 1.0f}; // Interpreted based on mesh_type
-	std::string file_path;    // Only used when mesh_type == "file"
+	std::string file_path; // Only used when mesh_type == "file"
 	rendering::MeshId id{rendering::INVALID_MESH}; // Populated in DoInitialize, geometry in DoLoad
 
 	MeshAssetInfo() : AssetInfo("", AssetType::MESH), mesh_type(mesh_types::QUAD) {}
@@ -320,6 +325,7 @@ struct MeshAssetInfo : AssetInfo {
 protected:
 	void DoInitialize() override;
 	bool DoLoad() override;
+	void DoUnload() override;
 };
 
 /// Polymorphic asset storage using shared_ptr (allows editor to hold references)

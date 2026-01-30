@@ -337,7 +337,12 @@ void ShaderManager::ReloadAllShaders() {
 	// TODO: Implement all shader reloading
 }
 
-void ShaderManager::DestroyShader(const ShaderId id) const { pimpl_->shaders.erase(id); }
+void ShaderManager::DestroyShader(const ShaderId id) const {
+	pimpl_->shaders.erase(id);
+	if (const auto shader_name = GetShaderName(id); !shader_name.empty()) {
+		pimpl_->name_to_id.erase(shader_name);
+	}
+}
 
 bool ShaderManager::IsValid(const ShaderId id) const { return pimpl_->shaders.contains(id); }
 

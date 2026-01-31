@@ -14,15 +14,13 @@ using namespace engine::scene;
 
 namespace {
 constexpr float MOVE_SPEED = 3.0f;
-constexpr float AUTO_ROTATE_SPEED_Y = 0.5f;
-constexpr float AUTO_ROTATE_SPEED_X = 0.3f;
 } // namespace
 
 class Cube3DScene : public examples::ExampleScene {
 private:
-	ShaderId cube_shader_id_{INVALID_SHADER};
 	SceneId scene_id_{INVALID_SCENE};
 	flecs::entity cube_entity_;
+	flecs::entity light_entity_;
 	glm::vec3 light_dir_{0.2f, -1.0f, -0.3f};
 
 public:
@@ -34,8 +32,8 @@ public:
 		std::cout << "Cube3DScene: Initialize" << std::endl;
 
 		scene_id_ = GetSceneManager().LoadSceneFromFile("assets/scenes/cube-3d.json");
-		cube_shader_id_ = engine.renderer->GetShaderManager().FindShader("colored_3d");
 		cube_entity_ = engine.ecs.FindEntityByName("Cube");
+		light_entity_ = engine.ecs.FindEntityByName("Light");
 
 		std::cout << "Cube3DScene: Initialized successfully" << std::endl;
 	}
@@ -77,16 +75,6 @@ public:
 		else {
 			linear = glm::vec3(0.0f);
 		}
-
-		// Auto-rotate the cube for demonstration
-		angular.y = AUTO_ROTATE_SPEED_Y;
-		angular.x = AUTO_ROTATE_SPEED_X;
-
-		const auto camera_pos = engine.ecs.GetActiveCamera().get<Transform>();
-		const auto& shader = engine.renderer->GetShaderManager().GetShader(cube_shader_id_);
-		shader.Use();
-		shader.SetUniform("u_LightDir", light_dir_);
-		shader.SetUniform("u_ViewPos", camera_pos.position);
 	}
 
 	void Render(engine::Engine& engine) override {}
@@ -112,8 +100,9 @@ public:
 		ImGui::Text("Transform:");
 		ImGui::Text("Position: (%.1f, %.1f, %.1f)", position_.x, position_.y, position_.z);
 		ImGui::Text("Rotation: (%.2f, %.2f, %.2f)", rotation_.x, rotation_.y, rotation_.z);
-		ImGui::SliderFloat("Scale", &scale_, 0.5f, 3.0f);
-		cube_pos.scale = glm::vec3(scale_); // Update uniform scale
+		if (ImGui::SliderFloat("Scale", &scale_, 0.5f, 3.0f)) {
+			cube_pos.scale = glm::vec3(scale_); // Update uniform scale
+		}
 
 		if (ImGui::Button("Reset Position")) {
 			position_ = glm::vec3(0.0f, 0.0f, -5.0f);
@@ -122,7 +111,10 @@ public:
 
 		ImGui::Separator();
 		ImGui::Text("Lighting:");
-		ImGui::SliderFloat3("Light Direction", &light_dir_.x, -1.0f, 1.0f);
+		if (ImGui::SliderFloat3("Light Direction", &light_dir_.x, -1.0f, 1.0f)) {
+			auto& light_comp = light_entity_.get_mut<Light>();
+			light_comp.direction = light_dir_;
+		}
 
 		ImGui::End();
 	}

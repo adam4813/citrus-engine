@@ -52,7 +52,6 @@ struct Camera {
 	float far_plane{100.0F};
 	glm::mat4 view_matrix{1.0F};
 	glm::mat4 projection_matrix{1.0F};
-	bool dirty{true};
 };
 
 struct ActiveCamera {}; // Tag for the currently active camera

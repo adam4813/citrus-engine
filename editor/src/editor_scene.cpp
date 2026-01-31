@@ -28,14 +28,14 @@ void EditorScene::Initialize(engine::Engine& engine) {
 	// TODO: Ensure this is excluded from scene serialization (Phase 1.5)
 	editor_camera_ = engine.ecs.CreateEntity("EditorCamera");
 	editor_camera_.set<engine::components::Transform>({{0.0f, 0.0f, 5.0f}}); // Position at z=5
-	editor_camera_.set<engine::components::Camera>(
-			{.target = {0.0f, 0.0f, 0.0f},
-			 .up = {0.0f, 1.0f, 0.0f},
-			 .fov = 60.0f,
-			 .aspect_ratio = 16.0f / 9.0f,
-			 .near_plane = 0.1f,
-			 .far_plane = 100.0f,
-			 .dirty = true});
+	editor_camera_.set<engine::components::Camera>({
+			.target = {0.0f, 0.0f, 0.0f},
+			.up = {0.0f, 1.0f, 0.0f},
+			.fov = 60.0f,
+			.aspect_ratio = 16.0f / 9.0f,
+			.near_plane = 0.1f,
+			.far_plane = 100.0f,
+	});
 	engine.ecs.SetActiveCamera(editor_camera_);
 
 	// Wire up panel callbacks

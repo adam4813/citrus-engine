@@ -92,7 +92,6 @@ ECSWorld::ECSWorld() {
 			.Field("far_plane", &Camera::far_plane)
 			.Field("view_matrix", &Camera::view_matrix, FieldType::ReadOnly)
 			.Field("projection_matrix", &Camera::projection_matrix, FieldType::ReadOnly)
-			.Field("dirty", &Camera::dirty, FieldType::ReadOnly)
 			.Build();
 
 	registry.Register<Sprite>("Sprite", world_)
@@ -413,14 +412,9 @@ void ECSWorld::SetupCameraSystem() const {
 	world_.observer<Transform, Camera>("CameraTransformUpdate")
 			.event(flecs::OnSet)
 			.each([](flecs::iter, size_t, const Transform& transform, Camera& camera) {
-				// Update view matrix
 				camera.view_matrix = glm::lookAt(transform.position, camera.target, camera.up);
-
-				// Update projection matrix
 				camera.projection_matrix = glm::perspective(
 						glm::radians(camera.fov), camera.aspect_ratio, camera.near_plane, camera.far_plane);
-
-				camera.dirty = false;
 			});
 }
 

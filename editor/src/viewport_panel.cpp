@@ -33,7 +33,6 @@ void ViewportPanel::Render(engine::Engine& engine, engine::scene::Scene* scene, 
 		if (active_camera.is_valid() && active_camera.has<engine::components::Camera>()) {
 			auto& camera = active_camera.get_mut<engine::components::Camera>();
 			camera.aspect_ratio = static_cast<float>(viewport_width) / static_cast<float>(viewport_height);
-			camera.dirty = true;
 		}
 	}
 

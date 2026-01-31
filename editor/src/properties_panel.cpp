@@ -194,7 +194,6 @@ void PropertiesPanel::RenderComponentFields(
 					if (ImGui::Selectable(label, is_selected)) {
 						*str = asset_names[i];
 						modified = true;
-						entity.modified(comp.id);
 					}
 					if (is_selected) {
 						ImGui::SetItemDefaultFocus();
@@ -210,6 +209,7 @@ void PropertiesPanel::RenderComponentFields(
 	ImGui::PopID(); // Pop component ID
 
 	if (modified && callbacks_.on_scene_modified) {
+		entity.modified(comp.id);
 		callbacks_.on_scene_modified();
 	}
 }

@@ -64,8 +64,6 @@ ECSWorld::ECSWorld() {
 			.Field("position", &Transform::position)
 			.Field("rotation", &Transform::rotation)
 			.Field("scale", &Transform::scale)
-			.Field("world_matrix", &Transform::world_matrix, FieldType::ReadOnly)
-			.Field("dirty", &Transform::dirty, FieldType::ReadOnly)
 			.Build();
 
 	registry.Register<WorldTransform>("WorldTransform", world_).Category("Core").Build();
@@ -162,9 +160,6 @@ ECSWorld::ECSWorld() {
 	registry.Register<ActiveCamera>("ActiveCamera", world_).Category("Tags").Build();
 	registry.Register<Tilemap>("Tilemap", world_).Category("Rendering").Build();
 
-	// Register WorldTransform and propagation system
-	RegisterTransformSystem();
-
 	// Set up shader reference integration (ShaderRef component, With trait, observers)
 	SetupShaderRefIntegration();
 
@@ -175,7 +170,6 @@ ECSWorld::ECSWorld() {
 	SetupMovementSystem();
 	SetupRotationSystem();
 	SetupCameraSystem();
-	SetupHierarchySystem();
 	SetupSpatialSystem();
 	SetupTransformSystem();
 }
@@ -398,79 +392,66 @@ void ECSWorld::SubmitRenderCommands(const rendering::Renderer& renderer) {
 void ECSWorld::SetupMovementSystem() const {
 	// System to update positions based on velocity
 	world_.system<Transform, const Velocity>().each(
-			[](const flecs::iter itr, size_t, Transform& transform, const Velocity& velocity) {
+			[](const flecs::iter itr, const size_t index, Transform& transform, const Velocity& velocity) {
 				transform.position += velocity.linear * itr.delta_time();
 				transform.rotation += velocity.angular * itr.delta_time();
-				transform.dirty = true;
+				itr.entity(index).modified<Transform>();
 			});
 }
 
 void ECSWorld::SetupRotationSystem() const {
 	// System for entities with Rotating tag - simple rotation animation
-	world_.system<Transform, Rotating>().each([](const flecs::iter itr, size_t, Transform& transform, Rotating) {
-		transform.rotation.y += 1.0F * itr.delta_time(); // 1 radian per second
-		transform.dirty = true;
-	});
+	world_.system<Transform, Rotating>().each(
+			[](const flecs::iter itr, const size_t index, Transform& transform, Rotating) {
+				transform.rotation.y += 1.0F * itr.delta_time(); // 1 radian per second
+				itr.entity(index).modified<Transform>();
+			});
 }
 
 void ECSWorld::SetupCameraSystem() const {
 	// System to update camera matrices when dirty
-	world_.system<Transform, Camera>().each([](flecs::iter, size_t, const Transform& transform, Camera& camera) {
-		if (!camera.dirty && !transform.dirty) {
-			return;
-		}
-		// Update view matrix
-		camera.view_matrix = glm::lookAt(transform.position, camera.target, camera.up);
+	world_.observer<Transform, Camera>("CameraTransformUpdate")
+			.event(flecs::OnSet)
+			.each([](flecs::iter, size_t, const Transform& transform, Camera& camera) {
+				// Update view matrix
+				camera.view_matrix = glm::lookAt(transform.position, camera.target, camera.up);
 
-		// Update projection matrix
-		camera.projection_matrix =
-				glm::perspective(glm::radians(camera.fov), camera.aspect_ratio, camera.near_plane, camera.far_plane);
+				// Update projection matrix
+				camera.projection_matrix = glm::perspective(
+						glm::radians(camera.fov), camera.aspect_ratio, camera.near_plane, camera.far_plane);
 
-		camera.dirty = false;
-	});
-}
-
-void ECSWorld::SetupHierarchySystem() const {
-	// System to propagate transform changes down the hierarchy
-	world_.system<Transform>()
-			.with(flecs::ChildOf, flecs::Wildcard)
-			.each([](const flecs::entity entity, Transform& transform) {
-				if (const auto parent = entity.parent(); parent.is_valid()) {
-					if (const auto parent_transform = parent.get<Transform>(); parent_transform.dirty) {
-						transform.dirty = true;
-					}
-				}
+				camera.dirty = false;
 			});
 }
 
 void ECSWorld::SetupSpatialSystem() const {
 	// System to update spatial bounds when transforms change
-	world_.system<const Transform, Spatial>().each([](flecs::entity, const Transform& transform, Spatial& spatial) {
-		if (transform.dirty) {
-			spatial.bounds_dirty = true;
-		}
-	});
+	world_.observer<const Transform, Spatial>("SpatialBoundsUpdate")
+			.event(flecs::OnSet)
+			.each([](flecs::entity, const Transform&, Spatial& spatial) { spatial.bounds_dirty = true; });
 }
 
 void ECSWorld::SetupTransformSystem() const {
-	// System to update transform matrix
-	world_.system<Transform>().each([](const flecs::iter, size_t, Transform& transform) {
-		component_helpers::UpdateTransformMatrix(transform);
-	});
-}
-
-void ECSWorld::RegisterTransformSystem() const {
-	world_.system<const Transform, WorldTransform>("TransformPropagation")
-			.kind(flecs::OnUpdate)
+	world_.observer<const Transform, WorldTransform>("TransformPropagation")
+			.term_at(0)
+			.self()
+			.up()
+			.event(flecs::OnSet)
 			.each([](const flecs::entity entity, const Transform& transform, WorldTransform& world_transform) {
-				const glm::mat4 local = transform.world_matrix;
+				glm::mat4 world_matrix = component_helpers::ComputeTransformMatrix(transform);
 				if (const auto parent = entity.parent(); parent.is_valid() && parent.has<WorldTransform>()) {
-					const auto [world_matrix] = parent.get<WorldTransform>();
-					world_transform.matrix = world_matrix * local;
+					const auto [parent_world_matrix] = parent.get<WorldTransform>();
+					world_matrix = parent_world_matrix * world_matrix;
 				}
-				else {
-					world_transform.matrix = local;
-				}
+
+				world_transform.matrix = world_matrix;
+
+				// Cascade to children: trigger their Transform observers
+				entity.children([](const flecs::entity child) {
+					if (child.has<Transform>()) {
+						child.modified<Transform>();
+					}
+				});
 			});
 }
 

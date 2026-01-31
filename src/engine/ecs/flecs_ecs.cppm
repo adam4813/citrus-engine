@@ -70,18 +70,14 @@ struct SceneRoot {}; // Tag for scene root entities
 // === COMPONENT HELPER FUNCTIONS ===
 namespace component_helpers {
 // Update transform matrix
-inline void UpdateTransformMatrix(components::Transform& transform) {
-	if (!transform.dirty) {
-		return;
-	}
+inline glm::mat4 ComputeTransformMatrix(const components::Transform& transform) {
 	// Create transformation matrix: T * R * S
 	const glm::mat4 translation = glm::translate(glm::mat4(1.0F), transform.position);
 	const glm::mat4 rotation_x = glm::rotate(glm::mat4(1.0F), transform.rotation.x, glm::vec3(1, 0, 0));
 	const glm::mat4 rotation_y = glm::rotate(glm::mat4(1.0F), transform.rotation.y, glm::vec3(0, 1, 0));
 	const glm::mat4 rotation_z = glm::rotate(glm::mat4(1.0F), transform.rotation.z, glm::vec3(0, 0, 1));
 	const glm::mat4 scale_mat = glm::scale(glm::mat4(1.0F), transform.scale);
-	transform.world_matrix = translation * rotation_z * rotation_y * rotation_x * scale_mat;
-	transform.dirty = false;
+	return translation * rotation_z * rotation_y * rotation_x * scale_mat;
 }
 
 // Update camera view matrix
@@ -180,13 +176,9 @@ private:
 
 	void SetupCameraSystem() const;
 
-	void SetupHierarchySystem() const;
-
 	void SetupSpatialSystem() const;
 
 	void SetupTransformSystem() const;
-
-	void RegisterTransformSystem() const;
 
 	void SetupShaderRefIntegration();
 

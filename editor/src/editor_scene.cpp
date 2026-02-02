@@ -82,6 +82,9 @@ void EditorScene::Shutdown(engine::Engine& engine) {
 }
 
 void EditorScene::Update(engine::Engine& engine, const float delta_time) {
+	// Cache delta_time for RenderUI camera controls
+	last_delta_time_ = delta_time;
+
 	// Update the active scene if in play mode
 	if (state_.is_running) {
 		auto& scene_manager = engine::scene::GetSceneManager();
@@ -130,7 +133,7 @@ void EditorScene::RenderUI(engine::Engine& engine) {
 	RenderMenuBar();
 	hierarchy_panel_.Render(editor_scene_id_, selected_entity_);
 	properties_panel_.Render(selected_entity_, engine.ecs, scene, selected_asset_, scene_active_camera_);
-	viewport_panel_.Render(engine, scene, state_.is_running);
+	viewport_panel_.Render(engine, scene, state_.is_running, editor_camera_, last_delta_time_);
 	asset_browser_panel_.Render(scene, selected_asset_);
 
 	// Handle dialogs

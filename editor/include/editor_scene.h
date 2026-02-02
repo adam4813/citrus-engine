@@ -123,6 +123,7 @@ private:
 	engine::Engine* engine_ = nullptr;
 	EditorState state_;
 	engine::scene::SceneId editor_scene_id_ = engine::scene::INVALID_SCENE;
+	float last_delta_time_ = 0.0f; // Cached for RenderUI camera controls
 
 	// Editor camera (separate from scene cameras, used for viewport navigation in edit mode)
 	flecs::entity editor_camera_;

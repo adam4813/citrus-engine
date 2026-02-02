@@ -4,6 +4,7 @@
 #include <imgui.h>
 
 import engine;
+import glm;
 
 namespace editor {
 
@@ -21,10 +22,17 @@ public:
 	/**
 	 * @brief Render the viewport panel
 	 * @param engine Reference to the engine for scene rendering
-	 * @param scene
+	 * @param scene The scene to render
 	 * @param is_running Whether the scene is in play mode
+	 * @param editor_camera The editor camera entity for fly-mode controls
+	 * @param delta_time Time since last frame for movement speed
 	 */
-	void Render(engine::Engine& engine, engine::scene::Scene* scene, bool is_running);
+	void
+	Render(engine::Engine& engine,
+		   engine::scene::Scene* scene,
+		   bool is_running,
+		   flecs::entity editor_camera,
+		   float delta_time);
 
 	/**
 	 * @brief Check if panel is visible
@@ -43,11 +51,17 @@ public:
 
 private:
 	void RenderPlayModeIndicator(const ImVec2& cursor_pos);
+	void HandleCameraInput(flecs::entity editor_camera, float delta_time);
 
 	engine::rendering::Framebuffer framebuffer_;
 	bool is_visible_ = true;
+	bool is_focused_ = false;
 	uint32_t last_width_ = 0;
 	uint32_t last_height_ = 0;
+
+	// Camera movement settings
+	static constexpr float kMoveSpeed = 5.0f;
+	static constexpr float kFastMoveMultiplier = 3.0f;
 };
 
 } // namespace editor

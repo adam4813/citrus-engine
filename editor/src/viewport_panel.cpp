@@ -1,5 +1,6 @@
 #include "viewport_panel.h"
 
+#include <cmath>
 #include <cstdint>
 #include <imgui.h>
 #ifndef __EMSCRIPTEN__
@@ -10,12 +11,20 @@
 
 namespace editor {
 
-void ViewportPanel::Render(engine::Engine& engine, engine::scene::Scene* scene, const bool is_running) {
+void ViewportPanel::Render(
+		engine::Engine& engine,
+		engine::scene::Scene* scene,
+		const bool is_running,
+		const flecs::entity editor_camera,
+		const float delta_time) {
 	if (!is_visible_) {
 		return;
 	}
 
 	ImGui::Begin("Viewport", &is_visible_);
+
+	// Track focus state for camera controls
+	is_focused_ = ImGui::IsWindowFocused();
 
 	const ImVec2 content_size = ImGui::GetContentRegionAvail();
 	const auto viewport_width = static_cast<std::uint32_t>(content_size.x);
@@ -34,6 +43,11 @@ void ViewportPanel::Render(engine::Engine& engine, engine::scene::Scene* scene, 
 			auto& camera = active_camera.get_mut<engine::components::Camera>();
 			camera.aspect_ratio = static_cast<float>(viewport_width) / static_cast<float>(viewport_height);
 		}
+	}
+
+	// Handle camera input when viewport is focused and not in play mode
+	if (is_focused_ && !is_running && editor_camera.is_valid()) {
+		HandleCameraInput(editor_camera, delta_time);
 	}
 
 	// Render scene to framebuffer
@@ -74,6 +88,68 @@ void ViewportPanel::Render(engine::Engine& engine, engine::scene::Scene* scene, 
 	}
 
 	ImGui::End();
+}
+
+void ViewportPanel::HandleCameraInput(const flecs::entity editor_camera, const float delta_time) {
+	using namespace engine::input;
+	using engine::input::KeyCode;
+
+	if (!editor_camera.has<engine::components::Transform>()) {
+		return;
+	}
+
+	auto& transform = editor_camera.get_mut<engine::components::Transform>();
+
+	// Calculate movement speed (Shift for fast movement)
+	float speed = kMoveSpeed;
+	if (Input::IsKeyPressed(KeyCode::LEFT_SHIFT) || Input::IsKeyPressed(KeyCode::RIGHT_SHIFT)) {
+		speed *= kFastMoveMultiplier;
+	}
+
+	// Calculate camera direction vectors from rotation
+	// Assuming rotation.y is yaw (horizontal rotation)
+	const float yaw = transform.rotation.y;
+	const glm::vec3 forward = glm::normalize(glm::vec3(-std::sin(yaw), 0.0f, -std::cos(yaw)));
+	const glm::vec3 right = glm::normalize(glm::cross(forward, glm::vec3(0.0f, 1.0f, 0.0f)));
+	const glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);
+
+	glm::vec3 movement(0.0f);
+
+	// WASD for horizontal movement
+	if (Input::IsKeyPressed(KeyCode::W)) {
+		movement += forward;
+	}
+	if (Input::IsKeyPressed(KeyCode::S)) {
+		movement -= forward;
+	}
+	if (Input::IsKeyPressed(KeyCode::A)) {
+		movement -= right;
+	}
+	if (Input::IsKeyPressed(KeyCode::D)) {
+		movement += right;
+	}
+
+	// Q/E for vertical movement
+	if (Input::IsKeyPressed(KeyCode::Q)) {
+		movement -= up;
+	}
+	if (Input::IsKeyPressed(KeyCode::E)) {
+		movement += up;
+	}
+
+	// Apply movement if any
+	if (glm::length(movement) > 0.0f) {
+		movement = glm::normalize(movement) * speed * delta_time;
+		transform.position += movement;
+		editor_camera.modified<engine::components::Transform>();
+
+		// Keep camera target in front of the camera so it doesn't orbit a fixed point
+		if (editor_camera.has<engine::components::Camera>()) {
+			auto& camera = editor_camera.get_mut<engine::components::Camera>();
+			camera.target = transform.position + forward;
+			editor_camera.modified<engine::components::Camera>();
+		}
+	}
 }
 
 void ViewportPanel::RenderPlayModeIndicator(const ImVec2& cursor_pos) {

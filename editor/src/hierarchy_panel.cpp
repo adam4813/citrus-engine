@@ -6,31 +6,35 @@
 
 namespace editor {
 
-void HierarchyPanel::SetCallbacks(const EditorCallbacks& callbacks) {
-	callbacks_ = callbacks;
-}
+void HierarchyPanel::SetCallbacks(const EditorCallbacks& callbacks) { callbacks_ = callbacks; }
 
-void HierarchyPanel::Render(engine::scene::SceneId scene_id, engine::ecs::Entity selected_entity) {
-	if (!is_visible_)
+void HierarchyPanel::Render(const engine::scene::SceneId scene_id, const engine::ecs::Entity selected_entity) {
+	if (!is_visible_) {
 		return;
+	}
 
 	ImGuiWindowClass win_class;
 	win_class.DockNodeFlagsOverrideSet = ImGuiDockNodeFlags_NoWindowMenuButton | ImGuiDockNodeFlags_NoDockingOverMe
-										 | ImGuiDockNodeFlags_NoDockingOverOther | ImGuiDockNodeFlags_NoDockingOverEmpty;
+										 | ImGuiDockNodeFlags_NoDockingOverOther
+										 | ImGuiDockNodeFlags_NoDockingOverEmpty;
 	ImGui::SetNextWindowClass(&win_class);
 
 	ImGui::Begin("Hierarchy", &is_visible_);
 
-	ImGui::Text("Scene Entities");
+	// Clickable "Scene" header to deselect entity and show scene properties
+	if (const bool scene_selected = !selected_entity.is_valid(); ImGui::Selectable("Scene", scene_selected)) {
+		if (callbacks_.on_entity_selected) {
+			callbacks_.on_entity_selected(flecs::entity()); // Pass invalid entity to deselect
+		}
+	}
 	ImGui::Separator();
 
 	auto& scene_manager = engine::scene::GetSceneManager();
 
 	if (auto* scene = scene_manager.TryGetScene(scene_id)) {
 		// Get only root-level entities (direct children of scene root)
-		const auto root_entities = GetChildren(scene->GetSceneRoot());
 
-		if (root_entities.empty()) {
+		if (const auto root_entities = GetChildren(scene->GetSceneRoot()); root_entities.empty()) {
 			ImGui::TextDisabled("No entities in scene");
 			ImGui::TextDisabled("Use Scene > Add Entity to create one");
 		}
@@ -47,14 +51,14 @@ void HierarchyPanel::Render(engine::scene::SceneId scene_id, engine::ecs::Entity
 	ImGui::End();
 }
 
-std::vector<engine::ecs::Entity> HierarchyPanel::GetChildren(engine::ecs::Entity entity) {
+std::vector<engine::ecs::Entity> HierarchyPanel::GetChildren(const engine::ecs::Entity entity) {
 	std::vector<engine::ecs::Entity> children;
-	entity.children([&children](engine::ecs::Entity child) { children.push_back(child); });
+	entity.children([&children](const engine::ecs::Entity child) { children.push_back(child); });
 	return children;
 }
 
 void HierarchyPanel::RenderEntityNode(
-		engine::ecs::Entity entity, engine::scene::Scene* scene, engine::ecs::Entity selected_entity) {
+		const engine::ecs::Entity entity, engine::scene::Scene* scene, const engine::ecs::Entity selected_entity) {
 	std::string name = entity.name().c_str();
 	if (name.empty()) {
 		name = "Entity_" + std::to_string(entity.id());
@@ -106,7 +110,7 @@ void HierarchyPanel::RenderEntityNode(
 				callbacks_.on_add_child_entity(entity);
 			}
 		}
-		
+
 		// Add Component submenu - grouped by category
 		if (ImGui::BeginMenu("Add Component")) {
 			const auto& registry = engine::ecs::ComponentRegistry::Instance();
@@ -129,7 +133,7 @@ void HierarchyPanel::RenderEntityNode(
 			}
 			ImGui::EndMenu();
 		}
-		
+
 		ImGui::Separator();
 		if (ImGui::MenuItem("Rename")) {
 			if (callbacks_.on_show_rename_dialog) {
@@ -164,11 +168,9 @@ void HierarchyPanel::RenderEntityNode(
 	}
 }
 
-void HierarchyPanel::ClearNodeState() {
-	node_states_.clear();
-}
+void HierarchyPanel::ClearNodeState() { node_states_.clear(); }
 
-HierarchyNodeState* HierarchyPanel::GetNodeState(uint64_t entity_id) {
+HierarchyNodeState* HierarchyPanel::GetNodeState(const uint64_t entity_id) {
 	auto it = node_states_.find(entity_id);
 	return it != node_states_.end() ? &it->second : nullptr;
 }

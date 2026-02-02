@@ -15,6 +15,9 @@ EditorScene::~EditorScene() = default;
 void EditorScene::Initialize(engine::Engine& engine) {
 	std::cout << "EditorScene: Initializing 2D Scene Editor..." << std::endl;
 
+	// Store engine reference for methods that need it
+	engine_ = &engine;
+
 	// Scene system is already initialized by Engine::Initialize()
 	// Create a new empty scene for editing
 	const auto& scene_manager = engine::scene::GetSceneManager();
@@ -25,8 +28,9 @@ void EditorScene::Initialize(engine::Engine& engine) {
 	state_.is_dirty = false;
 
 	// Create editor camera (not part of the scene, used for viewport navigation)
+	// Manually created in Flecs ECS world, so it isn't under the scene root entity.
 	// TODO: Ensure this is excluded from scene serialization (Phase 1.5)
-	editor_camera_ = engine.ecs.CreateEntity("EditorCamera");
+	editor_camera_ = engine.ecs.GetWorld().entity("EditorCamera");
 	editor_camera_.set<engine::components::Transform>({{0.0f, 0.0f, 5.0f}}); // Position at z=5
 	editor_camera_.set<engine::components::Camera>({
 			.target = {0.0f, 0.0f, 0.0f},
@@ -54,6 +58,7 @@ void EditorScene::Initialize(engine::Engine& engine) {
 	callbacks.on_asset_deleted = [this](const engine::scene::AssetType type, const std::string& name) {
 		OnAssetDeleted(type, name);
 	};
+	callbacks.on_scene_camera_changed = [this](const engine::ecs::Entity camera) { scene_active_camera_ = camera; };
 
 	hierarchy_panel_.SetCallbacks(callbacks);
 	properties_panel_.SetCallbacks(callbacks);
@@ -124,7 +129,7 @@ void EditorScene::RenderUI(engine::Engine& engine) {
 
 	RenderMenuBar();
 	hierarchy_panel_.Render(editor_scene_id_, selected_entity_);
-	properties_panel_.Render(selected_entity_, engine.ecs, scene, selected_asset_);
+	properties_panel_.Render(selected_entity_, engine.ecs, scene, selected_asset_, scene_active_camera_);
 	viewport_panel_.Render(engine, scene, state_.is_running);
 	asset_browser_panel_.Render(scene, selected_asset_);
 
@@ -452,6 +457,16 @@ void EditorScene::OpenScene(const std::string& path) {
 
 	scene_manager.SetActiveScene(editor_scene_id_);
 
+	// Store the scene's active camera (loaded from file) before switching to editor camera
+	scene_active_camera_ = engine_->ecs.GetActiveCamera();
+	// Filter out editor camera in case it was serialized (shouldn't happen but be safe)
+	if (scene_active_camera_ == editor_camera_) {
+		scene_active_camera_ = {};
+	}
+
+	// HACK: Reset to editor camera for viewport rendering
+	engine_->ecs.SetActiveCamera(editor_camera_);
+
 	// Update state
 	state_.current_file_path = path;
 	state_.is_dirty = false;
@@ -473,6 +488,11 @@ void EditorScene::SaveScene() {
 
 	auto& scene_manager = engine::scene::GetSceneManager();
 
+	// HACK: Before saving, switch active camera from editor camera to scene's intended camera
+	// This prevents the editor camera from being serialized as the active camera.
+	// Use scene_active_camera_ if valid, otherwise set to invalid entity (no active camera)
+	engine_->ecs.SetActiveCamera(scene_active_camera_);
+
 	if (const engine::platform::fs::Path file_path(state_.current_file_path);
 		scene_manager.SaveScene(editor_scene_id_, file_path)) {
 		state_.is_dirty = false;
@@ -481,6 +501,9 @@ void EditorScene::SaveScene() {
 	else {
 		std::cerr << "EditorScene: Failed to save scene" << std::endl;
 	}
+
+	// HACK: Restore editor camera as active after save
+	engine_->ecs.SetActiveCamera(editor_camera_);
 }
 
 void EditorScene::SaveSceneAs(const std::string& path) {

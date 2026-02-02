@@ -45,9 +45,6 @@ void ViewportPanel::Render(engine::Engine& engine, engine::scene::Scene* scene, 
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		// Render the scene
-		//auto& scene_manager = engine::scene::GetSceneManager();
-		// The active scene isn't set in edit mode. So we directly render the provided scene.
-		// This needs to be improved later.
 		scene->Render();
 		// The scene's render method isn't set up to call the ECS render submission directly.
 		// So we manually submit the render commands from the ECS world.

@@ -24,10 +24,11 @@ struct EditorCallbacks {
 	EntityCallback on_entity_deleted;
 	VoidCallback on_scene_modified;
 	EntityCallback on_show_rename_dialog;
-	EntityCallback on_add_child_entity; // Add a new entity as child of the given parent
-	ComponentCallback on_add_component; // Add a component by name to an entity
-	AssetCallback on_asset_selected;    // An asset was selected for editing
-	AssetCallback on_asset_deleted;     // An asset was deleted
+	EntityCallback on_add_child_entity;      // Add a new entity as child of the given parent
+	ComponentCallback on_add_component;      // Add a component by name to an entity
+	AssetCallback on_asset_selected;         // An asset was selected for editing
+	AssetCallback on_asset_deleted;          // An asset was deleted
+	EntityCallback on_scene_camera_changed;  // Scene's active camera selection changed
 };
 
 } // namespace editor

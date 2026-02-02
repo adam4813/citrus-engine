@@ -16,7 +16,8 @@ void PropertiesPanel::Render(
 		const engine::ecs::Entity selected_entity,
 		engine::ecs::ECSWorld& world,
 		engine::scene::Scene* scene,
-		const AssetSelection& selected_asset) {
+		const AssetSelection& selected_asset,
+		const engine::ecs::Entity scene_active_camera) {
 	if (!is_visible_)
 		return;
 
@@ -44,7 +45,7 @@ void PropertiesPanel::Render(
 		RenderAssetProperties(scene, selected_asset);
 	}
 	else {
-		RenderSceneProperties(world);
+		RenderSceneProperties(world, scene_active_camera);
 	}
 
 	ImGui::End();
@@ -245,32 +246,37 @@ void PropertiesPanel::RenderAddComponentButton(const engine::ecs::Entity entity)
 	}
 }
 
-void PropertiesPanel::RenderSceneProperties(engine::ecs::ECSWorld& world) const {
+void PropertiesPanel::RenderSceneProperties(
+		engine::ecs::ECSWorld& world, const engine::ecs::Entity scene_active_camera) const {
 	ImGui::Text("Scene Properties");
 	ImGui::Separator();
 
-	// Collect all entities with Camera component
+	// Collect all entities with Camera component (excluding EditorCamera)
 	std::vector<flecs::entity> camera_entities;
 	const flecs::world& flecs_world = world.GetWorld();
 
 	flecs_world.query<engine::components::Camera>().each(
-			[&](const flecs::entity entity, const engine::components::Camera&) { camera_entities.push_back(entity); });
+			[&](const flecs::entity entity, const engine::components::Camera&) {
+				// HACK: Filter out EditorCamera - it's not part of the scene
+				if (const char* name = entity.name().c_str(); name && std::string(name) == "EditorCamera") {
+					return;
+				}
+				camera_entities.push_back(entity);
+			});
 
-	// Active Camera selection
+	// Active Camera selection (uses scene_active_camera, not ECS active camera which is the editor camera)
 	if (ImGui::CollapsingHeader("Camera", ImGuiTreeNodeFlags_DefaultOpen)) {
-		const flecs::entity active_camera = world.GetActiveCamera();
-
-		// Build preview string
+		// Build preview string from scene_active_camera (not ECS active camera)
 		std::string preview = "(None)";
 		int current_index = -1;
-		if (active_camera.is_valid()) {
-			preview = active_camera.name().c_str();
+		if (scene_active_camera.is_valid()) {
+			preview = scene_active_camera.name().c_str();
 			if (preview.empty()) {
-				preview = "Entity_" + std::to_string(active_camera.id());
+				preview = "Entity_" + std::to_string(scene_active_camera.id());
 			}
 			// Find index
 			for (size_t i = 0; i < camera_entities.size(); ++i) {
-				if (camera_entities[i] == active_camera) {
+				if (camera_entities[i] == scene_active_camera) {
 					current_index = static_cast<int>(i);
 					break;
 				}
@@ -280,7 +286,12 @@ void PropertiesPanel::RenderSceneProperties(engine::ecs::ECSWorld& world) const 
 		if (ImGui::BeginCombo("Active Camera", preview.c_str())) {
 			// Option to clear active camera
 			if (ImGui::Selectable("(None)", current_index == -1)) {
-				// Clear is not directly supported, but could be added
+				if (callbacks_.on_scene_camera_changed) {
+					callbacks_.on_scene_camera_changed(flecs::entity()); // Pass invalid entity to clear
+				}
+				if (callbacks_.on_scene_modified) {
+					callbacks_.on_scene_modified();
+				}
 			}
 
 			for (size_t i = 0; i < camera_entities.size(); ++i) {
@@ -292,7 +303,9 @@ void PropertiesPanel::RenderSceneProperties(engine::ecs::ECSWorld& world) const 
 
 				const bool is_selected = (static_cast<int>(i) == current_index);
 				if (ImGui::Selectable(cam_name.c_str(), is_selected)) {
-					world.SetActiveCamera(cam_entity);
+					if (callbacks_.on_scene_camera_changed) {
+						callbacks_.on_scene_camera_changed(cam_entity);
+					}
 					if (callbacks_.on_scene_modified) {
 						callbacks_.on_scene_modified();
 					}

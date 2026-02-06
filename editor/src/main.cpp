@@ -55,7 +55,8 @@ void main_loop() {
 	}
 
 	// Poll events first
-	glfwPollEvents();
+	// TODO: Remove when we can call g_app_state->engine.Update
+	engine::input::Input::PollEvents();
 
 	// Begin rendering
 	if (g_app_state->engine.renderer) {
@@ -66,7 +67,8 @@ void main_loop() {
 	g_app_state->editor_scene.Update(g_app_state->engine, delta_time);
 
 	// Update engine systems
-	g_app_state->engine.Update(delta_time);
+	// We cannot call this in edit mode, all in-game systems are ran e.g. physics
+	//g_app_state->engine.Update(delta_time);
 
 	// Render
 	if (g_app_state->engine.renderer) {

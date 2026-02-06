@@ -62,6 +62,13 @@ private:
 	// Camera movement settings
 	static constexpr float kMoveSpeed = 5.0f;
 	static constexpr float kFastMoveMultiplier = 3.0f;
+	static constexpr float kMouseSensitivity = 0.003f;
+
+	// Mouse look state
+	bool is_right_mouse_down_ = false;
+	float last_mouse_x_ = 0.0f;
+	float last_mouse_y_ = 0.0f;
+	glm::quat camera_orientation_ = glm::quat(1.0f, 0.0f, 0.0f, 0.0f);
 };
 
 } // namespace editor

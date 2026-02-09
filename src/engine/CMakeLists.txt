@@ -46,6 +46,7 @@ target_sources(engine-core
     assets/tileset.cppm
     platform/platform.cppm
     components/components.cppm
+    ecs/component_registry.cppm
     ecs/flecs_ecs.cppm
     input/input.cppm
     os/os.cppm
@@ -54,9 +55,12 @@ target_sources(engine-core
     rendering/shader.cppm
     rendering/mesh.cppm
     rendering/material.cppm
+    rendering/framebuffer.cppm
     rendering/renderer.cppm
     rendering/tilemap_renderer.cppm
     rendering/rendering.cppm
+    scene/scene_assets.cppm
+    scene/scene_serializer.cppm
     scene/scene.cppm
     scripting/scripting_backend.cppm
     scripting/scripting_system.cppm
@@ -108,6 +112,7 @@ target_sources(engine-core PRIVATE
     assets/asset_manager.cpp
     assets/tileset.cpp
 
+    ecs/component_registry.cpp
     ecs/ecs_world.cpp
 
     input/input.cpp
@@ -127,10 +132,13 @@ target_sources(engine-core PRIVATE
     rendering/texture.cpp
     rendering/mesh.cpp
     rendering/material.cpp
+    rendering/framebuffer.cpp
     rendering/tilemap_renderer.cpp
 
     # Scene module implementation
+    scene/scene_assets.cpp
     scene/scene_manager.cpp
+    scene/scene_serializer.cpp
 
     # Scripting module implementation
     scripting/lua_backend.cpp

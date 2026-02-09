@@ -13,6 +13,14 @@ failures.
 
 ### Complete Setup Checklist
 
+**For Windows Native Builds:**
+
+1. ✅ Open a Visual Studio Developer Command Prompt or PowerShell (required for MSVC toolchain)
+2. ✅ Clone and bootstrap vcpkg
+3. ✅ Set VCPKG_ROOT environment variable
+4. ✅ Run CMake configure with x64-windows triplet
+5. ✅ Build
+
 **For Linux Native Builds:**
 
 1. ✅ Install system dependencies (X11, OpenGL, Clang-18, ninja-build)
@@ -33,7 +41,56 @@ failures.
 
 ---
 
+### Editor Project
+
+The editor is a **separate CMake project** located in the `editor/` directory. It has its own CMakeLists.txt and vcpkg.json.
+
+**To build/run the editor:**
+1. Change directory to `editor/`
+2. Configure: `cmake --preset cli-native -DVCPKG_TARGET_TRIPLET=x64-windows`
+3. Build: `cmake --build --preset cli-native-debug`
+4. The editor executable will be at `editor/build/cli-native/Debug/citrus-scene-editor.exe`
+
+**After modifying engine code:**
+When you modify engine source files (`src/engine/**`), you must:
+1. **Bump the version** in `ports/citrus-engine/vcpkg.json` (e.g., `0.0.7` → `0.0.8`)
+2. **Reconfigure** the editor project to pick up the new engine:
+   ```bash
+   cd editor && cmake --preset cli-native -DVCPKG_TARGET_TRIPLET=x64-windows
+   ```
+
+The engine is installed via vcpkg manifest mode using an overlay port (`../ports/citrus-engine`). Bumping the version and reconfiguring triggers vcpkg to rebuild and reinstall the engine package.
+
+**Note**: On Windows, building from CLI requires a Visual Studio Developer environment. Building from CLion or Visual Studio IDE works without additional setup.
+
 ### Step 1: Install System Dependencies
+
+**Windows (Native Build)**:
+
+- Windows: Install Visual Studio 2022 with C++ tools OR Clang-18+
+
+#### Windows: Visual Studio Compiler Environment
+
+**When using MSVC (Visual Studio compiler)**, you must initialize the Visual Studio toolchain environment before building. Wrap build commands with `vcvars64.bat`:
+
+```powershell
+# PowerShell - wrap the entire command
+cmd /c '"C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars64.bat" && cmake --build --preset cli-native-debug 2>&1'
+
+# For tests
+cmd /c '"C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars64.bat" && ctest --preset cli-native-test-debug --output-on-failure 2>&1'
+```
+
+**How to detect MSVC**: Check the CMake output during configure - it will show the compiler path containing `MSVC` or `cl.exe`, e.g.:
+```
+Compiler found: C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/.../bin/Hostx64/x64/cl.exe
+```
+
+**Why**: The `vcvars64.bat` script initializes environment variables that tell the compiler where to find the Windows SDK and standard library headers.
+
+**Alternative paths** (adjust for your VS version/edition):
+- VS 2022 Professional: `C:\Program Files\Microsoft Visual Studio\2022\Professional\VC\Auxiliary\Build\vcvars64.bat`
+- VS 2019: `C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvars64.bat`
 
 **Linux (Native Build)**:
 
@@ -485,6 +542,12 @@ After successful build, run tests before completing work:
 - macOS: Xcode 12+ / Clang 10+
 
 ### Code Standards
+
+#### Code Formatting
+
+- **Line endings**: Use LF (Unix-style), not CRLF
+- **Formatting**: Use `clang-format` - the project includes a `.clang-format` configuration
+- **Run formatter**: Before committing, run `clang-format -i <files>` or use IDE integration
 
 #### Modern C++20 Requirements
 

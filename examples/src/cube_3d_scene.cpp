@@ -10,19 +10,17 @@ import engine;
 
 using namespace engine::components;
 using namespace engine::rendering;
+using namespace engine::scene;
 
 namespace {
 constexpr float MOVE_SPEED = 3.0f;
-constexpr float AUTO_ROTATE_SPEED_Y = 0.5f;
-constexpr float AUTO_ROTATE_SPEED_X = 0.3f;
 } // namespace
 
 class Cube3DScene : public examples::ExampleScene {
 private:
-	ShaderId cube_shader_id_{INVALID_SHADER};
-	MeshId cube_mesh_id_{INVALID_MESH};
+	SceneId scene_id_{INVALID_SCENE};
 	flecs::entity cube_entity_;
-	flecs::entity camera_entity_;
+	flecs::entity light_entity_;
 	glm::vec3 light_dir_{0.2f, -1.0f, -0.3f};
 
 public:
@@ -33,38 +31,16 @@ public:
 	void Initialize(engine::Engine& engine) override {
 		std::cout << "Cube3DScene: Initialize" << std::endl;
 
-		// Create cube mesh using MeshManager
-		cube_mesh_id_ = engine.renderer->GetMeshManager().CreateCube(1.0f);
-
-		// Load the colored 3D shader
-		cube_shader_id_ = engine.renderer->GetShaderManager().LoadShader(
-				"colored_3d", "shaders/colored_3d.vert", "shaders/colored_3d.frag");
-
-		auto& ecs = engine.ecs;
-		camera_entity_ = ecs.CreateEntity("MainCamera");
-		camera_entity_.set<Transform>({{0.0f, 0.0f, 5.0f}});
-		camera_entity_.set<Camera>({.target = {0.0f, 0.0f, 4.0f}});
-		ecs.SetActiveCamera(camera_entity_);
-
-		cube_entity_ = ecs.CreateEntity();
-		cube_entity_.set<Transform>({.position = {0.0f, 0.0f, -5.0f}});
-		cube_entity_.set<Renderable>({.mesh = cube_mesh_id_, .shader = cube_shader_id_});
-		cube_entity_.set<Velocity>({});
+		scene_id_ = GetSceneManager().LoadSceneFromFile("assets/scenes/cube-3d.json");
+		cube_entity_ = engine.ecs.FindEntityByName("Cube");
+		light_entity_ = engine.ecs.FindEntityByName("Light");
 
 		std::cout << "Cube3DScene: Initialized successfully" << std::endl;
 	}
 
 	void Shutdown(engine::Engine& engine) override {
 		std::cout << "Cube3DScene: Shutdown" << std::endl;
-
-		cube_entity_.destruct();
-		camera_entity_.destruct();
-
-		const auto renderer = engine.renderer;
-		const auto& shader_manager = renderer->GetShaderManager();
-		shader_manager.DestroyShader(cube_shader_id_);
-		const auto& mesh_manager = renderer->GetMeshManager();
-		mesh_manager.DestroyMesh(cube_mesh_id_);
+		GetSceneManager().DestroyScene(scene_id_);
 	}
 
 	void Update(engine::Engine& engine, float delta_time) override {
@@ -99,16 +75,6 @@ public:
 		else {
 			linear = glm::vec3(0.0f);
 		}
-
-		// Auto-rotate the cube for demonstration
-		angular.y = AUTO_ROTATE_SPEED_Y;
-		angular.x = AUTO_ROTATE_SPEED_X;
-
-		const auto camera_pos = engine.ecs.GetActiveCamera().get<Transform>();
-		const auto& shader = engine.renderer->GetShaderManager().GetShader(cube_shader_id_);
-		shader.Use();
-		shader.SetUniform("u_LightDir", light_dir_);
-		shader.SetUniform("u_ViewPos", camera_pos.position);
 	}
 
 	void Render(engine::Engine& engine) override {}
@@ -134,8 +100,9 @@ public:
 		ImGui::Text("Transform:");
 		ImGui::Text("Position: (%.1f, %.1f, %.1f)", position_.x, position_.y, position_.z);
 		ImGui::Text("Rotation: (%.2f, %.2f, %.2f)", rotation_.x, rotation_.y, rotation_.z);
-		ImGui::SliderFloat("Scale", &scale_, 0.5f, 3.0f);
-		cube_pos.scale = glm::vec3(scale_); // Update uniform scale
+		if (ImGui::SliderFloat("Scale", &scale_, 0.5f, 3.0f)) {
+			cube_pos.scale = glm::vec3(scale_); // Update uniform scale
+		}
 
 		if (ImGui::Button("Reset Position")) {
 			position_ = glm::vec3(0.0f, 0.0f, -5.0f);
@@ -144,7 +111,10 @@ public:
 
 		ImGui::Separator();
 		ImGui::Text("Lighting:");
-		ImGui::SliderFloat3("Light Direction", &light_dir_.x, -1.0f, 1.0f);
+		if (ImGui::SliderFloat3("Light Direction", &light_dir_.x, -1.0f, 1.0f)) {
+			auto& light_comp = light_entity_.get_mut<Light>();
+			light_comp.direction = light_dir_;
+		}
 
 		ImGui::End();
 	}

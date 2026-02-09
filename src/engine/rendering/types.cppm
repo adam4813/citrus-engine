@@ -2,6 +2,7 @@ module;
 
 #include <cstddef>
 #include <cstdint>
+#include <string>
 #include <vector>
 
 export module engine.rendering:types;
@@ -112,6 +113,18 @@ struct Renderable {
 	uint32_t render_layer{0};
 	std::vector<RenderFlagStackEntry> render_state_stack;
 	float alpha{1.0F};
+};
+
+// Asset reference component for shader - stores shader name for serialization
+// An observer resolves the name to ShaderId and updates Renderable::shader
+struct ShaderRef {
+	std::string name;
+};
+
+// Asset reference component for mesh - stores mesh asset name for serialization
+// An observer resolves the name to MeshId and updates Renderable::mesh
+struct MeshRef {
+	std::string name;
 };
 
 // Light component for lighting calculations

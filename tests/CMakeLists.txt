@@ -109,3 +109,13 @@ add_engine_test(ui_tab_container_test
 add_engine_test(ui_tooltip_test
     ui_tooltip_test.cpp
 )
+
+# Add Scene Serialization test
+add_engine_test(scene_serialization_test
+    scene_serialization_test.cpp
+)
+
+# Add scene assets test
+add_engine_test(scene_assets_test
+    scene_assets_test.cpp
+)

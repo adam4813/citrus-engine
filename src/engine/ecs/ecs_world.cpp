@@ -43,6 +43,9 @@ void RegisterGlmTypes(const flecs::world& world) {
 }
 
 ECSWorld::ECSWorld() {
+	// Set up custom pipeline phases FIRST (before any systems)
+	SetupPipeline();
+
 	// Register GLM types first - required for proper flecs reflection
 	RegisterGlmTypes(world_);
 
@@ -158,6 +161,10 @@ ECSWorld::ECSWorld() {
 	registry.Register<SceneRoot>("SceneRoot", world_).Category("Tags").Build();
 	registry.Register<ActiveCamera>("ActiveCamera", world_).Category("Tags").Build();
 	registry.Register<Tilemap>("Tilemap", world_).Category("Rendering").Build();
+
+	// Register scene organization components
+	registry.Register<Group>("Group", world_).Category("Scene").Build();
+	registry.Register<Tags>("Tags", world_).Category("Scene").Field("tags", &Tags::tags).Build();
 
 	// Set up shader reference integration (ShaderRef component, With trait, observers)
 	SetupShaderRefIntegration();
@@ -333,8 +340,24 @@ ECSWorld::QuerySphere(const glm::vec3& center, const float radius, const uint32_
 	return result;
 }
 
-// Progress the world (run systems)
-void ECSWorld::Progress(const float delta_time) const { world_.progress(delta_time); }
+void ECSWorld::SetupPipeline() {
+	simulation_phase_ = world_.entity("Simulation").add(flecs::Phase).depends_on(flecs::OnUpdate);
+}
+
+// Progress all phases (standard full update)
+void ECSWorld::ProgressAll(const float delta_time) const {
+	simulation_phase_.enable();
+	world_.progress(delta_time);
+}
+
+// Progress edit mode (skip simulation, run post-simulation and pre-render)
+void ECSWorld::ProgressEditMode(const float delta_time) const {
+	simulation_phase_.disable();
+	world_.progress(delta_time);
+}
+
+// Legacy method - kept for backwards compatibility
+void ECSWorld::Progress(const float delta_time) const { ProgressAll(delta_time); }
 
 // Submit render commands for all renderable entities
 void ECSWorld::SubmitRenderCommands(const rendering::Renderer& renderer) {
@@ -389,9 +412,10 @@ void ECSWorld::SubmitRenderCommands(const rendering::Renderer& renderer) {
 }
 
 void ECSWorld::SetupMovementSystem() const {
-	// System to update positions based on velocity
-	world_.system<Transform, const Velocity>().each(
-			[](const flecs::iter itr, const size_t index, Transform& transform, const Velocity& velocity) {
+	// System to update positions based on velocity (Simulation phase)
+	world_.system<Transform, const Velocity>()
+			.kind(simulation_phase_)
+			.each([](const flecs::iter itr, const size_t index, Transform& transform, const Velocity& velocity) {
 				transform.position += velocity.linear * itr.delta_time();
 				transform.rotation += velocity.angular * itr.delta_time();
 				itr.entity(index).modified<Transform>();
@@ -399,9 +423,10 @@ void ECSWorld::SetupMovementSystem() const {
 }
 
 void ECSWorld::SetupRotationSystem() const {
-	// System for entities with Rotating tag - simple rotation animation
-	world_.system<Transform, Rotating>().each(
-			[](const flecs::iter itr, const size_t index, Transform& transform, Rotating) {
+	// System for entities with Rotating tag - simple rotation animation (Simulation phase)
+	world_.system<Transform, Rotating>()
+			.kind(simulation_phase_)
+			.each([](const flecs::iter itr, const size_t index, Transform& transform, Rotating) {
 				transform.rotation.y += 1.0F * itr.delta_time(); // 1 radian per second
 				itr.entity(index).modified<Transform>();
 			});

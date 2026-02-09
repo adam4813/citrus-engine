@@ -9,6 +9,23 @@ import glm;
 namespace editor {
 
 /**
+ * @brief Transform gizmo modes
+ */
+enum class GizmoMode {
+	Translate,
+	Rotate,
+	Scale
+};
+
+/**
+ * @brief Coordinate space for gizmos
+ */
+enum class GizmoSpace {
+	World,
+	Local
+};
+
+/**
  * @brief Scene viewport panel
  *
  * Renders the scene to a framebuffer and displays it in the viewport.
@@ -54,8 +71,15 @@ public:
 private:
 	void RenderPlayModeIndicator(const ImVec2& cursor_pos);
 	void HandleCameraInput(flecs::entity editor_camera, float delta_time);
+	void HandleGizmoInput();
 	void RenderTransformGizmo(flecs::entity selected_entity, flecs::entity editor_camera,
 							  const ImVec2& viewport_min, const ImVec2& viewport_size);
+	void RenderTranslateGizmo(flecs::entity selected_entity, flecs::entity editor_camera,
+							  const ImVec2& viewport_min, const ImVec2& viewport_size);
+	void RenderRotationGizmo(flecs::entity selected_entity, flecs::entity editor_camera,
+							 const ImVec2& viewport_min, const ImVec2& viewport_size);
+	void RenderScaleGizmo(flecs::entity selected_entity, flecs::entity editor_camera,
+						  const ImVec2& viewport_min, const ImVec2& viewport_size);
 	void RenderOrientationGizmo(const ImVec2& viewport_min, const ImVec2& viewport_size);
 
 	struct AxisDrawParams {
@@ -104,8 +128,20 @@ private:
 	int dragging_axis_ = -1; // -1=none, 0=X, 1=Y, 2=Z
 	ImVec2 drag_start_mouse_{};
 	glm::vec3 drag_start_position_{};
+	glm::vec3 drag_start_rotation_{}; // For rotation gizmo
+	glm::vec3 drag_start_scale_{1.0f, 1.0f, 1.0f}; // For scale gizmo
 	ImVec2 drag_axis_screen_dir_{};
 	float drag_world_per_pixel_ = 0.0f;
+	float drag_start_angle_ = 0.0f; // For rotation gizmo
+
+	// Gizmo mode and settings
+	GizmoMode gizmo_mode_ = GizmoMode::Translate;
+	GizmoSpace gizmo_space_ = GizmoSpace::World;
+	
+	// Snap settings
+	float translate_snap_ = 0.5f; // Default snap increment for translation
+	float rotate_snap_ = 15.0f;   // Default snap increment for rotation (degrees)
+	float scale_snap_ = 0.1f;     // Default snap increment for scale
 };
 
 } // namespace editor

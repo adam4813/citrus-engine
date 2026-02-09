@@ -97,11 +97,21 @@ inline glm::mat4 GetViewProjectionMatrix(const components::Camera& camera) {
 }
 } // namespace component_helpers
 
+// ECS system phases for selective updates
+enum class SystemPhase {
+	Simulation, // Gameplay systems (physics, AI, scripts, game logic)
+	PostSimulation, // Transform propagation, bounds updates
+	PreRender // Render command submission, UI updates
+};
+
 // Flecs world wrapper with engine-specific functionality
 class ECSWorld {
 private:
 	flecs::world world_;
 	flecs::entity active_camera_;
+
+	// Phase entities for custom pipeline
+	flecs::entity simulation_phase_;
 
 public:
 	ECSWorld();
@@ -160,7 +170,24 @@ public:
 	[[nodiscard]] std::vector<flecs::entity>
 	QuerySphere(const glm::vec3& center, float radius, uint32_t layer_mask = 0xFFFFFFFF) const;
 
-	// Progress the world (run systems)
+	// === ECS UPDATE (PHASED) ===
+
+	// Progress simulation phase only (gameplay systems)
+	void ProgressSimulation(float delta_time) const;
+
+	// Progress post-simulation phase (transform propagation, bounds)
+	void ProgressPostSimulation(float delta_time) const;
+
+	// Progress pre-render phase (render command submission, UI)
+	void ProgressPreRender(float delta_time) const;
+
+	// Progress all phases (standard full update)
+	void ProgressAll(float delta_time) const;
+
+	// Progress edit mode (skip simulation, run post-simulation and pre-render)
+	void ProgressEditMode(float delta_time) const;
+
+	// Legacy method - kept for backwards compatibility, calls ProgressAll
 	void Progress(float delta_time) const;
 
 	// Query entities with specific components
@@ -170,6 +197,8 @@ public:
 	void SubmitRenderCommands(const rendering::Renderer& renderer);
 
 private:
+	void SetupPipeline();
+
 	void SetupMovementSystem() const;
 
 	void SetupRotationSystem() const;

@@ -3,6 +3,7 @@ module;
 #include <cmath>
 #include <cstdint>
 #include <memory>
+#include <string>
 #include <unordered_map>
 #include <vector>
 
@@ -55,6 +56,34 @@ struct Camera {
 };
 
 struct ActiveCamera {}; // Tag for the currently active camera
+
+// === SCENE ORGANIZATION COMPONENTS ===
+
+// Tag component for organizational group entities (folders in hierarchy)
+struct Group {};
+
+// Tags for categorizing and filtering entities
+struct Tags {
+	std::vector<std::string> tags;
+
+	void AddTag(const std::string& tag) {
+		if (std::find(tags.begin(), tags.end(), tag) == tags.end()) {
+			tags.push_back(tag);
+		}
+	}
+
+	void RemoveTag(const std::string& tag) {
+		std::erase(tags, tag);
+	}
+
+	bool HasTag(const std::string& tag) const {
+		return std::find(tags.begin(), tags.end(), tag) != tags.end();
+	}
+
+	void ClearTags() {
+		tags.clear();
+	}
+};
 
 // === TILEMAP COMPONENTS ===
 

@@ -11,7 +11,8 @@ export namespace engine::input {
     enum class KeyCode : uint16_t {
         UNKNOWN = 0,
         W, A, S, D,
-        Q, E,
+        Q, E, R,
+        X,
         UP, DOWN, LEFT, RIGHT,
         ESCAPE, SPACE, ENTER,
         LEFT_SHIFT, RIGHT_SHIFT,

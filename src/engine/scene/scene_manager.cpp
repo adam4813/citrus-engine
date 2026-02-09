@@ -32,6 +32,13 @@ struct Scene::Impl {
 	platform::fs::Path file_path;
 	std::pair<Vec3, Vec3> world_bounds{{-1000.0f, -1000.0f, -1000.0f}, {1000.0f, 1000.0f, 1000.0f}};
 
+	// Scene settings
+	glm::vec4 background_color{0.2f, 0.3f, 0.4f, 1.0f}; // Default background color
+	glm::vec4 ambient_light{0.1f, 0.1f, 0.1f, 1.0f}; // Ambient light color with intensity
+	glm::vec2 gravity{0.0f, -9.81f}; // Physics gravity (disabled until F18)
+	std::string author;
+	std::string description;
+
 	// Asset management
 	SceneAssets scene_assets; // Shader, texture, and other asset definitions
 
@@ -152,6 +159,23 @@ bool Scene::IsActive() const { return pimpl_->active; }
 
 void Scene::SetLoaded(const bool loaded) const { pimpl_->loaded = loaded; }
 bool Scene::IsLoaded() const { return pimpl_->loaded; }
+
+// === SCENE SETTINGS ===
+
+void Scene::SetBackgroundColor(const glm::vec4& color) const { pimpl_->background_color = color; }
+glm::vec4 Scene::GetBackgroundColor() const { return pimpl_->background_color; }
+
+void Scene::SetAmbientLight(const glm::vec4& color) const { pimpl_->ambient_light = color; }
+glm::vec4 Scene::GetAmbientLight() const { return pimpl_->ambient_light; }
+
+void Scene::SetGravity(const glm::vec2& gravity) const { pimpl_->gravity = gravity; }
+glm::vec2 Scene::GetGravity() const { return pimpl_->gravity; }
+
+void Scene::SetAuthor(const std::string& author) const { pimpl_->author = author; }
+std::string Scene::GetAuthor() const { return pimpl_->author; }
+
+void Scene::SetDescription(const std::string& description) const { pimpl_->description = description; }
+std::string Scene::GetDescription() const { return pimpl_->description; }
 
 void Scene::SetFilePath(const platform::fs::Path& path) const { pimpl_->file_path = path; }
 

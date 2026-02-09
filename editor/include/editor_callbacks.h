@@ -2,16 +2,20 @@
 
 #include <flecs.h>
 #include <functional>
+#include <memory>
 #include <string>
 
 import engine;
 
 namespace editor {
 
+class ICommand;
+
 using EntityCallback = std::function<void(engine::ecs::Entity)>;
 using VoidCallback = std::function<void()>;
 using ComponentCallback = std::function<void(engine::ecs::Entity, const std::string&)>;
 using AssetCallback = std::function<void(engine::scene::AssetType, const std::string&)>;
+using CommandCallback = std::function<void(std::unique_ptr<ICommand>)>;
 
 /**
  * @brief Callbacks for panel-to-editor communication
@@ -29,6 +33,7 @@ struct EditorCallbacks {
 	AssetCallback on_asset_selected;         // An asset was selected for editing
 	AssetCallback on_asset_deleted;          // An asset was deleted
 	EntityCallback on_scene_camera_changed;  // Scene's active camera selection changed
+	CommandCallback on_execute_command;      // Execute a command through the command history
 };
 
 } // namespace editor

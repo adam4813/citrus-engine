@@ -28,6 +28,11 @@ void ViewportPanel::Render(
 	// Track focus state for camera controls
 	is_focused_ = ImGui::IsWindowFocused();
 
+	// Handle gizmo mode switching (when viewport is focused and not in play mode)
+	if (is_focused_ && !is_running) {
+		HandleGizmoInput();
+	}
+
 	const ImVec2 content_size = ImGui::GetContentRegionAvail();
 	const auto viewport_width = static_cast<std::uint32_t>(content_size.x);
 	const auto viewport_height = static_cast<uint32_t>(content_size.y);
@@ -87,6 +92,39 @@ void ViewportPanel::Render(
 			&& selected_entity.has<engine::components::Transform>()) {
 			const ImVec2 viewport_min = ImGui::GetItemRectMin();
 			RenderTransformGizmo(selected_entity, editor_camera, viewport_min, content_size);
+			
+			// Draw gizmo mode indicator
+			ImDrawList* draw_list = ImGui::GetWindowDrawList();
+			const char* mode_text = gizmo_mode_ == GizmoMode::Translate ? "Translate (W)" 
+									: gizmo_mode_ == GizmoMode::Rotate ? "Rotate (E)" 
+									: "Scale (R)";
+			const char* space_text = gizmo_space_ == GizmoSpace::World ? "World (X)" : "Local (X)";
+			
+			const ImVec2 mode_text_size = ImGui::CalcTextSize(mode_text);
+			const ImVec2 space_text_size = ImGui::CalcTextSize(space_text);
+			const float padding = 8.0f;
+			const float spacing = 2.0f;
+			
+			// Draw mode indicator
+			draw_list->AddRectFilled(
+				ImVec2(viewport_min.x + padding, viewport_min.y + padding),
+				ImVec2(viewport_min.x + padding + mode_text_size.x + 10.0f, 
+					   viewport_min.y + padding + mode_text_size.y + 6.0f),
+				IM_COL32(40, 40, 40, 200));
+			draw_list->AddText(
+				ImVec2(viewport_min.x + padding + 5.0f, viewport_min.y + padding + 3.0f),
+				IM_COL32(255, 255, 255, 255), mode_text);
+			
+			// Draw space indicator below mode
+			const float space_y_offset = mode_text_size.y + 6.0f + spacing;
+			draw_list->AddRectFilled(
+				ImVec2(viewport_min.x + padding, viewport_min.y + padding + space_y_offset),
+				ImVec2(viewport_min.x + padding + space_text_size.x + 10.0f, 
+					   viewport_min.y + padding + space_y_offset + space_text_size.y + 6.0f),
+				IM_COL32(40, 40, 40, 200));
+			draw_list->AddText(
+				ImVec2(viewport_min.x + padding + 5.0f, viewport_min.y + padding + space_y_offset + 3.0f),
+				IM_COL32(255, 255, 255, 255), space_text);
 		}
 
 		// Draw orientation gizmo in upper-right corner
@@ -198,7 +236,47 @@ void ViewportPanel::HandleCameraInput(const flecs::entity editor_camera, const f
 	}
 }
 
+void ViewportPanel::HandleGizmoInput() {
+	using namespace engine::input;
+	using engine::input::KeyCode;
+
+	// Gizmo mode switching (W/E/R keys) - use IsKeyJustPressed to avoid conflicts with camera hold
+	if (Input::IsKeyJustPressed(KeyCode::W)) {
+		gizmo_mode_ = GizmoMode::Translate;
+	}
+	if (Input::IsKeyJustPressed(KeyCode::E)) {
+		gizmo_mode_ = GizmoMode::Rotate;
+	}
+	if (Input::IsKeyJustPressed(KeyCode::R)) {
+		gizmo_mode_ = GizmoMode::Scale;
+	}
+
+	// Local/World space toggle (X key)
+	if (Input::IsKeyJustPressed(KeyCode::X)) {
+		gizmo_space_ = (gizmo_space_ == GizmoSpace::World) ? GizmoSpace::Local : GizmoSpace::World;
+	}
+}
+
 void ViewportPanel::RenderTransformGizmo(
+		const flecs::entity selected_entity,
+		const flecs::entity editor_camera,
+		const ImVec2& viewport_min,
+		const ImVec2& viewport_size) {
+	// Dispatch to appropriate gizmo based on current mode
+	switch (gizmo_mode_) {
+		case GizmoMode::Translate:
+			RenderTranslateGizmo(selected_entity, editor_camera, viewport_min, viewport_size);
+			break;
+		case GizmoMode::Rotate:
+			RenderRotationGizmo(selected_entity, editor_camera, viewport_min, viewport_size);
+			break;
+		case GizmoMode::Scale:
+			RenderScaleGizmo(selected_entity, editor_camera, viewport_min, viewport_size);
+			break;
+	}
+}
+
+void ViewportPanel::RenderTranslateGizmo(
 		const flecs::entity selected_entity,
 		const flecs::entity editor_camera,
 		const ImVec2& viewport_min,
@@ -234,10 +312,20 @@ void ViewportPanel::RenderTransformGizmo(
 	const float dist_to_camera = glm::length(origin - cam_transform.position);
 	const float axis_world_len = std::max(dist_to_camera * 0.15f, 0.01f);
 
-	const glm::vec3 axes[3] = {
-			{axis_world_len, 0.0f, 0.0f},
-			{0.0f, axis_world_len, 0.0f},
-			{0.0f, 0.0f, axis_world_len}};
+	// Determine axis directions based on gizmo space (local or world)
+	glm::vec3 axes[3];
+	if (gizmo_space_ == GizmoSpace::Local && entity_transform.rotation != glm::vec3(0.0f)) {
+		// Local space: transform axes by entity's rotation
+		const glm::quat entity_quat = glm::quat(entity_transform.rotation);
+		axes[0] = entity_quat * glm::vec3(axis_world_len, 0.0f, 0.0f);
+		axes[1] = entity_quat * glm::vec3(0.0f, axis_world_len, 0.0f);
+		axes[2] = entity_quat * glm::vec3(0.0f, 0.0f, axis_world_len);
+	} else {
+		// World space: use world axes
+		axes[0] = {axis_world_len, 0.0f, 0.0f};
+		axes[1] = {0.0f, axis_world_len, 0.0f};
+		axes[2] = {0.0f, 0.0f, axis_world_len};
+	}
 
 	ImVec2 axis_ends_2d[3];
 	for (int i = 0; i < 3; ++i) {
@@ -288,6 +376,7 @@ void ViewportPanel::RenderTransformGizmo(
 			dragging_axis_ = hovered_axis;
 			drag_start_mouse_ = mouse_pos;
 			drag_start_position_ = entity_transform.position;
+			drag_start_rotation_ = entity_transform.rotation; // Capture rotation for local space
 			drag_axis_screen_dir_ = {axis_dir.x / axis_screen_len, axis_dir.y / axis_screen_len};
 			drag_world_per_pixel_ = axis_world_len / axis_screen_len;
 		}
@@ -300,9 +389,29 @@ void ViewportPanel::RenderTransformGizmo(
 			const float projected = mouse_delta.x * drag_axis_screen_dir_.x + mouse_delta.y * drag_axis_screen_dir_.y;
 
 			auto& transform = selected_entity.get_mut<engine::components::Transform>();
+			
+			// Compute axis direction in world space
 			glm::vec3 axis_dir(0.0f);
-			axis_dir[dragging_axis_] = 1.0f;
-			transform.position = drag_start_position_ + axis_dir * projected * drag_world_per_pixel_;
+			if (gizmo_space_ == GizmoSpace::Local && drag_start_rotation_ != glm::vec3(0.0f)) {
+				// Local space: axis is rotated by entity's rotation at drag start
+				const glm::quat entity_quat = glm::quat(drag_start_rotation_);
+				glm::vec3 local_axis(0.0f);
+				local_axis[dragging_axis_] = 1.0f;
+				axis_dir = entity_quat * local_axis;
+			} else {
+				// World space: use world axes
+				axis_dir[dragging_axis_] = 1.0f;
+			}
+			
+			float movement = projected * drag_world_per_pixel_;
+			
+			// Apply snapping if Ctrl is held
+			if (engine::input::Input::IsKeyPressed(engine::input::KeyCode::LEFT_CONTROL) ||
+				engine::input::Input::IsKeyPressed(engine::input::KeyCode::RIGHT_CONTROL)) {
+				movement = std::round(movement / translate_snap_) * translate_snap_;
+			}
+			
+			transform.position = drag_start_position_ + axis_dir * movement;
 			selected_entity.modified<engine::components::Transform>();
 		} else {
 			dragging_axis_ = -1;
@@ -326,6 +435,386 @@ void ViewportPanel::RenderTransformGizmo(
 
 	// Draw origin circle
 	draw_list->AddCircleFilled(origin_2d, 4.0f, IM_COL32(255, 255, 255, 200));
+}
+
+void ViewportPanel::RenderRotationGizmo(
+		const flecs::entity selected_entity,
+		const flecs::entity editor_camera,
+		const ImVec2& viewport_min,
+		const ImVec2& viewport_size) {
+	if (!editor_camera.is_valid() || !editor_camera.has<engine::components::Camera>()) {
+		return;
+	}
+
+	const auto& camera = editor_camera.get<engine::components::Camera>();
+	const auto& entity_transform = selected_entity.get<engine::components::Transform>();
+	const glm::mat4 vp = camera.projection_matrix * camera.view_matrix;
+
+	// Project a 3D world position to 2D viewport screen coordinates
+	auto project = [&](const glm::vec3& world_pos) -> ImVec2 {
+		const glm::vec4 clip = vp * glm::vec4(world_pos, 1.0f);
+		if (clip.w <= 0.0f) {
+			return {-1.0f, -1.0f};
+		}
+		const glm::vec3 ndc = glm::vec3(clip) / clip.w;
+		return {
+				viewport_min.x + (ndc.x * 0.5f + 0.5f) * viewport_size.x,
+				viewport_min.y + (1.0f - (ndc.y * 0.5f + 0.5f)) * viewport_size.y};
+	};
+
+	const glm::vec3 origin = entity_transform.position;
+	const ImVec2 origin_2d = project(origin);
+	if (origin_2d.x < 0.0f) {
+		return;
+	}
+
+	// Compute ring radius based on distance to camera
+	const auto& cam_transform = editor_camera.get<engine::components::Transform>();
+	const float dist_to_camera = glm::length(origin - cam_transform.position);
+	const float ring_world_radius = std::max(dist_to_camera * 0.15f, 0.01f);
+
+	// Define rotation plane normals (axes of rotation) - in local or world space
+	glm::vec3 rotation_axes[3];
+	if (gizmo_space_ == GizmoSpace::Local && entity_transform.rotation != glm::vec3(0.0f)) {
+		// Local space: rotate axes by entity's rotation
+		const glm::quat entity_quat = glm::quat(entity_transform.rotation);
+		rotation_axes[0] = entity_quat * glm::vec3(1.0f, 0.0f, 0.0f); // X axis
+		rotation_axes[1] = entity_quat * glm::vec3(0.0f, 1.0f, 0.0f); // Y axis
+		rotation_axes[2] = entity_quat * glm::vec3(0.0f, 0.0f, 1.0f); // Z axis
+	} else {
+		// World space
+		rotation_axes[0] = {1.0f, 0.0f, 0.0f};
+		rotation_axes[1] = {0.0f, 1.0f, 0.0f};
+		rotation_axes[2] = {0.0f, 0.0f, 1.0f};
+	}
+
+	const ImVec2 mouse_pos = ImGui::GetIO().MousePos;
+	const bool right_down = ImGui::IsMouseDown(ImGuiMouseButton_Right);
+	const bool left_pressed = !right_down && ImGui::IsMouseClicked(ImGuiMouseButton_Left);
+	const bool left_down = !right_down && ImGui::IsMouseDown(ImGuiMouseButton_Left);
+
+	// Draw rotation rings as arc segments
+	ImDrawList* draw_list = ImGui::GetWindowDrawList();
+	constexpr int kNumSegments = 64;
+	
+	// Determine hovered ring
+	int hovered_axis = -1;
+	if (dragging_axis_ < 0 && !right_down) {
+		float best_dist = kGizmoHitRadius;
+		for (int ring_idx = 0; ring_idx < 3; ++ring_idx) {
+			const glm::vec3& axis_normal = rotation_axes[ring_idx];
+			
+			// Build two perpendicular vectors in the rotation plane
+			glm::vec3 tangent1 = glm::abs(axis_normal.y) < 0.9f 
+				? glm::normalize(glm::cross(axis_normal, glm::vec3(0.0f, 1.0f, 0.0f)))
+				: glm::normalize(glm::cross(axis_normal, glm::vec3(1.0f, 0.0f, 0.0f)));
+			glm::vec3 tangent2 = glm::normalize(glm::cross(axis_normal, tangent1));
+			
+			// Check distance from mouse to ring arc
+			for (int seg = 0; seg < kNumSegments; ++seg) {
+				const float angle1 = (seg * 2.0f * glm::pi<float>()) / kNumSegments;
+				const float angle2 = ((seg + 1) * 2.0f * glm::pi<float>()) / kNumSegments;
+				
+				const glm::vec3 p1_world = origin + ring_world_radius * (std::cos(angle1) * tangent1 + std::sin(angle1) * tangent2);
+				const glm::vec3 p2_world = origin + ring_world_radius * (std::cos(angle2) * tangent1 + std::sin(angle2) * tangent2);
+				
+				const ImVec2 p1_2d = project(p1_world);
+				const ImVec2 p2_2d = project(p2_world);
+				
+				if (p1_2d.x >= 0.0f && p2_2d.x >= 0.0f) {
+					// Distance from mouse to segment
+					const ImVec2 seg_dir = {p2_2d.x - p1_2d.x, p2_2d.y - p1_2d.y};
+					const ImVec2 mouse_dir = {mouse_pos.x - p1_2d.x, mouse_pos.y - p1_2d.y};
+					const float seg_len_sq = seg_dir.x * seg_dir.x + seg_dir.y * seg_dir.y;
+					if (seg_len_sq > 1e-6f) {
+						const float t = std::clamp((mouse_dir.x * seg_dir.x + mouse_dir.y * seg_dir.y) / seg_len_sq, 0.0f, 1.0f);
+						const float dx = mouse_dir.x - seg_dir.x * t;
+						const float dy = mouse_dir.y - seg_dir.y * t;
+						const float d = std::sqrt(dx * dx + dy * dy);
+						if (d < best_dist) {
+							best_dist = d;
+							hovered_axis = ring_idx;
+						}
+					}
+				}
+			}
+		}
+	}
+
+	// Begin drag — capture initial rotation
+	if (hovered_axis >= 0 && left_pressed) {
+		dragging_axis_ = hovered_axis;
+		drag_start_mouse_ = mouse_pos;
+		drag_start_rotation_ = entity_transform.rotation;
+		drag_start_angle_ = 0.0f; // Will accumulate angle during drag
+	}
+
+	// Process drag — compute rotation angle from mouse movement
+	if (dragging_axis_ >= 0) {
+		if (left_down) {
+			const glm::vec3& axis_normal = rotation_axes[dragging_axis_];
+			
+			// Project mouse delta onto screen-space tangent of rotation
+			// Simplified: use perpendicular mouse movement to estimate rotation angle
+			const ImVec2 mouse_delta = {mouse_pos.x - drag_start_mouse_.x, mouse_pos.y - drag_start_mouse_.y};
+			const float mouse_dist = std::sqrt(mouse_delta.x * mouse_delta.x + mouse_delta.y * mouse_delta.y);
+			
+			// Compute screen-space direction and convert to angle delta
+			// Approximate: 1 pixel ~ 0.005 radians (tunable sensitivity)
+			float angle_delta = mouse_dist * 0.005f;
+			
+			// Determine sign based on mouse direction (simplified heuristic)
+			const float cross = mouse_delta.x * (origin_2d.y - drag_start_mouse_.y) - mouse_delta.y * (origin_2d.x - drag_start_mouse_.x);
+			if (cross < 0.0f) {
+				angle_delta = -angle_delta;
+			}
+			
+			// Apply snapping if Ctrl is held
+			if (engine::input::Input::IsKeyPressed(engine::input::KeyCode::LEFT_CONTROL) ||
+				engine::input::Input::IsKeyPressed(engine::input::KeyCode::RIGHT_CONTROL)) {
+				const float snap_radians = glm::radians(rotate_snap_);
+				angle_delta = std::round(angle_delta / snap_radians) * snap_radians;
+			}
+			
+			// Apply rotation to entity
+			auto& transform = selected_entity.get_mut<engine::components::Transform>();
+			const glm::quat rotation_quat = glm::angleAxis(angle_delta, axis_normal);
+			const glm::quat start_quat = glm::quat(drag_start_rotation_);
+			const glm::quat new_quat = rotation_quat * start_quat;
+			transform.rotation = glm::eulerAngles(new_quat);
+			selected_entity.modified<engine::components::Transform>();
+		} else {
+			dragging_axis_ = -1;
+		}
+	}
+
+	// Draw rotation rings
+	for (int ring_idx = 0; ring_idx < 3; ++ring_idx) {
+		const bool highlight = (ring_idx == dragging_axis_ || ring_idx == hovered_axis);
+		const ImU32 color = highlight ? kAxisHoverColors[ring_idx] : kAxisColors[ring_idx];
+		const float thickness = highlight ? kGizmoThickness + 1.0f : kGizmoThickness;
+		
+		const glm::vec3& axis_normal = rotation_axes[ring_idx];
+		
+		// Build two perpendicular vectors in the rotation plane
+		glm::vec3 tangent1 = glm::abs(axis_normal.y) < 0.9f 
+			? glm::normalize(glm::cross(axis_normal, glm::vec3(0.0f, 1.0f, 0.0f)))
+			: glm::normalize(glm::cross(axis_normal, glm::vec3(1.0f, 0.0f, 0.0f)));
+		glm::vec3 tangent2 = glm::normalize(glm::cross(axis_normal, tangent1));
+		
+		// Draw ring as line segments
+		for (int seg = 0; seg < kNumSegments; ++seg) {
+			const float angle1 = (seg * 2.0f * glm::pi<float>()) / kNumSegments;
+			const float angle2 = ((seg + 1) * 2.0f * glm::pi<float>()) / kNumSegments;
+			
+			const glm::vec3 p1_world = origin + ring_world_radius * (std::cos(angle1) * tangent1 + std::sin(angle1) * tangent2);
+			const glm::vec3 p2_world = origin + ring_world_radius * (std::cos(angle2) * tangent1 + std::sin(angle2) * tangent2);
+			
+			const ImVec2 p1_2d = project(p1_world);
+			const ImVec2 p2_2d = project(p2_world);
+			
+			if (p1_2d.x >= 0.0f && p2_2d.x >= 0.0f) {
+				draw_list->AddLine(p1_2d, p2_2d, color, thickness);
+			}
+		}
+	}
+
+	// Draw origin circle
+	draw_list->AddCircleFilled(origin_2d, 4.0f, IM_COL32(255, 255, 255, 200));
+}
+
+void ViewportPanel::RenderScaleGizmo(
+		const flecs::entity selected_entity,
+		const flecs::entity editor_camera,
+		const ImVec2& viewport_min,
+		const ImVec2& viewport_size) {
+	if (!editor_camera.is_valid() || !editor_camera.has<engine::components::Camera>()) {
+		return;
+	}
+
+	const auto& camera = editor_camera.get<engine::components::Camera>();
+	const auto& entity_transform = selected_entity.get<engine::components::Transform>();
+	const glm::mat4 vp = camera.projection_matrix * camera.view_matrix;
+
+	// Project a 3D world position to 2D viewport screen coordinates
+	auto project = [&](const glm::vec3& world_pos) -> ImVec2 {
+		const glm::vec4 clip = vp * glm::vec4(world_pos, 1.0f);
+		if (clip.w <= 0.0f) {
+			return {-1.0f, -1.0f};
+		}
+		const glm::vec3 ndc = glm::vec3(clip) / clip.w;
+		return {
+				viewport_min.x + (ndc.x * 0.5f + 0.5f) * viewport_size.x,
+				viewport_min.y + (1.0f - (ndc.y * 0.5f + 0.5f)) * viewport_size.y};
+	};
+
+	const glm::vec3 origin = entity_transform.position;
+	const ImVec2 origin_2d = project(origin);
+	if (origin_2d.x < 0.0f) {
+		return;
+	}
+
+	// Compute axis endpoint scale based on distance to camera
+	const auto& cam_transform = editor_camera.get<engine::components::Transform>();
+	const float dist_to_camera = glm::length(origin - cam_transform.position);
+	const float axis_world_len = std::max(dist_to_camera * 0.15f, 0.01f);
+
+	// Determine axis directions based on gizmo space (local or world)
+	glm::vec3 axes[3];
+	if (gizmo_space_ == GizmoSpace::Local && entity_transform.rotation != glm::vec3(0.0f)) {
+		// Local space: transform axes by entity's rotation
+		const glm::quat entity_quat = glm::quat(entity_transform.rotation);
+		axes[0] = entity_quat * glm::vec3(axis_world_len, 0.0f, 0.0f);
+		axes[1] = entity_quat * glm::vec3(0.0f, axis_world_len, 0.0f);
+		axes[2] = entity_quat * glm::vec3(0.0f, 0.0f, axis_world_len);
+	} else {
+		// World space: use world axes
+		axes[0] = {axis_world_len, 0.0f, 0.0f};
+		axes[1] = {0.0f, axis_world_len, 0.0f};
+		axes[2] = {0.0f, 0.0f, axis_world_len};
+	}
+
+	ImVec2 axis_ends_2d[3];
+	for (int i = 0; i < 3; ++i) {
+		axis_ends_2d[i] = project(origin + axes[i]);
+	}
+
+	// Distance from point to line segment
+	auto point_to_segment_dist = [](const ImVec2& p, const ImVec2& a, const ImVec2& b) -> float {
+		const ImVec2 ab = {b.x - a.x, b.y - a.y};
+		const ImVec2 ap = {p.x - a.x, p.y - a.y};
+		const float ab_sq = ab.x * ab.x + ab.y * ab.y;
+		if (ab_sq < 1e-6f) {
+			return std::sqrt(ap.x * ap.x + ap.y * ap.y);
+		}
+		const float t = std::clamp((ap.x * ab.x + ap.y * ab.y) / ab_sq, 0.0f, 1.0f);
+		const float dx = ap.x - ab.x * t;
+		const float dy = ap.y - ab.y * t;
+		return std::sqrt(dx * dx + dy * dy);
+	};
+
+	const ImVec2 mouse_pos = ImGui::GetIO().MousePos;
+	const bool right_down = ImGui::IsMouseDown(ImGuiMouseButton_Right);
+	const bool left_pressed = !right_down && ImGui::IsMouseClicked(ImGuiMouseButton_Left);
+	const bool left_down = !right_down && ImGui::IsMouseDown(ImGuiMouseButton_Left);
+
+	// Check for center cube hover (for uniform scale)
+	const float center_dist = std::sqrt((mouse_pos.x - origin_2d.x) * (mouse_pos.x - origin_2d.x)
+										+ (mouse_pos.y - origin_2d.y) * (mouse_pos.y - origin_2d.y));
+	const bool center_hovered = (center_dist < 10.0f) && dragging_axis_ < 0 && !right_down;
+
+	// Determine hovered axis
+	int hovered_axis = -1;
+	if (dragging_axis_ < 0 && !right_down && !center_hovered) {
+		float best_dist = kGizmoHitRadius;
+		for (int i = 0; i < 3; ++i) {
+			if (axis_ends_2d[i].x < 0.0f) {
+				continue;
+			}
+			const float d = point_to_segment_dist(mouse_pos, origin_2d, axis_ends_2d[i]);
+			if (d < best_dist) {
+				best_dist = d;
+				hovered_axis = i;
+			}
+		}
+	}
+
+	// Begin drag
+	if (left_pressed) {
+		if (center_hovered) {
+			// Uniform scale mode
+			dragging_axis_ = 3; // Special value for uniform scale
+			drag_start_mouse_ = mouse_pos;
+			drag_start_scale_ = entity_transform.scale;
+		} else if (hovered_axis >= 0) {
+			// Single axis scale
+			const ImVec2& axis_end = axis_ends_2d[hovered_axis];
+			ImVec2 axis_dir = {axis_end.x - origin_2d.x, axis_end.y - origin_2d.y};
+			const float axis_screen_len = std::sqrt(axis_dir.x * axis_dir.x + axis_dir.y * axis_dir.y);
+			if (axis_screen_len > 1e-4f) {
+				dragging_axis_ = hovered_axis;
+				drag_start_mouse_ = mouse_pos;
+				drag_start_scale_ = entity_transform.scale;
+				drag_start_rotation_ = entity_transform.rotation; // For local space
+				drag_axis_screen_dir_ = {axis_dir.x / axis_screen_len, axis_dir.y / axis_screen_len};
+				drag_world_per_pixel_ = axis_world_len / axis_screen_len;
+			}
+		}
+	}
+
+	// Process drag
+	if (dragging_axis_ >= 0) {
+		if (left_down) {
+			auto& transform = selected_entity.get_mut<engine::components::Transform>();
+			
+			if (dragging_axis_ == 3) {
+				// Uniform scale: use vertical mouse movement
+				const float mouse_delta_y = mouse_pos.y - drag_start_mouse_.y;
+				float scale_factor = 1.0f - mouse_delta_y * 0.01f; // Scale sensitivity
+				
+				// Apply snapping if Ctrl is held
+				if (engine::input::Input::IsKeyPressed(engine::input::KeyCode::LEFT_CONTROL) ||
+					engine::input::Input::IsKeyPressed(engine::input::KeyCode::RIGHT_CONTROL)) {
+					scale_factor = std::round(scale_factor / scale_snap_) * scale_snap_;
+				}
+				
+				transform.scale = drag_start_scale_ * scale_factor;
+			} else {
+				// Single axis scale
+				const ImVec2 mouse_delta = {mouse_pos.x - drag_start_mouse_.x, mouse_pos.y - drag_start_mouse_.y};
+				const float projected = mouse_delta.x * drag_axis_screen_dir_.x + mouse_delta.y * drag_axis_screen_dir_.y;
+				
+				float scale_delta = projected * 0.01f; // Scale sensitivity
+				
+				// Apply snapping if Ctrl is held
+				if (engine::input::Input::IsKeyPressed(engine::input::KeyCode::LEFT_CONTROL) ||
+					engine::input::Input::IsKeyPressed(engine::input::KeyCode::RIGHT_CONTROL)) {
+					scale_delta = std::round(scale_delta / scale_snap_) * scale_snap_;
+				}
+				
+				transform.scale = drag_start_scale_;
+				transform.scale[dragging_axis_] += scale_delta;
+				// Prevent negative or zero scale
+				transform.scale[dragging_axis_] = std::max(transform.scale[dragging_axis_], 0.01f);
+			}
+			
+			selected_entity.modified<engine::components::Transform>();
+		} else {
+			dragging_axis_ = -1;
+		}
+	}
+
+	// Draw axis lines with cube endpoints
+	ImDrawList* draw_list = ImGui::GetWindowDrawList();
+	constexpr float kCubeSize = 8.0f;
+	
+	for (int i = 0; i < 3; ++i) {
+		if (axis_ends_2d[i].x < 0.0f) {
+			continue;
+		}
+		const bool highlight = (i == dragging_axis_ || i == hovered_axis);
+		const ImU32 color = highlight ? kAxisHoverColors[i] : kAxisColors[i];
+		const float thickness = highlight ? kGizmoThickness + 1.0f : kGizmoThickness;
+		
+		// Draw line
+		draw_list->AddLine(origin_2d, axis_ends_2d[i], color, thickness);
+		
+		// Draw cube at endpoint
+		const ImVec2& cube_center = axis_ends_2d[i];
+		draw_list->AddRectFilled(
+			ImVec2(cube_center.x - kCubeSize * 0.5f, cube_center.y - kCubeSize * 0.5f),
+			ImVec2(cube_center.x + kCubeSize * 0.5f, cube_center.y + kCubeSize * 0.5f),
+			color);
+	}
+
+	// Draw center cube for uniform scale
+	const bool center_highlight = (dragging_axis_ == 3 || center_hovered);
+	const ImU32 center_color = center_highlight ? IM_COL32(255, 255, 255, 255) : IM_COL32(200, 200, 200, 200);
+	const float center_cube_size = center_highlight ? 10.0f : 8.0f;
+	draw_list->AddRectFilled(
+		ImVec2(origin_2d.x - center_cube_size * 0.5f, origin_2d.y - center_cube_size * 0.5f),
+		ImVec2(origin_2d.x + center_cube_size * 0.5f, origin_2d.y + center_cube_size * 0.5f),
+		center_color);
 }
 
 void ViewportPanel::RenderOrientationGizmo(const ImVec2& viewport_min, const ImVec2& viewport_size) {

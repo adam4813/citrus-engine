@@ -59,10 +59,23 @@ bool Engine::Init(const uint32_t window_width, const uint32_t window_height) {
 }
 
 void Engine::Update(const float dt) {
+	Update(dt, UpdateMode::Full);
+}
+
+void Engine::Update(const float dt, const UpdateMode mode) {
 	// Poll input events
 	input::Input::PollEvents();
-	// Progress ECS world (run systems)
-	ecs.Progress(dt);
+	
+	// Progress ECS world based on update mode
+	switch (mode) {
+		case UpdateMode::Full:
+			ecs.ProgressAll(dt);
+			break;
+		case UpdateMode::EditMode:
+			ecs.ProgressEditMode(dt);
+			break;
+	}
+	
 	// Render scene
 	ecs.SubmitRenderCommands(*renderer);
 	// ...update other subsystems as needed...

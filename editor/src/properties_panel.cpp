@@ -59,7 +59,46 @@ void PropertiesPanel::RenderComponentSections(const engine::ecs::Entity entity, 
 		}
 
 		if (ImGui::CollapsingHeader(comp.name.c_str(), ImGuiTreeNodeFlags_DefaultOpen)) {
-			if (comp.fields.empty()) {
+			// Special handling for Tags component
+			if (comp.name == "Tags") {
+				auto* tags_comp = entity.try_get_mut<engine::components::Tags>();
+				if (tags_comp) {
+					ImGui::PushID("Tags");
+					bool modified = false;
+
+					// Display existing tags with remove buttons
+					for (size_t i = 0; i < tags_comp->tags.size(); ++i) {
+						ImGui::PushID(static_cast<int>(i));
+						ImGui::Text("%s", tags_comp->tags[i].c_str());
+						ImGui::SameLine();
+						if (ImGui::SmallButton("X")) {
+							tags_comp->tags.erase(tags_comp->tags.begin() + i);
+							modified = true;
+							ImGui::PopID();
+							break; // Exit loop since we modified the vector
+						}
+						ImGui::PopID();
+					}
+
+					// Add new tag input
+					static char tag_buffer[128] = {};
+					ImGui::InputText("##new_tag", tag_buffer, sizeof(tag_buffer));
+					ImGui::SameLine();
+					if (ImGui::Button("Add Tag") && tag_buffer[0] != '\0') {
+						tags_comp->AddTag(tag_buffer);
+						tag_buffer[0] = '\0'; // Clear input
+						modified = true;
+					}
+
+					if (modified && callbacks_.on_scene_modified) {
+						entity.modified<engine::components::Tags>();
+						callbacks_.on_scene_modified();
+					}
+
+					ImGui::PopID();
+				}
+			}
+			else if (comp.fields.empty()) {
 				ImGui::TextDisabled("(No editable fields)");
 			}
 			else {
@@ -251,6 +290,85 @@ void PropertiesPanel::RenderSceneProperties(
 	ImGui::Text("Scene Properties");
 	ImGui::Separator();
 
+	// Get the current scene
+	auto& scene_manager = engine::scene::GetSceneManager();
+	auto* scene = scene_manager.TryGetScene(scene_manager.GetActiveScene());
+	if (!scene) {
+		ImGui::TextDisabled("No active scene");
+		return;
+	}
+
+	// Scene Name
+	if (ImGui::CollapsingHeader("General", ImGuiTreeNodeFlags_DefaultOpen)) {
+		char name_buffer[256];
+		std::string scene_name = scene->GetName();
+		std::strncpy(name_buffer, scene_name.c_str(), sizeof(name_buffer) - 1);
+		name_buffer[sizeof(name_buffer) - 1] = '\0';
+		if (ImGui::InputText("Scene Name", name_buffer, sizeof(name_buffer))) {
+			scene->SetName(name_buffer);
+			if (callbacks_.on_scene_modified) {
+				callbacks_.on_scene_modified();
+			}
+		}
+
+		// Author
+		char author_buffer[256];
+		std::string author = scene->GetAuthor();
+		std::strncpy(author_buffer, author.c_str(), sizeof(author_buffer) - 1);
+		author_buffer[sizeof(author_buffer) - 1] = '\0';
+		if (ImGui::InputText("Author", author_buffer, sizeof(author_buffer))) {
+			scene->SetAuthor(author_buffer);
+			if (callbacks_.on_scene_modified) {
+				callbacks_.on_scene_modified();
+			}
+		}
+
+		// Description
+		char desc_buffer[512];
+		std::string description = scene->GetDescription();
+		std::strncpy(desc_buffer, description.c_str(), sizeof(desc_buffer) - 1);
+		desc_buffer[sizeof(desc_buffer) - 1] = '\0';
+		if (ImGui::InputTextMultiline("Description", desc_buffer, sizeof(desc_buffer))) {
+			scene->SetDescription(desc_buffer);
+			if (callbacks_.on_scene_modified) {
+				callbacks_.on_scene_modified();
+			}
+		}
+	}
+
+	// Rendering Settings
+	if (ImGui::CollapsingHeader("Rendering", ImGuiTreeNodeFlags_DefaultOpen)) {
+		// Background color
+		glm::vec4 bg_color = scene->GetBackgroundColor();
+		if (ImGui::ColorEdit4("Background Color", &bg_color[0])) {
+			scene->SetBackgroundColor(bg_color);
+			if (callbacks_.on_scene_modified) {
+				callbacks_.on_scene_modified();
+			}
+		}
+
+		// Ambient light
+		glm::vec4 ambient = scene->GetAmbientLight();
+		if (ImGui::ColorEdit4("Ambient Light", &ambient[0])) {
+			scene->SetAmbientLight(ambient);
+			if (callbacks_.on_scene_modified) {
+				callbacks_.on_scene_modified();
+			}
+		}
+	}
+
+	// Physics Settings (placeholder until F18)
+	if (ImGui::CollapsingHeader("Physics", ImGuiTreeNodeFlags_DefaultOpen)) {
+		glm::vec2 gravity = scene->GetGravity();
+		if (ImGui::InputFloat2("Gravity", &gravity[0])) {
+			scene->SetGravity(gravity);
+			if (callbacks_.on_scene_modified) {
+				callbacks_.on_scene_modified();
+			}
+		}
+		ImGui::TextDisabled("(Physics system coming in F18)");
+	}
+
 	// Collect all entities with Camera component (excluding EditorCamera)
 	std::vector<flecs::entity> camera_entities;
 	const flecs::world& flecs_world = world.GetWorld();
@@ -324,10 +442,6 @@ void PropertiesPanel::RenderSceneProperties(
 			ImGui::TextDisabled("Add a Camera component to an entity");
 		}
 	}
-
-	ImGui::Spacing();
-	ImGui::TextDisabled("Select an entity in the Hierarchy");
-	ImGui::TextDisabled("panel to view its properties");
 }
 
 void PropertiesPanel::RenderAssetProperties(engine::scene::Scene* scene, const AssetSelection& selected_asset) const {

@@ -1,5 +1,8 @@
 #include "hierarchy_panel.h"
 
+#include "commands/entity_commands.h"
+
+#include <algorithm>
 #include <imgui.h>
 #include <imgui_internal.h>
 #include <string>
@@ -21,12 +24,44 @@ void HierarchyPanel::Render(const engine::scene::SceneId scene_id, const engine:
 
 	ImGui::Begin("Hierarchy", &is_visible_);
 
+	// Search bar
+	ImGui::SetNextItemWidth(-50.0f); // Leave space for clear button
+	if (ImGui::InputText("##search", search_buffer_, sizeof(search_buffer_))) {
+		search_query_ = search_buffer_;
+	}
+	ImGui::SameLine();
+	if (ImGui::Button("X##clear_search")) {
+		search_query_.clear();
+		search_buffer_[0] = '\0';
+	}
+	if (ImGui::IsItemHovered()) {
+		ImGui::SetTooltip("Clear search");
+	}
+
+	ImGui::Separator();
+
 	// Clickable "Scene" header to deselect entity and show scene properties
 	if (const bool scene_selected = !selected_entity.is_valid(); ImGui::Selectable("Scene", scene_selected)) {
 		if (callbacks_.on_entity_selected) {
 			callbacks_.on_entity_selected(flecs::entity()); // Pass invalid entity to deselect
 		}
 	}
+
+	// Right-click context menu on Scene
+	if (ImGui::BeginPopupContextItem("SceneContextMenu")) {
+		if (ImGui::MenuItem("New Group")) {
+			auto& scene_manager = engine::scene::GetSceneManager();
+			if (auto* scene = scene_manager.TryGetScene(scene_id)) {
+				auto group = scene->CreateEntity("New Group");
+				group.add<engine::components::Group>();
+				if (callbacks_.on_scene_modified) {
+					callbacks_.on_scene_modified();
+				}
+			}
+		}
+		ImGui::EndPopup();
+	}
+
 	ImGui::Separator();
 
 	auto& scene_manager = engine::scene::GetSceneManager();
@@ -59,9 +94,25 @@ std::vector<engine::ecs::Entity> HierarchyPanel::GetChildren(const engine::ecs::
 
 void HierarchyPanel::RenderEntityNode(
 		const engine::ecs::Entity entity, engine::scene::Scene* scene, const engine::ecs::Entity selected_entity) {
+	// Check if entity matches filter
+	const bool is_filtering = !search_query_.empty();
+	const bool matches = MatchesFilter(entity);
+	const bool has_matching_descendants = EntityOrDescendantsMatchFilter(entity);
+
+	// Skip this entity if filtering and neither it nor its descendants match
+	if (is_filtering && !matches && !has_matching_descendants) {
+		return;
+	}
+
 	std::string name = entity.name().c_str();
 	if (name.empty()) {
 		name = "Entity_" + std::to_string(entity.id());
+	}
+
+	// Check if this is a group entity
+	const bool is_group = entity.has<engine::components::Group>();
+	if (is_group) {
+		name = "[G] " + name; // Prefix with folder icon
 	}
 
 	// Ensure node state exists
@@ -83,8 +134,16 @@ void HierarchyPanel::RenderEntityNode(
 		flags |= ImGuiTreeNodeFlags_DefaultOpen;
 	}
 
-	// Visibility indicator
-	ImGui::PushStyleColor(ImGuiCol_Text, node_state.is_visible ? ImVec4(1, 1, 1, 1) : ImVec4(0.5f, 0.5f, 0.5f, 0.5f));
+	// Dim entities that don't match the filter
+	const bool should_dim = is_filtering && !matches;
+	if (should_dim) {
+		ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.5f, 0.5f, 0.5f, 0.5f));
+	}
+	else {
+		// Visibility indicator
+		ImGui::PushStyleColor(
+				ImGuiCol_Text, node_state.is_visible ? ImVec4(1, 1, 1, 1) : ImVec4(0.5f, 0.5f, 0.5f, 0.5f));
+	}
 
 	const bool node_open =
 			ImGui::TreeNodeEx(reinterpret_cast<void*>(static_cast<intptr_t>(entity.id())), flags, "%s", name.c_str());
@@ -108,6 +167,14 @@ void HierarchyPanel::RenderEntityNode(
 		if (ImGui::MenuItem("Add Child Entity")) {
 			if (callbacks_.on_add_child_entity) {
 				callbacks_.on_add_child_entity(entity);
+			}
+		}
+
+		if (ImGui::MenuItem("New Group")) {
+			auto group = scene->CreateEntity("New Group", entity);
+			group.add<engine::components::Group>();
+			if (callbacks_.on_scene_modified) {
+				callbacks_.on_scene_modified();
 			}
 		}
 
@@ -141,12 +208,13 @@ void HierarchyPanel::RenderEntityNode(
 			}
 		}
 		if (ImGui::MenuItem("Delete")) {
-			scene->DestroyEntity(entity);
+			// Use delete command instead of direct deletion
+			if (callbacks_.on_execute_command && world_) {
+				auto command = std::make_unique<DeleteEntityCommand>(scene, entity, *world_);
+				callbacks_.on_execute_command(std::move(command));
+			}
 			if (callbacks_.on_entity_deleted) {
 				callbacks_.on_entity_deleted(entity);
-			}
-			if (callbacks_.on_scene_modified) {
-				callbacks_.on_scene_modified();
 			}
 		}
 		ImGui::Separator();
@@ -173,6 +241,44 @@ void HierarchyPanel::ClearNodeState() { node_states_.clear(); }
 HierarchyNodeState* HierarchyPanel::GetNodeState(const uint64_t entity_id) {
 	auto it = node_states_.find(entity_id);
 	return it != node_states_.end() ? &it->second : nullptr;
+}
+
+bool HierarchyPanel::MatchesFilter(const engine::ecs::Entity entity) const {
+	if (search_query_.empty()) {
+		return true;
+	}
+
+	// Get entity name
+	std::string name = entity.name().c_str();
+	if (name.empty()) {
+		name = "Entity_" + std::to_string(entity.id());
+	}
+
+	// Convert to lowercase for case-insensitive search
+	std::string name_lower = name;
+	std::string query_lower = search_query_;
+	std::transform(name_lower.begin(), name_lower.end(), name_lower.begin(), ::tolower);
+	std::transform(query_lower.begin(), query_lower.end(), query_lower.begin(), ::tolower);
+
+	// Check if name contains search query
+	return name_lower.find(query_lower) != std::string::npos;
+}
+
+bool HierarchyPanel::EntityOrDescendantsMatchFilter(const engine::ecs::Entity entity) const {
+	// Check if entity itself matches
+	if (MatchesFilter(entity)) {
+		return true;
+	}
+
+	// Check if any descendant matches
+	const auto children = GetChildren(entity);
+	for (const auto& child : children) {
+		if (EntityOrDescendantsMatchFilter(child)) {
+			return true;
+		}
+	}
+
+	return false;
 }
 
 } // namespace editor

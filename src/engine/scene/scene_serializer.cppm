@@ -45,6 +45,12 @@ public:
 	/// @return The loaded scene ID, or INVALID_SCENE on failure
 	static SceneId Load(const platform::fs::Path& path, SceneManager& manager, ecs::ECSWorld& world);
 
+	/// Snapshot scene entities to an in-memory JSON string (for play mode restore)
+	static std::string SnapshotEntities(const Scene& scene, ecs::ECSWorld& world);
+
+	/// Restore scene entities from a snapshot string (for play mode restore)
+	static bool RestoreEntities(const std::string& snapshot, const Scene& scene, ecs::ECSWorld& world);
+
 private:
 	/// Serialize scene entities to flecs JSON format
 	static std::string SerializeEntities(const Scene& scene, ecs::ECSWorld& world);

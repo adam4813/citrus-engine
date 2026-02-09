@@ -119,3 +119,8 @@ add_engine_test(scene_serialization_test
 add_engine_test(scene_assets_test
     scene_assets_test.cpp
 )
+
+# Add graph framework test
+add_engine_test(graph_framework_test
+    graph_framework_test.cpp
+)

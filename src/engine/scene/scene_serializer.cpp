@@ -11,6 +11,7 @@ module engine.scene.serializer;
 import engine.ecs;
 import engine.platform;
 import engine.scene;
+import glm;
 
 using json = nlohmann::json;
 
@@ -27,6 +28,18 @@ bool SceneSerializer::Save(const Scene& scene, ecs::ECSWorld& world, const platf
 		json metadata;
 		metadata["engine_version"] = "0.0.9";
 		doc["metadata"] = metadata;
+
+		// Scene settings
+		json settings;
+		auto bg_color = scene.GetBackgroundColor();
+		settings["background_color"] = {bg_color.r, bg_color.g, bg_color.b, bg_color.a};
+		auto ambient = scene.GetAmbientLight();
+		settings["ambient_light"] = {ambient.r, ambient.g, ambient.b, ambient.a};
+		auto gravity = scene.GetGravity();
+		settings["gravity"] = {gravity.x, gravity.y};
+		settings["author"] = scene.GetAuthor();
+		settings["description"] = scene.GetDescription();
+		doc["settings"] = settings;
 
 		// Serialize assets (before entities - order matters for loading)
 		json assets_array = json::array();
@@ -98,6 +111,29 @@ SceneId SceneSerializer::Load(const platform::fs::Path& path, SceneManager& mana
 
 		auto& scene = manager.GetScene(scene_id);
 		scene.SetFilePath(path);
+
+		// Load scene settings (if present)
+		if (doc.contains("settings")) {
+			const auto& settings = doc["settings"];
+			if (settings.contains("background_color") && settings["background_color"].is_array()) {
+				auto bg = settings["background_color"];
+				scene.SetBackgroundColor(glm::vec4(bg[0], bg[1], bg[2], bg[3]));
+			}
+			if (settings.contains("ambient_light") && settings["ambient_light"].is_array()) {
+				auto amb = settings["ambient_light"];
+				scene.SetAmbientLight(glm::vec4(amb[0], amb[1], amb[2], amb[3]));
+			}
+			if (settings.contains("gravity") && settings["gravity"].is_array()) {
+				auto grav = settings["gravity"];
+				scene.SetGravity(glm::vec2(grav[0], grav[1]));
+			}
+			if (settings.contains("author")) {
+				scene.SetAuthor(settings["author"].get<std::string>());
+			}
+			if (settings.contains("description")) {
+				scene.SetDescription(settings["description"].get<std::string>());
+			}
+		}
 
 		// Add assets BEFORE entities (order matters - entities may reference assets)
 		if (doc.contains("assets") && doc["assets"].is_array()) {
@@ -238,6 +274,16 @@ void SceneSerializer::SetActiveCameraFromPath(const std::string& path, ecs::ECSW
 	else {
 		std::cerr << "SceneSerializer: Could not find camera entity at path: " << path << std::endl;
 	}
+}
+
+std::string SceneSerializer::SnapshotEntities(const Scene& scene, ecs::ECSWorld& world) {
+	return SerializeEntities(scene, world);
+}
+
+bool SceneSerializer::RestoreEntities(const std::string& snapshot, const Scene& scene, ecs::ECSWorld& world) {
+	// The scene root itself should still exist (only children were destroyed).
+	// Deserialize the snapshot to recreate all child entities under the scene root.
+	return DeserializeEntities(snapshot, world);
 }
 
 } // namespace engine::scene

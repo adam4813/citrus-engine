@@ -54,10 +54,6 @@ void main_loop() {
 		return;
 	}
 
-	// Poll events first
-	// TODO: Remove when we can call g_app_state->engine.Update
-	engine::input::Input::PollEvents();
-
 	// Begin rendering
 	if (g_app_state->engine.renderer) {
 		g_app_state->engine.renderer->BeginFrame();
@@ -66,9 +62,10 @@ void main_loop() {
 	// Update editor scene
 	g_app_state->editor_scene.Update(g_app_state->engine, delta_time);
 
-	// Update engine systems
-	// We cannot call this in edit mode, all in-game systems are ran e.g. physics
-	//g_app_state->engine.Update(delta_time);
+	// Update engine systems with appropriate mode
+	const auto update_mode =
+			g_app_state->editor_scene.IsRunning() ? engine::UpdateMode::Full : engine::UpdateMode::EditMode;
+	g_app_state->engine.Update(delta_time, update_mode);
 
 	// Render
 	if (g_app_state->engine.renderer) {

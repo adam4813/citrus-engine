@@ -1,5 +1,7 @@
 #include "editor_scene.h"
 
+#include "commands/entity_commands.h"
+
 #include <imgui.h>
 #include <imgui_internal.h>
 #include <iostream>
@@ -25,7 +27,6 @@ void EditorScene::Initialize(engine::Engine& engine) {
 	scene_manager.SetActiveScene(editor_scene_id_);
 
 	state_.current_file_path = "";
-	state_.is_dirty = false;
 
 	// Create editor camera (not part of the scene, used for viewport navigation)
 	// Manually created in Flecs ECS world, so it isn't under the scene root entity.
@@ -59,10 +60,20 @@ void EditorScene::Initialize(engine::Engine& engine) {
 		OnAssetDeleted(type, name);
 	};
 	callbacks.on_scene_camera_changed = [this](const engine::ecs::Entity camera) { scene_active_camera_ = camera; };
+	callbacks.on_execute_command = [this](std::unique_ptr<ICommand> command) {
+		command_history_.Execute(std::move(command));
+	};
 
 	hierarchy_panel_.SetCallbacks(callbacks);
+	hierarchy_panel_.SetWorld(&engine.ecs);
 	properties_panel_.SetCallbacks(callbacks);
 	asset_browser_panel_.SetCallbacks(callbacks);
+
+	// Register example node types for the graph editor
+	RegisterExampleGraphNodes();
+
+	// Create a demo graph so the panel isn't empty
+	CreateExampleGraph();
 
 	std::cout << "EditorScene: Initialized with new scene" << std::endl;
 }
@@ -104,6 +115,19 @@ void EditorScene::RenderUI(engine::Engine& engine) {
 	const ImGuiID dockspace_id = ImGui::GetID("My Dockspace");
 	const ImGuiViewport* viewport = ImGui::GetMainViewport();
 
+	// Handle keyboard shortcuts
+	const ImGuiIO& io = ImGui::GetIO();
+	if (io.KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_Z) && !io.KeyShift) {
+		command_history_.Undo();
+	}
+	if (io.KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_Y)) {
+		command_history_.Redo();
+	}
+	// Alternative redo shortcut: Ctrl+Shift+Z
+	if (io.KeyCtrl && io.KeyShift && ImGui::IsKeyPressed(ImGuiKey_Z)) {
+		command_history_.Redo();
+	}
+
 	// Create settings
 	if (ImGui::DockBuilderGetNode(dockspace_id) == nullptr) {
 		ImGui::DockBuilderAddNode(dockspace_id, ImGuiDockNodeFlags_DockSpace);
@@ -120,6 +144,7 @@ void EditorScene::RenderUI(engine::Engine& engine) {
 		ImGui::DockBuilderDockWindow("Properties", dock_id_left_bottom);
 		ImGui::DockBuilderDockWindow("Viewport", dock_id_main);
 		ImGui::DockBuilderDockWindow("Assets", dock_id_bottom);
+		ImGui::DockBuilderDockWindow("Graph Editor", dock_id_bottom);
 		ImGui::DockBuilderFinish(dockspace_id);
 	}
 
@@ -135,6 +160,7 @@ void EditorScene::RenderUI(engine::Engine& engine) {
 	properties_panel_.Render(selected_entity_, engine.ecs, scene, selected_asset_, scene_active_camera_);
 	viewport_panel_.Render(engine, scene, state_.is_running, editor_camera_, last_delta_time_, selected_entity_);
 	asset_browser_panel_.Render(scene, selected_asset_);
+	graph_editor_panel_.Render();
 
 	// Handle dialogs
 	if (state_.show_new_scene_dialog) {
@@ -210,7 +236,9 @@ void EditorScene::RenderUI(engine::Engine& engine) {
 			auto& scene_entity = selected_entity_.get_mut<engine::ecs::SceneEntity>();
 			scene_entity.name = std::string(rename_entity_buffer_);
 			rename_entity_buffer_[0] = '\0';
-			state_.is_dirty = true;
+			// Note: Renaming doesn't go through command history yet (would need a RenameEntityCommand)
+			// Mark scene as modified
+			OnSceneModified();
 			ImGui::CloseCurrentPopup();
 		}
 		ImGui::SameLine();
@@ -260,11 +288,11 @@ void EditorScene::RenderMenuBar() {
 		}
 
 		if (ImGui::BeginMenu("Edit")) {
-			if (ImGui::MenuItem("Undo", "Ctrl+Z", false, false)) {
-				// TODO: Implement undo
+			if (ImGui::MenuItem("Undo", "Ctrl+Z", false, command_history_.CanUndo())) {
+				command_history_.Undo();
 			}
-			if (ImGui::MenuItem("Redo", "Ctrl+Y", false, false)) {
-				// TODO: Implement redo
+			if (ImGui::MenuItem("Redo", "Ctrl+Y", false, command_history_.CanRedo())) {
+				command_history_.Redo();
 			}
 			ImGui::Separator();
 			if (ImGui::MenuItem("Cut", "Ctrl+X", false, false)) {
@@ -284,22 +312,25 @@ void EditorScene::RenderMenuBar() {
 			ImGui::MenuItem("Properties", nullptr, &properties_panel_.VisibleRef());
 			ImGui::MenuItem("Viewport", nullptr, &viewport_panel_.VisibleRef());
 			ImGui::MenuItem("Assets", nullptr, &asset_browser_panel_.VisibleRef());
+			ImGui::MenuItem("Graph Editor", nullptr, &graph_editor_panel_.VisibleRef());
 			ImGui::EndMenu();
 		}
 
 		if (ImGui::BeginMenu("Scene")) {
 			if (ImGui::MenuItem("Add Entity")) {
-				// Add a new entity to the scene
+				// Add a new entity to the scene using command
 				auto& scene_manager = engine::scene::GetSceneManager();
-				if (const auto* scene = scene_manager.TryGetScene(editor_scene_id_)) {
+				if (auto* scene = scene_manager.TryGetScene(editor_scene_id_)) {
 					std::string entity_name = "NewEntity";
 					auto count = 1;
 					while (count <= MAX_ENTITY_NAME_CHECK_COUNT
 						   && scene->GetSceneRoot().lookup(entity_name.c_str()) != flecs::entity::null()) {
 						entity_name = "NewEntity_" + std::to_string(count++);
 					}
-					if (count <= MAX_ENTITY_NAME_CHECK_COUNT && scene->CreateEntity(entity_name)) {
-						state_.is_dirty = true;
+					if (count <= MAX_ENTITY_NAME_CHECK_COUNT) {
+						auto command =
+								std::make_unique<CreateEntityCommand>(scene, entity_name, engine::ecs::Entity());
+						command_history_.Execute(std::move(command));
 					}
 				}
 			}
@@ -324,7 +355,7 @@ void EditorScene::RenderMenuBar() {
 
 		// Display current scene info on the right side of menu bar
 		std::string title = state_.current_file_path.empty() ? "Untitled" : state_.current_file_path;
-		if (state_.is_dirty) {
+		if (command_history_.IsDirty()) {
 			title += " *";
 		}
 		const float text_width = ImGui::CalcTextSize(title.c_str()).x;
@@ -353,7 +384,10 @@ void EditorScene::OnEntityDeleted(const engine::ecs::Entity entity) {
 	}
 }
 
-void EditorScene::OnSceneModified() { state_.is_dirty = true; }
+void EditorScene::OnSceneModified() {
+	// Scene modification now tracked through command history
+	// No need to manually set dirty flag
+}
 
 void EditorScene::OnShowRenameDialog(const engine::ecs::Entity entity) {
 	selected_entity_ = entity;
@@ -362,7 +396,7 @@ void EditorScene::OnShowRenameDialog(const engine::ecs::Entity entity) {
 
 void EditorScene::OnAddChildEntity(const engine::ecs::Entity parent) {
 	auto& scene_manager = engine::scene::GetSceneManager();
-	if (const auto* scene = scene_manager.TryGetScene(editor_scene_id_)) {
+	if (auto* scene = scene_manager.TryGetScene(editor_scene_id_)) {
 		std::string entity_name = "NewEntity";
 		auto count = 1;
 		while (count <= MAX_ENTITY_NAME_CHECK_COUNT
@@ -370,10 +404,12 @@ void EditorScene::OnAddChildEntity(const engine::ecs::Entity parent) {
 			entity_name = "NewEntity_" + std::to_string(count++);
 		}
 		if (count <= MAX_ENTITY_NAME_CHECK_COUNT) {
-			if (auto new_entity = scene->CreateEntity(entity_name, parent)) {
-				state_.is_dirty = true;
-				selected_entity_ = new_entity;
-			}
+			auto command = std::make_unique<CreateEntityCommand>(scene, entity_name, parent);
+			// Store the command pointer to get the created entity
+			auto* cmd_ptr = command.get();
+			command_history_.Execute(std::move(command));
+			// Select the newly created entity
+			selected_entity_ = cmd_ptr->GetCreatedEntity();
 		}
 	}
 }
@@ -383,7 +419,8 @@ void EditorScene::OnAddComponent(const engine::ecs::Entity entity, const std::st
 	if (const auto* comp = registry.FindComponent(component_name)) {
 		// Use flecs API directly to add component by ID
 		entity.add(comp->id);
-		state_.is_dirty = true;
+		// Note: Adding components doesn't go through command history yet (would need an AddComponentCommand)
+		// Mark scene as modified by executing a no-op to maintain dirty state
 		std::cout << "EditorScene: Added component '" << component_name << "' to entity" << std::endl;
 	}
 	else {
@@ -427,13 +464,13 @@ void EditorScene::NewScene() {
 
 	// Reset state
 	state_.current_file_path = "";
-	state_.is_dirty = false;
 	selected_entity_ = {};
 	selected_asset_.Clear();
 	selection_type_ = SelectionType::None;
 	file_path_buffer_[0] = '\0';
 	rename_entity_buffer_[0] = '\0';
 	hierarchy_panel_.ClearNodeState();
+	command_history_.Clear();
 
 	std::cout << "EditorScene: New scene created" << std::endl;
 }
@@ -472,11 +509,11 @@ void EditorScene::OpenScene(const std::string& path) {
 
 	// Update state
 	state_.current_file_path = path;
-	state_.is_dirty = false;
 	selected_entity_ = {};
 	selected_asset_.Clear();
 	selection_type_ = SelectionType::None;
 	hierarchy_panel_.ClearNodeState();
+	command_history_.Clear();
 
 	std::cout << "EditorScene: Scene loaded from: " << path << std::endl;
 }
@@ -498,7 +535,7 @@ void EditorScene::SaveScene() {
 
 	if (const engine::platform::fs::Path file_path(state_.current_file_path);
 		scene_manager.SaveScene(editor_scene_id_, file_path)) {
-		state_.is_dirty = false;
+		command_history_.SetSavePosition();
 		std::cout << "EditorScene: Scene saved successfully" << std::endl;
 	}
 	else {
@@ -526,16 +563,142 @@ void EditorScene::SaveSceneAs(const std::string& path) {
 }
 
 // ========================================================================
+// Graph Editor Setup
+// ========================================================================
+
+void EditorScene::RegisterExampleGraphNodes() {
+	using namespace engine::graph;
+	auto& registry = NodeTypeRegistry::GetGlobal();
+
+	// Math nodes
+	{
+		NodeTypeDefinition def("Add", "Math", "Add two values");
+		def.default_inputs = {
+				Pin(0, "A", PinType::Float, PinDirection::Input, 0.0f),
+				Pin(0, "B", PinType::Float, PinDirection::Input, 0.0f),
+		};
+		def.default_outputs = {Pin(0, "Result", PinType::Float, PinDirection::Output, 0.0f)};
+		registry.Register(def);
+	}
+	{
+		NodeTypeDefinition def("Multiply", "Math", "Multiply two values");
+		def.default_inputs = {
+				Pin(0, "A", PinType::Float, PinDirection::Input, 1.0f),
+				Pin(0, "B", PinType::Float, PinDirection::Input, 1.0f),
+		};
+		def.default_outputs = {Pin(0, "Result", PinType::Float, PinDirection::Output, 0.0f)};
+		registry.Register(def);
+	}
+	{
+		NodeTypeDefinition def("Clamp", "Math", "Clamp value between min and max");
+		def.default_inputs = {
+				Pin(0, "Value", PinType::Float, PinDirection::Input, 0.0f),
+				Pin(0, "Min", PinType::Float, PinDirection::Input, 0.0f),
+				Pin(0, "Max", PinType::Float, PinDirection::Input, 1.0f),
+		};
+		def.default_outputs = {Pin(0, "Result", PinType::Float, PinDirection::Output, 0.0f)};
+		registry.Register(def);
+	}
+
+	// Generator nodes
+	{
+		NodeTypeDefinition def("Constant", "Input", "A constant float value");
+		def.default_outputs = {Pin(0, "Value", PinType::Float, PinDirection::Output, 0.0f)};
+		registry.Register(def);
+	}
+	{
+		NodeTypeDefinition def("Color", "Input", "A constant color value");
+		def.default_outputs = {Pin(0, "Color", PinType::Color, PinDirection::Output, glm::vec4(1.0f))};
+		registry.Register(def);
+	}
+	{
+		NodeTypeDefinition def("Vec2", "Input", "A constant 2D vector");
+		def.default_outputs = {Pin(0, "Vector", PinType::Vec2, PinDirection::Output, glm::vec2(0.0f))};
+		registry.Register(def);
+	}
+
+	// Output nodes
+	{
+		NodeTypeDefinition def("Output", "Output", "Final output value");
+		def.default_inputs = {Pin(0, "Value", PinType::Any, PinDirection::Input, 0.0f)};
+		registry.Register(def);
+	}
+}
+
+void EditorScene::CreateExampleGraph() {
+	auto& graph = graph_editor_panel_.GetGraph();
+
+	// Create a simple example: Constant(5) + Constant(3) → Output
+	const int const_a = graph.AddNode("Constant", glm::vec2(50.0f, 50.0f));
+	const int const_b = graph.AddNode("Constant", glm::vec2(50.0f, 200.0f));
+	const int add_node = graph.AddNode("Add", glm::vec2(300.0f, 100.0f));
+	const int output = graph.AddNode("Output", glm::vec2(550.0f, 100.0f));
+
+	// Set up pins on nodes from registry definitions
+	auto& registry = engine::graph::NodeTypeRegistry::GetGlobal();
+	auto setup_pins = [&](int node_id, const std::string& type_name) {
+		if (auto* node = graph.GetNode(node_id)) {
+			if (const auto* def = registry.Get(type_name)) {
+				node->inputs = def->default_inputs;
+				node->outputs = def->default_outputs;
+			}
+		}
+	};
+	setup_pins(const_a, "Constant");
+	setup_pins(const_b, "Constant");
+	setup_pins(add_node, "Add");
+	setup_pins(output, "Output");
+
+	// Connect: Constant A output → Add input A
+	graph.AddLink(const_a, 0, add_node, 0);
+	// Connect: Constant B output → Add input B
+	graph.AddLink(const_b, 0, add_node, 1);
+	// Connect: Add result → Output value
+	graph.AddLink(add_node, 0, output, 0);
+}
+
+// ========================================================================
 // Scene Control
 // ========================================================================
 
 void EditorScene::PlayScene() {
 	std::cout << "EditorScene: Playing scene..." << std::endl;
+
+	// Snapshot the current scene state so we can restore it on Stop
+	const auto& scene_manager = engine::scene::GetSceneManager();
+	const auto& scene = scene_manager.GetScene(editor_scene_id_);
+	play_mode_snapshot_ = engine::scene::SceneSerializer::SnapshotEntities(scene, engine_->ecs);
+
+	// Deselect to avoid dangling entity references after restore
+	selected_entity_ = {};
+	selection_type_ = SelectionType::None;
+
 	state_.is_running = true;
 }
 
 void EditorScene::StopScene() {
 	std::cout << "EditorScene: Stopping scene..." << std::endl;
 	state_.is_running = false;
+
+	// Deselect before destroying entities
+	selected_entity_ = {};
+	selection_type_ = SelectionType::None;
+
+	// Destroy all scene entities, then restore from snapshot
+	auto& scene_manager = engine::scene::GetSceneManager();
+	auto& scene = scene_manager.GetScene(editor_scene_id_);
+	const auto entities = scene.GetAllEntities();
+	for (auto entity : entities) {
+		entity.destruct();
+	}
+
+	// Restore entities from snapshot
+	if (!play_mode_snapshot_.empty()) {
+		engine::scene::SceneSerializer::RestoreEntities(play_mode_snapshot_, scene, engine_->ecs);
+		play_mode_snapshot_.clear();
+	}
+
+	// Ensure editor camera is active again
+	engine_->ecs.SetActiveCamera(editor_camera_);
 }
 } // namespace editor

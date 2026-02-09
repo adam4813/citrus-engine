@@ -15,7 +15,9 @@ add_executable(
     citrus-scene-editor
     src/main.cpp
     src/asset_browser_panel.cpp
+    src/command.cpp
     src/editor_scene.cpp
+    src/graph_editor_panel.cpp
     src/hierarchy_panel.cpp
     src/properties_panel.cpp
     src/viewport_panel.cpp)

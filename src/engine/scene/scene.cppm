@@ -99,6 +99,22 @@ public:
 
 	bool IsLoaded() const;
 
+	// Scene settings
+	void SetBackgroundColor(const glm::vec4& color) const;
+	glm::vec4 GetBackgroundColor() const;
+
+	void SetAmbientLight(const glm::vec4& color) const;
+	glm::vec4 GetAmbientLight() const;
+
+	void SetGravity(const glm::vec2& gravity) const;
+	glm::vec2 GetGravity() const;
+
+	void SetAuthor(const std::string& author) const;
+	std::string GetAuthor() const;
+
+	void SetDescription(const std::string& description) const;
+	std::string GetDescription() const;
+
 	// Asset management
 	void SetFilePath(const platform::fs::Path& path) const;
 

@@ -10,6 +10,8 @@ import engine;
 
 namespace editor {
 
+class ICommand;
+
 /**
  * @brief Per-node state for hierarchy tree items
  */
@@ -42,6 +44,11 @@ public:
 	 * @param selected_entity Currently selected entity (for highlighting)
 	 */
 	void Render(engine::scene::SceneId scene_id, engine::ecs::Entity selected_entity);
+
+	/**
+	 * @brief Set the ECS world reference (needed for delete command)
+	 */
+	void SetWorld(engine::ecs::ECSWorld* world) { world_ = world; }
 
 	/**
 	 * @brief Check if panel is visible
@@ -79,9 +86,26 @@ private:
 	 */
 	static std::vector<engine::ecs::Entity> GetChildren(engine::ecs::Entity entity);
 
+	/**
+	 * @brief Check if an entity matches the current search/filter
+	 */
+	bool MatchesFilter(const engine::ecs::Entity entity) const;
+
+	/**
+	 * @brief Check if an entity or any of its descendants match the filter
+	 */
+	bool EntityOrDescendantsMatchFilter(const engine::ecs::Entity entity) const;
+
 	EditorCallbacks callbacks_;
 	bool is_visible_ = true;
 	std::unordered_map<uint64_t, HierarchyNodeState> node_states_;
+	engine::ecs::ECSWorld* world_ = nullptr;
+
+	// Search and filter state
+	std::string search_query_;
+	char search_buffer_[256] = {};
+	std::string tag_filter_;
+	bool filter_by_tag_ = false;
 };
 
 } // namespace editor

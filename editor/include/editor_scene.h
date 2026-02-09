@@ -1,6 +1,8 @@
 #pragma once
 
 #include "asset_browser_panel.h"
+#include "command.h"
+#include "graph_editor_panel.h"
 #include "hierarchy_panel.h"
 #include "properties_panel.h"
 #include "viewport_panel.h"
@@ -25,7 +27,6 @@ enum class SelectionType { None, Entity, Asset };
  */
 struct EditorState {
 	std::string current_file_path;
-	bool is_dirty = false;
 	bool show_new_scene_dialog = false;
 	bool show_open_dialog = false;
 	bool show_save_as_dialog = false;
@@ -79,6 +80,12 @@ public:
 	 * @param engine Reference to the engine instance
 	 */
 	void RenderUI(engine::Engine& engine);
+	
+	/**
+	 * Check if the scene is in play mode
+	 * @return true if the scene is running, false if in edit mode
+	 */
+	[[nodiscard]] bool IsRunning() const { return state_.is_running; }
 
 private:
 	// ========================================================================
@@ -102,6 +109,10 @@ private:
 
 	void PlayScene();
 	void StopScene();
+
+	// Graph editor setup
+	void RegisterExampleGraphNodes();
+	void CreateExampleGraph();
 
 	// ========================================================================
 	// Callback Handlers
@@ -142,6 +153,13 @@ private:
 	PropertiesPanel properties_panel_;
 	ViewportPanel viewport_panel_;
 	AssetBrowserPanel asset_browser_panel_;
+	GraphEditorPanel graph_editor_panel_;
+
+	// Command history for undo/redo
+	CommandHistory command_history_;
+
+	// Play mode snapshot — stores serialized scene state to restore on Stop
+	std::string play_mode_snapshot_;
 
 	// Input buffer for dialogs
 	char file_path_buffer_[256] = "";

@@ -22,7 +22,8 @@ namespace engine::input {
         
         const std::unordered_map<int, KeyCode> GLFW_TO_KEYCODE = {
             {GLFW_KEY_W, KeyCode::W}, {GLFW_KEY_A, KeyCode::A}, {GLFW_KEY_S, KeyCode::S}, {GLFW_KEY_D, KeyCode::D},
-            {GLFW_KEY_Q, KeyCode::Q}, {GLFW_KEY_E, KeyCode::E},
+            {GLFW_KEY_Q, KeyCode::Q}, {GLFW_KEY_E, KeyCode::E}, {GLFW_KEY_R, KeyCode::R},
+            {GLFW_KEY_X, KeyCode::X},
             {GLFW_KEY_UP, KeyCode::UP}, {GLFW_KEY_DOWN, KeyCode::DOWN}, {GLFW_KEY_LEFT, KeyCode::LEFT},
             {GLFW_KEY_RIGHT, KeyCode::RIGHT},
             {GLFW_KEY_ESCAPE, KeyCode::ESCAPE}, {GLFW_KEY_SPACE, KeyCode::SPACE}, {GLFW_KEY_ENTER, KeyCode::ENTER},

@@ -50,6 +50,12 @@ target_sources(engine-core
     ecs/flecs_ecs.cppm
     input/input.cppm
     os/os.cppm
+    graph/types.cppm
+    graph/node_graph.cppm
+    graph/node_type_registry.cppm
+    graph/graph_evaluator.cppm
+    graph/graph_serializer.cppm
+    graph/graph.cppm
     rendering/types.cppm
     rendering/texture.cppm
     rendering/shader.cppm
@@ -114,6 +120,13 @@ target_sources(engine-core PRIVATE
 
     ecs/component_registry.cpp
     ecs/ecs_world.cpp
+
+    # Graph module implementation
+    graph/types.cpp
+    graph/node_graph.cpp
+    graph/node_type_registry.cpp
+    graph/graph_evaluator.cpp
+    graph/graph_serializer.cpp
 
     input/input.cpp
 

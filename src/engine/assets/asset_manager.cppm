@@ -1,6 +1,7 @@
 module;
 
 #include <cstdint>
+#include <filesystem>
 #include <vector>
 #include <string>
 #include <memory>
@@ -24,10 +25,22 @@ export namespace engine::assets {
 
         static std::shared_ptr<Image> LoadImage(const std::string &path);
 
+        // Asset-relative path overloads (prepend assets directory)
         static std::optional<std::string> LoadTextFile(const std::string &path);
 
         static std::optional<std::vector<uint8_t>> LoadBinaryFile(const std::string &path);
 
         static bool SaveTextFile(const std::string &path, const std::string &content);
+
+        static bool SaveBinaryFile(const std::string &path, const std::vector<uint8_t> &data);
+
+        // Absolute/explicit path overloads (no assets directory prepending)
+        static std::optional<std::string> LoadTextFile(const std::filesystem::path &absolute_path);
+
+        static std::optional<std::vector<uint8_t>> LoadBinaryFile(const std::filesystem::path &absolute_path);
+
+        static bool SaveTextFile(const std::filesystem::path &absolute_path, const std::string &content);
+
+        static bool SaveBinaryFile(const std::filesystem::path &absolute_path, const std::vector<uint8_t> &data);
     };
 }

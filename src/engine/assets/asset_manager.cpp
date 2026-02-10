@@ -1,5 +1,6 @@
 module;
 
+#include <filesystem>
 #include <memory>
 #include <string>
 #include <vector>
@@ -56,8 +57,31 @@ namespace engine::assets {
     std::optional<std::string> AssetManager::LoadTextFile(const std::string &path) {
         using namespace engine::platform;
         const fs::Path asset_path = fs::GetAssetsDirectory() / path;
+        return LoadTextFile(asset_path);
+    }
+
+    std::optional<std::vector<uint8_t>> AssetManager::LoadBinaryFile(const std::string &path) {
+        using namespace engine::platform;
+        const fs::Path asset_path = fs::GetAssetsDirectory() / path;
+        return LoadBinaryFile(asset_path);
+    }
+
+    bool AssetManager::SaveTextFile(const std::string &path, const std::string &content) {
+        using namespace engine::platform;
+        const fs::Path asset_path = fs::GetAssetsDirectory() / path;
+        return SaveTextFile(asset_path, content);
+    }
+
+    bool AssetManager::SaveBinaryFile(const std::string &path, const std::vector<uint8_t> &data) {
+        using namespace engine::platform;
+        const fs::Path asset_path = fs::GetAssetsDirectory() / path;
+        return SaveBinaryFile(asset_path, data);
+    }
+
+    std::optional<std::string> AssetManager::LoadTextFile(const std::filesystem::path &absolute_path) {
+        using namespace engine::platform;
         fs::File file;
-        if (!file.Open(asset_path, fs::FileMode::Read, fs::FileType::Text)) {
+        if (!file.Open(absolute_path, fs::FileMode::Read, fs::FileType::Text)) {
             return std::nullopt;
         }
         std::string text = file.ReadText();
@@ -67,11 +91,10 @@ namespace engine::assets {
         return text;
     }
 
-    std::optional<std::vector<uint8_t>> AssetManager::LoadBinaryFile(const std::string &path) {
+    std::optional<std::vector<uint8_t>> AssetManager::LoadBinaryFile(const std::filesystem::path &absolute_path) {
         using namespace engine::platform;
-        const fs::Path asset_path = fs::GetAssetsDirectory() / path;
         fs::File file;
-        if (!file.Open(asset_path, fs::FileMode::Read)) {
+        if (!file.Open(absolute_path, fs::FileMode::Read)) {
             return std::nullopt;
         }
         const std::vector<uint8_t> data = file.ReadAll();
@@ -81,13 +104,21 @@ namespace engine::assets {
         return data;
     }
 
-    bool AssetManager::SaveTextFile(const std::string &path, const std::string &content) {
+    bool AssetManager::SaveTextFile(const std::filesystem::path &absolute_path, const std::string &content) {
         using namespace engine::platform;
-        const fs::Path asset_path = fs::GetAssetsDirectory() / path;
         fs::File file;
-        if (!file.Open(asset_path, fs::FileMode::Write, fs::FileType::Text)) {
+        if (!file.Open(absolute_path, fs::FileMode::Write, fs::FileType::Text)) {
             return false;
         }
         return file.WriteText(content);
+    }
+
+    bool AssetManager::SaveBinaryFile(const std::filesystem::path &absolute_path, const std::vector<uint8_t> &data) {
+        using namespace engine::platform;
+        fs::File file;
+        if (!file.Open(absolute_path, fs::FileMode::Write)) {
+            return false;
+        }
+        return file.Write(data.data(), data.size()) == data.size();
     }
 } // namespace engine::assets

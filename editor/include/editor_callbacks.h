@@ -16,6 +16,7 @@ using VoidCallback = std::function<void()>;
 using ComponentCallback = std::function<void(engine::ecs::Entity, const std::string&)>;
 using AssetCallback = std::function<void(engine::scene::AssetType, const std::string&)>;
 using CommandCallback = std::function<void(std::unique_ptr<ICommand>)>;
+using PrefabCallback = std::function<void(const std::string&)>;
 
 /**
  * @brief Callbacks for panel-to-editor communication
@@ -34,6 +35,7 @@ struct EditorCallbacks {
 	AssetCallback on_asset_deleted;          // An asset was deleted
 	EntityCallback on_scene_camera_changed;  // Scene's active camera selection changed
 	CommandCallback on_execute_command;      // Execute a command through the command history
+	PrefabCallback on_instantiate_prefab;    // Instantiate a prefab by file path
 };
 
 } // namespace editor

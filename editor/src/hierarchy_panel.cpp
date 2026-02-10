@@ -202,6 +202,32 @@ void HierarchyPanel::RenderEntityNode(
 		}
 
 		ImGui::Separator();
+
+		// Prefab operations
+		if (ImGui::MenuItem("Save as Prefab...")) {
+			if (world_) {
+				// Save to assets directory with entity name
+				std::string name_str = entity.name().c_str();
+				if (name_str.empty()) {
+					name_str = "Entity_" + std::to_string(entity.id());
+				}
+				if (const std::string prefab_path = "assets/" + name_str + ".prefab.json";
+					engine::scene::PrefabUtility::SaveAsPrefab(entity, *world_, prefab_path).is_valid()) {
+					std::cout << "HierarchyPanel: Saved prefab to " << prefab_path << std::endl;
+				}
+			}
+		}
+
+		// Show prefab-specific options if this is a flecs prefab instance (has IsA relationship)
+		if (const auto prefab_target = entity.target(flecs::IsA); prefab_target.is_valid()) {
+			if (ImGui::MenuItem("Apply to Prefab")) {
+				if (world_) {
+					engine::scene::PrefabUtility::ApplyToSource(entity, *world_);
+				}
+			}
+		}
+
+		ImGui::Separator();
 		if (ImGui::MenuItem("Rename")) {
 			if (callbacks_.on_show_rename_dialog) {
 				callbacks_.on_show_rename_dialog(entity);

@@ -1,15 +1,15 @@
 #pragma once
 
+#include <flecs.h>
+#include <memory>
+#include <string>
+
 #include "asset_browser_panel.h"
 #include "command.h"
 #include "graph_editor_panel.h"
 #include "hierarchy_panel.h"
 #include "properties_panel.h"
 #include "viewport_panel.h"
-
-#include <flecs.h>
-#include <memory>
-#include <string>
 
 import engine;
 
@@ -80,7 +80,7 @@ public:
 	 * @param engine Reference to the engine instance
 	 */
 	void RenderUI(engine::Engine& engine);
-	
+
 	/**
 	 * Check if the scene is in play mode
 	 * @return true if the scene is running, false if in edit mode

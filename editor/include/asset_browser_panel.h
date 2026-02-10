@@ -4,6 +4,7 @@
 
 #include <memory>
 #include <string>
+#include <vector>
 
 import engine;
 
@@ -69,8 +70,20 @@ private:
 			const engine::scene::AssetTypeInfo& type_info,
 			const AssetSelection& selected_asset) const;
 
+	/**
+	 * @brief Render the Prefabs section listing .prefab.json files
+	 */
+	void RenderPrefabSection();
+
+	/**
+	 * @brief Scan the assets directory for .prefab.json files
+	 */
+	void ScanForPrefabs();
+
 	EditorCallbacks callbacks_;
 	bool is_visible_ = true;
+	bool prefabs_scanned_ = false;
+	std::vector<std::string> prefab_files_; // Cached list of .prefab.json paths
 };
 
 } // namespace editor

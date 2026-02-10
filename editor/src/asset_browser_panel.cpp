@@ -1,6 +1,7 @@
 #include "asset_browser_panel.h"
 
 #include <cstring>
+#include <filesystem>
 #include <imgui.h>
 #include <imgui_internal.h>
 
@@ -31,6 +32,9 @@ void AssetBrowserPanel::Render(engine::scene::Scene* scene, const AssetSelection
 		 const auto& type_info : registry.GetAssetTypes()) {
 		RenderAssetCategory(scene, type_info, selected_asset);
 	}
+
+	// Render prefab files section
+	RenderPrefabSection();
 
 	ImGui::End();
 }
@@ -163,6 +167,122 @@ void AssetBrowserPanel::RenderAssetCategory(
 	}
 
 	ImGui::Unindent();
+}
+
+void AssetBrowserPanel::RenderPrefabSection() {
+	if (!prefabs_scanned_) {
+		ScanForPrefabs();
+	}
+
+	const std::string header_label = "Prefabs (" + std::to_string(prefab_files_.size()) + ")";
+
+	const bool is_open = ImGui::CollapsingHeader(
+			header_label.c_str(), ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_AllowItemOverlap);
+
+	// Refresh button
+	ImGui::SameLine(ImGui::GetWindowWidth() - 30);
+	if (ImGui::SmallButton("R##refresh_prefabs")) {
+		ScanForPrefabs();
+	}
+	if (ImGui::IsItemHovered()) {
+		ImGui::SetTooltip("Rescan for prefab files");
+	}
+
+	if (!is_open) {
+		return;
+	}
+
+	ImGui::Indent();
+
+	if (prefab_files_.empty()) {
+		ImGui::TextDisabled("No prefab files found");
+		ImGui::TextDisabled("Right-click an entity > Save as Prefab");
+	}
+	else {
+		for (const auto& prefab_path : prefab_files_) {
+			// Extract display name from path
+			const std::filesystem::path path(prefab_path);
+			std::string display_name = path.stem().string();
+			// Remove .prefab suffix if present (file is name.prefab.json)
+			if (display_name.ends_with(".prefab")) {
+				display_name = display_name.substr(0, display_name.size() - 7);
+			}
+
+			const ImGuiTreeNodeFlags node_flags =
+					ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen | ImGuiTreeNodeFlags_SpanAvailWidth;
+
+			ImGui::PushID(prefab_path.c_str());
+			ImGui::TreeNodeEx("##prefab_node", node_flags, "[P] %s", display_name.c_str());
+
+			// Right-click context menu
+			if (ImGui::BeginPopupContextItem("PrefabContextMenu")) {
+				if (ImGui::MenuItem("Instantiate")) {
+					if (callbacks_.on_instantiate_prefab) {
+						callbacks_.on_instantiate_prefab(prefab_path);
+					}
+				}
+				ImGui::Separator();
+				if (ImGui::MenuItem("Delete File")) {
+					std::filesystem::remove(prefab_path);
+					prefabs_scanned_ = false; // Trigger rescan
+				}
+				ImGui::EndPopup();
+			}
+
+			// Double-click to instantiate
+			if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left)) {
+				if (callbacks_.on_instantiate_prefab) {
+					callbacks_.on_instantiate_prefab(prefab_path);
+				}
+			}
+
+			if (ImGui::IsItemHovered()) {
+				ImGui::SetTooltip("%s", prefab_path.c_str());
+			}
+
+			ImGui::PopID();
+		}
+	}
+
+	ImGui::Unindent();
+}
+
+void AssetBrowserPanel::ScanForPrefabs() {
+	prefab_files_.clear();
+	prefabs_scanned_ = true;
+
+	// Scan the assets directory for .prefab.json files
+	const std::filesystem::path assets_dir("assets");
+	if (!std::filesystem::exists(assets_dir)) {
+		return;
+	}
+
+	try {
+		for (const auto& entry : std::filesystem::recursive_directory_iterator(assets_dir)) {
+			if (entry.is_regular_file()) {
+				const auto& path = entry.path();
+				const std::string filename = path.filename().string();
+				if (filename.ends_with(".prefab.json")) {
+					prefab_files_.push_back(path.string());
+				}
+			}
+		}
+		// Also check the current directory
+		if (std::filesystem::exists(".")) {
+			for (const auto& entry : std::filesystem::directory_iterator(".")) {
+				if (entry.is_regular_file()) {
+					const auto& path = entry.path();
+					const std::string filename = path.filename().string();
+					if (filename.ends_with(".prefab.json")) {
+						prefab_files_.push_back(path.string());
+					}
+				}
+			}
+		}
+	}
+	catch (const std::exception&) {
+		// Silently handle filesystem errors
+	}
 }
 
 } // namespace editor

@@ -63,6 +63,17 @@ void EditorScene::Initialize(engine::Engine& engine) {
 	callbacks.on_execute_command = [this](std::unique_ptr<ICommand> command) {
 		command_history_.Execute(std::move(command));
 	};
+	callbacks.on_instantiate_prefab = [this](const std::string& prefab_path) {
+		auto& scene_manager = engine::scene::GetSceneManager();
+		if (auto* scene = scene_manager.TryGetScene(editor_scene_id_)) {
+			if (const auto entity = engine::scene::PrefabUtility::InstantiatePrefab(
+						prefab_path, scene, engine_->ecs, selected_entity_);
+				entity.is_valid()) {
+				OnEntitySelected(entity);
+				OnSceneModified();
+			}
+		}
+	};
 
 	hierarchy_panel_.SetCallbacks(callbacks);
 	hierarchy_panel_.SetWorld(&engine.ecs);
@@ -328,8 +339,7 @@ void EditorScene::RenderMenuBar() {
 						entity_name = "NewEntity_" + std::to_string(count++);
 					}
 					if (count <= MAX_ENTITY_NAME_CHECK_COUNT) {
-						auto command =
-								std::make_unique<CreateEntityCommand>(scene, entity_name, engine::ecs::Entity());
+						auto command = std::make_unique<CreateEntityCommand>(scene, entity_name, engine::ecs::Entity());
 						command_history_.Execute(std::move(command));
 					}
 				}

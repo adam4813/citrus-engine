@@ -83,6 +83,7 @@ target_sources(engine-core
     rendering/rendering.cppm
     scene/scene_assets.cppm
     scene/scene_serializer.cppm
+    scene/prefab.cppm
     scene/scene.cppm
     scripting/scripting_backend.cppm
     scripting/scripting_system.cppm
@@ -177,6 +178,7 @@ target_sources(engine-core PRIVATE
     scene/scene_assets.cpp
     scene/scene_manager.cpp
     scene/scene_serializer.cpp
+    scene/prefab.cpp
 
     # Scripting module implementation
     scripting/lua_backend.cpp

@@ -72,17 +72,15 @@ struct Tags {
 		}
 	}
 
-	void RemoveTag(const std::string& tag) {
-		std::erase(tags, tag);
-	}
+	void RemoveTag(const std::string& tag) { std::erase(tags, tag); }
 
-	bool HasTag(const std::string& tag) const {
-		return std::find(tags.begin(), tags.end(), tag) != tags.end();
-	}
+	bool HasTag(const std::string& tag) const { return std::ranges::find(tags, tag) != tags.end(); }
 
-	void ClearTags() {
-		tags.clear();
-	}
+	void ClearTags() { tags.clear(); }
+};
+
+struct PrefabInstance {
+	std::string prefab_path; // Path to the .prefab.json file
 };
 
 // === TILEMAP COMPONENTS ===

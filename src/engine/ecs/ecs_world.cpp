@@ -138,9 +138,7 @@ ECSWorld::ECSWorld() {
 			.Build();
 
 	// Register the new animation system Animator component
-	registry.Register<Animator>("Animator", world_)
-			.Category("Animation")
-			.Build();
+	registry.Register<Animator>("Animator", world_).Category("Animation").Build();
 
 	registry.Register<ParticleSystem>("ParticleSystem", world_).Category("Rendering").Build();
 
@@ -171,10 +169,15 @@ ECSWorld::ECSWorld() {
 	// Register scene organization components
 	registry.Register<Group>("Group", world_).Category("Scene").Build();
 	registry.Register<Tags>("Tags", world_).Category("Scene").Field("tags", &Tags::tags).Build();
+	registry.Register<PrefabInstance>("PrefabInstance", world_)
+			.Category("Scene")
+			.Field("prefab_path", &PrefabInstance::prefab_path)
+			.Build();
+
 	// Register audio components
 	// Register PlayState enum for proper serialization
 	world_.component<audio::PlayState>();
-	
+
 	registry.Register<audio::AudioSource>("AudioSource", world_)
 			.Category("Audio")
 			.Field("clip_id", &audio::AudioSource::clip_id)

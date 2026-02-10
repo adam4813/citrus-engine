@@ -19,6 +19,7 @@ export import engine.platform;
 export import engine.ecs;
 export import engine.scene;
 export import engine.scene.serializer;
+export import engine.scene.prefab;
 export import engine.components;
 export import engine.animation;
 export import engine.data;

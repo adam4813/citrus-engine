@@ -209,6 +209,8 @@ private:
 
 	void SetupTransformSystem() const;
 
+	void SetupAnimationSystem() const;
+
 	void SetupShaderRefIntegration();
 
 	void SetupMeshRefIntegration();

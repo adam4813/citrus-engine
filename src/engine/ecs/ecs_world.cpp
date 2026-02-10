@@ -14,6 +14,7 @@ import glm;
 using namespace engine::components;
 using namespace engine::rendering;
 using namespace engine::ui;
+using namespace engine::animation;
 
 namespace engine::ecs {
 
@@ -136,6 +137,11 @@ ECSWorld::ECSWorld() {
 			.Field("playing", &Animation::playing)
 			.Build();
 
+	// Register the new animation system Animator component
+	registry.Register<Animator>("Animator", world_)
+			.Category("Animation")
+			.Build();
+
 	registry.Register<ParticleSystem>("ParticleSystem", world_).Category("Rendering").Build();
 
 	// Register scene components
@@ -165,6 +171,28 @@ ECSWorld::ECSWorld() {
 	// Register scene organization components
 	registry.Register<Group>("Group", world_).Category("Scene").Build();
 	registry.Register<Tags>("Tags", world_).Category("Scene").Field("tags", &Tags::tags).Build();
+	// Register audio components
+	// Register PlayState enum for proper serialization
+	world_.component<audio::PlayState>();
+	
+	registry.Register<audio::AudioSource>("AudioSource", world_)
+			.Category("Audio")
+			.Field("clip_id", &audio::AudioSource::clip_id)
+			.Field("volume", &audio::AudioSource::volume)
+			.Field("pitch", &audio::AudioSource::pitch)
+			.Field("looping", &audio::AudioSource::looping)
+			.Field("spatial", &audio::AudioSource::spatial)
+			.Field("position", &audio::AudioSource::position)
+			.Field("state", &audio::AudioSource::state)
+			.Field("play_handle", &audio::AudioSource::play_handle)
+			.Build();
+
+	registry.Register<audio::AudioListener>("AudioListener", world_)
+			.Category("Audio")
+			.Field("position", &audio::AudioListener::position)
+			.Field("forward", &audio::AudioListener::forward)
+			.Field("up", &audio::AudioListener::up)
+			.Build();
 
 	// Set up shader reference integration (ShaderRef component, With trait, observers)
 	SetupShaderRefIntegration();
@@ -178,6 +206,7 @@ ECSWorld::ECSWorld() {
 	SetupCameraSystem();
 	SetupSpatialSystem();
 	SetupTransformSystem();
+	SetupAnimationSystem();
 }
 
 // Get the underlying flecs world
@@ -584,4 +613,10 @@ void ECSWorld::SetupMeshRefIntegration() {
 				}
 			});
 }
+
+void ECSWorld::SetupAnimationSystem() const {
+	// Register the animation system with the flecs world
+	AnimationSystem::Register(world_);
+}
+
 } // namespace engine::ecs

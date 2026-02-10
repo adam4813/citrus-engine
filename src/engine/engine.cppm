@@ -20,12 +20,14 @@ export import engine.ecs;
 export import engine.scene;
 export import engine.scene.serializer;
 export import engine.components;
+export import engine.animation;
 export import engine.graph;
 export import engine.rendering;
 export import engine.os;
 export import engine.input;
 export import engine.scripting;
 export import engine.ui;
+export import engine.audio;
 
 // Main engine namespace
 export namespace engine {

@@ -44,6 +44,17 @@ target_sources(engine-core
     assets/asset_manager.cppm
     assets/assets.cppm
     assets/tileset.cppm
+    animation/animation_clip.cppm
+    animation/animation_state.cppm
+    animation/animator.cppm
+    animation/animation_system.cppm
+    animation/animation_serializer.cppm
+    animation/animation.cppm
+    audio/audio_clip.cppm
+    audio/audio_source.cppm
+    audio/audio_listener.cppm
+    audio/audio_system.cppm
+    audio/audio.cppm
     platform/platform.cppm
     components/components.cppm
     ecs/component_registry.cppm
@@ -114,6 +125,12 @@ endif ()
 
 # Engine implementation source files
 target_sources(engine-core PRIVATE
+    # Animation module implementation
+    animation/animation_clip.cpp
+    animation/animation_state.cpp
+    animation/animation_system.cpp
+    animation/animation_serializer.cpp
+
     # Assets module implementation
     assets/asset_manager.cpp
     assets/tileset.cpp

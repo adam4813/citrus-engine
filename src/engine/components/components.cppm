@@ -200,4 +200,19 @@ struct Tilemap {
 		return grid_offset + glm::vec2((grid_pos.x + 0.5f) * tile_size.x, (grid_pos.y + 0.5f) * tile_size.y);
 	}
 };
+
+// === AI COMPONENTS ===
+
+/**
+ * @brief Component that references a behavior tree asset
+ *
+ * Each entity with this component can run its own behavior tree.
+ * The blackboard is per-entity, allowing different instances to have different state.
+ */
+struct BehaviorTreeComponent {
+	std::string behavior_tree_asset; // Path to .bt.json file
+	// Note: The actual BehaviorTree and Blackboard are managed by the AI system
+	// to avoid circular dependencies and keep components simple POD structures
+};
+
 } // namespace engine::components

@@ -41,6 +41,9 @@ endif ()
 target_sources(engine-core
     PUBLIC
     FILE_SET CXX_MODULES FILES
+    ai/blackboard.cppm
+    ai/behavior_tree.cppm
+    ai/ai.cppm
     assets/asset_manager.cppm
     assets/assets.cppm
     assets/tileset.cppm
@@ -131,6 +134,9 @@ endif ()
 
 # Engine implementation source files
 target_sources(engine-core PRIVATE
+    # AI module implementation
+    ai/behavior_tree.cpp
+
     # Animation module implementation
     animation/animation_clip.cpp
     animation/animation_state.cpp

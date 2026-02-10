@@ -197,6 +197,12 @@ ECSWorld::ECSWorld() {
 			.Field("up", &audio::AudioListener::up)
 			.Build();
 
+	// Register AI components
+	registry.Register<BehaviorTreeComponent>("BehaviorTreeComponent", world_)
+			.Category("AI")
+			.Field("behavior_tree_asset", &BehaviorTreeComponent::behavior_tree_asset)
+			.Build();
+
 	// Set up shader reference integration (ShaderRef component, With trait, observers)
 	SetupShaderRefIntegration();
 

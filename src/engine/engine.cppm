@@ -14,6 +14,7 @@ module;
 export module engine;
 
 // Re-export all engine subsystems for convenient access
+export import engine.ai;
 export import engine.assets;
 export import engine.platform;
 export import engine.ecs;

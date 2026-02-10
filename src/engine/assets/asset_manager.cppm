@@ -27,5 +27,7 @@ export namespace engine::assets {
         static std::optional<std::string> LoadTextFile(const std::string &path);
 
         static std::optional<std::vector<uint8_t>> LoadBinaryFile(const std::string &path);
+
+        static bool SaveTextFile(const std::string &path, const std::string &content);
     };
 }

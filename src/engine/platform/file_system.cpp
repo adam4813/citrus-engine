@@ -47,7 +47,11 @@ namespace engine::platform::fs {
     }
 
     size_t File::Read(void *buffer, size_t size) {
-        return 0;
+        if (!file_stream_.is_open() || !buffer || size == 0) {
+            return 0;
+        }
+        file_stream_.read(static_cast<char *>(buffer), static_cast<std::streamsize>(size));
+        return static_cast<size_t>(file_stream_.gcount());
     }
 
     std::vector<uint8_t> File::ReadAll() {
@@ -63,23 +67,47 @@ namespace engine::platform::fs {
     }
 
     size_t File::Write(const void *data, size_t size) {
-        return 0;
+        if (!file_stream_.is_open() || !data || size == 0) {
+            return 0;
+        }
+        file_stream_.write(static_cast<const char *>(data), static_cast<std::streamsize>(size));
+        return file_stream_.good() ? size : 0;
     }
 
     bool File::WriteText(const std::string &text) {
-        return false;
+        if (!file_stream_.is_open()) {
+            return false;
+        }
+        file_stream_ << text;
+        return file_stream_.good();
     }
 
     bool File::Seek(size_t position) {
-        return false;
+        if (!file_stream_.is_open()) {
+            return false;
+        }
+        file_stream_.seekg(static_cast<std::streamoff>(position), std::ios::beg);
+        file_stream_.seekp(static_cast<std::streamoff>(position), std::ios::beg);
+        return file_stream_.good();
     }
 
     size_t File::Tell() const {
-        return 0;
+        if (!file_stream_.is_open()) {
+            return 0;
+        }
+        return static_cast<size_t>(const_cast<std::fstream &>(file_stream_).tellg());
     }
 
     size_t File::Size() const {
-        return 0;
+        if (!file_stream_.is_open()) {
+            return 0;
+        }
+        auto &stream = const_cast<std::fstream &>(file_stream_);
+        const auto current = stream.tellg();
+        stream.seekg(0, std::ios::end);
+        const auto size = static_cast<size_t>(stream.tellg());
+        stream.seekg(current);
+        return size;
     }
 
     Path GetAssetsDirectory() {

@@ -80,4 +80,14 @@ namespace engine::assets {
         }
         return data;
     }
+
+    bool AssetManager::SaveTextFile(const std::string &path, const std::string &content) {
+        using namespace engine::platform;
+        const fs::Path asset_path = fs::GetAssetsDirectory() / path;
+        fs::File file;
+        if (!file.Open(asset_path, fs::FileMode::Write, fs::FileType::Text)) {
+            return false;
+        }
+        return file.WriteText(content);
+    }
 } // namespace engine::assets

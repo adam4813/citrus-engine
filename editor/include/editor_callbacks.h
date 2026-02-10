@@ -44,6 +44,7 @@ struct EditorCallbacks {
 	FilePathCallback on_open_tileset;        // Open a tileset file in the tileset editor
 	FilePathCallback on_open_data_table;     // Open a data table file in the data table editor
 	StringCallback on_open_file;             // Open a file in the code editor
+	FilePathCallback on_file_selected;       // A file was single-clicked in asset browser
 };
 
 } // namespace editor

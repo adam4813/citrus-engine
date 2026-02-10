@@ -35,8 +35,19 @@ void PropertiesPanel::Render(
 			name = "Entity_" + std::to_string(selected_entity.id());
 		}
 
-		ImGui::Text("Entity: %s", name.c_str());
-		ImGui::Separator();
+		// Detect if this is a prefab template entity
+		const bool is_prefab_template = selected_entity.has(flecs::Prefab);
+		if (is_prefab_template) {
+			ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.4f, 0.8f, 1.0f, 1.0f));
+			ImGui::Text("Prefab Template");
+			ImGui::PopStyleColor();
+			ImGui::Text("Name: %s", name.c_str());
+			ImGui::Separator();
+		}
+		else {
+			ImGui::Text("Entity: %s", name.c_str());
+			ImGui::Separator();
+		}
 
 		RenderComponentSections(selected_entity, scene);
 		RenderAddComponentButton(selected_entity);

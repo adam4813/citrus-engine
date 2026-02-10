@@ -164,6 +164,7 @@ private:
 	SelectionType selection_type_ = SelectionType::None;
 	engine::ecs::Entity selected_entity_;
 	AssetSelection selected_asset_;
+	engine::ecs::Entity selected_prefab_entity_; // Tracks when a prefab template is selected
 
 	// Panels (composition)
 	HierarchyPanel hierarchy_panel_;

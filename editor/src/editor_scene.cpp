@@ -4,6 +4,7 @@
 #include "commands/entity_commands.h"
 #include "editor_utils.h"
 
+#include <fstream>
 #include <imgui.h>
 #include <imgui_internal.h>
 #include <iostream>
@@ -85,6 +86,21 @@ void EditorScene::Initialize(engine::Engine& engine) {
 	callbacks.on_open_file = [this](const std::string& path) {
 		code_editor_panel_.OpenFile(path);
 		code_editor_panel_.SetVisible(true);
+	};
+	callbacks.on_file_selected = [this](const std::string& path) {
+		// When a prefab file is selected, load it and display its properties
+		if (path.ends_with(".prefab.json")) {
+			auto prefab_entity = engine::scene::PrefabUtility::LoadPrefab(path, engine_->ecs);
+			if (prefab_entity.is_valid()) {
+				selected_entity_ = prefab_entity;
+				selected_asset_.Clear();
+				selection_type_ = SelectionType::Entity;
+				selected_prefab_entity_ = prefab_entity;
+				return;
+			}
+		}
+		// Non-prefab file selected: clear prefab tracking
+		selected_prefab_entity_ = {};
 	};
 
 	hierarchy_panel_.SetCallbacks(callbacks);
@@ -214,7 +230,7 @@ void EditorScene::RenderUI(engine::Engine& engine) {
 	texture_editor_panel_.Render();
 	animation_editor_panel_.Render();
 	behavior_tree_editor_panel_.Render();
-	tileset_editor_panel_.Render();
+	tileset_editor_panel_.Render(engine);
 	data_table_editor_panel_.Render();
 	sound_editor_panel_.Render();
 	code_editor_panel_.Render();
@@ -436,6 +452,7 @@ void EditorScene::OnEntitySelected(const engine::ecs::Entity entity) {
 	// Clear asset selection when entity is selected
 	selected_asset_.Clear();
 	selection_type_ = entity.is_valid() ? SelectionType::Entity : SelectionType::None;
+	selected_prefab_entity_ = {};
 }
 
 void EditorScene::OnEntityDeleted(const engine::ecs::Entity entity) {
@@ -447,6 +464,44 @@ void EditorScene::OnEntityDeleted(const engine::ecs::Entity entity) {
 void EditorScene::OnSceneModified() {
 	// Scene modification now tracked through command history
 	// No need to manually set dirty flag
+
+	// If we're editing a prefab template, persist changes to disk
+	if (selected_prefab_entity_.is_valid() && selected_prefab_entity_.has(flecs::Prefab)) {
+		const auto* prefab_info = selected_prefab_entity_.try_get<engine::components::PrefabInstance>();
+		if (prefab_info && !prefab_info->prefab_path.empty()) {
+			try {
+				json prefab_doc;
+				prefab_doc["version"] = 1;
+				prefab_doc["name"] = selected_prefab_entity_.name().c_str();
+
+				json entities_array = json::array();
+				json entity_entry;
+				entity_entry["name"] = selected_prefab_entity_.name().c_str();
+
+				json data = json::parse(selected_prefab_entity_.to_json().c_str());
+				if (data.contains("pairs")) {
+					auto& pairs = data["pairs"];
+					pairs.erase("flecs.core.ChildOf");
+					pairs.erase("flecs.core.IsA");
+					if (pairs.empty()) {
+						data.erase("pairs");
+					}
+				}
+				entity_entry["data"] = data.dump();
+				entities_array.push_back(entity_entry);
+				prefab_doc["entities"] = entities_array;
+
+				std::ofstream file(prefab_info->prefab_path);
+				if (file.is_open()) {
+					file << prefab_doc.dump(2);
+					file.close();
+				}
+			}
+			catch (const std::exception& e) {
+				std::cerr << "EditorScene: Error saving prefab: " << e.what() << std::endl;
+			}
+		}
+	}
 }
 
 void EditorScene::OnShowRenameDialog(const engine::ecs::Entity entity) {

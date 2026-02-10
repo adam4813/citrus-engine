@@ -1,7 +1,9 @@
 #pragma once
 
 #include "../command.h"
+#include "../editor_utils.h"
 
+#include <flecs.h>
 #include <string>
 #include <vector>
 
@@ -78,21 +80,39 @@ public:
 	DeleteEntityCommand(engine::scene::Scene* scene, engine::ecs::Entity entity, engine::ecs::ECSWorld& world) :
 			scene_(scene), entity_(entity), world_(world), entity_name_(entity.name().c_str()),
 			parent_(scene->GetParent(entity)) {
-		// Serialize the entity and its descendants to JSON for restoration
 		SerializeEntity();
 	}
 
 	void Execute() override {
 		if (entity_.is_valid()) {
+			// Capture state before destroying so Redo after Undo works
+			entity_name_ = entity_.name().c_str();
+			parent_ = scene_->GetParent(entity_);
+			SerializeEntity();
 			scene_->DestroyEntity(entity_);
 		}
 	}
 
 	void Undo() override {
-		// Restore the entity from JSON
-		if (!entity_json_.empty()) {
-			DeserializeEntity();
+		if (entity_json_.empty()) {
+			return;
 		}
+
+		// Create a fresh entity — the old ID is stale after destruction
+		if (parent_.is_valid()) {
+			entity_ = scene_->CreateEntity(entity_name_, parent_);
+		}
+		else {
+			entity_ = scene_->CreateEntity(entity_name_);
+		}
+
+		if (!entity_.is_valid()) {
+			return;
+		}
+
+		// Restore components, stripping hierarchy pairs so from_json
+		// doesn't try to re-parent to the (possibly stale) old parent
+		entity_.from_json(StripEntityRelationships(entity_json_).c_str());
 	}
 
 	std::string GetDescription() const override { return "Delete Entity: " + entity_name_; }
@@ -102,20 +122,7 @@ private:
 		if (!entity_.is_valid()) {
 			return;
 		}
-
-		// Use Flecs to_json to serialize the entity
 		entity_json_ = entity_.to_json();
-	}
-
-	void DeserializeEntity() {
-		// Use Flecs from_json to deserialize the entity
-		// Note: This restores the entity with the same ID if possible
-		entity_.from_json(entity_json_.c_str());
-
-		// Restore parent relationship if there was one
-		if (entity_.is_valid() && parent_.is_valid()) {
-			scene_->SetParent(entity_, parent_);
-		}
 	}
 
 	engine::scene::Scene* scene_;

@@ -289,16 +289,21 @@ void CutEntityCommand::SerializeEntity() {
 }
 
 void CutEntityCommand::DeserializeEntity() {
-	const flecs::world& flecs_world = world_.GetWorld();
-
-	// Recreate the entity
-	entity_ = flecs_world.entity(entity_name_.c_str());
-	entity_.from_json(entity_json_.c_str());
-
-	// Restore parent relationship if there was one
-	if (entity_.is_valid() && parent_.is_valid()) {
-		scene_->SetParent(entity_, parent_);
+	// Create a fresh entity — the old ID is stale after destruction
+	if (parent_.is_valid()) {
+		entity_ = scene_->CreateEntity(entity_name_, parent_);
 	}
+	else {
+		entity_ = scene_->CreateEntity(entity_name_);
+	}
+
+	if (!entity_.is_valid()) {
+		return;
+	}
+
+	// Restore components, stripping hierarchy pairs so from_json
+	// doesn't try to re-parent to the (possibly stale) old parent
+	entity_.from_json(StripEntityRelationships(entity_json_).c_str());
 }
 
 } // namespace editor

@@ -1,5 +1,6 @@
 #include "asset_browser_panel.h"
 
+#include <algorithm>
 #include <cstring>
 #include <filesystem>
 #include <imgui.h>
@@ -9,9 +10,146 @@ namespace editor {
 
 void AssetBrowserPanel::SetCallbacks(const EditorCallbacks& callbacks) { callbacks_ = callbacks; }
 
+std::string AssetBrowserPanel::GetFileIcon(const std::filesystem::path& path) {
+	if (std::filesystem::is_directory(path)) {
+		return "[D]";
+	}
+
+	const auto ext = path.extension().string();
+	if (ext == ".scene" || path.filename().string().ends_with(".scene.json")) {
+		return "[Sc]";
+	}
+	if (ext == ".prefab" || path.filename().string().ends_with(".prefab.json")) {
+		return "[P]";
+	}
+	if (path.filename().string().ends_with(".tileset.json")) {
+		return "[TS]";
+	}
+	if (path.filename().string().ends_with(".data.json")) {
+		return "[Dt]";
+	}
+	if (ext == ".png" || ext == ".jpg" || ext == ".jpeg" || ext == ".tga" || ext == ".bmp") {
+		return "[T]";
+	}
+	if (ext == ".wav" || ext == ".ogg" || ext == ".mp3") {
+		return "[S]";
+	}
+	if (ext == ".obj" || ext == ".fbx" || ext == ".gltf" || ext == ".glb") {
+		return "[M]";
+	}
+	if (ext == ".lua" || ext == ".as" || ext == ".js") {
+		return "[Sc]";
+	}
+	if (ext == ".glsl" || ext == ".vert" || ext == ".frag" || ext == ".shader") {
+		return "[Sh]";
+	}
+	if (ext == ".json") {
+		return "[J]";
+	}
+	return "[F]";
+}
+
+AssetFileType AssetBrowserPanel::GetAssetFileType(const std::filesystem::path& path) {
+	if (std::filesystem::is_directory(path)) {
+		return AssetFileType::Directory;
+	}
+
+	const auto ext = path.extension().string();
+	const auto filename = path.filename().string();
+
+	if (ext == ".scene" || filename.ends_with(".scene.json")) {
+		return AssetFileType::Scene;
+	}
+	if (ext == ".prefab" || filename.ends_with(".prefab.json")) {
+		return AssetFileType::Prefab;
+	}
+	if (filename.ends_with(".data.json")) {
+		return AssetFileType::DataTable;
+	}
+	if (ext == ".png" || ext == ".jpg" || ext == ".jpeg" || ext == ".tga" || ext == ".bmp") {
+		return AssetFileType::Texture;
+	}
+	if (ext == ".wav" || ext == ".ogg" || ext == ".mp3") {
+		return AssetFileType::Sound;
+	}
+	if (ext == ".obj" || ext == ".fbx" || ext == ".gltf" || ext == ".glb") {
+		return AssetFileType::Mesh;
+	}
+	if (ext == ".lua" || ext == ".as" || ext == ".js") {
+		return AssetFileType::Script;
+	}
+	if (ext == ".glsl" || ext == ".vert" || ext == ".frag" || ext == ".shader") {
+		return AssetFileType::Shader;
+	}
+
+	return AssetFileType::All;
+}
+
+bool AssetBrowserPanel::PassesFilter(const FileSystemItem& item) const {
+	// Search filter
+	if (search_buffer_[0] != '\0') {
+		const std::string search_lower = [this]() {
+			std::string s = search_buffer_;
+			std::transform(s.begin(), s.end(), s.begin(), ::tolower);
+			return s;
+		}();
+
+		std::string name_lower = item.display_name;
+		std::transform(name_lower.begin(), name_lower.end(), name_lower.begin(), ::tolower);
+
+		if (name_lower.find(search_lower) == std::string::npos) {
+			return false;
+		}
+	}
+
+	// Type filter
+	if (filter_type_ != AssetFileType::All) {
+		const auto item_type = GetAssetFileType(item.path);
+		if (item_type != filter_type_ && item_type != AssetFileType::Directory) {
+			return false;
+		}
+	}
+
+	return true;
+}
+
+void AssetBrowserPanel::RefreshCurrentDirectory() {
+	current_items_.clear();
+
+	if (!std::filesystem::exists(current_directory_)) {
+		needs_refresh_ = false;
+		return;
+	}
+
+	try {
+		for (const auto& entry : std::filesystem::directory_iterator(current_directory_)) {
+			FileSystemItem item(entry.path(), entry.is_directory());
+			item.type_icon = GetFileIcon(entry.path());
+			current_items_.push_back(item);
+		}
+
+		// Sort: directories first, then alphabetically
+		std::sort(current_items_.begin(), current_items_.end(), [](const auto& a, const auto& b) {
+			if (a.is_directory != b.is_directory) {
+				return a.is_directory > b.is_directory;
+			}
+			return a.display_name < b.display_name;
+		});
+	}
+	catch (const std::filesystem::filesystem_error&) {
+		// Silently handle errors
+	}
+
+	needs_refresh_ = false;
+}
+
 void AssetBrowserPanel::Render(engine::scene::Scene* scene, const AssetSelection& selected_asset) {
 	if (!is_visible_)
 		return;
+
+	if (needs_refresh_) {
+		RefreshCurrentDirectory();
+	}
 
 	ImGuiWindowClass win_class;
 	win_class.DockNodeFlagsOverrideSet = ImGuiDockNodeFlags_NoWindowMenuButton | ImGuiDockNodeFlags_NoCloseButton
@@ -27,16 +165,468 @@ void AssetBrowserPanel::Render(engine::scene::Scene* scene, const AssetSelection
 		return;
 	}
 
-	// Iterate over all registered asset types and render their sections
-	for (const auto& registry = engine::scene::AssetRegistry::Instance();
-		 const auto& type_info : registry.GetAssetTypes()) {
-		RenderAssetCategory(scene, type_info, selected_asset);
-	}
+	// Breadcrumb navigation
+	RenderBreadcrumbBar();
 
-	// Render prefab files section
-	RenderPrefabSection();
+	ImGui::Separator();
+
+	// Search and filter bar
+	RenderSearchBar();
+
+	ImGui::Separator();
+
+	// Two-panel layout: directory tree (left) and content view (right)
+	const float tree_width = 200.0f;
+
+	// Left panel: Directory tree
+	ImGui::BeginChild("DirectoryTree", ImVec2(tree_width, 0), true);
+	RenderDirectoryTree();
+	ImGui::EndChild();
+
+	ImGui::SameLine();
+
+	// Right panel: Content view
+	ImGui::BeginChild("ContentView", ImVec2(0, 0), true);
+	RenderContentView();
+
+	// Handle right-click on empty space
+	if (ImGui::IsWindowHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
+		ImGui::OpenPopup("EmptySpaceContextMenu");
+	}
+	ShowEmptySpaceContextMenu();
+
+	ImGui::EndChild();
 
 	ImGui::End();
+}
+
+void AssetBrowserPanel::RenderBreadcrumbBar() {
+	ImGui::Text("Path:");
+	ImGui::SameLine();
+
+	// Show clickable breadcrumb trail
+	std::filesystem::path path = current_directory_;
+	std::vector<std::filesystem::path> segments;
+
+	// Build segments from assets root
+	for (auto it = current_directory_; it != assets_root_.parent_path(); it = it.parent_path()) {
+		segments.push_back(it);
+		if (it == assets_root_)
+			break;
+	}
+	std::reverse(segments.begin(), segments.end());
+
+	for (size_t i = 0; i < segments.size(); ++i) {
+		if (i > 0) {
+			ImGui::SameLine();
+			ImGui::Text("/");
+			ImGui::SameLine();
+		}
+
+		const auto& segment = segments[i];
+		const std::string label = segment.filename().string();
+
+		if (ImGui::Button(label.c_str())) {
+			current_directory_ = segment;
+			needs_refresh_ = true;
+		}
+	}
+
+	// View mode toggle
+	ImGui::SameLine();
+	ImGui::SetCursorPosX(ImGui::GetWindowWidth() - 100);
+
+	if (view_mode_ == AssetViewMode::Grid) {
+		if (ImGui::Button("Grid View")) {
+			view_mode_ = AssetViewMode::List;
+		}
+	}
+	else {
+		if (ImGui::Button("List View")) {
+			view_mode_ = AssetViewMode::Grid;
+		}
+	}
+}
+
+void AssetBrowserPanel::RenderSearchBar() {
+	ImGui::Text("Search:");
+	ImGui::SameLine();
+
+	ImGui::SetNextItemWidth(200);
+	if (ImGui::InputText("##search", search_buffer_, sizeof(search_buffer_))) {
+		// Filter updated
+	}
+
+	ImGui::SameLine();
+	ImGui::Text("Filter:");
+	ImGui::SameLine();
+
+	ImGui::SetNextItemWidth(120);
+	const char* filter_items[] = {"All", "Scene", "Prefab", "Texture", "Sound", "Mesh", "Script", "Shader", "Data"};
+	int current_filter = static_cast<int>(filter_type_);
+	if (ImGui::Combo("##filter", &current_filter, filter_items, IM_ARRAYSIZE(filter_items))) {
+		filter_type_ = static_cast<AssetFileType>(current_filter);
+	}
+
+	ImGui::SameLine();
+	if (ImGui::Button("Refresh")) {
+		needs_refresh_ = true;
+	}
+}
+
+void AssetBrowserPanel::RenderDirectoryTree() {
+	if (!std::filesystem::exists(assets_root_)) {
+		ImGui::TextDisabled("Assets folder not found");
+		return;
+	}
+
+	RenderDirectoryTreeNode(assets_root_);
+}
+
+void AssetBrowserPanel::RenderDirectoryTreeNode(const std::filesystem::path& path) {
+	if (!std::filesystem::exists(path) || !std::filesystem::is_directory(path)) {
+		return;
+	}
+
+	const std::string name = path.filename().string();
+	const bool is_selected = (path == current_directory_);
+
+	ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick;
+	if (is_selected) {
+		flags |= ImGuiTreeNodeFlags_Selected;
+	}
+
+	// Check if this directory has subdirectories
+	bool has_subdirs = false;
+	try {
+		for (const auto& entry : std::filesystem::directory_iterator(path)) {
+			if (entry.is_directory()) {
+				has_subdirs = true;
+				break;
+			}
+		}
+	}
+	catch (...) {
+		// Ignore errors
+	}
+
+	if (!has_subdirs) {
+		flags |= ImGuiTreeNodeFlags_Leaf;
+	}
+
+	const bool node_open = ImGui::TreeNodeEx(name.c_str(), flags);
+
+	if (ImGui::IsItemClicked()) {
+		current_directory_ = path;
+		needs_refresh_ = true;
+	}
+
+	if (node_open) {
+		if (has_subdirs) {
+			try {
+				// Collect and sort subdirectories
+				std::vector<std::filesystem::path> subdirs;
+				for (const auto& entry : std::filesystem::directory_iterator(path)) {
+					if (entry.is_directory()) {
+						subdirs.push_back(entry.path());
+					}
+				}
+				std::sort(subdirs.begin(), subdirs.end());
+
+				for (const auto& subdir : subdirs) {
+					RenderDirectoryTreeNode(subdir);
+				}
+			}
+			catch (...) {
+				// Ignore errors
+			}
+		}
+		ImGui::TreePop();
+	}
+}
+
+void AssetBrowserPanel::RenderContentView() {
+	if (current_items_.empty()) {
+		ImGui::TextDisabled("Empty directory");
+		return;
+	}
+
+	if (view_mode_ == AssetViewMode::Grid) {
+		// Grid view with icons
+		const float item_size = 80.0f;
+		const float padding = 10.0f;
+		const float window_width = ImGui::GetContentRegionAvail().x;
+		const int columns = std::max(1, static_cast<int>((window_width + padding) / (item_size + padding)));
+
+		int col = 0;
+		for (const auto& item : current_items_) {
+			if (!PassesFilter(item)) {
+				continue;
+			}
+
+			ImGui::PushID(item.path.string().c_str());
+
+			if (col > 0) {
+				ImGui::SameLine();
+			}
+
+			RenderAssetItemGrid(item);
+
+			col++;
+			if (col >= columns) {
+				col = 0;
+			}
+
+			ImGui::PopID();
+		}
+	}
+	else {
+		// List view
+		if (ImGui::BeginTable("AssetList", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg)) {
+			ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthStretch);
+			ImGui::TableSetupColumn("Type", ImGuiTableColumnFlags_WidthFixed, 50.0f);
+			ImGui::TableHeadersRow();
+
+			for (const auto& item : current_items_) {
+				if (!PassesFilter(item)) {
+					continue;
+				}
+
+				ImGui::PushID(item.path.string().c_str());
+				RenderAssetItemList(item);
+				ImGui::PopID();
+			}
+
+			ImGui::EndTable();
+		}
+	}
+}
+
+void AssetBrowserPanel::RenderAssetItemList(const FileSystemItem& item) {
+	ImGui::TableNextRow();
+	ImGui::TableNextColumn();
+
+	const bool is_selected = (item.path == selected_item_path_);
+	if (ImGui::Selectable(item.display_name.c_str(), is_selected, ImGuiSelectableFlags_SpanAllColumns)) {
+		if (item.is_directory) {
+			current_directory_ = item.path;
+			needs_refresh_ = true;
+		}
+		else {
+			selected_item_path_ = item.path;
+			// Handle double-click actions
+			if (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left)) {
+				if (item.path.filename().string().ends_with(".prefab.json")) {
+					if (callbacks_.on_instantiate_prefab) {
+						callbacks_.on_instantiate_prefab(item.path.string());
+					}
+				}
+				else if (item.path.filename().string().ends_with(".tileset.json")) {
+					if (callbacks_.on_open_tileset) {
+						callbacks_.on_open_tileset(item.path.string());
+					}
+				}
+				else if (item.path.filename().string().ends_with(".data.json")) {
+					if (callbacks_.on_open_data_table) {
+						callbacks_.on_open_data_table(item.path.string());
+					}
+				}
+				else {
+					// Check if it's a code file
+					const auto ext = item.path.extension().string();
+					if (ext == ".lua" || ext == ".as" || ext == ".glsl" || ext == ".vert" || ext == ".frag"
+						|| ext == ".cpp" || ext == ".h" || ext == ".hpp" || ext == ".c" || ext == ".shader") {
+						if (callbacks_.on_open_file) {
+							callbacks_.on_open_file(item.path.string());
+						}
+					}
+				}
+			}
+		}
+	}
+
+	// Context menu
+	if (ImGui::BeginPopupContextItem("ItemContextMenu")) {
+		ShowItemContextMenu(item);
+		ImGui::EndPopup();
+	}
+
+	ImGui::TableNextColumn();
+	ImGui::Text("%s", item.type_icon.c_str());
+}
+
+void AssetBrowserPanel::RenderAssetItemGrid(const FileSystemItem& item) {
+	const float item_size = 80.0f;
+	const bool is_selected = (item.path == selected_item_path_);
+
+	ImVec2 button_size(item_size, item_size);
+
+	if (is_selected) {
+		ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetStyleColorVec4(ImGuiCol_ButtonActive));
+	}
+
+	if (ImGui::Button(item.type_icon.c_str(), button_size)) {
+		if (item.is_directory) {
+			current_directory_ = item.path;
+			needs_refresh_ = true;
+		}
+		else {
+			selected_item_path_ = item.path;
+		}
+	}
+
+	if (is_selected) {
+		ImGui::PopStyleColor();
+	}
+
+	// Double-click handling
+	if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left)) {
+		if (item.is_directory) {
+			current_directory_ = item.path;
+			needs_refresh_ = true;
+		}
+		else if (item.path.filename().string().ends_with(".prefab.json")) {
+			if (callbacks_.on_instantiate_prefab) {
+				callbacks_.on_instantiate_prefab(item.path.string());
+			}
+		}
+		else if (item.path.filename().string().ends_with(".tileset.json")) {
+			if (callbacks_.on_open_tileset) {
+				callbacks_.on_open_tileset(item.path.string());
+			}
+		}
+		else if (item.path.filename().string().ends_with(".data.json")) {
+			if (callbacks_.on_open_data_table) {
+				callbacks_.on_open_data_table(item.path.string());
+			}
+		}
+		else {
+			// Check if it's a code file
+			const auto ext = item.path.extension().string();
+			if (ext == ".lua" || ext == ".as" || ext == ".glsl" || ext == ".vert" || ext == ".frag" || ext == ".cpp"
+				|| ext == ".h" || ext == ".hpp" || ext == ".c" || ext == ".shader") {
+				if (callbacks_.on_open_file) {
+					callbacks_.on_open_file(item.path.string());
+				}
+			}
+		}
+	}
+
+	// Context menu
+	if (ImGui::BeginPopupContextItem("GridItemContextMenu")) {
+		ShowItemContextMenu(item);
+		ImGui::EndPopup();
+	}
+
+	// Display name below icon
+	ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + item_size);
+	ImGui::Text("%s", item.display_name.c_str());
+	ImGui::PopTextWrapPos();
+
+	if (ImGui::IsItemHovered()) {
+		ImGui::SetTooltip("%s", item.path.string().c_str());
+	}
+}
+
+void AssetBrowserPanel::ShowItemContextMenu(const FileSystemItem& item) {
+	if (item.is_directory) {
+		if (ImGui::MenuItem("Open")) {
+			current_directory_ = item.path;
+			needs_refresh_ = true;
+		}
+		ImGui::Separator();
+	}
+	else {
+		// File-specific actions
+		if (item.path.filename().string().ends_with(".prefab.json")) {
+			if (ImGui::MenuItem("Instantiate")) {
+				if (callbacks_.on_instantiate_prefab) {
+					callbacks_.on_instantiate_prefab(item.path.string());
+				}
+			}
+			ImGui::Separator();
+		}
+	}
+
+	if (ImGui::MenuItem("Rename")) {
+		// TODO: Show rename dialog
+	}
+
+	if (ImGui::MenuItem("Delete")) {
+		try {
+			std::filesystem::remove(item.path);
+			needs_refresh_ = true;
+		}
+		catch (...) {
+			// Handle error
+		}
+	}
+
+	ImGui::Separator();
+
+	if (ImGui::MenuItem("Copy Path")) {
+		ImGui::SetClipboardText(item.path.string().c_str());
+	}
+
+#ifdef _WIN32
+	if (ImGui::MenuItem("Show in Explorer")) {
+		const std::string command = "explorer /select,\"" + item.path.string() + "\"";
+		system(command.c_str());
+	}
+#elif defined(__linux__)
+	if (ImGui::MenuItem("Show in File Manager")) {
+		const std::string command = "xdg-open \"" + item.path.parent_path().string() + "\"";
+		system(command.c_str());
+	}
+#elif defined(__APPLE__)
+	if (ImGui::MenuItem("Show in Finder")) {
+		const std::string command = "open -R \"" + item.path.string() + "\"";
+		system(command.c_str());
+	}
+#endif
+}
+
+void AssetBrowserPanel::ShowEmptySpaceContextMenu() {
+	if (ImGui::BeginPopup("EmptySpaceContextMenu")) {
+		if (ImGui::MenuItem("New Folder")) {
+			try {
+				auto new_folder = current_directory_ / "NewFolder";
+				int counter = 1;
+				while (std::filesystem::exists(new_folder)) {
+					new_folder = current_directory_ / ("NewFolder" + std::to_string(counter++));
+				}
+				std::filesystem::create_directory(new_folder);
+				needs_refresh_ = true;
+			}
+			catch (...) {
+				// Handle error
+			}
+		}
+
+		ImGui::Separator();
+
+		if (ImGui::MenuItem("New Scene")) {
+			// TODO: Create new scene file
+		}
+
+		if (ImGui::MenuItem("New Prefab")) {
+			// TODO: Create new prefab file
+		}
+
+		ImGui::Separator();
+
+		if (ImGui::MenuItem("Import Asset...")) {
+			// TODO: Open file dialog for import
+		}
+
+		ImGui::Separator();
+
+		if (ImGui::MenuItem("Refresh")) {
+			needs_refresh_ = true;
+		}
+
+		ImGui::EndPopup();
+	}
 }
 
 void AssetBrowserPanel::RenderAssetCategory(

@@ -80,6 +80,12 @@ void EditorScene::Initialize(engine::Engine& engine) {
 	callbacks.on_copy_entity = [this]() { CopyEntity(); };
 	callbacks.on_paste_entity = [this]() { PasteEntity(); };
 	callbacks.on_duplicate_entity = [this]() { DuplicateEntity(); };
+	callbacks.on_open_tileset = [this](const std::string& path) {
+	};
+	callbacks.on_open_data_table = [this](const std::string& path) {
+	};
+	callbacks.on_open_file = [this](const std::string& path) {
+	};
 
 	hierarchy_panel_.SetCallbacks(callbacks);
 	hierarchy_panel_.SetWorld(&engine.ecs);

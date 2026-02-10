@@ -17,6 +17,8 @@ using ComponentCallback = std::function<void(engine::ecs::Entity, const std::str
 using AssetCallback = std::function<void(engine::scene::AssetType, const std::string&)>;
 using CommandCallback = std::function<void(std::unique_ptr<ICommand>)>;
 using PrefabCallback = std::function<void(const std::string&)>;
+using FilePathCallback = std::function<void(const std::string&)>;
+using StringCallback = std::function<void(const std::string&)>;
 
 /**
  * @brief Callbacks for panel-to-editor communication
@@ -39,6 +41,9 @@ struct EditorCallbacks {
 	VoidCallback on_copy_entity;             // Copy the selected entity
 	VoidCallback on_paste_entity;            // Paste from clipboard
 	VoidCallback on_duplicate_entity;        // Duplicate the selected entity
+	FilePathCallback on_open_tileset;        // Open a tileset file in the tileset editor
+	FilePathCallback on_open_data_table;     // Open a data table file in the data table editor
+	StringCallback on_open_file;             // Open a file in the code editor
 };
 
 } // namespace editor

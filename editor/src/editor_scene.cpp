@@ -102,6 +102,9 @@ void EditorScene::Initialize(engine::Engine& engine) {
 	
 	// Register shader-specific node types for the shader editor
 	RegisterShaderGraphNodes();
+	
+	// Register texture-specific node types for the texture editor
+	RegisterTextureGraphNodes();
 
 	// Create a demo graph so the panel isn't empty
 	CreateExampleGraph();
@@ -190,6 +193,7 @@ void EditorScene::RenderUI(engine::Engine& engine) {
 		ImGui::DockBuilderDockWindow("Viewport", dock_id_main);
 		ImGui::DockBuilderDockWindow("Assets", dock_id_bottom);
 		ImGui::DockBuilderDockWindow("Graph Editor", dock_id_bottom);
+		ImGui::DockBuilderDockWindow("Texture Editor", dock_id_bottom);
 		ImGui::DockBuilderDockWindow("Animation Editor", dock_id_bottom);
 		ImGui::DockBuilderDockWindow("Tileset Editor", dock_id_bottom);
 		ImGui::DockBuilderDockWindow("Code Editor", dock_id_bottom);

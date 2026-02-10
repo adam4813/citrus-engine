@@ -25,6 +25,7 @@ add_executable(
     src/hierarchy_panel.cpp
     src/properties_panel.cpp
     src/shader_editor_panel.cpp
+    src/texture_editor_panel.cpp
     src/tileset_editor_panel.cpp
     src/viewport_panel.cpp)
 

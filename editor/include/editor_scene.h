@@ -13,6 +13,7 @@
 #include "hierarchy_panel.h"
 #include "properties_panel.h"
 #include "shader_editor_panel.h"
+#include "texture_editor_panel.h"
 #include "tileset_editor_panel.h"
 #include "viewport_panel.h"
 
@@ -170,6 +171,7 @@ private:
 	GraphEditorPanel graph_editor_panel_;
 	ShaderEditorPanel shader_editor_panel_;
 	DataTableEditorPanel data_table_editor_panel_;
+	TextureEditorPanel texture_editor_panel_;
 	CodeEditorPanel code_editor_panel_;
 	AnimationEditorPanel animation_editor_panel_;
 	TilesetEditorPanel tileset_editor_panel_;

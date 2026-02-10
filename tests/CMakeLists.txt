@@ -124,3 +124,8 @@ add_engine_test(scene_assets_test
 add_engine_test(graph_framework_test
     graph_framework_test.cpp
 )
+
+# Add data module test
+add_engine_test(data_module_test
+    data_module_test.cpp
+)

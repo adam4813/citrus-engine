@@ -57,6 +57,11 @@ target_sources(engine-core
     audio/audio.cppm
     platform/platform.cppm
     components/components.cppm
+    data/data_asset.cppm
+    data/data_table.cppm
+    data/data_asset_registry.cppm
+    data/data_serializer.cppm
+    data/data.cppm
     ecs/component_registry.cppm
     ecs/flecs_ecs.cppm
     input/input.cppm
@@ -134,6 +139,9 @@ target_sources(engine-core PRIVATE
     # Assets module implementation
     assets/asset_manager.cpp
     assets/tileset.cpp
+
+    # Data module implementation
+    data/data_serializer.cpp
 
     ecs/component_registry.cpp
     ecs/ecs_world.cpp

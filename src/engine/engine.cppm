@@ -21,6 +21,7 @@ export import engine.scene;
 export import engine.scene.serializer;
 export import engine.components;
 export import engine.animation;
+export import engine.data;
 export import engine.graph;
 export import engine.rendering;
 export import engine.os;

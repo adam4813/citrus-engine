@@ -219,6 +219,7 @@ void EditorScene::RenderUI(engine::Engine& engine) {
 	animation_editor_panel_.Render();
 	tileset_editor_panel_.Render();
 	data_table_editor_panel_.Render();
+	sound_editor_panel_.Render();
 	code_editor_panel_.Render();
 
 	// Handle dialogs
@@ -381,6 +382,7 @@ void EditorScene::RenderMenuBar() {
 			ImGui::MenuItem("Tileset Editor", nullptr, &tileset_editor_panel_.VisibleRef());
 			ImGui::MenuItem("Data Table Editor", nullptr, &data_table_editor_panel_.VisibleRef());
 			ImGui::MenuItem("Code Editor", nullptr, &code_editor_panel_.VisibleRef());
+			ImGui::MenuItem("Sound Editor", nullptr, &sound_editor_panel_.VisibleRef());
 			ImGui::EndMenu();
 		}
 

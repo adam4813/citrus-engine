@@ -23,6 +23,7 @@ add_executable(
     src/graph_editor_panel.cpp
     src/hierarchy_panel.cpp
     src/properties_panel.cpp
+    src/shader_editor_panel.cpp
     src/viewport_panel.cpp)
 
 target_include_directories(citrus-scene-editor

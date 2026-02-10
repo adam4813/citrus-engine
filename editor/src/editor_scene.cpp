@@ -96,6 +96,9 @@ void EditorScene::Initialize(engine::Engine& engine) {
 
 	// Register example node types for the graph editor
 	RegisterExampleGraphNodes();
+	
+	// Register shader-specific node types for the shader editor
+	RegisterShaderGraphNodes();
 
 	// Create a demo graph so the panel isn't empty
 	CreateExampleGraph();
@@ -202,6 +205,8 @@ void EditorScene::RenderUI(engine::Engine& engine) {
 	viewport_panel_.Render(engine, scene, state_.is_running, editor_camera_, last_delta_time_, selected_entity_);
 	asset_browser_panel_.Render(scene, selected_asset_);
 	graph_editor_panel_.Render();
+	shader_editor_panel_.Render();
+	texture_editor_panel_.Render();
 	animation_editor_panel_.Render();
 	data_table_editor_panel_.Render();
 
@@ -359,6 +364,8 @@ void EditorScene::RenderMenuBar() {
 			ImGui::MenuItem("Viewport", nullptr, &viewport_panel_.VisibleRef());
 			ImGui::MenuItem("Assets", nullptr, &asset_browser_panel_.VisibleRef());
 			ImGui::MenuItem("Graph Editor", nullptr, &graph_editor_panel_.VisibleRef());
+			ImGui::MenuItem("Shader Editor", nullptr, &shader_editor_panel_.VisibleRef());
+			ImGui::MenuItem("Texture Editor", nullptr, &texture_editor_panel_.VisibleRef());
 			ImGui::MenuItem("Animation Editor", nullptr, &animation_editor_panel_.VisibleRef());
 			ImGui::MenuItem("Data Table Editor", nullptr, &data_table_editor_panel_.VisibleRef());
 			ImGui::EndMenu();

@@ -7,9 +7,11 @@
 #include "animation_editor_panel.h"
 #include "asset_browser_panel.h"
 #include "command.h"
+#include "data_table_editor_panel.h"
 #include "graph_editor_panel.h"
 #include "hierarchy_panel.h"
 #include "properties_panel.h"
+#include "shader_editor_panel.h"
 #include "viewport_panel.h"
 
 import engine;
@@ -164,6 +166,7 @@ private:
 	ViewportPanel viewport_panel_;
 	AssetBrowserPanel asset_browser_panel_;
 	GraphEditorPanel graph_editor_panel_;
+	ShaderEditorPanel shader_editor_panel_;
 	DataTableEditorPanel data_table_editor_panel_;
 	AnimationEditorPanel animation_editor_panel_;
 

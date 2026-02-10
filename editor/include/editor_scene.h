@@ -164,6 +164,7 @@ private:
 	ViewportPanel viewport_panel_;
 	AssetBrowserPanel asset_browser_panel_;
 	GraphEditorPanel graph_editor_panel_;
+	DataTableEditorPanel data_table_editor_panel_;
 	AnimationEditorPanel animation_editor_panel_;
 
 	// Command history for undo/redo

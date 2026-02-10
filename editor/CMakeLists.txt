@@ -18,6 +18,7 @@ add_executable(
     src/asset_browser_panel.cpp
     src/command.cpp
     src/commands/clipboard_commands.cpp
+    src/data_table_editor_panel.cpp
     src/editor_scene.cpp
     src/graph_editor_panel.cpp
     src/hierarchy_panel.cpp

@@ -86,6 +86,8 @@ void EditorScene::Initialize(engine::Engine& engine) {
 		data_table_editor_panel_.OpenTable(path);
 	};
 	callbacks.on_open_file = [this](const std::string& path) {
+		code_editor_panel_.OpenFile(path);
+		code_editor_panel_.SetVisible(true);
 	};
 
 	hierarchy_panel_.SetCallbacks(callbacks);
@@ -188,6 +190,7 @@ void EditorScene::RenderUI(engine::Engine& engine) {
 		ImGui::DockBuilderDockWindow("Assets", dock_id_bottom);
 		ImGui::DockBuilderDockWindow("Graph Editor", dock_id_bottom);
 		ImGui::DockBuilderDockWindow("Animation Editor", dock_id_bottom);
+		ImGui::DockBuilderDockWindow("Code Editor", dock_id_bottom);
 		ImGui::DockBuilderDockWindow("Data Table Editor", dock_id_bottom);
 		ImGui::DockBuilderFinish(dockspace_id);
 	}
@@ -209,6 +212,7 @@ void EditorScene::RenderUI(engine::Engine& engine) {
 	texture_editor_panel_.Render();
 	animation_editor_panel_.Render();
 	data_table_editor_panel_.Render();
+	code_editor_panel_.Render();
 
 	// Handle dialogs
 	if (state_.show_new_scene_dialog) {
@@ -368,6 +372,7 @@ void EditorScene::RenderMenuBar() {
 			ImGui::MenuItem("Texture Editor", nullptr, &texture_editor_panel_.VisibleRef());
 			ImGui::MenuItem("Animation Editor", nullptr, &animation_editor_panel_.VisibleRef());
 			ImGui::MenuItem("Data Table Editor", nullptr, &data_table_editor_panel_.VisibleRef());
+			ImGui::MenuItem("Code Editor", nullptr, &code_editor_panel_.VisibleRef());
 			ImGui::EndMenu();
 		}
 

@@ -6,6 +6,7 @@
 
 #include "animation_editor_panel.h"
 #include "asset_browser_panel.h"
+#include "code_editor_panel.h"
 #include "command.h"
 #include "data_table_editor_panel.h"
 #include "graph_editor_panel.h"
@@ -168,6 +169,7 @@ private:
 	GraphEditorPanel graph_editor_panel_;
 	ShaderEditorPanel shader_editor_panel_;
 	DataTableEditorPanel data_table_editor_panel_;
+	CodeEditorPanel code_editor_panel_;
 	AnimationEditorPanel animation_editor_panel_;
 
 	// Command history for undo/redo

@@ -16,6 +16,7 @@ add_executable(
     src/main.cpp
     src/animation_editor_panel.cpp
     src/asset_browser_panel.cpp
+    src/code_editor_panel.cpp
     src/command.cpp
     src/commands/clipboard_commands.cpp
     src/data_table_editor_panel.cpp

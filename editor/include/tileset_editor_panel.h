@@ -6,6 +6,7 @@
 #include <unordered_map>
 #include <vector>
 
+import engine;
 import glm;
 
 namespace editor {
@@ -77,8 +78,9 @@ public:
 
 	/**
 	 * @brief Render the tileset editor panel
+	 * @param engine Reference to the engine instance
 	 */
-	void Render();
+	void Render(engine::Engine& engine);
 
 	/**
 	 * @brief Check if panel is visible
@@ -116,10 +118,14 @@ public:
 	void OpenTileset(const std::string& path);
 
 private:
-	void RenderToolbar();
+	void RenderToolbar(engine::Engine& engine);
 	void RenderTilesetGrid();
 	void RenderTileProperties();
 	void RenderTilePalette();
+	void RenderTilePreview();
+
+	// Load the source image and create a GPU texture
+	void LoadSourceImage(engine::Engine& engine, const std::string& path);
 
 	// Get tile ID from grid coordinates
 	uint32_t GetTileIdFromCoords(int x, int y) const;
@@ -133,14 +139,24 @@ private:
 	// Ensure tile definition exists for the given ID
 	TileDefinition* EnsureTileDefinition(uint32_t id);
 
+	// Get actual image dimensions (loaded or placeholder)
+	int GetImageWidth() const;
+	int GetImageHeight() const;
+
 	bool is_visible_ = false;
 	std::unique_ptr<TilesetDefinition> tileset_;
 	std::string current_file_path_;
 
+	// Source image state
+	std::shared_ptr<engine::assets::Image> loaded_image_;
+	engine::rendering::TextureId gpu_texture_id_ = engine::rendering::INVALID_TEXTURE;
+	char image_path_buffer_[512] = "";
+	std::string load_error_message_;
+
 	// Grid rendering state
 	static constexpr int PLACEHOLDER_IMAGE_WIDTH = 512;
 	static constexpr int PLACEHOLDER_IMAGE_HEIGHT = 512;
-	static constexpr float TILE_DISPLAY_SIZE = 48.0f; // Display size in pixels
+	float tile_display_scale_ = 2.0f;
 
 	// Selection state
 	std::vector<uint32_t> selected_tiles_; // Multi-selection support

@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <imgui.h>
 #include <imgui_internal.h>
+#include <iostream>
 #include <string>
 
 namespace editor {
@@ -109,9 +110,14 @@ void HierarchyPanel::RenderEntityNode(
 		name = "Entity_" + std::to_string(entity.id());
 	}
 
+	// Check if this is a prefab instance (has IsA relationship to a prefab)
+	const bool is_prefab_instance =
+			entity.has<engine::components::PrefabInstance>() || entity.target(flecs::IsA).is_valid();
+	if (is_prefab_instance) {
+		name = "[P] " + name; // Prefix with prefab icon
+	}
 	// Check if this is a group entity
-	const bool is_group = entity.has<engine::components::Group>();
-	if (is_group) {
+	else if (const bool is_group = entity.has<engine::components::Group>(); is_group) {
 		name = "[G] " + name; // Prefix with folder icon
 	}
 
@@ -138,6 +144,10 @@ void HierarchyPanel::RenderEntityNode(
 	const bool should_dim = is_filtering && !matches;
 	if (should_dim) {
 		ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.5f, 0.5f, 0.5f, 0.5f));
+	}
+	else if (is_prefab_instance && node_state.is_visible) {
+		// Prefab instances get a distinct blue tint
+		ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.6f, 0.8f, 1.0f, 1.0f));
 	}
 	else {
 		// Visibility indicator
@@ -177,6 +187,38 @@ void HierarchyPanel::RenderEntityNode(
 				callbacks_.on_scene_modified();
 			}
 		}
+
+		ImGui::Separator();
+
+		// Copy/Paste/Duplicate operations
+		if (ImGui::MenuItem("Copy", "Ctrl+C")) {
+			if (callbacks_.on_entity_selected) {
+				callbacks_.on_entity_selected(entity);
+			}
+			if (callbacks_.on_copy_entity) {
+				callbacks_.on_copy_entity();
+			}
+		}
+
+		if (ImGui::MenuItem("Duplicate", "Ctrl+D")) {
+			if (callbacks_.on_entity_selected) {
+				callbacks_.on_entity_selected(entity);
+			}
+			if (callbacks_.on_duplicate_entity) {
+				callbacks_.on_duplicate_entity();
+			}
+		}
+
+		if (ImGui::MenuItem("Paste", "Ctrl+V")) {
+			if (callbacks_.on_entity_selected) {
+				callbacks_.on_entity_selected(entity);
+			}
+			if (callbacks_.on_paste_entity) {
+				callbacks_.on_paste_entity();
+			}
+		}
+
+		ImGui::Separator();
 
 		// Add Component submenu - grouped by category
 		if (ImGui::BeginMenu("Add Component")) {

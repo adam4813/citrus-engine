@@ -36,6 +36,9 @@ struct EditorCallbacks {
 	EntityCallback on_scene_camera_changed;  // Scene's active camera selection changed
 	CommandCallback on_execute_command;      // Execute a command through the command history
 	PrefabCallback on_instantiate_prefab;    // Instantiate a prefab by file path
+	VoidCallback on_copy_entity;             // Copy the selected entity
+	VoidCallback on_paste_entity;            // Paste from clipboard
+	VoidCallback on_duplicate_entity;        // Duplicate the selected entity
 };
 
 } // namespace editor

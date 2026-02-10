@@ -115,6 +115,15 @@ private:
 	void CreateExampleGraph();
 
 	// ========================================================================
+	// Clipboard Operations
+	// ========================================================================
+
+	void CopyEntity();
+	void CutEntity();
+	void PasteEntity();
+	void DuplicateEntity();
+
+	// ========================================================================
 	// Callback Handlers
 	// ========================================================================
 
@@ -160,6 +169,9 @@ private:
 
 	// Play mode snapshot — stores serialized scene state to restore on Stop
 	std::string play_mode_snapshot_;
+
+	// Clipboard for copy/paste operations
+	std::string clipboard_json_;
 
 	// Input buffer for dialogs
 	char file_path_buffer_[256] = "";

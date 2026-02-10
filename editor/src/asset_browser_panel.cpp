@@ -425,6 +425,9 @@ void AssetBrowserPanel::RenderAssetItemList(const FileSystemItem& item) {
 		}
 		else {
 			selected_item_path_ = item.path;
+			if (callbacks_.on_file_selected) {
+				callbacks_.on_file_selected(item.path.string());
+			}
 			// Handle double-click actions
 			if (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left)) {
 				if (item.path.filename().string().ends_with(".prefab.json")) {
@@ -472,6 +475,8 @@ void AssetBrowserPanel::RenderAssetItemGrid(const FileSystemItem& item) {
 
 	ImVec2 button_size(item_size, item_size);
 
+	ImGui::BeginGroup();
+
 	if (is_selected) {
 		ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetStyleColorVec4(ImGuiCol_ButtonActive));
 	}
@@ -483,6 +488,9 @@ void AssetBrowserPanel::RenderAssetItemGrid(const FileSystemItem& item) {
 		}
 		else {
 			selected_item_path_ = item.path;
+			if (callbacks_.on_file_selected) {
+				callbacks_.on_file_selected(item.path.string());
+			}
 		}
 	}
 
@@ -529,10 +537,29 @@ void AssetBrowserPanel::RenderAssetItemGrid(const FileSystemItem& item) {
 		ImGui::EndPopup();
 	}
 
-	// Display name below icon
-	ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + item_size);
-	ImGui::Text("%s", item.display_name.c_str());
-	ImGui::PopTextWrapPos();
+	// Display name below icon (truncated to cell width)
+	const std::string& name = item.display_name;
+	const float text_width = ImGui::CalcTextSize(name.c_str()).x;
+	if (text_width > item_size) {
+		// Truncate with ellipsis
+		std::string truncated;
+		for (size_t i = 0; i < name.size(); ++i) {
+			const std::string candidate = name.substr(0, i) + "...";
+			if (ImGui::CalcTextSize(candidate.c_str()).x > item_size) {
+				break;
+			}
+			truncated = candidate;
+		}
+		ImGui::TextUnformatted(truncated.c_str());
+	}
+	else {
+		// Center the text
+		const float offset = (item_size - text_width) * 0.5f;
+		ImGui::SetCursorPosX(ImGui::GetCursorPosX() + offset);
+		ImGui::TextUnformatted(name.c_str());
+	}
+
+	ImGui::EndGroup();
 
 	if (ImGui::IsItemHovered()) {
 		ImGui::SetTooltip("%s", item.path.string().c_str());
@@ -814,6 +841,13 @@ void AssetBrowserPanel::RenderPrefabSection() {
 
 			ImGui::PushID(prefab_path.c_str());
 			ImGui::TreeNodeEx("##prefab_node", node_flags, "[P] %s", display_name.c_str());
+
+			// Single-click to select and show properties
+			if (ImGui::IsItemClicked()) {
+				if (callbacks_.on_file_selected) {
+					callbacks_.on_file_selected(prefab_path);
+				}
+			}
 
 			// Right-click context menu
 			if (ImGui::BeginPopupContextItem("PrefabContextMenu")) {

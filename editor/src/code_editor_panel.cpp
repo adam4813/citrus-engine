@@ -3,9 +3,10 @@
 #include <algorithm>
 #include <cstring>
 #include <filesystem>
-#include <fstream>
 #include <imgui.h>
 #include <imgui_internal.h>
+
+import engine;
 
 namespace editor {
 
@@ -291,19 +292,16 @@ void CodeEditorPanel::OpenFile(const std::string& path) {
 	}
 
 	// Try to read file
-	std::ifstream file(path);
-	if (!file.is_open()) {
+	auto content = engine::assets::AssetManager::LoadTextFile(std::filesystem::path(path));
+	if (!content) {
 		// TODO: Show error message
 		return;
 	}
 
-	std::string content((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
-	file.close();
-
 	// Create new tab
 	CodeFile code_file;
 	code_file.path = path;
-	code_file.content = content;
+	code_file.content = *content;
 	code_file.display_name = std::filesystem::path(path).filename().string();
 	code_file.is_modified = false;
 
@@ -323,14 +321,10 @@ bool CodeEditorPanel::SaveCurrentFile() {
 	}
 
 	// Write to file
-	std::ofstream out(file->path);
-	if (!out.is_open()) {
+	if (!engine::assets::AssetManager::SaveTextFile(std::filesystem::path(file->path), file->content)) {
 		// TODO: Show error message
 		return false;
 	}
-
-	out << file->content;
-	out.close();
 
 	file->is_modified = false;
 	return true;

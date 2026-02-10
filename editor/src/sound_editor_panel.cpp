@@ -5,8 +5,10 @@
 
 #include <algorithm>
 #include <cmath>
-#include <fstream>
+#include <filesystem>
 #include <random>
+
+import engine;
 
 using json = nlohmann::json;
 
@@ -485,13 +487,12 @@ bool SoundEditorPanel::SaveSound(const std::string& path) {
 
 bool SoundEditorPanel::LoadPresetFromJson(const std::string& path) {
 	try {
-		std::ifstream file(path);
-		if (!file.is_open()) {
+		auto text = engine::assets::AssetManager::LoadTextFile(path);
+		if (!text) {
 			return false;
 		}
 
-		json j;
-		file >> j;
+		json j = json::parse(*text);
 
 		// Load preset parameters
 		if (j.contains("waveform")) preset_.waveform = static_cast<WaveformType>(j["waveform"].get<int>());
@@ -553,13 +554,7 @@ bool SoundEditorPanel::SavePresetToJson(const std::string& path) {
 		j["master_volume"] = preset_.master_volume;
 		j["gain"] = preset_.gain;
 
-		std::ofstream file(path);
-		if (!file.is_open()) {
-			return false;
-		}
-
-		file << j.dump(2); // Pretty print with 2-space indent
-		return true;
+		return engine::assets::AssetManager::SaveTextFile(std::filesystem::path(path), j.dump(2));
 	} catch (const std::exception& e) {
 		return false;
 	}

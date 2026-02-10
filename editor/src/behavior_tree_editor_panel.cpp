@@ -1,6 +1,6 @@
 #include "behavior_tree_editor_panel.h"
 
-#include <fstream>
+#include <filesystem>
 #include <imgui.h>
 #include <iostream>
 
@@ -336,23 +336,18 @@ bool BehaviorTreeEditorPanel::SaveTree(const std::string& path) {
 	std::cout << "Saving behavior tree to: " << path << std::endl;
 
 	// For now, just create a simple placeholder file
-	std::ofstream file(path);
-	if (file.is_open()) {
-		file << "{\n";
-		file << "  \"type\": \"behavior_tree\",\n";
-		file << "  \"version\": \"1.0\",\n";
-		if (root_node_) {
-			file << "  \"root\": {\n";
-			file << "    \"type\": \"" << root_node_->GetTypeName() << "\",\n";
-			file << "    \"name\": \"" << root_node_->GetName() << "\"\n";
-			file << "  }\n";
-		}
-		file << "}\n";
-		file.close();
-		return true;
+	std::string content = "{\n";
+	content += "  \"type\": \"behavior_tree\",\n";
+	content += "  \"version\": \"1.0\",\n";
+	if (root_node_) {
+		content += "  \"root\": {\n";
+		content += "    \"type\": \"" + std::string(root_node_->GetTypeName()) + "\",\n";
+		content += "    \"name\": \"" + std::string(root_node_->GetName()) + "\"\n";
+		content += "  }\n";
 	}
+	content += "}\n";
 
-	return false;
+	return engine::assets::AssetManager::SaveTextFile(std::filesystem::path(path), content);
 }
 
 bool BehaviorTreeEditorPanel::LoadTree(const std::string& path) {

@@ -1,10 +1,11 @@
 #include "data_table_editor_panel.h"
 
 #include <algorithm>
-#include <fstream>
+#include <filesystem>
 #include <imgui.h>
-#include <sstream>
 #include <variant>
+
+import engine;
 
 namespace editor {
 
@@ -548,13 +549,9 @@ bool DataTableEditorPanel::SaveTable(const std::string& path) {
 	try {
 		std::string json_str = engine::data::DataSerializer::SerializeTable(*table_);
 
-		std::ofstream file(path);
-		if (!file.is_open()) {
+		if (!engine::assets::AssetManager::SaveTextFile(std::filesystem::path(path), json_str)) {
 			return false;
 		}
-
-		file << json_str;
-		file.close();
 
 		current_file_path_ = path;
 		return true;
@@ -566,17 +563,12 @@ bool DataTableEditorPanel::SaveTable(const std::string& path) {
 
 bool DataTableEditorPanel::LoadTable(const std::string& path) {
 	try {
-		std::ifstream file(path);
-		if (!file.is_open()) {
+		auto text = engine::assets::AssetManager::LoadTextFile(std::filesystem::path(path));
+		if (!text) {
 			return false;
 		}
 
-		std::stringstream buffer;
-		buffer << file.rdbuf();
-		std::string json_str = buffer.str();
-		file.close();
-
-		*table_ = engine::data::DataSerializer::DeserializeTable(json_str);
+		*table_ = engine::data::DataSerializer::DeserializeTable(*text);
 
 		// Update UI buffers
 		std::strncpy(table_name_buffer_, table_->GetName().c_str(), sizeof(table_name_buffer_) - 1);
@@ -598,16 +590,7 @@ void DataTableEditorPanel::OpenTable(const std::string& path) {
 bool DataTableEditorPanel::ExportToCSV(const std::string& path) {
 	try {
 		std::string csv_str = engine::data::DataSerializer::ExportTableToCSV(*table_);
-
-		std::ofstream file(path);
-		if (!file.is_open()) {
-			return false;
-		}
-
-		file << csv_str;
-		file.close();
-
-		return true;
+		return engine::assets::AssetManager::SaveTextFile(std::filesystem::path(path), csv_str);
 	}
 	catch (...) {
 		return false;

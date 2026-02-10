@@ -1,7 +1,6 @@
 module;
 
 #include <flecs.h>
-#include <fstream>
 #include <iostream>
 #include <nlohmann/json.hpp>
 #include <string>
@@ -9,6 +8,7 @@ module;
 
 module engine.scene.prefab;
 
+import engine.assets;
 import engine.ecs;
 import engine.platform;
 import engine.scene;
@@ -51,14 +51,12 @@ bool PrefabUtility::WritePrefabFile(const ecs::Entity& prefab_entity, const plat
 
 		prefab_doc["entities"] = entities_array;
 
-		std::ofstream file(file_path);
-		if (!file.is_open()) {
+		const std::string json_str = prefab_doc.dump(2);
+		if (!assets::AssetManager::SaveTextFile(file_path, json_str)) {
 			std::cerr << "PrefabUtility: Failed to open file for writing: " << file_path << std::endl;
 			return false;
 		}
 
-		file << prefab_doc.dump(2);
-		file.close();
 		return true;
 	}
 	catch (const std::exception& e) {
@@ -132,15 +130,13 @@ ecs::Entity PrefabUtility::LoadPrefab(const platform::fs::Path& prefab_path, ecs
 	}
 
 	try {
-		std::ifstream file(prefab_path);
-		if (!file.is_open()) {
+		auto text = assets::AssetManager::LoadTextFile(prefab_path);
+		if (!text) {
 			std::cerr << "PrefabUtility: Failed to open prefab file: " << prefab_path << std::endl;
 			return ecs::Entity();
 		}
 
-		json prefab_doc;
-		file >> prefab_doc;
-		file.close();
+		json prefab_doc = json::parse(*text);
 
 		if (const int version = prefab_doc.value("version", 0); version != 1) {
 			std::cerr << "PrefabUtility: Unsupported prefab format version: " << version << std::endl;

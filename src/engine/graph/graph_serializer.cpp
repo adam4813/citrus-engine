@@ -2,7 +2,6 @@ module;
 
 #include <algorithm>
 #include <cstdint>
-#include <fstream>
 #include <nlohmann/json.hpp>
 #include <string>
 #include <variant>
@@ -12,6 +11,7 @@ module engine.graph;
 import :graph_serializer;
 import :node_graph;
 import :types;
+import engine.assets;
 import engine.platform;
 import glm;
 
@@ -257,28 +257,15 @@ bool GraphSerializer::Deserialize(const std::string& json_str, NodeGraph& graph)
 
 bool GraphSerializer::Save(const NodeGraph& graph, const platform::fs::Path& path) {
 	std::string json_str = Serialize(graph);
-
-	std::ofstream file(path.string());
-	if (!file.is_open()) {
-		return false;
-	}
-
-	file << json_str;
-	file.close();
-
-	return true;
+	return assets::AssetManager::SaveTextFile(path, json_str);
 }
 
 bool GraphSerializer::Load(const platform::fs::Path& path, NodeGraph& graph) {
-	std::ifstream file(path.string());
-	if (!file.is_open()) {
+	auto text = assets::AssetManager::LoadTextFile(path);
+	if (!text) {
 		return false;
 	}
-
-	std::string json_str((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
-	file.close();
-
-	return Deserialize(json_str, graph);
+	return Deserialize(*text, graph);
 }
 
 } // namespace engine::graph

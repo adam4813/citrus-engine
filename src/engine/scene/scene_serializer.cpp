@@ -1,13 +1,13 @@
 module;
 
 #include <flecs.h>
-#include <fstream>
 #include <iostream>
 #include <nlohmann/json.hpp>
 #include <string>
 
 module engine.scene.serializer;
 
+import engine.assets;
 import engine.ecs;
 import engine.platform;
 import engine.scene;
@@ -62,14 +62,11 @@ bool SceneSerializer::Save(const Scene& scene, ecs::ECSWorld& world, const platf
 		}
 
 		// Write to file
-		std::ofstream file(path);
-		if (!file.is_open()) {
+		const std::string json_str = doc.dump(2); // Pretty print with 2-space indent
+		if (!assets::AssetManager::SaveTextFile(path, json_str)) {
 			std::cerr << "SceneSerializer: Failed to open file for writing: " << path << std::endl;
 			return false;
 		}
-
-		file << doc.dump(2); // Pretty print with 2-space indent
-		file.close();
 
 		std::cout << "SceneSerializer: Saved scene '" << scene.GetName() << "' to " << path << std::endl;
 		return true;
@@ -83,15 +80,13 @@ bool SceneSerializer::Save(const Scene& scene, ecs::ECSWorld& world, const platf
 SceneId SceneSerializer::Load(const platform::fs::Path& path, SceneManager& manager, ecs::ECSWorld& world) {
 	try {
 		// Read file
-		std::ifstream file(path);
-		if (!file.is_open()) {
+		auto text = assets::AssetManager::LoadTextFile(path);
+		if (!text) {
 			std::cerr << "SceneSerializer: Failed to open file for reading: " << path << std::endl;
 			return INVALID_SCENE;
 		}
 
-		json doc;
-		file >> doc;
-		file.close();
+		json doc = json::parse(*text);
 
 		// Validate version
 		if (const int version = doc.value("version", 0); version != SCENE_FORMAT_VERSION) {

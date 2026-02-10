@@ -1,12 +1,12 @@
 module;
 
-#include <fstream>
 #include <nlohmann/json.hpp>
 #include <variant>
 
 module engine.animation.serializer;
 
 import engine.animation;
+import engine.assets;
 import engine.platform;
 import glm;
 
@@ -149,16 +149,7 @@ std::shared_ptr<AnimationClip> AnimationSerializer::FromJson(const json& j) {
 bool AnimationSerializer::SaveToFile(const AnimationClip& clip, const platform::fs::Path& path) {
 	try {
 		json j = ToJson(clip);
-
-		std::ofstream file(path);
-		if (!file.is_open()) {
-			return false;
-		}
-
-		file << j.dump(2); // Pretty print with 2-space indent
-		file.close();
-
-		return true;
+		return assets::AssetManager::SaveTextFile(path, j.dump(2));
 	}
 	catch (...) {
 		return false;
@@ -167,15 +158,12 @@ bool AnimationSerializer::SaveToFile(const AnimationClip& clip, const platform::
 
 std::shared_ptr<AnimationClip> AnimationSerializer::LoadFromFile(const platform::fs::Path& path) {
 	try {
-		std::ifstream file(path);
-		if (!file.is_open()) {
+		auto text = assets::AssetManager::LoadTextFile(path);
+		if (!text) {
 			return nullptr;
 		}
 
-		json j;
-		file >> j;
-		file.close();
-
+		json j = json::parse(*text);
 		return FromJson(j);
 	}
 	catch (...) {

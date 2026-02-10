@@ -3,6 +3,8 @@
 #include <flecs.h>
 #include <imgui.h>
 
+#include "editor_callbacks.h"
+
 import engine;
 import glm;
 
@@ -11,19 +13,12 @@ namespace editor {
 /**
  * @brief Transform gizmo modes
  */
-enum class GizmoMode {
-	Translate,
-	Rotate,
-	Scale
-};
+enum class GizmoMode { Translate, Rotate, Scale };
 
 /**
  * @brief Coordinate space for gizmos
  */
-enum class GizmoSpace {
-	World,
-	Local
-};
+enum class GizmoSpace { World, Local };
 
 /**
  * @brief Scene viewport panel
@@ -54,6 +49,11 @@ public:
 		   flecs::entity selected_entity);
 
 	/**
+	 * @brief Set editor callbacks for panel-to-editor communication
+	 */
+	void SetCallbacks(const EditorCallbacks& callbacks);
+
+	/**
 	 * @brief Check if panel is visible
 	 */
 	[[nodiscard]] bool IsVisible() const { return is_visible_; }
@@ -72,14 +72,36 @@ private:
 	void RenderPlayModeIndicator(const ImVec2& cursor_pos);
 	void HandleCameraInput(flecs::entity editor_camera, float delta_time);
 	void HandleGizmoInput();
-	void RenderTransformGizmo(flecs::entity selected_entity, flecs::entity editor_camera,
-							  const ImVec2& viewport_min, const ImVec2& viewport_size);
-	void RenderTranslateGizmo(flecs::entity selected_entity, flecs::entity editor_camera,
-							  const ImVec2& viewport_min, const ImVec2& viewport_size);
-	void RenderRotationGizmo(flecs::entity selected_entity, flecs::entity editor_camera,
-							 const ImVec2& viewport_min, const ImVec2& viewport_size);
-	void RenderScaleGizmo(flecs::entity selected_entity, flecs::entity editor_camera,
-						  const ImVec2& viewport_min, const ImVec2& viewport_size);
+	void HandleObjectPicking(
+			flecs::entity editor_camera,
+			const ImVec2& viewport_min,
+			const ImVec2& viewport_size,
+			engine::scene::Scene* scene);
+	void PickEntityAtMousePosition(
+			flecs::entity editor_camera,
+			const ImVec2& viewport_mouse,
+			const ImVec2& viewport_size,
+			engine::scene::Scene* scene);
+	void RenderTransformGizmo(
+			flecs::entity selected_entity,
+			flecs::entity editor_camera,
+			const ImVec2& viewport_min,
+			const ImVec2& viewport_size);
+	void RenderTranslateGizmo(
+			flecs::entity selected_entity,
+			flecs::entity editor_camera,
+			const ImVec2& viewport_min,
+			const ImVec2& viewport_size);
+	void RenderRotationGizmo(
+			flecs::entity selected_entity,
+			flecs::entity editor_camera,
+			const ImVec2& viewport_min,
+			const ImVec2& viewport_size);
+	void RenderScaleGizmo(
+			flecs::entity selected_entity,
+			flecs::entity editor_camera,
+			const ImVec2& viewport_min,
+			const ImVec2& viewport_size);
 	void RenderOrientationGizmo(const ImVec2& viewport_min, const ImVec2& viewport_size);
 
 	struct AxisDrawParams {
@@ -98,6 +120,9 @@ private:
 	uint32_t last_width_ = 0;
 	uint32_t last_height_ = 0;
 
+	// Editor callbacks
+	EditorCallbacks callbacks_;
+
 	// Camera movement settings
 	static constexpr float kMoveSpeed = 5.0f;
 	static constexpr float kFastMoveMultiplier = 3.0f;
@@ -109,13 +134,9 @@ private:
 	static constexpr float kOrientationGizmoSize = 40.0f;
 	static constexpr float kOrientationGizmoMargin = 15.0f;
 	static constexpr ImU32 kAxisColors[3] = {
-			IM_COL32(230, 50, 50, 255),
-			IM_COL32(50, 200, 50, 255),
-			IM_COL32(50, 100, 230, 255)};
+			IM_COL32(230, 50, 50, 255), IM_COL32(50, 200, 50, 255), IM_COL32(50, 100, 230, 255)};
 	static constexpr ImU32 kAxisHoverColors[3] = {
-			IM_COL32(255, 130, 130, 255),
-			IM_COL32(130, 255, 130, 255),
-			IM_COL32(130, 180, 255, 255)};
+			IM_COL32(255, 130, 130, 255), IM_COL32(130, 255, 130, 255), IM_COL32(130, 180, 255, 255)};
 	static constexpr const char* kAxisLabels[3] = {"X", "Y", "Z"};
 
 	// Mouse look state
@@ -134,14 +155,19 @@ private:
 	float drag_world_per_pixel_ = 0.0f;
 	float drag_start_angle_ = 0.0f; // For rotation gizmo
 
+	// Object picking state
+	ImVec2 left_mouse_down_pos_{}; // Position where left mouse was pressed
+	bool left_mouse_was_down_ = false; // Track previous frame state
+	static constexpr float kPickDragThreshold = 5.0f; // Pixels to distinguish click from drag
+
 	// Gizmo mode and settings
 	GizmoMode gizmo_mode_ = GizmoMode::Translate;
 	GizmoSpace gizmo_space_ = GizmoSpace::World;
-	
+
 	// Snap settings
 	float translate_snap_ = 0.5f; // Default snap increment for translation
-	float rotate_snap_ = 15.0f;   // Default snap increment for rotation (degrees)
-	float scale_snap_ = 0.1f;     // Default snap increment for scale
+	float rotate_snap_ = 15.0f; // Default snap increment for rotation (degrees)
+	float scale_snap_ = 0.1f; // Default snap increment for scale
 };
 
 } // namespace editor

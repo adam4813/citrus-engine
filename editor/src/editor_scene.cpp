@@ -85,6 +85,7 @@ void EditorScene::Initialize(engine::Engine& engine) {
 	hierarchy_panel_.SetWorld(&engine.ecs);
 	properties_panel_.SetCallbacks(callbacks);
 	asset_browser_panel_.SetCallbacks(callbacks);
+	viewport_panel_.SetCallbacks(callbacks);
 
 	// Register example node types for the graph editor
 	RegisterExampleGraphNodes();

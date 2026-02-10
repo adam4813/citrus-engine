@@ -19,6 +19,7 @@ add_executable(
     src/code_editor_panel.cpp
     src/command.cpp
     src/commands/clipboard_commands.cpp
+    src/behavior_tree_editor_panel.cpp
     src/data_table_editor_panel.cpp
     src/editor_scene.cpp
     src/graph_editor_panel.cpp
@@ -31,7 +32,7 @@ add_executable(
     src/viewport_panel.cpp)
 
 target_include_directories(citrus-scene-editor
-                           PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+    PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 # Link to the engine (provides all dependencies transitively)
 target_link_libraries(citrus-scene-editor PRIVATE citrus-engine::engine-core)
@@ -40,12 +41,12 @@ target_link_libraries(citrus-scene-editor PRIVATE citrus-engine::engine-core)
 setup_asset_preload(citrus-scene-editor "${CMAKE_CURRENT_SOURCE_DIR}/assets")
 
 # Platform-specific configuration
-if(EMSCRIPTEN)
-  set(CMAKE_EXECUTABLE_SUFFIX ".html")
+if (EMSCRIPTEN)
+    set(CMAKE_EXECUTABLE_SUFFIX ".html")
 
-  # Set memory limits
-  set(INITIAL_MEMORY_BYTES 67108864) # 64MB initial memory
-  set(MAXIMUM_MEMORY_BYTES 134217728) # 128MB maximum memory
+    # Set memory limits
+    set(INITIAL_MEMORY_BYTES 67108864) # 64MB initial memory
+    set(MAXIMUM_MEMORY_BYTES 134217728) # 128MB maximum memory
 
     target_link_options(
         citrus-scene-editor
@@ -63,14 +64,14 @@ if(EMSCRIPTEN)
     message(
         STATUS
         "Memory: Initial ${INITIAL_MEMORY_BYTES} bytes, Maximum ${MAXIMUM_MEMORY_BYTES} bytes")
-endif()
+endif ()
 
 # Install target
 install(TARGETS citrus-scene-editor RUNTIME DESTINATION bin)
 
-if(NOT EMSCRIPTEN)
+if (NOT EMSCRIPTEN)
     install(
         DIRECTORY assets/
         DESTINATION bin/assets
         PATTERN "*")
-endif()
+endif ()

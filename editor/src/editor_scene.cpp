@@ -80,12 +80,8 @@ void EditorScene::Initialize(engine::Engine& engine) {
 	callbacks.on_copy_entity = [this]() { CopyEntity(); };
 	callbacks.on_paste_entity = [this]() { PasteEntity(); };
 	callbacks.on_duplicate_entity = [this]() { DuplicateEntity(); };
-	callbacks.on_open_tileset = [this](const std::string& path) {
-		tileset_editor_panel_.OpenTileset(path);
-	};
-	callbacks.on_open_data_table = [this](const std::string& path) {
-		data_table_editor_panel_.OpenTable(path);
-	};
+	callbacks.on_open_tileset = [this](const std::string& path) { tileset_editor_panel_.OpenTileset(path); };
+	callbacks.on_open_data_table = [this](const std::string& path) { data_table_editor_panel_.OpenTable(path); };
 	callbacks.on_open_file = [this](const std::string& path) {
 		code_editor_panel_.OpenFile(path);
 		code_editor_panel_.SetVisible(true);
@@ -99,10 +95,10 @@ void EditorScene::Initialize(engine::Engine& engine) {
 
 	// Register example node types for the graph editor
 	RegisterExampleGraphNodes();
-	
+
 	// Register shader-specific node types for the shader editor
 	RegisterShaderGraphNodes();
-	
+
 	// Register texture-specific node types for the texture editor
 	RegisterTextureGraphNodes();
 
@@ -217,6 +213,7 @@ void EditorScene::RenderUI(engine::Engine& engine) {
 	shader_editor_panel_.Render();
 	texture_editor_panel_.Render();
 	animation_editor_panel_.Render();
+	behavior_tree_editor_panel_.Render();
 	tileset_editor_panel_.Render();
 	data_table_editor_panel_.Render();
 	sound_editor_panel_.Render();
@@ -379,6 +376,7 @@ void EditorScene::RenderMenuBar() {
 			ImGui::MenuItem("Shader Editor", nullptr, &shader_editor_panel_.VisibleRef());
 			ImGui::MenuItem("Texture Editor", nullptr, &texture_editor_panel_.VisibleRef());
 			ImGui::MenuItem("Animation Editor", nullptr, &animation_editor_panel_.VisibleRef());
+			ImGui::MenuItem("Behavior Tree Editor", nullptr, &behavior_tree_editor_panel_.VisibleRef());
 			ImGui::MenuItem("Tileset Editor", nullptr, &tileset_editor_panel_.VisibleRef());
 			ImGui::MenuItem("Data Table Editor", nullptr, &data_table_editor_panel_.VisibleRef());
 			ImGui::MenuItem("Code Editor", nullptr, &code_editor_panel_.VisibleRef());

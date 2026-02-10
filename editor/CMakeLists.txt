@@ -14,6 +14,7 @@ find_package(citrus-engine CONFIG REQUIRED)
 add_executable(
     citrus-scene-editor
     src/main.cpp
+    src/animation_editor_panel.cpp
     src/asset_browser_panel.cpp
     src/command.cpp
     src/commands/clipboard_commands.cpp

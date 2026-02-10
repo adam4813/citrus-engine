@@ -1,8 +1,12 @@
+module;
+
 #include <algorithm>
 #include <cmath>
 #include <string>
 #include <variant>
 #include <vector>
+
+module engine.animation.clip;
 
 import engine.animation;
 import glm;

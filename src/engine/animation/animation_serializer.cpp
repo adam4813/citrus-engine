@@ -1,6 +1,10 @@
+module;
+
 #include <fstream>
 #include <nlohmann/json.hpp>
 #include <variant>
+
+module engine.animation.serializer;
 
 import engine.animation;
 import engine.platform;

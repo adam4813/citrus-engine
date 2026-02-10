@@ -4,6 +4,7 @@
 #include <memory>
 #include <string>
 
+#include "animation_editor_panel.h"
 #include "asset_browser_panel.h"
 #include "command.h"
 #include "graph_editor_panel.h"
@@ -163,6 +164,7 @@ private:
 	ViewportPanel viewport_panel_;
 	AssetBrowserPanel asset_browser_panel_;
 	GraphEditorPanel graph_editor_panel_;
+	AnimationEditorPanel animation_editor_panel_;
 
 	// Command history for undo/redo
 	CommandHistory command_history_;

@@ -1,8 +1,12 @@
+module;
+
 #include <algorithm>
 #include <cmath>
 #include <memory>
 #include <string>
 #include <vector>
+
+module engine.animation.state;
 
 import engine.animation;
 

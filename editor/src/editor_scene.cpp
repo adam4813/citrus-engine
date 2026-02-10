@@ -177,6 +177,7 @@ void EditorScene::RenderUI(engine::Engine& engine) {
 		ImGui::DockBuilderDockWindow("Viewport", dock_id_main);
 		ImGui::DockBuilderDockWindow("Assets", dock_id_bottom);
 		ImGui::DockBuilderDockWindow("Graph Editor", dock_id_bottom);
+		ImGui::DockBuilderDockWindow("Animation Editor", dock_id_bottom);
 		ImGui::DockBuilderFinish(dockspace_id);
 	}
 
@@ -193,6 +194,7 @@ void EditorScene::RenderUI(engine::Engine& engine) {
 	viewport_panel_.Render(engine, scene, state_.is_running, editor_camera_, last_delta_time_, selected_entity_);
 	asset_browser_panel_.Render(scene, selected_asset_);
 	graph_editor_panel_.Render();
+	animation_editor_panel_.Render();
 
 	// Handle dialogs
 	if (state_.show_new_scene_dialog) {
@@ -348,6 +350,7 @@ void EditorScene::RenderMenuBar() {
 			ImGui::MenuItem("Viewport", nullptr, &viewport_panel_.VisibleRef());
 			ImGui::MenuItem("Assets", nullptr, &asset_browser_panel_.VisibleRef());
 			ImGui::MenuItem("Graph Editor", nullptr, &graph_editor_panel_.VisibleRef());
+			ImGui::MenuItem("Animation Editor", nullptr, &animation_editor_panel_.VisibleRef());
 			ImGui::EndMenu();
 		}
 

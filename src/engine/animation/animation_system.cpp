@@ -1,8 +1,12 @@
+module;
+
 #include <flecs.h>
 #include <memory>
 #include <string>
 #include <variant>
 #include <vector>
+
+module engine.animation.system;
 
 import engine.animation;
 import engine.ecs;

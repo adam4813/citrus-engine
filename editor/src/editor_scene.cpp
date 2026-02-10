@@ -81,6 +81,7 @@ void EditorScene::Initialize(engine::Engine& engine) {
 	callbacks.on_paste_entity = [this]() { PasteEntity(); };
 	callbacks.on_duplicate_entity = [this]() { DuplicateEntity(); };
 	callbacks.on_open_tileset = [this](const std::string& path) {
+		tileset_editor_panel_.OpenTileset(path);
 	};
 	callbacks.on_open_data_table = [this](const std::string& path) {
 		data_table_editor_panel_.OpenTable(path);
@@ -190,6 +191,7 @@ void EditorScene::RenderUI(engine::Engine& engine) {
 		ImGui::DockBuilderDockWindow("Assets", dock_id_bottom);
 		ImGui::DockBuilderDockWindow("Graph Editor", dock_id_bottom);
 		ImGui::DockBuilderDockWindow("Animation Editor", dock_id_bottom);
+		ImGui::DockBuilderDockWindow("Tileset Editor", dock_id_bottom);
 		ImGui::DockBuilderDockWindow("Code Editor", dock_id_bottom);
 		ImGui::DockBuilderDockWindow("Data Table Editor", dock_id_bottom);
 		ImGui::DockBuilderFinish(dockspace_id);
@@ -211,6 +213,7 @@ void EditorScene::RenderUI(engine::Engine& engine) {
 	shader_editor_panel_.Render();
 	texture_editor_panel_.Render();
 	animation_editor_panel_.Render();
+	tileset_editor_panel_.Render();
 	data_table_editor_panel_.Render();
 	code_editor_panel_.Render();
 
@@ -371,6 +374,7 @@ void EditorScene::RenderMenuBar() {
 			ImGui::MenuItem("Shader Editor", nullptr, &shader_editor_panel_.VisibleRef());
 			ImGui::MenuItem("Texture Editor", nullptr, &texture_editor_panel_.VisibleRef());
 			ImGui::MenuItem("Animation Editor", nullptr, &animation_editor_panel_.VisibleRef());
+			ImGui::MenuItem("Tileset Editor", nullptr, &tileset_editor_panel_.VisibleRef());
 			ImGui::MenuItem("Data Table Editor", nullptr, &data_table_editor_panel_.VisibleRef());
 			ImGui::MenuItem("Code Editor", nullptr, &code_editor_panel_.VisibleRef());
 			ImGui::EndMenu();

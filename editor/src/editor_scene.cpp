@@ -210,7 +210,7 @@ void EditorScene::RenderUI(engine::Engine& engine) {
 	viewport_panel_.Render(engine, scene, state_.is_running, editor_camera_, last_delta_time_, selected_entity_);
 	asset_browser_panel_.Render(scene, selected_asset_);
 	graph_editor_panel_.Render();
-	shader_editor_panel_.Render();
+	shader_editor_panel_.Render(scene);
 	texture_editor_panel_.Render();
 	animation_editor_panel_.Render();
 	behavior_tree_editor_panel_.Render();
@@ -487,6 +487,17 @@ void EditorScene::OnAssetSelected(const engine::scene::AssetType type, const std
 	selection_type_ = SelectionType::Asset;
 	selected_asset_.type = type;
 	selected_asset_.name = name;
+
+	// Open shader assets in the shader editor
+	if (type == engine::scene::AssetType::SHADER && engine_) {
+		auto& scene_manager = engine::scene::GetSceneManager();
+		if (auto* scene = scene_manager.TryGetScene(editor_scene_id_)) {
+			auto asset = scene->GetAssets().Find(name, engine::scene::AssetType::SHADER);
+			if (asset) {
+				shader_editor_panel_.OpenAsset(static_cast<engine::scene::ShaderAssetInfo*>(asset.get()));
+			}
+		}
+	}
 }
 
 void EditorScene::OnAssetDeleted(const engine::scene::AssetType type, const std::string& name) {

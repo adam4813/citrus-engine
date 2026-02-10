@@ -17,7 +17,7 @@ namespace editor {
  * - Code editor mode: Multi-line text editor with vertex/fragment tabs
  * - Node graph mode: Visual shader graph using GraphEditorPanel
  * - Uniform inspector: Auto-detects and displays shader uniforms
- * - Save/Load: JSON-based shader asset format
+ * - Opens shader assets from scene, edits their vertex/fragment files
  */
 class ShaderEditorPanel {
 public:
@@ -26,38 +26,24 @@ public:
 
 	/**
 	 * @brief Render the shader editor panel
+	 * @param scene The current scene (for listing shader assets)
 	 */
-	void Render();
+	void Render(engine::scene::Scene* scene);
 
-	/**
-	 * @brief Check if panel is visible
-	 */
 	[[nodiscard]] bool IsVisible() const { return is_visible_; }
-
-	/**
-	 * @brief Set panel visibility
-	 */
 	void SetVisible(bool visible) { is_visible_ = visible; }
+	bool& VisibleRef() { return is_visible_; }
 
 	/**
-	 * @brief Get mutable reference to visibility (for ImGui::MenuItem binding)
+	 * @brief Open a shader asset for editing
+	 * @param asset Pointer to the shader asset info
 	 */
-	bool& VisibleRef() { return is_visible_; }
+	void OpenAsset(engine::scene::ShaderAssetInfo* asset);
 
 	/**
 	 * @brief Create a new empty shader
 	 */
 	void NewShader();
-
-	/**
-	 * @brief Open a shader from file
-	 */
-	bool OpenShader(const std::string& path);
-
-	/**
-	 * @brief Save the current shader to file
-	 */
-	bool SaveShader(const std::string& path);
 
 	/**
 	 * @brief Compile the current shader (validates syntax)
@@ -68,7 +54,7 @@ private:
 	// ========================================================================
 	// Rendering Methods
 	// ========================================================================
-	void RenderToolbar();
+	void RenderToolbar(engine::scene::Scene* scene);
 	void RenderCodeEditor();
 	void RenderNodeGraph();
 	void RenderUniformInspector();
@@ -77,6 +63,8 @@ private:
 	// ========================================================================
 	// Shader Management
 	// ========================================================================
+	bool LoadSourceFromFiles();
+	bool SaveSourceToFiles();
 	void ExtractUniforms();
 	void GenerateShaderFromGraph();
 	std::string GetDefaultVertexShader() const;
@@ -91,11 +79,18 @@ private:
 	enum class EditorMode { Code, NodeGraph };
 	EditorMode mode_ = EditorMode::Code;
 
+	// Current asset being edited
+	engine::scene::ShaderAssetInfo* current_asset_ = nullptr;
+
 	// Shader data
 	std::string shader_name_ = "Untitled";
 	std::string vertex_source_;
 	std::string fragment_source_;
-	std::string current_file_path_;
+
+	// Text editor buffers (member, not static, so they update on asset change)
+	char vertex_buffer_[16384]{};
+	char fragment_buffer_[16384]{};
+	int buffer_generation_ = 0; // Incremented on open/new to force ImGui to create fresh widget state
 
 	// Code editor state
 	enum class ShaderTab { Vertex, Fragment };
@@ -104,7 +99,7 @@ private:
 	// Uniform detection
 	struct UniformInfo {
 		std::string name;
-		std::string type; // "float", "vec2", "vec3", "vec4", "int", "sampler2D", etc.
+		std::string type;
 		std::string default_value;
 	};
 	std::vector<UniformInfo> uniforms_;

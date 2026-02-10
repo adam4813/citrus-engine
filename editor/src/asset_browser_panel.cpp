@@ -185,9 +185,20 @@ void AssetBrowserPanel::Render(engine::scene::Scene* scene, const AssetSelection
 
 	ImGui::SameLine();
 
-	// Right panel: Content view
+	// Right panel: Content view + Scene assets
 	ImGui::BeginChild("ContentView", ImVec2(0, 0), true);
 	RenderContentView();
+
+	// Scene-embedded assets section
+	if (scene && !scene->GetAssets().GetAll().empty()) {
+		ImGui::Separator();
+		if (ImGui::CollapsingHeader("Scene Assets", ImGuiTreeNodeFlags_DefaultOpen)) {
+			auto& registry = engine::scene::AssetRegistry::Instance();
+			for (const auto& type_info : registry.GetAssetTypes()) {
+				RenderAssetCategory(scene, type_info, selected_asset);
+			}
+		}
+	}
 
 	// Handle right-click on empty space
 	if (ImGui::IsWindowHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {

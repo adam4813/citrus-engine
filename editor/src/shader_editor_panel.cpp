@@ -6,7 +6,6 @@
 
 #include <algorithm>
 #include <cmath>
-#include <fstream>
 #include <regex>
 #include <sstream>
 
@@ -18,14 +17,14 @@ ShaderEditorPanel::ShaderEditorPanel() : shader_graph_(std::make_unique<engine::
 
 ShaderEditorPanel::~ShaderEditorPanel() = default;
 
-void ShaderEditorPanel::Render() {
+void ShaderEditorPanel::Render(engine::scene::Scene* scene) {
 	if (!is_visible_) {
 		return;
 	}
 
 	ImGui::Begin("Shader Editor", &is_visible_, ImGuiWindowFlags_MenuBar);
 
-	RenderToolbar();
+	RenderToolbar(scene);
 
 	// Main content area
 	ImGui::BeginChild("Content", ImVec2(0, -200), true, ImGuiWindowFlags_HorizontalScrollbar);
@@ -59,26 +58,34 @@ void ShaderEditorPanel::Render() {
 	ImGui::End();
 }
 
-void ShaderEditorPanel::RenderToolbar() {
+void ShaderEditorPanel::RenderToolbar(engine::scene::Scene* scene) {
 	if (ImGui::BeginMenuBar()) {
 		if (ImGui::BeginMenu("File")) {
 			if (ImGui::MenuItem("New")) {
 				NewShader();
 			}
-			if (ImGui::MenuItem("Open...")) {
-				// For now, just load from a default path
-				OpenShader("shader_test.shader.json");
-			}
-			if (ImGui::MenuItem("Save")) {
-				if (current_file_path_.empty()) {
-					SaveShader("shader_test.shader.json");
+
+			// List shader assets from scene to open
+			if (scene && ImGui::BeginMenu("Open Asset")) {
+				auto& assets = scene->GetAssets();
+				bool has_shaders = false;
+				for (const auto& asset : assets.GetAll()) {
+					if (asset && asset->type == engine::scene::AssetType::SHADER) {
+						has_shaders = true;
+						const bool is_current = (current_asset_ && current_asset_->name == asset->name);
+						if (ImGui::MenuItem(asset->name.c_str(), nullptr, is_current)) {
+							OpenAsset(static_cast<engine::scene::ShaderAssetInfo*>(asset.get()));
+						}
+					}
 				}
-				else {
-					SaveShader(current_file_path_);
+				if (!has_shaders) {
+					ImGui::TextDisabled("No shader assets in scene");
 				}
+				ImGui::EndMenu();
 			}
-			if (ImGui::MenuItem("Save As...")) {
-				SaveShader("shader_test.shader.json");
+
+			if (ImGui::MenuItem("Save", "Ctrl+S", false, current_asset_ != nullptr)) {
+				SaveSourceToFiles();
 			}
 			ImGui::EndMenu();
 		}
@@ -93,6 +100,12 @@ void ShaderEditorPanel::RenderToolbar() {
 			ImGui::EndMenu();
 		}
 
+		// Show current asset name
+		if (current_asset_) {
+			ImGui::Spacing();
+			ImGui::Text("| %s", current_asset_->name.c_str());
+		}
+
 		// Compile button
 		ImGui::Spacing();
 		if (ImGui::Button("Compile")) {
@@ -104,6 +117,12 @@ void ShaderEditorPanel::RenderToolbar() {
 }
 
 void ShaderEditorPanel::RenderCodeEditor() {
+	// Use generation counter in widget IDs so ImGui creates fresh state after open/new
+	char vertex_id[32];
+	char fragment_id[32];
+	std::snprintf(vertex_id, sizeof(vertex_id), "##VS%d", buffer_generation_);
+	std::snprintf(fragment_id, sizeof(fragment_id), "##FS%d", buffer_generation_);
+
 	// Tabs for vertex and fragment shaders
 	if (ImGui::BeginTabBar("ShaderTabs")) {
 		if (ImGui::BeginTabItem("Vertex Shader")) {
@@ -137,20 +156,13 @@ void ShaderEditorPanel::RenderCodeEditor() {
 			// Text editor
 			ImGui::BeginChild("VertexEditor", ImVec2(0, 0), false);
 
-			// Allocate buffer if needed (with extra space)
-			static char vertex_buffer[16384];
-			if (vertex_source_.size() < sizeof(vertex_buffer) - 1) {
-				std::strncpy(vertex_buffer, vertex_source_.c_str(), sizeof(vertex_buffer) - 1);
-				vertex_buffer[sizeof(vertex_buffer) - 1] = '\0';
-			}
-
 			if (ImGui::InputTextMultiline(
-						"##VertexSource",
-						vertex_buffer,
-						sizeof(vertex_buffer),
+						vertex_id,
+						vertex_buffer_,
+						sizeof(vertex_buffer_),
 						ImVec2(-1, -1),
 						ImGuiInputTextFlags_AllowTabInput)) {
-				vertex_source_ = vertex_buffer;
+				vertex_source_ = vertex_buffer_;
 			}
 
 			ImGui::EndChild();
@@ -185,19 +197,13 @@ void ShaderEditorPanel::RenderCodeEditor() {
 
 			ImGui::BeginChild("FragmentEditor", ImVec2(0, 0), false);
 
-			static char fragment_buffer[16384];
-			if (fragment_source_.size() < sizeof(fragment_buffer) - 1) {
-				std::strncpy(fragment_buffer, fragment_source_.c_str(), sizeof(fragment_buffer) - 1);
-				fragment_buffer[sizeof(fragment_buffer) - 1] = '\0';
-			}
-
 			if (ImGui::InputTextMultiline(
-						"##FragmentSource",
-						fragment_buffer,
-						sizeof(fragment_buffer),
+						fragment_id,
+						fragment_buffer_,
+						sizeof(fragment_buffer_),
 						ImVec2(-1, -1),
 						ImGuiInputTextFlags_AllowTabInput)) {
-				fragment_source_ = fragment_buffer;
+				fragment_source_ = fragment_buffer_;
 			}
 
 			ImGui::EndChild();
@@ -462,91 +468,104 @@ void ShaderEditorPanel::NewShader() {
 	shader_name_ = "Untitled";
 	vertex_source_ = GetDefaultVertexShader();
 	fragment_source_ = GetDefaultFragmentShader();
-	current_file_path_ = "";
+	current_asset_ = nullptr;
 	uniforms_.clear();
 	has_errors_ = false;
 	error_message_ = "";
+
+	// Copy source to buffers and bump generation to force ImGui to re-read
+	std::strncpy(vertex_buffer_, vertex_source_.c_str(), sizeof(vertex_buffer_) - 1);
+	vertex_buffer_[sizeof(vertex_buffer_) - 1] = '\0';
+	std::strncpy(fragment_buffer_, fragment_source_.c_str(), sizeof(fragment_buffer_) - 1);
+	fragment_buffer_[sizeof(fragment_buffer_) - 1] = '\0';
+	buffer_generation_++;
 
 	// Clear graph
 	shader_graph_ = std::make_unique<engine::graph::NodeGraph>();
 }
 
-bool ShaderEditorPanel::OpenShader(const std::string& path) {
-	std::ifstream file(path);
-	if (!file.is_open()) {
-		error_message_ = "Failed to open file: " + path;
-		has_errors_ = true;
-		return false;
+void ShaderEditorPanel::OpenAsset(engine::scene::ShaderAssetInfo* asset) {
+	if (!asset) {
+		return;
 	}
 
-	try {
-		json j;
-		file >> j;
+	current_asset_ = asset;
+	shader_name_ = asset->name;
+	has_errors_ = false;
+	error_message_ = "";
 
-		shader_name_ = j.value("name", "Untitled");
-		vertex_source_ = j.value("vertex_source", GetDefaultVertexShader());
-		fragment_source_ = j.value("fragment_source", GetDefaultFragmentShader());
-		current_file_path_ = path;
-
-		// Load uniforms
-		if (j.contains("uniforms")) {
-			uniforms_.clear();
-			for (const auto& u : j["uniforms"]) {
-				UniformInfo uniform;
-				uniform.name = u.value("name", "");
-				uniform.type = u.value("type", "float");
-				uniform.default_value = u.value("default_value", "0.0");
-				uniforms_.push_back(uniform);
-			}
-		}
-
-		// Load graph data if present
-		if (j.contains("graph_data")) {
-			// TODO: Deserialize graph
-		}
-
-		has_errors_ = false;
-		error_message_ = "";
-		return true;
+	if (!LoadSourceFromFiles()) {
+		// If files don't exist yet, start with defaults
+		vertex_source_ = GetDefaultVertexShader();
+		fragment_source_ = GetDefaultFragmentShader();
 	}
-	catch (const std::exception& e) {
-		error_message_ = std::string("Failed to parse JSON: ") + e.what();
-		has_errors_ = true;
-		return false;
-	}
+
+	// Copy source to buffers and bump generation to force ImGui to re-read
+	std::strncpy(vertex_buffer_, vertex_source_.c_str(), sizeof(vertex_buffer_) - 1);
+	vertex_buffer_[sizeof(vertex_buffer_) - 1] = '\0';
+	std::strncpy(fragment_buffer_, fragment_source_.c_str(), sizeof(fragment_buffer_) - 1);
+	fragment_buffer_[sizeof(fragment_buffer_) - 1] = '\0';
+	buffer_generation_++;
+
+	ExtractUniforms();
+	SetVisible(true);
 }
 
-bool ShaderEditorPanel::SaveShader(const std::string& path) {
-	json j;
-	j["name"] = shader_name_;
-	j["vertex_source"] = vertex_source_;
-	j["fragment_source"] = fragment_source_;
-
-	// Save uniforms
-	json uniforms_json = json::array();
-	for (const auto& uniform : uniforms_) {
-		json u;
-		u["name"] = uniform.name;
-		u["type"] = uniform.type;
-		u["default_value"] = uniform.default_value;
-		uniforms_json.push_back(u);
+bool ShaderEditorPanel::LoadSourceFromFiles() {
+	if (!current_asset_) {
+		return false;
 	}
-	j["uniforms"] = uniforms_json;
 
-	// Save graph data
-	// TODO: Serialize graph
-	j["graph_data"] = json::object();
+	bool loaded_any = false;
 
-	std::ofstream file(path);
-	if (!file.is_open()) {
-		error_message_ = "Failed to save file: " + path;
+	if (!current_asset_->vertex_path.empty()) {
+		if (auto text = engine::assets::AssetManager::LoadTextFile(current_asset_->vertex_path)) {
+			vertex_source_ = std::move(*text);
+			loaded_any = true;
+		}
+	}
+
+	if (!current_asset_->fragment_path.empty()) {
+		if (auto text = engine::assets::AssetManager::LoadTextFile(current_asset_->fragment_path)) {
+			fragment_source_ = std::move(*text);
+			loaded_any = true;
+		}
+	}
+
+	return loaded_any;
+}
+
+bool ShaderEditorPanel::SaveSourceToFiles() {
+	if (!current_asset_) {
+		error_message_ = "No shader asset loaded";
 		has_errors_ = true;
 		return false;
 	}
 
-	file << j.dump(2);
-	current_file_path_ = path;
-	return true;
+	bool success = true;
+
+	if (!current_asset_->vertex_path.empty()) {
+		if (!engine::assets::AssetManager::SaveTextFile(current_asset_->vertex_path, vertex_source_)) {
+			error_message_ = "Failed to save vertex shader: " + current_asset_->vertex_path;
+			has_errors_ = true;
+			success = false;
+		}
+	}
+
+	if (!current_asset_->fragment_path.empty()) {
+		if (!engine::assets::AssetManager::SaveTextFile(current_asset_->fragment_path, fragment_source_)) {
+			error_message_ = "Failed to save fragment shader: " + current_asset_->fragment_path;
+			has_errors_ = true;
+			success = false;
+		}
+	}
+
+	if (success) {
+		has_errors_ = false;
+		error_message_ = "";
+	}
+
+	return success;
 }
 
 bool ShaderEditorPanel::CompileShader() {

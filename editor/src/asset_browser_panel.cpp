@@ -12,45 +12,6 @@ std::string_view AssetBrowserPanel::GetPanelName() const { return "Assets"; }
 
 void AssetBrowserPanel::SetCallbacks(const EditorCallbacks& callbacks) { callbacks_ = callbacks; }
 
-std::string AssetBrowserPanel::GetFileIcon(const std::filesystem::path& path) {
-	if (std::filesystem::is_directory(path)) {
-		return "[D]";
-	}
-
-	const auto ext = path.extension().string();
-	if (ext == ".scene" || path.filename().string().ends_with(".scene.json")) {
-		return "[Sc]";
-	}
-	if (ext == ".prefab" || path.filename().string().ends_with(".prefab.json")) {
-		return "[P]";
-	}
-	if (path.filename().string().ends_with(".tileset.json")) {
-		return "[TS]";
-	}
-	if (path.filename().string().ends_with(".data.json")) {
-		return "[Dt]";
-	}
-	if (ext == ".png" || ext == ".jpg" || ext == ".jpeg" || ext == ".tga" || ext == ".bmp") {
-		return "[T]";
-	}
-	if (ext == ".wav" || ext == ".ogg" || ext == ".mp3") {
-		return "[S]";
-	}
-	if (ext == ".obj" || ext == ".fbx" || ext == ".gltf" || ext == ".glb") {
-		return "[M]";
-	}
-	if (ext == ".lua" || ext == ".as" || ext == ".js") {
-		return "[Sc]";
-	}
-	if (ext == ".glsl" || ext == ".vert" || ext == ".frag" || ext == ".shader") {
-		return "[Sh]";
-	}
-	if (ext == ".json") {
-		return "[J]";
-	}
-	return "[F]";
-}
-
 AssetFileType AssetBrowserPanel::GetAssetFileType(const std::filesystem::path& path) {
 	if (std::filesystem::is_directory(path)) {
 		return AssetFileType::Directory;
@@ -126,7 +87,7 @@ void AssetBrowserPanel::RefreshCurrentDirectory() {
 	try {
 		for (const auto& entry : std::filesystem::directory_iterator(current_directory_)) {
 			FileSystemItem item(entry.path(), entry.is_directory());
-			item.type_icon = GetFileIcon(entry.path());
+			item.type_icon = GetFileIcon(entry);
 			current_items_.push_back(item);
 		}
 
@@ -293,68 +254,9 @@ void AssetBrowserPanel::RenderDirectoryTree() {
 		return;
 	}
 
-	RenderDirectoryTreeNode(assets_root_);
-}
-
-void AssetBrowserPanel::RenderDirectoryTreeNode(const std::filesystem::path& path) {
-	if (!std::filesystem::exists(path) || !std::filesystem::is_directory(path)) {
-		return;
-	}
-
-	const std::string name = path.filename().string();
-	const bool is_selected = (path == current_directory_);
-
-	ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick;
-	if (is_selected) {
-		flags |= ImGuiTreeNodeFlags_Selected;
-	}
-
-	// Check if this directory has subdirectories
-	bool has_subdirs = false;
-	try {
-		for (const auto& entry : std::filesystem::directory_iterator(path)) {
-			if (entry.is_directory()) {
-				has_subdirs = true;
-				break;
-			}
-		}
-	}
-	catch (...) {
-		// Ignore errors
-	}
-
-	if (!has_subdirs) {
-		flags |= ImGuiTreeNodeFlags_Leaf;
-	}
-
-	const bool node_open = ImGui::TreeNodeEx(name.c_str(), flags);
-
-	if (ImGui::IsItemClicked()) {
-		current_directory_ = path;
+	if (std::filesystem::path new_dir; editor::RenderDirectoryTree(assets_root_, current_directory_, new_dir, false)) {
+		current_directory_ = new_dir;
 		needs_refresh_ = true;
-	}
-
-	if (node_open) {
-		if (has_subdirs) {
-			try {
-				// Collect and sort subdirectories
-				std::vector<std::filesystem::path> subdirs;
-				for (const auto& entry : std::filesystem::directory_iterator(path)) {
-					if (entry.is_directory()) {
-						subdirs.push_back(entry.path());
-					}
-				}
-				std::sort(subdirs.begin(), subdirs.end());
-
-				for (const auto& subdir : subdirs) {
-					RenderDirectoryTreeNode(subdir);
-				}
-			}
-			catch (...) {
-				// Ignore errors
-			}
-		}
-		ImGui::TreePop();
 	}
 }
 

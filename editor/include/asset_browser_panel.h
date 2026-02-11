@@ -2,6 +2,7 @@
 
 #include "editor_callbacks.h"
 #include "editor_panel.h"
+#include "file_utils.h"
 
 #include <filesystem>
 #include <memory>
@@ -101,11 +102,6 @@ private:
 	void RenderDirectoryTree();
 
 	/**
-	 * @brief Render directory tree node recursively
-	 */
-	void RenderDirectoryTreeNode(const std::filesystem::path& path);
-
-	/**
 	 * @brief Render the content view (right panel)
 	 */
 	void RenderContentView();
@@ -144,11 +140,6 @@ private:
 	 * @brief Refresh the current directory contents
 	 */
 	void RefreshCurrentDirectory();
-
-	/**
-	 * @brief Get the icon for a file based on its extension
-	 */
-	static std::string GetFileIcon(const std::filesystem::path& path);
 
 	/**
 	 * @brief Get the asset file type from extension

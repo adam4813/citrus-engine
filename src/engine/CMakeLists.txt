@@ -91,6 +91,7 @@ target_sources(engine-core
     scripting/scripting_backend.cppm
     scripting/scripting_system.cppm
     physics/physics_types.cppm
+    physics/physics_components.cppm
     physics/physics_backend.cppm
     physics/physics_system.cppm
     ui/ui.cppm
@@ -197,7 +198,9 @@ target_sources(engine-core PRIVATE
     # Physics module implementation
     physics/physics_factory.cpp
     physics/jolt_backend.cpp
+    physics/jolt_module.cpp
     physics/bullet3_backend.cpp
+    physics/bullet3_module.cpp
     physics/physx_backend.cpp
 
     ui/text_renderer.cpp

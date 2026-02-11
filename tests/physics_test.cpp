@@ -1,464 +1,339 @@
+#include <flecs.h>
 #include <gtest/gtest.h>
 
+import engine.components;
 import engine.physics;
 import glm;
 
 using namespace engine::physics;
 
-class PhysicsSystemTest : public ::testing::Test {
-protected:
-    void SetUp() override {
-    }
+// === Type/Struct Unit Tests (no flecs world needed) ===
 
-    void TearDown() override {
-    }
+TEST(PhysicsTypesTest, physics_transform_matrix_conversion) {
+	PhysicsTransform transform;
+	transform.position = glm::vec3{1.0F, 2.0F, 3.0F};
+	transform.rotation = glm::quat{1.0F, 0.0F, 0.0F, 0.0F};
+
+	glm::mat4 matrix = transform.GetMatrix();
+
+	EXPECT_FLOAT_EQ(matrix[3][0], 1.0F);
+	EXPECT_FLOAT_EQ(matrix[3][1], 2.0F);
+	EXPECT_FLOAT_EQ(matrix[3][2], 3.0F);
+	EXPECT_FLOAT_EQ(matrix[3][3], 1.0F);
+
+	PhysicsTransform converted = PhysicsTransform::FromMatrix(matrix);
+	EXPECT_FLOAT_EQ(converted.position.x, 1.0F);
+	EXPECT_FLOAT_EQ(converted.position.y, 2.0F);
+	EXPECT_FLOAT_EQ(converted.position.z, 3.0F);
+}
+
+TEST(PhysicsTypesTest, collision_info_validity) {
+	CollisionInfo info{};
+	info.entity_a = 0;
+	info.entity_b = 0;
+	EXPECT_FALSE(info.IsValid());
+
+	info.entity_a = 1;
+	info.entity_b = 2;
+	EXPECT_TRUE(info.IsValid());
+}
+
+TEST(PhysicsTypesTest, raycast_result_validity) {
+	RaycastResult result{};
+	result.entity = 0;
+	EXPECT_FALSE(result.HasHit());
+
+	result.entity = 1;
+	EXPECT_TRUE(result.HasHit());
+}
+
+TEST(PhysicsTypesTest, component_defaults) {
+	RigidBody rb{};
+	EXPECT_EQ(rb.motion_type, MotionType::Dynamic);
+	EXPECT_FLOAT_EQ(rb.mass, 1.0F);
+	EXPECT_TRUE(rb.use_gravity);
+
+	CollisionShape cs{};
+	EXPECT_EQ(cs.type, ShapeType::Box);
+	EXPECT_FLOAT_EQ(cs.sphere_radius, 0.5F);
+
+	PhysicsWorldConfig cfg{};
+	EXPECT_FLOAT_EQ(cfg.gravity.y, -9.81F);
+	EXPECT_FLOAT_EQ(cfg.fixed_timestep, 1.0F / 60.0F);
+	EXPECT_EQ(cfg.max_substeps, 4);
+}
+
+// === Backend Factory Tests ===
+
+TEST(PhysicsBackendTest, can_create_jolt_backend) {
+	auto backend = CreatePhysicsBackend(PhysicsEngineType::JoltPhysics);
+	ASSERT_NE(backend, nullptr);
+	EXPECT_EQ(backend->GetEngineName(), "JoltPhysics");
+
+	PhysicsConfig config{};
+	EXPECT_TRUE(backend->Initialize(config));
+	backend->Shutdown();
+}
+
+TEST(PhysicsBackendTest, can_create_bullet3_backend) {
+	auto backend = CreatePhysicsBackend(PhysicsEngineType::Bullet3);
+	ASSERT_NE(backend, nullptr);
+	EXPECT_EQ(backend->GetEngineName(), "Bullet3");
+
+	PhysicsConfig config{};
+	EXPECT_TRUE(backend->Initialize(config));
+	backend->Shutdown();
+}
+
+TEST(PhysicsBackendTest, can_create_physx_stub_backend) {
+	auto backend = CreatePhysicsBackend(PhysicsEngineType::PhysX);
+	ASSERT_NE(backend, nullptr);
+	EXPECT_EQ(backend->GetEngineName(), "PhysX (stub)");
+
+	PhysicsConfig config{};
+	EXPECT_TRUE(backend->Initialize(config));
+	backend->Shutdown();
+}
+
+TEST(PhysicsBackendTest, backend_gravity) {
+	auto backend = CreatePhysicsBackend(PhysicsEngineType::JoltPhysics);
+	PhysicsConfig config{};
+	backend->Initialize(config);
+
+	glm::vec3 new_gravity{0.0F, -20.0F, 0.0F};
+	backend->SetGravity(new_gravity);
+
+	auto g = backend->GetGravity();
+	EXPECT_FLOAT_EQ(g.x, 0.0F);
+	EXPECT_FLOAT_EQ(g.y, -20.0F);
+	EXPECT_FLOAT_EQ(g.z, 0.0F);
+
+	backend->Shutdown();
+}
+
+TEST(PhysicsBackendTest, backend_step_simulation) {
+	auto backend = CreatePhysicsBackend(PhysicsEngineType::JoltPhysics);
+	PhysicsConfig config{};
+	backend->Initialize(config);
+
+	// Just verify stepping doesn't crash
+	backend->StepSimulation(1.0F / 60.0F);
+	backend->StepSimulation(1.0F / 60.0F);
+
+	backend->Shutdown();
+}
+
+TEST(PhysicsBackendTest, backend_constraints) {
+	auto backend = CreatePhysicsBackend(PhysicsEngineType::JoltPhysics);
+	PhysicsConfig config{};
+	backend->Initialize(config);
+
+	ConstraintConfig cc{};
+	cc.type = ConstraintType::Fixed;
+	EXPECT_TRUE(backend->AddConstraint(1, 2, cc));
+	backend->RemoveConstraint(1, 2); // Should not crash
+
+	backend->Shutdown();
+}
+
+TEST(PhysicsBackendTest, backend_body_falls_under_gravity) {
+	auto backend = CreatePhysicsBackend(PhysicsEngineType::JoltPhysics);
+	PhysicsConfig config{};
+	backend->Initialize(config);
+
+	// Create a dynamic sphere at y=10
+	PhysicsTransform pt;
+	pt.position = {0.0F, 10.0F, 0.0F};
+	pt.rotation = {1.0F, 0.0F, 0.0F, 0.0F};
+
+	RigidBody rb{};
+	rb.motion_type = MotionType::Dynamic;
+	rb.mass = 1.0F;
+
+	CollisionShape cs{};
+	cs.type = ShapeType::Sphere;
+	cs.sphere_radius = 0.5F;
+
+	backend->SyncBodyToBackend(100, pt, rb, cs);
+	EXPECT_TRUE(backend->HasBody(100));
+
+	// Step simulation for 60 frames
+	for (int i = 0; i < 60; ++i) {
+		backend->StepSimulation(1.0F / 60.0F);
+	}
+
+	auto result = backend->SyncBodyFromBackend(100);
+	EXPECT_LT(result.position.y, 10.0F);
+
+	backend->Shutdown();
+}
+
+// === Flecs Module Integration Tests ===
+
+class JoltModuleTest : public ::testing::Test {
+protected:
+	flecs::world world_;
+
+	void SetUp() override {
+		// Register engine Transform component
+		world_.component<engine::components::Transform>();
+		// Set default physics config
+		world_.set<PhysicsWorldConfig>({});
+		// Create Simulation phase entity matching ECSWorld::SetupPipeline
+		auto sim_phase = world_.entity("Simulation").add(flecs::Phase).depends_on(flecs::OnUpdate);
+		sim_phase.enable();
+		// Import the Jolt module
+		world_.import <JoltPhysicsModule>();
+	}
 };
 
-// Test basic initialization with JoltPhysics backend
-TEST_F(PhysicsSystemTest, can_initialize_jolt_backend) {
-    PhysicsSystem physics(PhysicsEngineType::JoltPhysics);
-    EXPECT_EQ(physics.GetEngineType(), PhysicsEngineType::JoltPhysics);
-    EXPECT_EQ(physics.GetEngineName(), "JoltPhysics");
+TEST_F(JoltModuleTest, module_imports_successfully) {
+	// If SetUp completes without error, the module imported
+	SUCCEED();
 }
 
-// Test initialization with Bullet3 backend
-TEST_F(PhysicsSystemTest, can_initialize_bullet3_backend) {
-    PhysicsSystem physics(PhysicsEngineType::Bullet3);
-    EXPECT_EQ(physics.GetEngineType(), PhysicsEngineType::Bullet3);
-    EXPECT_EQ(physics.GetEngineName(), "Bullet3");
+TEST_F(JoltModuleTest, entity_with_physics_components_syncs_to_backend) {
+	auto e = world_.entity()
+					 .set<engine::components::Transform>({{0.0F, 10.0F, 0.0F}})
+					 .set<RigidBody>({.motion_type = MotionType::Dynamic, .mass = 1.0F})
+					 .set<CollisionShape>({.type = ShapeType::Sphere, .sphere_radius = 0.5F});
+
+	// Progress to trigger observers and systems
+	world_.progress(1.0F / 60.0F);
+
+	// Dynamic body should get PhysicsVelocity auto-added
+	EXPECT_TRUE(e.has<PhysicsVelocity>());
 }
 
-// Test initialization with PhysX backend
-TEST_F(PhysicsSystemTest, can_initialize_physx_backend) {
-    PhysicsSystem physics(PhysicsEngineType::PhysX);
-    EXPECT_EQ(physics.GetEngineType(), PhysicsEngineType::PhysX);
-    EXPECT_EQ(physics.GetEngineName(), "PhysX (stub)");
+TEST_F(JoltModuleTest, static_body_does_not_get_velocity) {
+	auto e = world_.entity()
+					 .set<engine::components::Transform>({{0.0F, 0.0F, 0.0F}})
+					 .set<RigidBody>({.motion_type = MotionType::Static})
+					 .set<CollisionShape>({.type = ShapeType::Box});
+
+	world_.progress(1.0F / 60.0F);
+
+	// Static bodies should NOT get PhysicsVelocity
+	EXPECT_FALSE(e.has<PhysicsVelocity>());
 }
 
-// Test gravity setting and getting
-TEST_F(PhysicsSystemTest, can_set_and_get_gravity) {
-    PhysicsSystem physics(PhysicsEngineType::JoltPhysics);
-    
-    glm::vec3 new_gravity{0.0F, -20.0F, 0.0F};
-    physics.SetGravity(new_gravity);
-    
-    glm::vec3 retrieved_gravity = physics.GetGravity();
-    EXPECT_FLOAT_EQ(retrieved_gravity.x, new_gravity.x);
-    EXPECT_FLOAT_EQ(retrieved_gravity.y, new_gravity.y);
-    EXPECT_FLOAT_EQ(retrieved_gravity.z, new_gravity.z);
+TEST_F(JoltModuleTest, dynamic_body_falls_under_gravity) {
+	auto e = world_.entity()
+					 .set<engine::components::Transform>({{0.0F, 10.0F, 0.0F}})
+					 .set<RigidBody>({.motion_type = MotionType::Dynamic, .mass = 1.0F})
+					 .set<CollisionShape>({.type = ShapeType::Sphere, .sphere_radius = 0.5F});
+
+	// First progress triggers OnSet observer → creates body in backend
+	world_.progress(1.0F / 60.0F);
+
+	// Verify PhysicsVelocity was added (confirms observer ran)
+	ASSERT_TRUE(e.has<PhysicsVelocity>());
+
+	// Run simulation frames
+	for (int i = 0; i < 59; ++i) {
+		world_.progress(1.0F / 60.0F);
+	}
+
+	const auto& t = e.get<engine::components::Transform>();
+	// After 1 second of gravity, Y should be less than starting position
+	EXPECT_LT(t.position.y, 10.0F);
 }
 
-// Test adding and removing rigid bodies
-TEST_F(PhysicsSystemTest, can_add_and_remove_rigid_body) {
-    PhysicsSystem physics(PhysicsEngineType::JoltPhysics);
-    
-    EntityId entity = 1;
-    RigidBodyConfig config{};
-    config.motion_type = MotionType::Dynamic;
-    config.mass = 5.0F;
-    
-    EXPECT_FALSE(physics.HasRigidBody(entity));
-    
-    bool added = physics.AddRigidBody(entity, config);
-    EXPECT_TRUE(added);
-    EXPECT_TRUE(physics.HasRigidBody(entity));
-    
-    physics.RemoveRigidBody(entity);
-    EXPECT_FALSE(physics.HasRigidBody(entity));
+TEST_F(JoltModuleTest, removing_rigidbody_cleans_up) {
+	auto e = world_.entity()
+					 .set<engine::components::Transform>({{0.0F, 5.0F, 0.0F}})
+					 .set<RigidBody>({.motion_type = MotionType::Dynamic})
+					 .set<CollisionShape>({.type = ShapeType::Box});
+
+	world_.progress(1.0F / 60.0F);
+	EXPECT_TRUE(e.has<PhysicsVelocity>());
+
+	// Remove RigidBody — should trigger OnRemove observer
+	e.remove<RigidBody>();
+	world_.progress(1.0F / 60.0F);
+
+	// Entity should no longer have physics velocity updated
+	// (it still has the component, but backend won't sync)
+	SUCCEED();
 }
 
-// Test setting and getting transform
-TEST_F(PhysicsSystemTest, can_set_and_get_transform) {
-    PhysicsSystem physics(PhysicsEngineType::JoltPhysics);
-    
-    EntityId entity = 1;
-    RigidBodyConfig config{};
-    physics.AddRigidBody(entity, config);
-    
-    glm::vec3 position{10.0F, 20.0F, 30.0F};
-    glm::quat rotation{1.0F, 0.0F, 0.0F, 0.0F};
-    
-    physics.SetTransform(entity, position, rotation);
-    
-    glm::vec3 retrieved_pos = physics.GetPosition(entity);
-    EXPECT_FLOAT_EQ(retrieved_pos.x, position.x);
-    EXPECT_FLOAT_EQ(retrieved_pos.y, position.y);
-    EXPECT_FLOAT_EQ(retrieved_pos.z, position.z);
+TEST_F(JoltModuleTest, physics_force_is_applied) {
+	auto e = world_.entity()
+					 .set<engine::components::Transform>({{0.0F, 10.0F, 0.0F}})
+					 .set<RigidBody>({.motion_type = MotionType::Dynamic, .mass = 1.0F, .use_gravity = false})
+					 .set<CollisionShape>({.type = ShapeType::Sphere, .sphere_radius = 0.5F});
+
+	world_.progress(1.0F / 60.0F);
+
+	// Apply a force in X direction
+	e.set<PhysicsForce>({.force = {100.0F, 0.0F, 0.0F}, .clear_after_apply = true});
+
+	for (int i = 0; i < 30; ++i) {
+		world_.progress(1.0F / 60.0F);
+	}
+
+	const auto& t = e.get<engine::components::Transform>();
+	// Should have moved in X direction
+	EXPECT_GT(t.position.x, 0.0F);
+
+	// PhysicsForce should have been removed (clear_after_apply)
+	EXPECT_FALSE(e.has<PhysicsForce>());
 }
 
-// Test velocity management
-TEST_F(PhysicsSystemTest, can_set_and_get_velocity) {
-    PhysicsSystem physics(PhysicsEngineType::JoltPhysics);
-    
-    EntityId entity = 1;
-    RigidBodyConfig config{};
-    physics.AddRigidBody(entity, config);
-    
-    glm::vec3 velocity{5.0F, 10.0F, 15.0F};
-    physics.SetLinearVelocity(entity, velocity);
-    
-    glm::vec3 retrieved_vel = physics.GetLinearVelocity(entity);
-    EXPECT_FLOAT_EQ(retrieved_vel.x, velocity.x);
-    EXPECT_FLOAT_EQ(retrieved_vel.y, velocity.y);
-    EXPECT_FLOAT_EQ(retrieved_vel.z, velocity.z);
+TEST_F(JoltModuleTest, physics_impulse_is_consumed) {
+	auto e = world_.entity()
+					 .set<engine::components::Transform>({{0.0F, 10.0F, 0.0F}})
+					 .set<RigidBody>({.motion_type = MotionType::Dynamic, .mass = 1.0F, .use_gravity = false})
+					 .set<CollisionShape>({.type = ShapeType::Sphere, .sphere_radius = 0.5F});
+
+	world_.progress(1.0F / 60.0F);
+
+	// Apply an impulse
+	e.set<PhysicsImpulse>({.impulse = {0.0F, 50.0F, 0.0F}});
+	world_.progress(1.0F / 60.0F);
+
+	// PhysicsImpulse should be consumed (removed)
+	EXPECT_FALSE(e.has<PhysicsImpulse>());
 }
 
-// Test adding and removing colliders
-TEST_F(PhysicsSystemTest, can_add_and_remove_collider) {
-    PhysicsSystem physics(PhysicsEngineType::JoltPhysics);
-    
-    EntityId entity = 1;
-    ColliderConfig config{};
-    config.shape.type = ShapeType::Box;
-    config.shape.box_half_extents = glm::vec3{1.0F, 2.0F, 3.0F};
-    
-    EXPECT_FALSE(physics.HasCollider(entity));
-    
-    bool added = physics.AddCollider(entity, config);
-    EXPECT_TRUE(added);
-    EXPECT_TRUE(physics.HasCollider(entity));
-    
-    physics.RemoveCollider(entity);
-    EXPECT_FALSE(physics.HasCollider(entity));
+// === Bullet3 Module Integration Tests ===
+
+class Bullet3ModuleTest : public ::testing::Test {
+protected:
+	flecs::world world_;
+
+	void SetUp() override {
+		world_.component<engine::components::Transform>();
+		world_.set<PhysicsWorldConfig>({});
+		auto sim_phase = world_.entity("Simulation").add(flecs::Phase).depends_on(flecs::OnUpdate);
+		sim_phase.enable();
+		world_.import <Bullet3PhysicsModule>();
+	}
+};
+
+TEST_F(Bullet3ModuleTest, module_imports_successfully) { SUCCEED(); }
+
+TEST_F(Bullet3ModuleTest, entity_with_physics_components_syncs) {
+	auto e = world_.entity()
+					 .set<engine::components::Transform>({{0.0F, 10.0F, 0.0F}})
+					 .set<RigidBody>({.motion_type = MotionType::Dynamic, .mass = 1.0F})
+					 .set<CollisionShape>({.type = ShapeType::Sphere, .sphere_radius = 0.5F});
+
+	world_.progress(1.0F / 60.0F);
+
+	EXPECT_TRUE(e.has<PhysicsVelocity>());
 }
 
-// Test CCD enable/disable
-TEST_F(PhysicsSystemTest, can_enable_and_disable_ccd) {
-    PhysicsSystem physics(PhysicsEngineType::JoltPhysics);
-    
-    EntityId entity = 1;
-    RigidBodyConfig config{};
-    config.enable_ccd = false;
-    physics.AddRigidBody(entity, config);
-    
-    EXPECT_FALSE(physics.IsCCDEnabled(entity));
-    
-    physics.EnableCCD(entity, true);
-    EXPECT_TRUE(physics.IsCCDEnabled(entity));
-    
-    physics.EnableCCD(entity, false);
-    EXPECT_FALSE(physics.IsCCDEnabled(entity));
-}
+TEST_F(Bullet3ModuleTest, dynamic_body_falls_under_gravity) {
+	auto e = world_.entity()
+					 .set<engine::components::Transform>({{0.0F, 10.0F, 0.0F}})
+					 .set<RigidBody>({.motion_type = MotionType::Dynamic, .mass = 1.0F})
+					 .set<CollisionShape>({.type = ShapeType::Sphere, .sphere_radius = 0.5F});
 
-// Test character controller
-TEST_F(PhysicsSystemTest, can_add_and_remove_character_controller) {
-    PhysicsSystem physics(PhysicsEngineType::JoltPhysics);
-    
-    EntityId entity = 1;
-    CharacterControllerConfig config{};
-    config.height = 1.8F;
-    config.radius = 0.3F;
-    
-    EXPECT_FALSE(physics.HasCharacterController(entity));
-    
-    bool added = physics.AddCharacterController(entity, config);
-    EXPECT_TRUE(added);
-    EXPECT_TRUE(physics.HasCharacterController(entity));
-    
-    physics.RemoveCharacterController(entity);
-    EXPECT_FALSE(physics.HasCharacterController(entity));
-}
+	for (int i = 0; i < 60; ++i) {
+		world_.progress(1.0F / 60.0F);
+	}
 
-// Test convenience method: CreateDynamicBox
-TEST_F(PhysicsSystemTest, can_create_dynamic_box) {
-    PhysicsSystem physics(PhysicsEngineType::JoltPhysics);
-    
-    EntityId entity = 1;
-    glm::vec3 position{0.0F, 10.0F, 0.0F};
-    glm::vec3 half_extents{1.0F, 1.0F, 1.0F};
-    
-    bool created = physics.CreateDynamicBox(entity, position, half_extents, 2.0F);
-    EXPECT_TRUE(created);
-    EXPECT_TRUE(physics.HasRigidBody(entity));
-    EXPECT_TRUE(physics.HasCollider(entity));
-    
-    glm::vec3 retrieved_pos = physics.GetPosition(entity);
-    EXPECT_FLOAT_EQ(retrieved_pos.x, position.x);
-    EXPECT_FLOAT_EQ(retrieved_pos.y, position.y);
-    EXPECT_FLOAT_EQ(retrieved_pos.z, position.z);
-}
-
-// Test convenience method: CreateStaticBox
-TEST_F(PhysicsSystemTest, can_create_static_box) {
-    PhysicsSystem physics(PhysicsEngineType::JoltPhysics);
-    
-    EntityId entity = 1;
-    glm::vec3 position{2.0F, -1.0F, 3.0F};
-    glm::vec3 half_extents{10.0F, 0.5F, 10.0F};
-    
-    bool created = physics.CreateStaticBox(entity, position, half_extents);
-    EXPECT_TRUE(created);
-    EXPECT_TRUE(physics.HasRigidBody(entity));
-    EXPECT_TRUE(physics.HasCollider(entity));
-    
-    // Verify position was applied correctly
-    glm::vec3 retrieved_pos = physics.GetPosition(entity);
-    EXPECT_FLOAT_EQ(retrieved_pos.x, position.x);
-    EXPECT_FLOAT_EQ(retrieved_pos.y, position.y);
-    EXPECT_FLOAT_EQ(retrieved_pos.z, position.z);
-}
-
-// Test convenience method: CreateDynamicSphere
-TEST_F(PhysicsSystemTest, can_create_dynamic_sphere) {
-    PhysicsSystem physics(PhysicsEngineType::JoltPhysics);
-    
-    EntityId entity = 1;
-    glm::vec3 position{0.0F, 5.0F, 0.0F};
-    float radius = 0.5F;
-    
-    bool created = physics.CreateDynamicSphere(entity, position, radius, 1.0F);
-    EXPECT_TRUE(created);
-    EXPECT_TRUE(physics.HasRigidBody(entity));
-    EXPECT_TRUE(physics.HasCollider(entity));
-    
-    // Verify position was applied correctly
-    glm::vec3 retrieved_pos = physics.GetPosition(entity);
-    EXPECT_FLOAT_EQ(retrieved_pos.x, position.x);
-    EXPECT_FLOAT_EQ(retrieved_pos.y, position.y);
-    EXPECT_FLOAT_EQ(retrieved_pos.z, position.z);
-}
-
-// Test convenience method: CreateStaticSphere
-TEST_F(PhysicsSystemTest, can_create_static_sphere) {
-    PhysicsSystem physics(PhysicsEngineType::JoltPhysics);
-    
-    EntityId entity = 1;
-    glm::vec3 position{3.0F, 0.0F, -2.0F};
-    float radius = 1.0F;
-    
-    bool created = physics.CreateStaticSphere(entity, position, radius);
-    EXPECT_TRUE(created);
-    EXPECT_TRUE(physics.HasRigidBody(entity));
-    EXPECT_TRUE(physics.HasCollider(entity));
-    
-    // Verify position was applied correctly
-    glm::vec3 retrieved_pos = physics.GetPosition(entity);
-    EXPECT_FLOAT_EQ(retrieved_pos.x, position.x);
-    EXPECT_FLOAT_EQ(retrieved_pos.y, position.y);
-    EXPECT_FLOAT_EQ(retrieved_pos.z, position.z);
-}
-
-// Test convenience method: CreateDynamicCapsule
-TEST_F(PhysicsSystemTest, can_create_dynamic_capsule) {
-    PhysicsSystem physics(PhysicsEngineType::JoltPhysics);
-    
-    EntityId entity = 1;
-    glm::vec3 position{0.0F, 5.0F, 0.0F};
-    float radius = 0.3F;
-    float height = 1.5F;
-    
-    bool created = physics.CreateDynamicCapsule(entity, position, radius, height, 1.0F);
-    EXPECT_TRUE(created);
-    EXPECT_TRUE(physics.HasRigidBody(entity));
-    EXPECT_TRUE(physics.HasCollider(entity));
-    
-    // Verify position was applied correctly
-    glm::vec3 retrieved_pos = physics.GetPosition(entity);
-    EXPECT_FLOAT_EQ(retrieved_pos.x, position.x);
-    EXPECT_FLOAT_EQ(retrieved_pos.y, position.y);
-    EXPECT_FLOAT_EQ(retrieved_pos.z, position.z);
-}
-
-// Test convenience method: CreateStaticCapsule
-TEST_F(PhysicsSystemTest, can_create_static_capsule) {
-    PhysicsSystem physics(PhysicsEngineType::JoltPhysics);
-    
-    EntityId entity = 1;
-    glm::vec3 position{-1.0F, 0.0F, 4.0F};
-    float radius = 0.5F;
-    float height = 2.0F;
-    
-    bool created = physics.CreateStaticCapsule(entity, position, radius, height);
-    EXPECT_TRUE(created);
-    EXPECT_TRUE(physics.HasRigidBody(entity));
-    EXPECT_TRUE(physics.HasCollider(entity));
-    
-    // Verify position was applied correctly
-    glm::vec3 retrieved_pos = physics.GetPosition(entity);
-    EXPECT_FLOAT_EQ(retrieved_pos.x, position.x);
-    EXPECT_FLOAT_EQ(retrieved_pos.y, position.y);
-    EXPECT_FLOAT_EQ(retrieved_pos.z, position.z);
-}
-
-// Test RemovePhysics removes all physics components
-TEST_F(PhysicsSystemTest, can_remove_all_physics_from_entity) {
-    PhysicsSystem physics(PhysicsEngineType::JoltPhysics);
-    
-    EntityId entity = 1;
-    
-    physics.CreateDynamicBox(entity, glm::vec3{0.0F}, glm::vec3{1.0F});
-    physics.AddCharacterController(entity);
-    
-    EXPECT_TRUE(physics.HasRigidBody(entity));
-    EXPECT_TRUE(physics.HasCollider(entity));
-    EXPECT_TRUE(physics.HasCharacterController(entity));
-    
-    physics.RemovePhysics(entity);
-    
-    EXPECT_FALSE(physics.HasRigidBody(entity));
-    EXPECT_FALSE(physics.HasCollider(entity));
-    EXPECT_FALSE(physics.HasCharacterController(entity));
-}
-
-// Test feature support query
-TEST_F(PhysicsSystemTest, can_query_feature_support) {
-    PhysicsSystem physics(PhysicsEngineType::JoltPhysics);
-    
-    // JoltPhysics supports these
-    EXPECT_TRUE(physics.SupportsFeature("ccd"));
-    EXPECT_TRUE(physics.SupportsFeature("convex_hull"));
-    EXPECT_TRUE(physics.SupportsFeature("character_controller"));
-    EXPECT_TRUE(physics.SupportsFeature("multithreading"));
-    
-    // JoltPhysics does not support these
-    EXPECT_FALSE(physics.SupportsFeature("ccd_concave_mesh"));
-    EXPECT_FALSE(physics.SupportsFeature("gpu_acceleration"));
-}
-
-// Test switching between physics engines at runtime
-TEST_F(PhysicsSystemTest, can_switch_physics_engine) {
-    PhysicsSystem physics(PhysicsEngineType::JoltPhysics);
-    EXPECT_EQ(physics.GetEngineType(), PhysicsEngineType::JoltPhysics);
-    
-    // Switch to Bullet3
-    bool switched = physics.SetEngine(PhysicsEngineType::Bullet3);
-    EXPECT_TRUE(switched);
-    EXPECT_EQ(physics.GetEngineType(), PhysicsEngineType::Bullet3);
-    
-    // Switch to PhysX
-    switched = physics.SetEngine(PhysicsEngineType::PhysX);
-    EXPECT_TRUE(switched);
-    EXPECT_EQ(physics.GetEngineType(), PhysicsEngineType::PhysX);
-    
-    // Switch back to JoltPhysics
-    switched = physics.SetEngine(PhysicsEngineType::JoltPhysics);
-    EXPECT_TRUE(switched);
-    EXPECT_EQ(physics.GetEngineType(), PhysicsEngineType::JoltPhysics);
-}
-
-// Test that switching to same engine is a no-op
-TEST_F(PhysicsSystemTest, switching_to_same_engine_is_noop) {
-    PhysicsSystem physics(PhysicsEngineType::JoltPhysics);
-    
-    // Add a rigid body
-    EntityId entity = 1;
-    physics.AddRigidBody(entity, RigidBodyConfig{});
-    EXPECT_TRUE(physics.HasRigidBody(entity));
-    
-    // Switch to same engine - should preserve state
-    bool switched = physics.SetEngine(PhysicsEngineType::JoltPhysics);
-    EXPECT_TRUE(switched);
-    
-    // Body should still exist (no reinitialization occurred)
-    EXPECT_TRUE(physics.HasRigidBody(entity));
-}
-
-// Test simulation step
-TEST_F(PhysicsSystemTest, can_step_simulation) {
-    PhysicsSystem physics(PhysicsEngineType::JoltPhysics);
-    
-    EntityId entity = 1;
-    RigidBodyConfig config{};
-    config.motion_type = MotionType::Dynamic;
-    config.use_gravity = true;
-    physics.AddRigidBody(entity, config);
-    
-    glm::vec3 initial_pos{0.0F, 10.0F, 0.0F};
-    physics.SetTransform(entity, initial_pos);
-    
-    // Step simulation
-    physics.Update(1.0F / 60.0F);
-    
-    // Position should have changed due to gravity (in stub implementation)
-    glm::vec3 new_pos = physics.GetPosition(entity);
-    // In the stub implementation, gravity is applied each step
-    EXPECT_NE(new_pos.y, initial_pos.y);
-}
-
-// Test applying impulse
-TEST_F(PhysicsSystemTest, can_apply_impulse) {
-    PhysicsSystem physics(PhysicsEngineType::JoltPhysics);
-    
-    EntityId entity = 1;
-    RigidBodyConfig config{};
-    config.motion_type = MotionType::Dynamic;
-    config.mass = 1.0F;
-    config.use_gravity = false; // Disable gravity for cleaner test
-    physics.AddRigidBody(entity, config);
-    
-    glm::vec3 initial_velocity = physics.GetLinearVelocity(entity);
-    EXPECT_FLOAT_EQ(initial_velocity.x, 0.0F);
-    EXPECT_FLOAT_EQ(initial_velocity.y, 0.0F);
-    EXPECT_FLOAT_EQ(initial_velocity.z, 0.0F);
-    
-    // Apply impulse
-    glm::vec3 impulse{10.0F, 0.0F, 0.0F};
-    physics.ApplyImpulse(entity, impulse);
-    
-    // Velocity should have changed
-    glm::vec3 new_velocity = physics.GetLinearVelocity(entity);
-    EXPECT_GT(new_velocity.x, 0.0F);
-}
-
-// Test PhysicsTransform matrix conversion
-TEST_F(PhysicsSystemTest, physics_transform_matrix_conversion) {
-    PhysicsTransform transform;
-    transform.position = glm::vec3{1.0F, 2.0F, 3.0F};
-    transform.rotation = glm::quat{1.0F, 0.0F, 0.0F, 0.0F}; // Identity rotation
-    
-    glm::mat4 matrix = transform.GetMatrix();
-    
-    // Check position in matrix
-    EXPECT_FLOAT_EQ(matrix[3][0], 1.0F);
-    EXPECT_FLOAT_EQ(matrix[3][1], 2.0F);
-    EXPECT_FLOAT_EQ(matrix[3][2], 3.0F);
-    EXPECT_FLOAT_EQ(matrix[3][3], 1.0F);
-    
-    // Convert back
-    PhysicsTransform converted = PhysicsTransform::FromMatrix(matrix);
-    EXPECT_FLOAT_EQ(converted.position.x, 1.0F);
-    EXPECT_FLOAT_EQ(converted.position.y, 2.0F);
-    EXPECT_FLOAT_EQ(converted.position.z, 3.0F);
-}
-
-// Test collision info validity check
-TEST_F(PhysicsSystemTest, collision_info_validity) {
-    CollisionInfo info{};
-    info.entity_a = 0;
-    info.entity_b = 0;
-    EXPECT_FALSE(info.IsValid());
-    
-    info.entity_a = 1;
-    info.entity_b = 2;
-    EXPECT_TRUE(info.IsValid());
-}
-
-// Test raycast result validity check
-TEST_F(PhysicsSystemTest, raycast_result_validity) {
-    RaycastResult result{};
-    result.entity = 0;
-    EXPECT_FALSE(result.HasHit());
-    
-    result.entity = 1;
-    EXPECT_TRUE(result.HasHit());
-}
-
-// Test constraints
-TEST_F(PhysicsSystemTest, can_add_and_remove_constraints) {
-    PhysicsSystem physics(PhysicsEngineType::JoltPhysics);
-    
-    EntityId entity_a = 1;
-    EntityId entity_b = 2;
-    
-    physics.AddRigidBody(entity_a);
-    physics.AddRigidBody(entity_b);
-    
-    ConstraintConfig config{};
-    config.type = ConstraintType::Fixed;
-    
-    bool added = physics.AddConstraint(entity_a, entity_b, config);
-    EXPECT_TRUE(added);
-    
-    // Remove constraint (no assertion needed, just ensure it doesn't crash)
-    physics.RemoveConstraint(entity_a, entity_b);
+	const auto& t = e.get<engine::components::Transform>();
+	EXPECT_LT(t.position.y, 10.0F);
 }

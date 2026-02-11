@@ -1,11 +1,12 @@
 // Data module test - tests DataAsset, DataTable, DataAssetRegistry, and DataSerializer
 
-import engine.data;
-import glm;
-
 #include <cassert>
 #include <iostream>
 #include <string>
+#include <variant>
+
+import engine.data;
+import glm;
 
 using namespace engine::data;
 

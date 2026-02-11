@@ -1,4 +1,5 @@
 #include "graph_editor_panel.h"
+#include "asset_editor_registry.h"
 
 #include <imgui.h>
 #include <imgui_internal.h>
@@ -8,11 +9,31 @@
 
 namespace editor {
 
-GraphEditorPanel::GraphEditorPanel() : graph_(std::make_unique<engine::graph::NodeGraph>()) {}
+GraphEditorPanel::GraphEditorPanel() : graph_(std::make_unique<engine::graph::NodeGraph>()) {
+	open_dialog_.SetCallback([this](const std::string& path) {
+		if (LoadGraph(path)) {
+			current_file_path_ = path;
+		}
+	});
+	save_dialog_.SetCallback([this](const std::string& path) {
+		if (SaveGraph(path)) {
+			current_file_path_ = path;
+		}
+	});
+}
 
 GraphEditorPanel::~GraphEditorPanel() = default;
 
 std::string_view GraphEditorPanel::GetPanelName() const { return "Graph Editor"; }
+
+void GraphEditorPanel::RegisterAssetHandlers(AssetEditorRegistry& registry) {
+	registry.Register("node_graph", [this](const std::string& path) {
+		if (LoadGraph(path)) {
+			current_file_path_ = path;
+			SetVisible(true);
+		}
+	});
+}
 
 void GraphEditorPanel::Render() {
 	if (!IsVisible()) {
@@ -24,8 +45,7 @@ void GraphEditorPanel::Render() {
 	RenderToolbar();
 
 	// Main canvas area
-	ImGui::BeginChild("Canvas", ImVec2(0, 0), true,
-					  ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoMove);
+	ImGui::BeginChild("Canvas", ImVec2(0, 0), true, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoMove);
 
 	RenderCanvas();
 
@@ -39,13 +59,16 @@ void GraphEditorPanel::RenderToolbar() {
 		if (ImGui::BeginMenu("File")) {
 			if (ImGui::MenuItem("New")) {
 				NewGraph();
+				current_file_path_.clear();
 			}
-			if (ImGui::MenuItem("Save")) {
-				// For now, just save to a default path
-				SaveGraph("graph.json");
+			if (ImGui::MenuItem("Open...")) {
+				open_dialog_.Open();
 			}
-			if (ImGui::MenuItem("Load")) {
-				LoadGraph("graph.json");
+			if (ImGui::MenuItem("Save", nullptr, false, !current_file_path_.empty())) {
+				SaveGraph(current_file_path_);
+			}
+			if (ImGui::MenuItem("Save As...")) {
+				save_dialog_.Open("graph.json");
 			}
 			ImGui::EndMenu();
 		}
@@ -59,6 +82,9 @@ void GraphEditorPanel::RenderToolbar() {
 
 		ImGui::EndMenuBar();
 	}
+
+	open_dialog_.Render();
+	save_dialog_.Render();
 }
 
 void GraphEditorPanel::RenderCanvas() {
@@ -73,12 +99,16 @@ void GraphEditorPanel::RenderCanvas() {
 	// Draw grid lines
 	const float grid_step = GRID_SIZE * canvas_zoom_;
 	for (float x = fmodf(canvas_offset_.x, grid_step); x < canvas_sz.x; x += grid_step) {
-		draw_list->AddLine(ImVec2(canvas_p0_.x + x, canvas_p0_.y), ImVec2(canvas_p0_.x + x, canvas_p1.y),
-						   IM_COL32(50, 50, 50, 255));
+		draw_list->AddLine(
+				ImVec2(canvas_p0_.x + x, canvas_p0_.y),
+				ImVec2(canvas_p0_.x + x, canvas_p1.y),
+				IM_COL32(50, 50, 50, 255));
 	}
 	for (float y = fmodf(canvas_offset_.y, grid_step); y < canvas_sz.y; y += grid_step) {
-		draw_list->AddLine(ImVec2(canvas_p0_.x, canvas_p0_.y + y), ImVec2(canvas_p1.x, canvas_p0_.y + y),
-						   IM_COL32(50, 50, 50, 255));
+		draw_list->AddLine(
+				ImVec2(canvas_p0_.x, canvas_p0_.y + y),
+				ImVec2(canvas_p1.x, canvas_p0_.y + y),
+				IM_COL32(50, 50, 50, 255));
 	}
 
 	// Clip rendering to canvas
@@ -113,8 +143,7 @@ void GraphEditorPanel::RenderCanvas() {
 	if (is_creating_link_) {
 		const auto* start_node = graph_->GetNode(link_start_node_id_);
 		if (start_node) {
-			const ImVec2 start_pos =
-					GetPinScreenPos(*start_node, link_start_pin_index_, link_start_is_output_);
+			const ImVec2 start_pos = GetPinScreenPos(*start_node, link_start_pin_index_, link_start_is_output_);
 			const ImVec2 end_pos = ImGui::GetMousePos();
 
 			const ImVec2 p1 = link_start_is_output_ ? start_pos : end_pos;
@@ -136,12 +165,10 @@ void GraphEditorPanel::RenderCanvas() {
 				// Must connect output→input (different directions)
 				if (end_is_output != link_start_is_output_ && end_node_id != link_start_node_id_) {
 					if (link_start_is_output_) {
-						graph_->AddLink(link_start_node_id_, link_start_pin_index_, end_node_id,
-										end_pin_index);
+						graph_->AddLink(link_start_node_id_, link_start_pin_index_, end_node_id, end_pin_index);
 					}
 					else {
-						graph_->AddLink(end_node_id, end_pin_index, link_start_node_id_,
-										link_start_pin_index_);
+						graph_->AddLink(end_node_id, end_pin_index, link_start_node_id_, link_start_pin_index_);
 					}
 				}
 			}
@@ -244,13 +271,12 @@ void GraphEditorPanel::RenderNode(const engine::graph::Node& node) {
 	const ImVec2 node_size(NODE_WIDTH * canvas_zoom_, 0); // Height will be calculated
 
 	// Calculate node height based on pin count
-	const int pin_count = std::max(static_cast<int>(node.inputs.size()),
-								   static_cast<int>(node.outputs.size()));
+	const int pin_count = std::max(static_cast<int>(node.inputs.size()), static_cast<int>(node.outputs.size()));
 	const float node_height = 40.0f + pin_count * 20.0f;
 
 	const ImVec2 node_rect_min = node_pos;
-	const ImVec2 node_rect_max = ImVec2(node_pos.x + NODE_WIDTH * canvas_zoom_,
-										 node_pos.y + node_height * canvas_zoom_);
+	const ImVec2 node_rect_max =
+			ImVec2(node_pos.x + NODE_WIDTH * canvas_zoom_, node_pos.y + node_height * canvas_zoom_);
 
 	// Draw node background
 	const bool is_selected = (node.id == selected_node_id_);
@@ -293,8 +319,9 @@ void GraphEditorPanel::RenderNode(const engine::graph::Node& node) {
 
 	// Handle node interaction
 	ImGui::SetCursorScreenPos(node_rect_min);
-	ImGui::InvisibleButton(("node_" + std::to_string(node.id)).c_str(),
-						   ImVec2(node_rect_max.x - node_rect_min.x, node_rect_max.y - node_rect_min.y));
+	ImGui::InvisibleButton(
+			("node_" + std::to_string(node.id)).c_str(),
+			ImVec2(node_rect_max.x - node_rect_min.x, node_rect_max.y - node_rect_min.y));
 
 	if (ImGui::IsItemHovered()) {
 		hovered_node_id_ = node.id;
@@ -336,8 +363,8 @@ void GraphEditorPanel::RenderLink(const engine::graph::Link& link) {
 		return;
 	}
 
-	if (link.from_pin_index >= static_cast<int>(from_node->outputs.size()) ||
-		link.to_pin_index >= static_cast<int>(to_node->inputs.size())) {
+	if (link.from_pin_index >= static_cast<int>(from_node->outputs.size())
+		|| link.to_pin_index >= static_cast<int>(to_node->inputs.size())) {
 		return;
 	}
 
@@ -352,8 +379,8 @@ void GraphEditorPanel::RenderLink(const engine::graph::Link& link) {
 	const ImVec2 cp1 = ImVec2(p1.x + offset, p1.y);
 	const ImVec2 cp2 = ImVec2(p2.x - offset, p2.y);
 
-	const ImU32 link_color = (link.id == selected_link_id_) ? IM_COL32(255, 255, 100, 255)
-															: IM_COL32(200, 200, 100, 255);
+	const ImU32 link_color =
+			(link.id == selected_link_id_) ? IM_COL32(255, 255, 100, 255) : IM_COL32(200, 200, 100, 255);
 	const float link_thickness = (link.id == selected_link_id_) ? 3.0f * canvas_zoom_ : 2.0f * canvas_zoom_;
 	draw_list->AddBezierCubic(p1, cp1, cp2, p2, link_color, link_thickness);
 }
@@ -361,9 +388,7 @@ void GraphEditorPanel::RenderLink(const engine::graph::Link& link) {
 void GraphEditorPanel::RenderContextMenu() {
 	if (ImGui::BeginPopup("CanvasContextMenu")) {
 		switch (context_target_) {
-		case ContextTarget::Canvas:
-			RenderAddNodeMenu();
-			break;
+		case ContextTarget::Canvas: RenderAddNodeMenu(); break;
 
 		case ContextTarget::Node:
 			if (ImGui::MenuItem("Delete Node")) {
@@ -383,8 +408,7 @@ void GraphEditorPanel::RenderContextMenu() {
 			}
 			break;
 
-		default:
-			break;
+		default: break;
 		}
 
 		ImGui::EndPopup();
@@ -427,12 +451,12 @@ void GraphEditorPanel::RenderAddNodeMenu() {
 }
 
 ImVec2 GraphEditorPanel::GetNodeScreenPos(const engine::graph::Node& node) const {
-	return ImVec2(canvas_p0_.x + canvas_offset_.x + node.position.x * canvas_zoom_,
-				  canvas_p0_.y + canvas_offset_.y + node.position.y * canvas_zoom_);
+	return ImVec2(
+			canvas_p0_.x + canvas_offset_.x + node.position.x * canvas_zoom_,
+			canvas_p0_.y + canvas_offset_.y + node.position.y * canvas_zoom_);
 }
 
-ImVec2 GraphEditorPanel::GetPinScreenPos(const engine::graph::Node& node, int pin_index,
-										  bool is_output) const {
+ImVec2 GraphEditorPanel::GetPinScreenPos(const engine::graph::Node& node, int pin_index, bool is_output) const {
 	const ImVec2 node_pos = GetNodeScreenPos(node);
 	const float y_offset = 30.0f + pin_index * 20.0f;
 
@@ -451,8 +475,8 @@ bool GraphEditorPanel::HitTestPin(const ImVec2& point, const ImVec2& pin_pos) co
 	return (dx * dx + dy * dy) <= (radius * radius);
 }
 
-bool GraphEditorPanel::FindPinUnderMouse(const ImVec2& mouse_pos, int& out_node_id, int& out_pin_index,
-										  bool& out_is_output) const {
+bool GraphEditorPanel::FindPinUnderMouse(
+		const ImVec2& mouse_pos, int& out_node_id, int& out_pin_index, bool& out_is_output) const {
 	for (const auto& node : graph_->GetNodes()) {
 		for (int i = 0; i < static_cast<int>(node.outputs.size()); ++i) {
 			if (HitTestPin(mouse_pos, GetPinScreenPos(node, i, true))) {
@@ -500,10 +524,8 @@ int GraphEditorPanel::FindLinkUnderMouse(const ImVec2& mouse_pos) const {
 		for (int s = 0; s <= samples; ++s) {
 			const float t = static_cast<float>(s) / static_cast<float>(samples);
 			const float u = 1.0f - t;
-			const float x = u * u * u * p1.x + 3 * u * u * t * cp1.x + 3 * u * t * t * cp2.x
-							+ t * t * t * p2.x;
-			const float y = u * u * u * p1.y + 3 * u * u * t * cp1.y + 3 * u * t * t * cp2.y
-							+ t * t * t * p2.y;
+			const float x = u * u * u * p1.x + 3 * u * u * t * cp1.x + 3 * u * t * t * cp2.x + t * t * t * p2.x;
+			const float y = u * u * u * p1.y + 3 * u * u * t * cp1.y + 3 * u * t * t * cp2.y + t * t * t * p2.y;
 			const float dx = mouse_pos.x - x;
 			const float dy = mouse_pos.y - y;
 			if (dx * dx + dy * dy <= threshold * threshold) {

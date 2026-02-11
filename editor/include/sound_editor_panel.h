@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "editor_panel.h"
+#include "file_dialog.h"
 
 namespace editor {
 
@@ -138,6 +139,10 @@ private:
 	// Waveform visualization
 	static constexpr int WAVEFORM_SAMPLE_COUNT = 512;
 	std::vector<float> waveform_samples_;
+
+	// File dialogs
+	FileDialogPopup open_dialog_{"Open Sound Preset", FileDialogMode::Open, {".json"}};
+	FileDialogPopup save_dialog_{"Save Sound Preset As", FileDialogMode::Save, {".json"}};
 };
 
 } // namespace editor

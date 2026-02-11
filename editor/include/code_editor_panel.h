@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "editor_panel.h"
+#include "file_dialog.h"
 
 namespace editor {
 
@@ -13,11 +14,11 @@ namespace editor {
  * @brief A single open file tab in the code editor
  */
 struct CodeFile {
-	std::string path;         // Full file path
-	std::string content;      // File content
+	std::string path; // Full file path
+	std::string content; // File content
 	std::string display_name; // Filename for tab display
 	bool is_modified = false; // Dirty flag
-	int cursor_position = 0;  // Cursor position in the text
+	int cursor_position = 0; // Cursor position in the text
 };
 
 /**
@@ -90,8 +91,9 @@ private:
 	int current_find_index_ = -1;
 	std::vector<size_t> find_results_;
 
-	// File dialog state
-	char file_path_buffer_[512] = "";
+	// File dialogs
+	FileDialogPopup open_dialog_{"Open File", FileDialogMode::Open};
+	FileDialogPopup save_as_dialog_{"Save File As", FileDialogMode::Save};
 };
 
 } // namespace editor

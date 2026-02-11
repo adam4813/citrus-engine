@@ -1,5 +1,4 @@
 #include "sound_editor_panel.h"
-
 #include "asset_editor_registry.h"
 
 #include <imgui.h>
@@ -19,6 +18,9 @@ namespace editor {
 SoundEditorPanel::SoundEditorPanel() {
 	NewSound();
 	waveform_samples_.resize(WAVEFORM_SAMPLE_COUNT);
+
+	open_dialog_.SetCallback([this](const std::string& path) { OpenSound(path); });
+	save_dialog_.SetCallback([this](const std::string& path) { SaveSound(path); });
 }
 
 SoundEditorPanel::~SoundEditorPanel() = default;
@@ -26,7 +28,10 @@ SoundEditorPanel::~SoundEditorPanel() = default;
 std::string_view SoundEditorPanel::GetPanelName() const { return "Sound Editor"; }
 
 void SoundEditorPanel::RegisterAssetHandlers(AssetEditorRegistry& registry) {
-	registry.Register("sound", [this](const std::string& path) { OpenSound(path); SetVisible(true); });
+	registry.Register("sound", [this](const std::string& path) {
+		OpenSound(path);
+		SetVisible(true);
+	});
 }
 
 void SoundEditorPanel::Render() {
@@ -84,28 +89,25 @@ void SoundEditorPanel::RenderMenuBar() {
 				NewSound();
 			}
 			if (ImGui::MenuItem("Open...")) {
-				// For now, use a default path
-				OpenSound("sound_preset.sfx.json");
+				open_dialog_.Open();
 			}
-			if (ImGui::MenuItem("Save")) {
-				if (current_file_path_.empty()) {
-					SaveSound("sound_preset.sfx.json");
-				} else {
-					SaveSound(current_file_path_);
-				}
+			if (ImGui::MenuItem("Save", nullptr, false, !current_file_path_.empty())) {
+				SaveSound(current_file_path_);
 			}
 			if (ImGui::MenuItem("Save As...")) {
-				SaveSound("sound_preset.sfx.json");
+				save_dialog_.Open("sound_preset.sfx.json");
 			}
 			ImGui::Separator();
 			if (ImGui::MenuItem("Export WAV...")) {
-				// TODO: Implement WAV export
 				ImGui::OpenPopup("ExportNotImplemented");
 			}
 			ImGui::EndMenu();
 		}
 		ImGui::EndMenuBar();
 	}
+
+	open_dialog_.Render();
+	save_dialog_.Render();
 
 	// Export not implemented popup
 	if (ImGui::BeginPopupModal("ExportNotImplemented", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
@@ -214,7 +216,8 @@ void SoundEditorPanel::RenderTransportControls() {
 			is_playing_ = true;
 			// TODO: Trigger audio playback (stretch goal)
 		}
-	} else {
+	}
+	else {
 		if (ImGui::Button("Stop", ImVec2(button_width, 0))) {
 			is_playing_ = false;
 			// TODO: Stop audio playback
@@ -248,24 +251,15 @@ void SoundEditorPanel::RenderWaveformVisualizer() {
 	draw_list->AddRectFilled(canvas_p0, canvas_p1, IM_COL32(20, 20, 20, 255));
 
 	// Grid lines
-	const int grid_count = 8;
+	constexpr int grid_count = 8;
 	for (int i = 0; i <= grid_count; ++i) {
 		const float y = canvas_p0.y + (canvas_size.y * i) / grid_count;
-		draw_list->AddLine(
-			ImVec2(canvas_p0.x, y),
-			ImVec2(canvas_p1.x, y),
-			IM_COL32(40, 40, 40, 255)
-		);
+		draw_list->AddLine(ImVec2(canvas_p0.x, y), ImVec2(canvas_p1.x, y), IM_COL32(40, 40, 40, 255));
 	}
 
 	// Center line (zero amplitude)
 	const float center_y = canvas_p0.y + canvas_size.y * 0.5f;
-	draw_list->AddLine(
-		ImVec2(canvas_p0.x, center_y),
-		ImVec2(canvas_p1.x, center_y),
-		IM_COL32(80, 80, 80, 255),
-		2.0f
-	);
+	draw_list->AddLine(ImVec2(canvas_p0.x, center_y), ImVec2(canvas_p1.x, center_y), IM_COL32(80, 80, 80, 255), 2.0f);
 
 	// Waveform
 	if (!waveform_samples_.empty()) {
@@ -278,12 +272,7 @@ void SoundEditorPanel::RenderWaveformVisualizer() {
 			const float y0 = center_y - waveform_samples_[i] * y_scale;
 			const float y1 = center_y - waveform_samples_[i + 1] * y_scale;
 
-			draw_list->AddLine(
-				ImVec2(x0, y0),
-				ImVec2(x1, y1),
-				IM_COL32(0, 255, 0, 255),
-				1.5f
-			);
+			draw_list->AddLine(ImVec2(x0, y0), ImVec2(x1, y1), IM_COL32(0, 255, 0, 255), 1.5f);
 		}
 	}
 
@@ -367,7 +356,8 @@ void SoundEditorPanel::RandomizeHit() {
 	static std::random_device rd;
 	static std::mt19937 gen(rd());
 
-	preset_.waveform = static_cast<WaveformType>(std::uniform_int_distribution<int>(1, 3)(gen)); // Square, Saw, Triangle
+	preset_.waveform =
+			static_cast<WaveformType>(std::uniform_int_distribution<int>(1, 3)(gen)); // Square, Saw, Triangle
 	preset_.base_frequency = std::uniform_real_distribution<float>(200.0f, 500.0f)(gen);
 	preset_.frequency_slide = std::uniform_real_distribution<float>(-0.4f, 0.1f)(gen);
 	preset_.attack_time = 0.0f;
@@ -428,32 +418,31 @@ float SoundEditorPanel::GenerateOscillatorSample(const float phase) const {
 	const float pi = 3.14159265359f;
 
 	switch (preset_.waveform) {
-		case WaveformType::Sine:
-			return std::sin(phase);
+	case WaveformType::Sine: return std::sin(phase);
 
-		case WaveformType::Square:
-			return (std::sin(phase) >= 0.0f) ? 1.0f : -1.0f;
+	case WaveformType::Square: return (std::sin(phase) >= 0.0f) ? 1.0f : -1.0f;
 
-		case WaveformType::Saw:
-			// Sawtooth: linear rise from -1 to 1
-			return (phase / pi) - 1.0f;
+	case WaveformType::Saw:
+		// Sawtooth: linear rise from -1 to 1
+		return (phase / pi) - 1.0f;
 
-		case WaveformType::Triangle: {
-			// Triangle wave
-			const float t = phase / (2.0f * pi);
-			return (t < 0.5f) ? (4.0f * t - 1.0f) : (3.0f - 4.0f * t);
-		}
+	case WaveformType::Triangle:
+	{
+		// Triangle wave
+		const float t = phase / (2.0f * pi);
+		return (t < 0.5f) ? (4.0f * t - 1.0f) : (3.0f - 4.0f * t);
+	}
 
-		case WaveformType::Noise: {
-			// Simple noise (pseudo-random based on phase)
-			static std::random_device rd;
-			static std::mt19937 gen(rd());
-			static std::uniform_real_distribution<float> dist(-1.0f, 1.0f);
-			return dist(gen);
-		}
+	case WaveformType::Noise:
+	{
+		// Simple noise (pseudo-random based on phase)
+		static std::random_device rd;
+		static std::mt19937 gen(rd());
+		static std::uniform_real_distribution<float> dist(-1.0f, 1.0f);
+		return dist(gen);
+	}
 
-		default:
-			return 0.0f;
+	default: return 0.0f;
 	}
 }
 
@@ -495,7 +484,7 @@ bool SoundEditorPanel::SaveSound(const std::string& path) {
 
 bool SoundEditorPanel::LoadPresetFromJson(const std::string& path) {
 	try {
-		auto text = engine::assets::AssetManager::LoadTextFile(path);
+		const auto text = engine::assets::AssetManager::LoadTextFile(std::filesystem::path(path));
 		if (!text) {
 			return false;
 		}
@@ -503,32 +492,69 @@ bool SoundEditorPanel::LoadPresetFromJson(const std::string& path) {
 		json j = json::parse(*text);
 
 		// Load preset parameters
-		if (j.contains("waveform")) preset_.waveform = static_cast<WaveformType>(j["waveform"].get<int>());
-		if (j.contains("base_frequency")) preset_.base_frequency = j["base_frequency"].get<float>();
-		if (j.contains("frequency_min")) preset_.frequency_min = j["frequency_min"].get<float>();
-		if (j.contains("frequency_max")) preset_.frequency_max = j["frequency_max"].get<float>();
-		if (j.contains("frequency_slide")) preset_.frequency_slide = j["frequency_slide"].get<float>();
+		if (j.contains("waveform")) {
+			preset_.waveform = static_cast<WaveformType>(j["waveform"].get<int>());
+		}
+		if (j.contains("base_frequency")) {
+			preset_.base_frequency = j["base_frequency"].get<float>();
+		}
+		if (j.contains("frequency_min")) {
+			preset_.frequency_min = j["frequency_min"].get<float>();
+		}
+		if (j.contains("frequency_max")) {
+			preset_.frequency_max = j["frequency_max"].get<float>();
+		}
+		if (j.contains("frequency_slide")) {
+			preset_.frequency_slide = j["frequency_slide"].get<float>();
+		}
 
-		if (j.contains("attack_time")) preset_.attack_time = j["attack_time"].get<float>();
-		if (j.contains("sustain_time")) preset_.sustain_time = j["sustain_time"].get<float>();
-		if (j.contains("sustain_level")) preset_.sustain_level = j["sustain_level"].get<float>();
-		if (j.contains("decay_time")) preset_.decay_time = j["decay_time"].get<float>();
+		if (j.contains("attack_time")) {
+			preset_.attack_time = j["attack_time"].get<float>();
+		}
+		if (j.contains("sustain_time")) {
+			preset_.sustain_time = j["sustain_time"].get<float>();
+		}
+		if (j.contains("sustain_level")) {
+			preset_.sustain_level = j["sustain_level"].get<float>();
+		}
+		if (j.contains("decay_time")) {
+			preset_.decay_time = j["decay_time"].get<float>();
+		}
 
-		if (j.contains("vibrato_depth")) preset_.vibrato_depth = j["vibrato_depth"].get<float>();
-		if (j.contains("vibrato_speed")) preset_.vibrato_speed = j["vibrato_speed"].get<float>();
+		if (j.contains("vibrato_depth")) {
+			preset_.vibrato_depth = j["vibrato_depth"].get<float>();
+		}
+		if (j.contains("vibrato_speed")) {
+			preset_.vibrato_speed = j["vibrato_speed"].get<float>();
+		}
 
-		if (j.contains("phaser_offset")) preset_.phaser_offset = j["phaser_offset"].get<float>();
-		if (j.contains("phaser_sweep")) preset_.phaser_sweep = j["phaser_sweep"].get<float>();
+		if (j.contains("phaser_offset")) {
+			preset_.phaser_offset = j["phaser_offset"].get<float>();
+		}
+		if (j.contains("phaser_sweep")) {
+			preset_.phaser_sweep = j["phaser_sweep"].get<float>();
+		}
 
-		if (j.contains("lowpass_cutoff")) preset_.lowpass_cutoff = j["lowpass_cutoff"].get<float>();
-		if (j.contains("lowpass_sweep")) preset_.lowpass_sweep = j["lowpass_sweep"].get<float>();
-		if (j.contains("highpass_cutoff")) preset_.highpass_cutoff = j["highpass_cutoff"].get<float>();
+		if (j.contains("lowpass_cutoff")) {
+			preset_.lowpass_cutoff = j["lowpass_cutoff"].get<float>();
+		}
+		if (j.contains("lowpass_sweep")) {
+			preset_.lowpass_sweep = j["lowpass_sweep"].get<float>();
+		}
+		if (j.contains("highpass_cutoff")) {
+			preset_.highpass_cutoff = j["highpass_cutoff"].get<float>();
+		}
 
-		if (j.contains("master_volume")) preset_.master_volume = j["master_volume"].get<float>();
-		if (j.contains("gain")) preset_.gain = j["gain"].get<float>();
+		if (j.contains("master_volume")) {
+			preset_.master_volume = j["master_volume"].get<float>();
+		}
+		if (j.contains("gain")) {
+			preset_.gain = j["gain"].get<float>();
+		}
 
 		return true;
-	} catch (const std::exception& e) {
+	}
+	catch (const std::exception& e) {
 		return false;
 	}
 }
@@ -564,7 +590,8 @@ bool SoundEditorPanel::SavePresetToJson(const std::string& path) {
 		j["gain"] = preset_.gain;
 
 		return engine::assets::AssetManager::SaveTextFile(std::filesystem::path(path), j.dump(2));
-	} catch (const std::exception& e) {
+	}
+	catch (const std::exception& e) {
 		return false;
 	}
 }

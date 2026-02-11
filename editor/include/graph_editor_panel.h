@@ -5,6 +5,7 @@
 #include <string>
 
 #include "editor_panel.h"
+#include "file_dialog.h"
 
 import engine;
 import glm;
@@ -24,6 +25,7 @@ public:
 	~GraphEditorPanel() override;
 
 	[[nodiscard]] std::string_view GetPanelName() const override;
+	void RegisterAssetHandlers(AssetEditorRegistry& registry) override;
 
 	/**
 	 * @brief Render the graph editor panel
@@ -73,8 +75,7 @@ private:
 	bool HitTestPin(const ImVec2& point, const ImVec2& pin_pos) const;
 
 	// Find which pin (if any) is under the mouse. Returns true if found.
-	bool FindPinUnderMouse(const ImVec2& mouse_pos, int& out_node_id, int& out_pin_index,
-						   bool& out_is_output) const;
+	bool FindPinUnderMouse(const ImVec2& mouse_pos, int& out_node_id, int& out_pin_index, bool& out_is_output) const;
 
 	// Find which link (if any) is near the mouse for selection/deletion
 	int FindLinkUnderMouse(const ImVec2& mouse_pos) const;
@@ -109,6 +110,11 @@ private:
 	static constexpr float GRID_SIZE = 64.0f;
 	static constexpr float NODE_WIDTH = 150.0f;
 	static constexpr float PIN_RADIUS = 6.0f;
+
+	// File state
+	std::string current_file_path_;
+	FileDialogPopup open_dialog_{"Open Graph", FileDialogMode::Open, {".json"}};
+	FileDialogPopup save_dialog_{"Save Graph As", FileDialogMode::Save, {".json"}};
 };
 
 } // namespace editor

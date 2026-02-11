@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "editor_panel.h"
+#include "file_dialog.h"
 
 import engine;
 import glm;
@@ -29,6 +30,7 @@ public:
 	~AnimationEditorPanel() override;
 
 	[[nodiscard]] std::string_view GetPanelName() const override;
+	void RegisterAssetHandlers(AssetEditorRegistry& registry) override;
 
 	/**
 	 * @brief Render the animation editor panel
@@ -144,15 +146,14 @@ private:
 	ImVec2 tracks_canvas_p1_{0.0f, 0.0f};
 
 	// Input buffers
-	char save_path_buffer_[256] = "";
-	char load_path_buffer_[256] = "";
 	char new_track_name_buffer_[256] = "";
 	float keyframe_value_buffer_ = 0.0f;
 	int interpolation_mode_buffer_ = 0;
 
 	// Dialog state
-	bool show_save_dialog_ = false;
-	bool show_load_dialog_ = false;
+	std::string current_file_path_;
+	FileDialogPopup open_dialog_{"Open Animation", FileDialogMode::Open, {".json"}};
+	FileDialogPopup save_dialog_{"Save Animation As", FileDialogMode::Save, {".json"}};
 	bool show_add_track_dialog_ = false;
 	bool show_keyframe_editor_ = false;
 };

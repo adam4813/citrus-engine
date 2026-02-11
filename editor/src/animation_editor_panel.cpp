@@ -1,4 +1,5 @@
 #include "animation_editor_panel.h"
+#include "asset_editor_registry.h"
 
 #include <imgui.h>
 #include <imgui_internal.h>
@@ -14,11 +15,28 @@ AnimationEditorPanel::AnimationEditorPanel() {
 	clip_.name = "New Animation";
 	clip_.duration = 5.0f;
 	clip_.looping = false;
+
+	open_dialog_.SetCallback([this](const std::string& path) {
+		LoadClip(path);
+		current_file_path_ = path;
+	});
+	save_dialog_.SetCallback([this](const std::string& path) {
+		SaveClip(path);
+		current_file_path_ = path;
+	});
 }
 
 AnimationEditorPanel::~AnimationEditorPanel() = default;
 
 std::string_view AnimationEditorPanel::GetPanelName() const { return "Animation Editor"; }
+
+void AnimationEditorPanel::RegisterAssetHandlers(AssetEditorRegistry& registry) {
+	registry.Register("animation", [this](const std::string& path) {
+		LoadClip(path);
+		current_file_path_ = path;
+		SetVisible(true);
+	});
+}
 
 void AnimationEditorPanel::Render() {
 	if (!IsVisible()) {
@@ -40,45 +58,9 @@ void AnimationEditorPanel::Render() {
 	ImGui::EndChild();
 
 	// Dialogs
-	if (show_save_dialog_) {
-		ImGui::OpenPopup("Save Animation");
-		show_save_dialog_ = false;
-	}
-
-	if (ImGui::BeginPopupModal("Save Animation", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
-		ImGui::Text("Enter file path:");
-		ImGui::InputText("##savepath", save_path_buffer_, sizeof(save_path_buffer_));
-
-		if (ImGui::Button("Save", ImVec2(120, 0))) {
-			SaveClip(save_path_buffer_);
-			ImGui::CloseCurrentPopup();
-		}
-		ImGui::SameLine();
-		if (ImGui::Button("Cancel", ImVec2(120, 0))) {
-			ImGui::CloseCurrentPopup();
-		}
-		ImGui::EndPopup();
-	}
-
-	if (show_load_dialog_) {
-		ImGui::OpenPopup("Load Animation");
-		show_load_dialog_ = false;
-	}
-
-	if (ImGui::BeginPopupModal("Load Animation", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
-		ImGui::Text("Enter file path:");
-		ImGui::InputText("##loadpath", load_path_buffer_, sizeof(load_path_buffer_));
-
-		if (ImGui::Button("Load", ImVec2(120, 0))) {
-			LoadClip(load_path_buffer_);
-			ImGui::CloseCurrentPopup();
-		}
-		ImGui::SameLine();
-		if (ImGui::Button("Cancel", ImVec2(120, 0))) {
-			ImGui::CloseCurrentPopup();
-		}
-		ImGui::EndPopup();
-	}
+	// File dialogs
+	open_dialog_.Render();
+	save_dialog_.Render();
 
 	if (show_add_track_dialog_) {
 		ImGui::OpenPopup("Add Track");
@@ -159,14 +141,16 @@ void AnimationEditorPanel::RenderMenuBar() {
 		if (ImGui::BeginMenu("File")) {
 			if (ImGui::MenuItem("New")) {
 				NewClip();
+				current_file_path_.clear();
 			}
-			if (ImGui::MenuItem("Save")) {
-				save_path_buffer_[0] = '\0';
-				show_save_dialog_ = true;
+			if (ImGui::MenuItem("Open...")) {
+				open_dialog_.Open();
 			}
-			if (ImGui::MenuItem("Load")) {
-				load_path_buffer_[0] = '\0';
-				show_load_dialog_ = true;
+			if (ImGui::MenuItem("Save", nullptr, false, !current_file_path_.empty())) {
+				SaveClip(current_file_path_);
+			}
+			if (ImGui::MenuItem("Save As...")) {
+				save_dialog_.Open("animation.json");
 			}
 			ImGui::EndMenu();
 		}

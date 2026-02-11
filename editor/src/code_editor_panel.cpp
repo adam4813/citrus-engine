@@ -1,5 +1,4 @@
 #include "code_editor_panel.h"
-
 #include "asset_editor_registry.h"
 
 #include <algorithm>
@@ -12,7 +11,16 @@ import engine;
 
 namespace editor {
 
-CodeEditorPanel::CodeEditorPanel() = default;
+CodeEditorPanel::CodeEditorPanel() {
+	open_dialog_.SetCallback([this](const std::string& path) { OpenFile(path); });
+	save_as_dialog_.SetCallback([this](const std::string& path) {
+		if (active_tab_index_ >= 0 && active_tab_index_ < static_cast<int>(open_files_.size())) {
+			open_files_[active_tab_index_].path = path;
+			open_files_[active_tab_index_].display_name = std::filesystem::path(path).filename().string();
+			SaveCurrentFile();
+		}
+	});
+}
 
 CodeEditorPanel::~CodeEditorPanel() = default;
 
@@ -20,7 +28,10 @@ std::string_view CodeEditorPanel::GetPanelName() const { return "Code Editor"; }
 
 void CodeEditorPanel::RegisterAssetHandlers(AssetEditorRegistry& registry) {
 	for (const auto& ext : {".lua", ".as", ".glsl", ".vert", ".frag", ".cpp", ".h", ".hpp", ".c", ".shader"}) {
-		registry.RegisterExtension(ext, [this](const std::string& path) { OpenFile(path); SetVisible(true); });
+		registry.RegisterExtension(ext, [this](const std::string& path) {
+			OpenFile(path);
+			SetVisible(true);
+		});
 	}
 }
 
@@ -50,9 +61,7 @@ void CodeEditorPanel::RenderMenuBar() {
 				NewFile();
 			}
 			if (ImGui::MenuItem("Open", "Ctrl+O")) {
-				// For now, just show a simple input dialog
-				// In a full implementation, this would use a file dialog
-				ImGui::OpenPopup("OpenFileDialog");
+				open_dialog_.Open();
 			}
 			if (ImGui::MenuItem("Save", "Ctrl+S", false, active_tab_index_ >= 0)) {
 				SaveCurrentFile();
@@ -84,25 +93,8 @@ void CodeEditorPanel::RenderMenuBar() {
 		ImGui::EndMenuBar();
 	}
 
-	// Simple "Open File" dialog popup
-	if (ImGui::BeginPopupModal("OpenFileDialog", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
-		ImGui::Text("Enter file path:");
-		ImGui::InputText("##filepath", file_path_buffer_, sizeof(file_path_buffer_));
-
-		if (ImGui::Button("Open")) {
-			if (file_path_buffer_[0] != '\0') {
-				OpenFile(file_path_buffer_);
-				file_path_buffer_[0] = '\0';
-			}
-			ImGui::CloseCurrentPopup();
-		}
-		ImGui::SameLine();
-		if (ImGui::Button("Cancel")) {
-			ImGui::CloseCurrentPopup();
-		}
-
-		ImGui::EndPopup();
-	}
+	open_dialog_.Render();
+	save_as_dialog_.Render();
 
 	// Handle keyboard shortcuts
 	if (ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows)) {
@@ -200,8 +192,8 @@ void CodeEditorPanel::RenderEditor() {
 
 	ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[0]); // Use monospace font if available
 
-	if (ImGui::InputTextMultiline("##editor", &edit_buffer[0], edit_buffer.capacity(),
-								   ImVec2(-FLT_MIN, -FLT_MIN), flags)) {
+	if (ImGui::InputTextMultiline(
+				"##editor", &edit_buffer[0], edit_buffer.capacity(), ImVec2(-FLT_MIN, -FLT_MIN), flags)) {
 		// Content changed
 		edit_buffer.resize(std::strlen(edit_buffer.c_str())); // Trim to actual size
 		if (edit_buffer != file.content) {
@@ -225,14 +217,14 @@ void CodeEditorPanel::RenderFindBar() {
 		// Search text changed, reset results
 		current_find_index_ = -1;
 		if (find_buffer_[0] != '\0') {
-			auto* file = GetCurrentFile();
-			if (file) {
+			if (const auto* file = GetCurrentFile()) {
 				find_results_ = FindOccurrences(file->content, find_buffer_);
 				if (!find_results_.empty()) {
 					current_find_index_ = 0;
 				}
 			}
-		} else {
+		}
+		else {
 			find_results_.clear();
 		}
 	}
@@ -341,9 +333,10 @@ bool CodeEditorPanel::SaveCurrentFile() {
 }
 
 bool CodeEditorPanel::SaveCurrentFileAs() {
-	// For now, just show a simple input dialog
-	// In a full implementation, this would use a file dialog
-	ImGui::OpenPopup("SaveAsDialog");
+	if (active_tab_index_ >= 0) {
+		const auto& file = open_files_[active_tab_index_];
+		save_as_dialog_.Open(file.display_name);
+	}
 	return false;
 }
 

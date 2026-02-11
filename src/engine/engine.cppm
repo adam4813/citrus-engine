@@ -14,16 +14,23 @@ module;
 export module engine;
 
 // Re-export all engine subsystems for convenient access
+export import engine.ai;
 export import engine.assets;
 export import engine.platform;
 export import engine.ecs;
 export import engine.scene;
+export import engine.scene.serializer;
+export import engine.scene.prefab;
 export import engine.components;
+export import engine.animation;
+export import engine.data;
+export import engine.graph;
 export import engine.rendering;
 export import engine.os;
 export import engine.input;
 export import engine.scripting;
 export import engine.ui;
+export import engine.audio;
 
 // Main engine namespace
 export namespace engine {
@@ -32,6 +39,12 @@ constexpr int VERSION_MAJOR = 1;
 constexpr int VERSION_MINOR = 0;
 constexpr int VERSION_PATCH = 0;
 [[nodiscard]] constexpr auto GetVersionString() noexcept -> const char* { return "1.0.0"; }
+
+// Update modes for ECS simulation
+enum class UpdateMode {
+	Full,     // Run all phases (simulation + post-simulation + pre-render)
+	EditMode  // Skip simulation, run only post-simulation + pre-render
+};
 
 class Engine {
 public:
@@ -42,6 +55,9 @@ public:
 	bool Init(std::uint32_t window_width, uint32_t window_height);
 
 	void Update(float dt);
+	
+	// Update with specific mode (full or edit mode)
+	void Update(float dt, UpdateMode mode);
 
 	void Shutdown();
 

@@ -69,3 +69,4 @@ site/
 
 # Node.js dependencies
 node_modules/
+/plan/issues/*

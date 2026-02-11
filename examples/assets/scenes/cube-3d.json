@@ -1,0 +1,28 @@
+{
+  "active_camera": "::UntitledScene_Root::MainCamera",
+  "assets": [
+    {
+      "fragment_path": "shaders/colored_3d.frag",
+      "name": "colored_3d",
+      "type": "shader",
+      "vertex_path": "shaders/colored_3d.vert"
+    },
+    {
+      "file_path": "",
+      "mesh_type": "cube",
+      "name": "CubeMesh",
+      "params": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "type": "mesh"
+    }
+  ],
+  "flecs_data": "[{\"data\":\"{\\\"name\\\":\\\"UntitledScene_Root\\\", \\\"tags\\\":[\\\"engine.ecs.SceneRoot\\\"], \\\"components\\\":{\\\"engine.components.Transform\\\":{\\\"position\\\":{\\\"x\\\":0, \\\"y\\\":0, \\\"z\\\":0}, \\\"rotation\\\":{\\\"x\\\":0, \\\"y\\\":0, \\\"z\\\":0}, \\\"scale\\\":{\\\"x\\\":1, \\\"y\\\":1, \\\"z\\\":1}}, \\\"engine.components.WorldTransform\\\":null, \\\"engine.ecs.SceneEntity\\\":{\\\"name\\\":\\\"UntitledScene_Root\\\", \\\"visible\\\":true, \\\"static_entity\\\":false, \\\"scene_layer\\\":0}}}\",\"path\":\"::UntitledScene_Root\"},{\"data\":\"{\\\"parent\\\":\\\"UntitledScene_Root\\\", \\\"name\\\":\\\"Cube\\\", \\\"components\\\":{\\\"engine.components.Transform\\\":{\\\"position\\\":{\\\"x\\\":2, \\\"y\\\":1, \\\"z\\\":-5}, \\\"rotation\\\":{\\\"x\\\":0, \\\"y\\\":0, \\\"z\\\":0}, \\\"scale\\\":{\\\"x\\\":2, \\\"y\\\":2, \\\"z\\\":2}}, \\\"engine.components.WorldTransform\\\":null, \\\"engine.components.Velocity\\\":{\\\"linear\\\":{\\\"x\\\":0, \\\"y\\\":0, \\\"z\\\":0}, \\\"angular\\\":{\\\"x\\\":0.5, \\\"y\\\":0.5, \\\"z\\\":0}}, \\\"engine.rendering.Renderable\\\":{\\\"visible\\\":true, \\\"render_layer\\\":0, \\\"alpha\\\":0}, \\\"engine.ecs.SceneEntity\\\":{\\\"name\\\":\\\"Cube\\\", \\\"visible\\\":true, \\\"static_entity\\\":false, \\\"scene_layer\\\":0}, \\\"engine.rendering.ShaderRef\\\":{\\\"name\\\":\\\"colored_3d\\\"}, \\\"engine.rendering.MeshRef\\\":{\\\"name\\\":\\\"CubeMesh\\\"}}}\",\"path\":\"::UntitledScene_Root::Cube\"},{\"data\":\"{\\\"parent\\\":\\\"UntitledScene_Root.Cube\\\", \\\"name\\\":\\\"NewEntity\\\", \\\"components\\\":{\\\"engine.components.Transform\\\":{\\\"position\\\":{\\\"x\\\":-2, \\\"y\\\":0, \\\"z\\\":0}, \\\"rotation\\\":{\\\"x\\\":0, \\\"y\\\":0, \\\"z\\\":0}, \\\"scale\\\":{\\\"x\\\":2, \\\"y\\\":2, \\\"z\\\":2}}, \\\"engine.components.WorldTransform\\\":null, \\\"engine.rendering.Renderable\\\":{\\\"visible\\\":true, \\\"render_layer\\\":0, \\\"alpha\\\":0}, \\\"engine.ecs.SceneEntity\\\":{\\\"name\\\":\\\"NewEntity\\\", \\\"visible\\\":true, \\\"static_entity\\\":false, \\\"scene_layer\\\":0}, \\\"engine.rendering.ShaderRef\\\":{\\\"name\\\":\\\"colored_3d\\\"}, \\\"engine.rendering.MeshRef\\\":{\\\"name\\\":\\\"CubeMesh\\\"}}}\",\"path\":\"::UntitledScene_Root::Cube::NewEntity\"},{\"data\":\"{\\\"parent\\\":\\\"UntitledScene_Root\\\", \\\"name\\\":\\\"Light\\\", \\\"components\\\":{\\\"engine.components.Transform\\\":{\\\"position\\\":{\\\"x\\\":0, \\\"y\\\":0, \\\"z\\\":0}, \\\"rotation\\\":{\\\"x\\\":0, \\\"y\\\":0, \\\"z\\\":0}, \\\"scale\\\":{\\\"x\\\":1, \\\"y\\\":1, \\\"z\\\":1}}, \\\"engine.components.WorldTransform\\\":null, \\\"engine.ecs.SceneEntity\\\":{\\\"name\\\":\\\"Light\\\", \\\"visible\\\":true, \\\"static_entity\\\":false, \\\"scene_layer\\\":0}, \\\"engine.rendering.Light\\\":{\\\"type\\\":0, \\\"color\\\":{\\\"x\\\":1, \\\"y\\\":1, \\\"z\\\":1, \\\"w\\\":1}, \\\"intensity\\\":1, \\\"range\\\":10, \\\"attenuation\\\":1, \\\"spot_angle\\\":45, \\\"spot_falloff\\\":1, \\\"direction\\\":{\\\"x\\\":0.200000003, \\\"y\\\":-1, \\\"z\\\":-0.3000000119}}}}\",\"path\":\"::UntitledScene_Root::Light\"},{\"data\":\"{\\\"parent\\\":\\\"UntitledScene_Root\\\", \\\"name\\\":\\\"MainCamera\\\", \\\"tags\\\":[\\\"engine.components.ActiveCamera\\\"], \\\"components\\\":{\\\"engine.components.Transform\\\":{\\\"position\\\":{\\\"x\\\":0, \\\"y\\\":0, \\\"z\\\":5}, \\\"rotation\\\":{\\\"x\\\":45, \\\"y\\\":45, \\\"z\\\":45}, \\\"scale\\\":{\\\"x\\\":1, \\\"y\\\":2, \\\"z\\\":1}}, \\\"engine.components.WorldTransform\\\":null, \\\"engine.components.Camera\\\":{\\\"target\\\":{\\\"x\\\":0, \\\"y\\\":0, \\\"z\\\":4}, \\\"up\\\":{\\\"x\\\":0, \\\"y\\\":1, \\\"z\\\":0}, \\\"fov\\\":60, \\\"aspect_ratio\\\":2.2219061852, \\\"near_plane\\\":0.1000000015, \\\"far_plane\\\":100, \\\"view_matrix\\\":{\\\"c0\\\":{\\\"x\\\":1, \\\"y\\\":0, \\\"z\\\":0, \\\"w\\\":0}, \\\"c1\\\":{\\\"x\\\":0, \\\"y\\\":1, \\\"z\\\":0, \\\"w\\\":0}, \\\"c2\\\":{\\\"x\\\":0, \\\"y\\\":0, \\\"z\\\":1, \\\"w\\\":0}, \\\"c3\\\":{\\\"x\\\":0, \\\"y\\\":0, \\\"z\\\":-5, \\\"w\\\":1}}, \\\"projection_matrix\\\":{\\\"c0\\\":{\\\"x\\\":0.7795337439, \\\"y\\\":0, \\\"z\\\":0, \\\"w\\\":0}, \\\"c1\\\":{\\\"x\\\":0, \\\"y\\\":1.7320508957, \\\"z\\\":0, \\\"w\\\":0}, \\\"c2\\\":{\\\"x\\\":0, \\\"y\\\":0, \\\"z\\\":-1.0020020008, \\\"w\\\":-1}, \\\"c3\\\":{\\\"x\\\":0, \\\"y\\\":0, \\\"z\\\":-0.2002002001, \\\"w\\\":0}}}, \\\"engine.ecs.SceneEntity\\\":{\\\"name\\\":\\\"MainCamera\\\", \\\"visible\\\":true, \\\"static_entity\\\":false, \\\"scene_layer\\\":0}}}\",\"path\":\"::UntitledScene_Root::MainCamera\"}]",
+  "metadata": {
+    "engine_version": "0.0.9"
+  },
+  "name": "UntitledScene",
+  "version": 1
+}

@@ -16,7 +16,7 @@
 
 <div align="center">
 
-<img src="assets/branding/citrus-engine-logo.svg" alt="Citrus Engine Logo" width="300"/>
+<img src="docs/assets/citrus-engine-logo.svg" alt="Citrus Engine Logo" width="300"/>
 
 **-or-**
 

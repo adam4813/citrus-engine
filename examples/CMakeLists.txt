@@ -22,7 +22,8 @@ add_executable(
     src/scene_management_scene.cpp
     src/ui_image_scene.cpp
     src/ui_showcase_scene.cpp
-    src/ui_component_scene.cpp)
+    src/ui_component_scene.cpp
+    src/data_asset_scene.cpp)
 
 target_include_directories(citrus-examples
                            PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)

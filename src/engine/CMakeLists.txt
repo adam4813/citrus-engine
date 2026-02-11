@@ -41,22 +41,52 @@ endif ()
 target_sources(engine-core
     PUBLIC
     FILE_SET CXX_MODULES FILES
+    ai/blackboard.cppm
+    ai/behavior_tree.cppm
+    ai/ai.cppm
     assets/asset_manager.cppm
     assets/assets.cppm
     assets/tileset.cppm
+    animation/animation_clip.cppm
+    animation/animation_state.cppm
+    animation/animator.cppm
+    animation/animation_system.cppm
+    animation/animation_serializer.cppm
+    animation/animation.cppm
+    audio/audio_clip.cppm
+    audio/audio_source.cppm
+    audio/audio_listener.cppm
+    audio/audio_system.cppm
+    audio/audio.cppm
     platform/platform.cppm
     components/components.cppm
+    data/data_asset.cppm
+    data/data_table.cppm
+    data/data_asset_registry.cppm
+    data/data_serializer.cppm
+    data/data.cppm
+    ecs/component_registry.cppm
     ecs/flecs_ecs.cppm
     input/input.cppm
     os/os.cppm
+    graph/types.cppm
+    graph/node_graph.cppm
+    graph/node_type_registry.cppm
+    graph/graph_evaluator.cppm
+    graph/graph_serializer.cppm
+    graph/graph.cppm
     rendering/types.cppm
     rendering/texture.cppm
     rendering/shader.cppm
     rendering/mesh.cppm
     rendering/material.cppm
+    rendering/framebuffer.cppm
     rendering/renderer.cppm
     rendering/tilemap_renderer.cppm
     rendering/rendering.cppm
+    scene/scene_assets.cppm
+    scene/scene_serializer.cppm
+    scene/prefab.cppm
     scene/scene.cppm
     scripting/scripting_backend.cppm
     scripting/scripting_system.cppm
@@ -107,11 +137,31 @@ endif ()
 
 # Engine implementation source files
 target_sources(engine-core PRIVATE
+    # AI module implementation
+    ai/behavior_tree.cpp
+
+    # Animation module implementation
+    animation/animation_clip.cpp
+    animation/animation_state.cpp
+    animation/animation_system.cpp
+    animation/animation_serializer.cpp
+
     # Assets module implementation
     assets/asset_manager.cpp
     assets/tileset.cpp
 
+    # Data module implementation
+    data/data_serializer.cpp
+
+    ecs/component_registry.cpp
     ecs/ecs_world.cpp
+
+    # Graph module implementation
+    graph/types.cpp
+    graph/node_graph.cpp
+    graph/node_type_registry.cpp
+    graph/graph_evaluator.cpp
+    graph/graph_serializer.cpp
 
     input/input.cpp
 
@@ -130,10 +180,14 @@ target_sources(engine-core PRIVATE
     rendering/texture.cpp
     rendering/mesh.cpp
     rendering/material.cpp
+    rendering/framebuffer.cpp
     rendering/tilemap_renderer.cpp
 
     # Scene module implementation
+    scene/scene_assets.cpp
     scene/scene_manager.cpp
+    scene/scene_serializer.cpp
+    scene/prefab.cpp
 
     # Scripting module implementation
     scripting/lua_backend.cpp

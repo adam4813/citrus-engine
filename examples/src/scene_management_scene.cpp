@@ -174,12 +174,13 @@ public:
 			if (scene) {
 				bool is_loaded = scene->IsLoaded();
 				if (ImGui::Button(is_loaded ? "Unload Current Scene" : "Load Current Scene")) {
-					scene->SetLoaded(!is_loaded);
-					if (!is_loaded) {
-						scene->LoadAssets();
+					if (is_loaded) {
+						scene_manager.UnloadScene(current_scene_id_);
+						std::cout << "Unloaded scene: " << scene->GetName() << std::endl;
 					}
 					else {
-						scene->UnloadAssets();
+						scene_manager.LoadScene(current_scene_id_);
+						std::cout << "Loaded scene: " << scene->GetName() << std::endl;
 					}
 				}
 			}

@@ -1,4 +1,5 @@
 #include "behavior_tree_editor_panel.h"
+#include "asset_editor_registry.h"
 
 #include <filesystem>
 #include <imgui.h>
@@ -9,23 +10,40 @@ import engine;
 namespace editor {
 
 BehaviorTreeEditorPanel::BehaviorTreeEditorPanel() {
-	// Initialize with an empty tree
 	NewTree();
+	open_dialog_.SetCallback([this](const std::string& path) {
+		if (LoadTree(path)) {
+			current_file_path_ = path;
+		}
+	});
+	save_dialog_.SetCallback([this](const std::string& path) {
+		if (SaveTree(path)) {
+			current_file_path_ = path;
+		}
+	});
 }
 
 BehaviorTreeEditorPanel::~BehaviorTreeEditorPanel() = default;
 
 std::string_view BehaviorTreeEditorPanel::GetPanelName() const { return "Behavior Tree Editor"; }
 
+void BehaviorTreeEditorPanel::RegisterAssetHandlers(AssetEditorRegistry& registry) {
+	registry.Register("behavior_tree", [this](const std::string& path) {
+		if (LoadTree(path)) {
+			current_file_path_ = path;
+			SetVisible(true);
+		}
+	});
+}
+
 void BehaviorTreeEditorPanel::Render() {
 	if (!IsVisible()) {
 		return;
 	}
 
-	ImGui::Begin("Behavior Tree Editor", &VisibleRef());
+	ImGui::Begin("Behavior Tree Editor", &VisibleRef(), ImGuiWindowFlags_MenuBar);
 
 	RenderToolbar();
-	ImGui::Separator();
 
 	// Split view: Tree on left, properties on right
 	ImGui::BeginChild("TreeView", ImVec2(ImGui::GetContentRegionAvail().x * 0.6F, 0), true);
@@ -44,78 +62,29 @@ void BehaviorTreeEditorPanel::Render() {
 }
 
 void BehaviorTreeEditorPanel::RenderToolbar() {
-	if (ImGui::Button("New")) {
-		NewTree();
-	}
-	ImGui::SameLine();
-
-	if (ImGui::Button("Open")) {
-		show_open_dialog_ = true;
-	}
-	ImGui::SameLine();
-
-	if (ImGui::Button("Save")) {
-		if (!current_file_path_.empty()) {
-			SaveTree(current_file_path_);
-		}
-		else {
-			show_save_dialog_ = true;
-		}
-	}
-	ImGui::SameLine();
-
-	if (ImGui::Button("Save As...")) {
-		show_save_dialog_ = true;
-	}
-
-	ImGui::SameLine();
-	ImGui::Text("| File: %s", current_file_path_.empty() ? "(unsaved)" : current_file_path_.c_str());
-
-	// Simple file dialogs (placeholder - would use proper file dialog in production)
-	if (show_open_dialog_) {
-		ImGui::OpenPopup("Open Behavior Tree");
-		show_open_dialog_ = false;
-	}
-
-	if (show_save_dialog_) {
-		ImGui::OpenPopup("Save Behavior Tree");
-		show_save_dialog_ = false;
-	}
-
-	// File dialog popups
-	if (ImGui::BeginPopupModal("Open Behavior Tree", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
-		static char path_buffer[256] = "assets/behaviors/tree.bt.json";
-		ImGui::InputText("Path", path_buffer, sizeof(path_buffer));
-
-		if (ImGui::Button("Open", ImVec2(120, 0))) {
-			if (LoadTree(path_buffer)) {
-				current_file_path_ = path_buffer;
+	if (ImGui::BeginMenuBar()) {
+		if (ImGui::BeginMenu("File")) {
+			if (ImGui::MenuItem("New")) {
+				NewTree();
 			}
-			ImGui::CloseCurrentPopup();
-		}
-		ImGui::SameLine();
-		if (ImGui::Button("Cancel", ImVec2(120, 0))) {
-			ImGui::CloseCurrentPopup();
-		}
-		ImGui::EndPopup();
-	}
-
-	if (ImGui::BeginPopupModal("Save Behavior Tree", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
-		static char path_buffer[256] = "assets/behaviors/tree.bt.json";
-		ImGui::InputText("Path", path_buffer, sizeof(path_buffer));
-
-		if (ImGui::Button("Save", ImVec2(120, 0))) {
-			if (SaveTree(path_buffer)) {
-				current_file_path_ = path_buffer;
+			if (ImGui::MenuItem("Open...")) {
+				open_dialog_.Open();
 			}
-			ImGui::CloseCurrentPopup();
+			if (ImGui::MenuItem("Save", nullptr, false, !current_file_path_.empty())) {
+				SaveTree(current_file_path_);
+			}
+			if (ImGui::MenuItem("Save As...")) {
+				save_dialog_.Open("tree.bt.json");
+			}
+			ImGui::EndMenu();
 		}
-		ImGui::SameLine();
-		if (ImGui::Button("Cancel", ImVec2(120, 0))) {
-			ImGui::CloseCurrentPopup();
-		}
-		ImGui::EndPopup();
+		ImGui::EndMenuBar();
 	}
+
+	ImGui::Text("File: %s", current_file_path_.empty() ? "(unsaved)" : current_file_path_.c_str());
+
+	open_dialog_.Render();
+	save_dialog_.Render();
 }
 
 void BehaviorTreeEditorPanel::RenderTreeView() {
@@ -292,8 +261,9 @@ void BehaviorTreeEditorPanel::RenderPropertiesPanel() {
 			int policy_index = (parallel_node->GetPolicy() == engine::ai::ParallelNode::Policy::RequireAll) ? 0 : 1;
 			const char* policies[] = {"Require All", "Require One"};
 			if (ImGui::Combo("Policy", &policy_index, policies, 2)) {
-				parallel_node->SetPolicy(policy_index == 0 ? engine::ai::ParallelNode::Policy::RequireAll
-																											 : engine::ai::ParallelNode::Policy::RequireOne);
+				parallel_node->SetPolicy(
+						policy_index == 0 ? engine::ai::ParallelNode::Policy::RequireAll
+										  : engine::ai::ParallelNode::Policy::RequireOne);
 			}
 		}
 		else {
@@ -307,7 +277,8 @@ void BehaviorTreeEditorPanel::RenderPropertiesPanel() {
 
 void BehaviorTreeEditorPanel::RenderContextMenu() {
 	// Right-click in empty space to add root node
-	if (ImGui::BeginPopupContextWindow("TreeContextMenu", ImGuiPopupFlags_MouseButtonRight | ImGuiPopupFlags_NoOpenOverItems)) {
+	if (ImGui::BeginPopupContextWindow(
+				"TreeContextMenu", ImGuiPopupFlags_MouseButtonRight | ImGuiPopupFlags_NoOpenOverItems)) {
 		if (!root_node_) {
 			if (ImGui::BeginMenu("Add Root Node")) {
 				if (ImGui::MenuItem("Selector")) {
@@ -366,8 +337,8 @@ bool BehaviorTreeEditorPanel::LoadTree(const std::string& path) {
 	return true;
 }
 
-std::unique_ptr<engine::ai::BTNode> BehaviorTreeEditorPanel::CreateNode(const std::string& node_type,
-		const std::string& name) {
+std::unique_ptr<engine::ai::BTNode>
+BehaviorTreeEditorPanel::CreateNode(const std::string& node_type, const std::string& name) {
 	if (node_type == "Selector") {
 		return std::make_unique<engine::ai::SelectorNode>(name);
 	}

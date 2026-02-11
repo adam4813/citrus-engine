@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "editor_panel.h"
+#include "file_dialog.h"
 
 import engine;
 
@@ -27,6 +28,7 @@ public:
 	~BehaviorTreeEditorPanel() override;
 
 	[[nodiscard]] std::string_view GetPanelName() const override;
+	void RegisterAssetHandlers(AssetEditorRegistry& registry) override;
 
 	/**
 	 * @brief Render the behavior tree editor panel
@@ -65,8 +67,8 @@ private:
 	// UI state
 	ImVec2 scroll_pos_{0.0F, 0.0F};
 	bool show_new_dialog_ = false;
-	bool show_open_dialog_ = false;
-	bool show_save_dialog_ = false;
+	FileDialogPopup open_dialog_{"Open Behavior Tree", FileDialogMode::Open, {".json"}};
+	FileDialogPopup save_dialog_{"Save Behavior Tree", FileDialogMode::Save, {".json"}};
 };
 
 } // namespace editor

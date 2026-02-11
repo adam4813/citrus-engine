@@ -1,5 +1,4 @@
 #include "tileset_editor_panel.h"
-
 #include "asset_editor_registry.h"
 
 #include <imgui.h>
@@ -12,14 +11,21 @@ using json = nlohmann::json;
 
 namespace editor {
 
-TilesetEditorPanel::TilesetEditorPanel() : tileset_(std::make_unique<TilesetDefinition>()) {}
+TilesetEditorPanel::TilesetEditorPanel() : tileset_(std::make_unique<TilesetDefinition>()) {
+	open_dialog_.SetCallback([this](const std::string& path) { OpenTileset(path); });
+	save_dialog_.SetCallback([this](const std::string& path) { SaveTileset(path); });
+	image_dialog_.SetCallback([this](const std::string& path) {
+		std::strncpy(image_path_buffer_, path.c_str(), sizeof(image_path_buffer_) - 1);
+		image_path_buffer_[sizeof(image_path_buffer_) - 1] = '\0';
+		pending_image_load_ = true;
+		tileset_->source_image_path = path;
+	});
+}
 
 std::string_view TilesetEditorPanel::GetPanelName() const { return "Tileset Editor"; }
 
 void TilesetEditorPanel::RegisterAssetHandlers(AssetEditorRegistry& registry) {
-	registry.Register("tileset", [this](const std::string& path) {
-		OpenTileset(path);
-	});
+	registry.Register("tileset", [this](const std::string& path) { OpenTileset(path); });
 }
 
 TilesetEditorPanel::~TilesetEditorPanel() = default;
@@ -66,19 +72,13 @@ void TilesetEditorPanel::RenderToolbar(engine::Engine& engine) {
 				NewTileset();
 			}
 			if (ImGui::MenuItem("Open...")) {
-				show_open_dialog_ = true;
+				open_dialog_.Open();
 			}
-			if (ImGui::MenuItem("Save")) {
-				if (!current_file_path_.empty()) {
-					SaveTileset(current_file_path_);
-				} else {
-					show_save_dialog_ = true;
-					save_as_mode_ = false;
-				}
+			if (ImGui::MenuItem("Save", nullptr, false, !current_file_path_.empty())) {
+				SaveTileset(current_file_path_);
 			}
 			if (ImGui::MenuItem("Save As...")) {
-				show_save_dialog_ = true;
-				save_as_mode_ = true;
+				save_dialog_.Open("tileset.json");
 			}
 			ImGui::EndMenu();
 		}
@@ -86,53 +86,19 @@ void TilesetEditorPanel::RenderToolbar(engine::Engine& engine) {
 		ImGui::EndMenuBar();
 	}
 
-	// Save file dialog popup
-	if (show_save_dialog_) {
-		ImGui::OpenPopup("Save Tileset As");
-		show_save_dialog_ = false;
-	}
-	if (ImGui::BeginPopupModal("Save Tileset As", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
-		ImGui::Text("Enter file path:");
-		ImGui::SetNextItemWidth(300);
-		ImGui::InputText("##save_path", save_path_buffer_, sizeof(save_path_buffer_));
-		ImGui::Separator();
-		if (ImGui::Button("Save", ImVec2(120, 0))) {
-			SaveTileset(save_path_buffer_);
-			ImGui::CloseCurrentPopup();
-		}
-		ImGui::SameLine();
-		if (ImGui::Button("Cancel", ImVec2(120, 0))) {
-			ImGui::CloseCurrentPopup();
-		}
-		ImGui::EndPopup();
-	}
-
-	// Open file dialog popup
-	if (show_open_dialog_) {
-		ImGui::OpenPopup("Open Tileset");
-		show_open_dialog_ = false;
-	}
-	if (ImGui::BeginPopupModal("Open Tileset", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
-		ImGui::Text("Enter tileset file path:");
-		ImGui::SetNextItemWidth(300);
-		ImGui::InputText("##open_path", open_path_buffer_, sizeof(open_path_buffer_));
-		ImGui::Separator();
-		if (ImGui::Button("Open", ImVec2(120, 0))) {
-			OpenTileset(open_path_buffer_);
-			ImGui::CloseCurrentPopup();
-		}
-		ImGui::SameLine();
-		if (ImGui::Button("Cancel", ImVec2(120, 0))) {
-			ImGui::CloseCurrentPopup();
-		}
-		ImGui::EndPopup();
-	}
+	open_dialog_.Render();
+	save_dialog_.Render();
+	image_dialog_.Render();
 
 	// Source image selection
 	ImGui::Text("Source Image:");
 	ImGui::SameLine();
-	ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x - 80);
+	ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x - 150);
 	ImGui::InputText("##image_path", image_path_buffer_, sizeof(image_path_buffer_));
+	ImGui::SameLine();
+	if (ImGui::Button("Browse##img")) {
+		image_dialog_.Open();
+	}
 	ImGui::SameLine();
 	if (ImGui::Button("Load")) {
 		LoadSourceImage(engine, image_path_buffer_);
@@ -143,9 +109,14 @@ void TilesetEditorPanel::RenderToolbar(engine::Engine& engine) {
 	}
 
 	if (loaded_image_) {
-		ImGui::TextColored(ImVec4(0.3f, 1.0f, 0.3f, 1.0f), "Loaded: %s (%dx%d)",
-			tileset_->source_image_path.c_str(), loaded_image_->width, loaded_image_->height);
-	} else {
+		ImGui::TextColored(
+				ImVec4(0.3f, 1.0f, 0.3f, 1.0f),
+				"Loaded: %s (%dx%d)",
+				tileset_->source_image_path.c_str(),
+				loaded_image_->width,
+				loaded_image_->height);
+	}
+	else {
 		ImGui::TextDisabled("No image loaded (using placeholder grid)");
 	}
 
@@ -168,7 +139,9 @@ void TilesetEditorPanel::LoadSourceImage(engine::Engine& engine, const std::stri
 		return;
 	}
 
-	auto image = engine::assets::AssetManager::LoadImage(path);
+	// TODO: Add LoadImage overload that takes a path and update this to use it
+	const auto relative_path = std::filesystem::relative(std::filesystem::path(path), image_dialog_.RootDirectory());
+	const auto image = engine::assets::AssetManager::LoadImage(relative_path.string());
 	if (!image || !image->IsValid()) {
 		load_error_message_ = "Failed to load image: " + path;
 		return;
@@ -202,9 +175,7 @@ void TilesetEditorPanel::LoadSourceImage(engine::Engine& engine, const std::stri
 	selected_tiles_.clear();
 }
 
-int TilesetEditorPanel::GetImageWidth() const {
-	return loaded_image_ ? loaded_image_->width : PLACEHOLDER_IMAGE_WIDTH;
-}
+int TilesetEditorPanel::GetImageWidth() const { return loaded_image_ ? loaded_image_->width : PLACEHOLDER_IMAGE_WIDTH; }
 
 int TilesetEditorPanel::GetImageHeight() const {
 	return loaded_image_ ? loaded_image_->height : PLACEHOLDER_IMAGE_HEIGHT;
@@ -226,7 +197,8 @@ void TilesetEditorPanel::RenderTilesetGrid() {
 
 	if (loaded_image_) {
 		ImGui::Text("Image: %dx%d | Grid: %d x %d tiles", image_width, image_height, grid_cols, grid_rows);
-	} else {
+	}
+	else {
 		ImGui::Text("Placeholder Grid: %d x %d tiles", grid_cols, grid_rows);
 	}
 
@@ -255,7 +227,8 @@ void TilesetEditorPanel::RenderTilesetGrid() {
 
 	if (is_selecting_ && ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
 		HandleTileSelection(mouse_pos, grid_origin);
-	} else {
+	}
+	else {
 		is_selecting_ = false;
 	}
 
@@ -265,24 +238,21 @@ void TilesetEditorPanel::RenderTilesetGrid() {
 		if (gl_tex != nullptr) {
 			const auto imgui_tex = static_cast<ImTextureID>(static_cast<uintptr_t>(gl_tex->handle));
 			const ImVec2 img_min = grid_origin;
-			const ImVec2 img_max = ImVec2(grid_origin.x + grid_width, grid_origin.y + grid_height);
+			const auto img_max = ImVec2(grid_origin.x + grid_width, grid_origin.y + grid_height);
 			// UV flipped vertically for OpenGL
 			draw_list->AddImage(imgui_tex, img_min, img_max, ImVec2(0, 1), ImVec2(1, 0));
 		}
-	} else {
+	}
+	else {
 		// Draw placeholder checkerboard
 		for (int y = 0; y < grid_rows; ++y) {
 			for (int x = 0; x < grid_cols; ++x) {
 				const auto cell_off = grid.CellOriginScaled(x, y, scale);
-				const ImVec2 tile_min = ImVec2(
-					grid_origin.x + cell_off.x, grid_origin.y + cell_off.y);
-				const ImVec2 tile_max = ImVec2(
-					tile_min.x + tile_display_w, tile_min.y + tile_display_h);
+				const auto tile_min = ImVec2(grid_origin.x + cell_off.x, grid_origin.y + cell_off.y);
+				const auto tile_max = ImVec2(tile_min.x + tile_display_w, tile_min.y + tile_display_h);
 
 				const bool is_dark = ((x + y) % 2) == 0;
-				const ImU32 tile_color = is_dark
-					? IM_COL32(100, 100, 100, 255)
-					: IM_COL32(120, 120, 120, 255);
+				const ImU32 tile_color = is_dark ? IM_COL32(100, 100, 100, 255) : IM_COL32(120, 120, 120, 255);
 				draw_list->AddRectFilled(tile_min, tile_max, tile_color);
 			}
 		}
@@ -293,14 +263,11 @@ void TilesetEditorPanel::RenderTilesetGrid() {
 		for (int x = 0; x < grid_cols; ++x) {
 			const uint32_t tile_id = GetTileIdFromCoords(x, y);
 			const auto cell_off = grid.CellOriginScaled(x, y, scale);
-			const ImVec2 tile_min = ImVec2(
-				grid_origin.x + cell_off.x, grid_origin.y + cell_off.y);
-			const ImVec2 tile_max = ImVec2(
-				tile_min.x + tile_display_w, tile_min.y + tile_display_h);
+			const auto tile_min = ImVec2(grid_origin.x + cell_off.x, grid_origin.y + cell_off.y);
+			const auto tile_max = ImVec2(tile_min.x + tile_display_w, tile_min.y + tile_display_h);
 
 			// Highlight selected tiles
-			const bool is_selected = std::ranges::find(selected_tiles_, tile_id) != selected_tiles_.end();
-			if (is_selected) {
+			if (std::ranges::find(selected_tiles_, tile_id) != selected_tiles_.end()) {
 				draw_list->AddRectFilled(tile_min, tile_max, IM_COL32(255, 255, 0, 60));
 				draw_list->AddRect(tile_min, tile_max, IM_COL32(255, 255, 0, 255), 0.0f, 0, 3.0f);
 			}
@@ -314,14 +281,11 @@ void TilesetEditorPanel::RenderTilesetGrid() {
 	if (ImGui::IsItemHovered()) {
 		int hover_x = 0;
 		int hover_y = 0;
-		if (grid.PixelToCell(mouse_pos.x - grid_origin.x, mouse_pos.y - grid_origin.y,
-				scale, hover_x, hover_y)
+		if (grid.PixelToCell(mouse_pos.x - grid_origin.x, mouse_pos.y - grid_origin.y, scale, hover_x, hover_y)
 			&& hover_x >= 0 && hover_x < grid_cols && hover_y >= 0 && hover_y < grid_rows) {
 			const auto cell_off = grid.CellOriginScaled(hover_x, hover_y, scale);
-			const ImVec2 hover_min = ImVec2(
-				grid_origin.x + cell_off.x, grid_origin.y + cell_off.y);
-			const ImVec2 hover_max = ImVec2(
-				hover_min.x + tile_display_w, hover_min.y + tile_display_h);
+			const auto hover_min = ImVec2(grid_origin.x + cell_off.x, grid_origin.y + cell_off.y);
+			const auto hover_max = ImVec2(hover_min.x + tile_display_w, hover_min.y + tile_display_h);
 			draw_list->AddRect(hover_min, hover_max, IM_COL32(255, 255, 255, 180), 0.0f, 0, 2.0f);
 
 			const uint32_t hover_id = GetTileIdFromCoords(hover_x, hover_y);
@@ -382,11 +346,9 @@ void TilesetEditorPanel::RenderTileProperties() {
 	// Add new tag
 	ImGui::InputText("##new_tag", new_tag_buffer_, sizeof(new_tag_buffer_));
 	ImGui::SameLine();
-	if (ImGui::Button("Add Tag")) {
-		if (new_tag_buffer_[0] != '\0') {
-			tile_def->tags.emplace_back(new_tag_buffer_);
-			new_tag_buffer_[0] = '\0';
-		}
+	if (ImGui::Button("Add Tag") && new_tag_buffer_[0] != '\0') {
+		tile_def->tags.emplace_back(new_tag_buffer_);
+		new_tag_buffer_[0] = '\0';
 	}
 
 	ImGui::Separator();
@@ -397,17 +359,17 @@ void TilesetEditorPanel::RenderTileProperties() {
 	for (auto& [key, value] : tile_def->custom_properties) {
 		ImGui::PushID(key.c_str());
 		ImGui::BulletText("%s", key.c_str());
-		
+
 		char value_buffer[256];
 		std::strncpy(value_buffer, value.c_str(), sizeof(value_buffer) - 1);
 		value_buffer[sizeof(value_buffer) - 1] = '\0';
-		
+
 		ImGui::SameLine();
 		ImGui::SetNextItemWidth(150);
 		if (ImGui::InputText("##value", value_buffer, sizeof(value_buffer))) {
 			value = value_buffer;
 		}
-		
+
 		ImGui::SameLine();
 		if (ImGui::SmallButton("Remove")) {
 			keys_to_remove.push_back(key);
@@ -471,11 +433,12 @@ void TilesetEditorPanel::RenderTilePreview() {
 			const auto imgui_tex = static_cast<ImTextureID>(static_cast<uintptr_t>(gl_tex->handle));
 			ImGui::Image(imgui_tex, ImVec2(PREVIEW_SIZE, PREVIEW_SIZE), ImVec2(u0, v0), ImVec2(u1, v1));
 		}
-	} else {
+	}
+	else {
 		// Placeholder preview
 		ImDrawList* draw_list = ImGui::GetWindowDrawList();
 		const ImVec2 preview_origin = ImGui::GetCursorScreenPos();
-		const ImVec2 preview_max = ImVec2(preview_origin.x + PREVIEW_SIZE, preview_origin.y + PREVIEW_SIZE);
+		const auto preview_max = ImVec2(preview_origin.x + PREVIEW_SIZE, preview_origin.y + PREVIEW_SIZE);
 
 		const bool is_dark = ((tile_x + tile_y) % 2) == 0;
 		const ImU32 color = is_dark ? IM_COL32(100, 100, 100, 255) : IM_COL32(120, 120, 120, 255);
@@ -484,9 +447,9 @@ void TilesetEditorPanel::RenderTilePreview() {
 
 		const std::string id_text = std::to_string(selected_id);
 		const ImVec2 text_size = ImGui::CalcTextSize(id_text.c_str());
-		const ImVec2 text_pos = ImVec2(
-			preview_origin.x + (PREVIEW_SIZE - text_size.x) * 0.5f,
-			preview_origin.y + (PREVIEW_SIZE - text_size.y) * 0.5f);
+		const auto text_pos =
+				ImVec2(preview_origin.x + (PREVIEW_SIZE - text_size.x) * 0.5f,
+					   preview_origin.y + (PREVIEW_SIZE - text_size.y) * 0.5f);
 		draw_list->AddText(text_pos, IM_COL32(255, 255, 255, 255), id_text.c_str());
 
 		ImGui::Dummy(ImVec2(PREVIEW_SIZE, PREVIEW_SIZE));
@@ -519,25 +482,20 @@ void TilesetEditorPanel::RenderTilePalette() {
 	// Show selected tiles as palette
 	if (!selected_tiles_.empty()) {
 		ImGui::Text("Selected Tiles (%zu):", selected_tiles_.size());
-		
+
 		ImDrawList* draw_list = ImGui::GetWindowDrawList();
 		const ImVec2 palette_origin = ImGui::GetCursorScreenPos();
-		
+
 		constexpr float PALETTE_TILE_SIZE = 32.0f;
 		const int image_width = GetImageWidth();
 		const int grid_cols = tileset_->grid.GetColumns(image_width);
 
 		for (size_t i = 0; i < selected_tiles_.size(); ++i) {
-			const ImVec2 tile_min = ImVec2(
-				palette_origin.x + i * (PALETTE_TILE_SIZE + 4),
-				palette_origin.y);
-			const ImVec2 tile_max = ImVec2(
-				tile_min.x + PALETTE_TILE_SIZE,
-				tile_min.y + PALETTE_TILE_SIZE);
+			const auto tile_min = ImVec2(palette_origin.x + i * (PALETTE_TILE_SIZE + 4), palette_origin.y);
+			const auto tile_max = ImVec2(tile_min.x + PALETTE_TILE_SIZE, tile_min.y + PALETTE_TILE_SIZE);
 
 			if (loaded_image_ && gpu_texture_id_ != engine::rendering::INVALID_TEXTURE) {
-				auto* gl_tex = engine::rendering::GetGLTexture(gpu_texture_id_);
-				if (gl_tex != nullptr) {
+				if (const auto* gl_tex = engine::rendering::GetGLTexture(gpu_texture_id_); gl_tex != nullptr) {
 					int tx = 0;
 					int ty = 0;
 					GetCoordsFromTileId(selected_tiles_[i], tx, ty);
@@ -549,13 +507,14 @@ void TilesetEditorPanel::RenderTilePalette() {
 					const auto imgui_tex = static_cast<ImTextureID>(static_cast<uintptr_t>(gl_tex->handle));
 					draw_list->AddImage(imgui_tex, tile_min, tile_max, ImVec2(u0, v0), ImVec2(u1, v1));
 				}
-			} else {
+			}
+			else {
 				draw_list->AddRectFilled(tile_min, tile_max, IM_COL32(100, 150, 200, 255));
 				const std::string id_text = std::to_string(selected_tiles_[i]);
 				const ImVec2 text_size = ImGui::CalcTextSize(id_text.c_str());
-				const ImVec2 text_pos = ImVec2(
-					tile_min.x + (PALETTE_TILE_SIZE - text_size.x) * 0.5f,
-					tile_min.y + (PALETTE_TILE_SIZE - text_size.y) * 0.5f);
+				const auto text_pos =
+						ImVec2(tile_min.x + (PALETTE_TILE_SIZE - text_size.x) * 0.5f,
+							   tile_min.y + (PALETTE_TILE_SIZE - text_size.y) * 0.5f);
 				draw_list->AddText(text_pos, IM_COL32(255, 255, 255, 255), id_text.c_str());
 			}
 
@@ -563,9 +522,10 @@ void TilesetEditorPanel::RenderTilePalette() {
 		}
 
 		// Reserve space for palette
-		const float palette_height = PALETTE_TILE_SIZE + 4;
+		constexpr float palette_height = PALETTE_TILE_SIZE + 4;
 		ImGui::Dummy(ImVec2(selected_tiles_.size() * (PALETTE_TILE_SIZE + 4), palette_height));
-	} else {
+	}
+	else {
 		ImGui::TextWrapped("No tiles selected for brush.");
 	}
 }
@@ -610,7 +570,8 @@ bool TilesetEditorPanel::SaveTileset(const std::string& path) {
 
 		current_file_path_ = path;
 		return true;
-	} catch (const std::exception&) {
+	}
+	catch (const std::exception&) {
 		return false;
 	}
 }
@@ -639,19 +600,19 @@ bool TilesetEditorPanel::LoadTileset(const std::string& path) {
 				tile.id = tile_json.value("id", 0u);
 				tile.name = tile_json.value("name", "");
 				tile.collision = tile_json.value("collision", false);
-				
+
 				if (tile_json.contains("tags") && tile_json["tags"].is_array()) {
 					for (const auto& tag : tile_json["tags"]) {
 						tile.tags.push_back(tag.get<std::string>());
 					}
 				}
-				
+
 				if (tile_json.contains("custom_properties") && tile_json["custom_properties"].is_object()) {
 					for (auto& [key, value] : tile_json["custom_properties"].items()) {
 						tile.custom_properties[key] = value.get<std::string>();
 					}
 				}
-				
+
 				new_tileset->tiles.push_back(tile);
 			}
 		}
@@ -665,7 +626,8 @@ bool TilesetEditorPanel::LoadTileset(const std::string& path) {
 		image_path_buffer_[sizeof(image_path_buffer_) - 1] = '\0';
 
 		return true;
-	} catch (const std::exception&) {
+	}
+	catch (const std::exception&) {
 		return false;
 	}
 }
@@ -722,7 +684,8 @@ void TilesetEditorPanel::HandleTileSelection(const ImVec2& mouse_pos, const ImVe
 		for (uint32_t id = min_id; id <= max_id; ++id) {
 			selected_tiles_.push_back(id);
 		}
-	} else {
+	}
+	else {
 		// Single selection
 		selected_tiles_.clear();
 		selected_tiles_.push_back(clicked_id);
@@ -731,8 +694,7 @@ void TilesetEditorPanel::HandleTileSelection(const ImVec2& mouse_pos, const ImVe
 
 TileDefinition* TilesetEditorPanel::EnsureTileDefinition(uint32_t id) {
 	// Check if tile already exists
-	TileDefinition* existing = tileset_->GetTile(id);
-	if (existing != nullptr) {
+	if (TileDefinition* existing = tileset_->GetTile(id); existing != nullptr) {
 		return existing;
 	}
 

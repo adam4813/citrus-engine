@@ -1,5 +1,4 @@
 #include "sprite_editor_panel.h"
-
 #include "asset_editor_registry.h"
 
 #include <imgui.h>
@@ -15,7 +14,21 @@ using json = nlohmann::json;
 
 namespace editor {
 
-SpriteEditorPanel::SpriteEditorPanel() = default;
+SpriteEditorPanel::SpriteEditorPanel() {
+	open_dialog_.SetCallback([this](const std::string& path) { OpenAtlas(path); });
+	save_dialog_.SetCallback([this](const std::string& path) {
+		std::strncpy(export_path_buffer_, path.c_str(), sizeof(export_path_buffer_) - 1);
+		export_path_buffer_[sizeof(export_path_buffer_) - 1] = '\0';
+		current_file_path_ = path;
+		ExportAtlas();
+	});
+	image_dialog_.SetCallback([this](const std::string& path) {
+		std::strncpy(image_path_buffer_, path.c_str(), sizeof(image_path_buffer_) - 1);
+		image_path_buffer_[sizeof(image_path_buffer_) - 1] = '\0';
+		pending_image_load_ = true;
+		pending_image_path_ = path;
+	});
+}
 
 SpriteEditorPanel::~SpriteEditorPanel() = default;
 
@@ -44,7 +57,7 @@ void SpriteEditorPanel::Render(engine::Engine& engine) {
 	RenderToolbar(engine);
 
 	// Layout: canvas on left, sprite list + preview on right
-	const float right_panel_width = 250.0f;
+	constexpr float right_panel_width = 250.0f;
 	const float available_width = ImGui::GetContentRegionAvail().x;
 	const float canvas_width = available_width - right_panel_width - 8.0f;
 
@@ -68,43 +81,36 @@ void SpriteEditorPanel::Render(engine::Engine& engine) {
 void SpriteEditorPanel::RenderToolbar(engine::Engine& engine) {
 	if (ImGui::BeginMenuBar()) {
 		if (ImGui::BeginMenu("File")) {
-			if (ImGui::MenuItem("Open...")) {
-				show_open_dialog_ = true;
+			if (ImGui::MenuItem("New")) {
+				NewAtlas();
 			}
-			if (ImGui::MenuItem("Export Atlas...")) {
+			if (ImGui::MenuItem("Open...")) {
+				open_dialog_.Open();
+			}
+			if (ImGui::MenuItem("Save", nullptr, false, !current_file_path_.empty())) {
 				ExportAtlas();
+			}
+			if (ImGui::MenuItem("Save As...")) {
+				save_dialog_.Open("sprites.json");
 			}
 			ImGui::EndMenu();
 		}
 		ImGui::EndMenuBar();
 	}
 
-	// Open file dialog popup
-	if (show_open_dialog_) {
-		ImGui::OpenPopup("Open Sprite Atlas");
-		show_open_dialog_ = false;
-	}
-	if (ImGui::BeginPopupModal("Open Sprite Atlas", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
-		ImGui::Text("Enter sprite atlas file path:");
-		ImGui::SetNextItemWidth(300);
-		ImGui::InputText("##open_path", open_path_buffer_, sizeof(open_path_buffer_));
-		ImGui::Separator();
-		if (ImGui::Button("Open", ImVec2(120, 0))) {
-			OpenAtlas(open_path_buffer_);
-			ImGui::CloseCurrentPopup();
-		}
-		ImGui::SameLine();
-		if (ImGui::Button("Cancel", ImVec2(120, 0))) {
-			ImGui::CloseCurrentPopup();
-		}
-		ImGui::EndPopup();
-	}
+	open_dialog_.Render();
+	save_dialog_.Render();
+	image_dialog_.Render();
 
 	// Image path input
 	ImGui::Text("Image:");
 	ImGui::SameLine();
-	ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x - 80);
+	ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x - 140);
 	ImGui::InputText("##image_path", image_path_buffer_, sizeof(image_path_buffer_));
+	ImGui::SameLine();
+	if (ImGui::Button("Browse##img")) {
+		image_dialog_.Open();
+	}
 	ImGui::SameLine();
 	if (ImGui::Button("Load")) {
 		LoadSourceImage(engine, image_path_buffer_);
@@ -112,11 +118,10 @@ void SpriteEditorPanel::RenderToolbar(engine::Engine& engine) {
 
 	// Status message
 	if (!status_message_.empty()) {
-		if (status_is_error_) {
-			ImGui::TextColored(ImVec4(1.0f, 0.3f, 0.3f, 1.0f), "%s", status_message_.c_str());
-		} else {
-			ImGui::TextColored(ImVec4(0.3f, 1.0f, 0.3f, 1.0f), "%s", status_message_.c_str());
-		}
+		ImGui::TextColored(
+				status_is_error_ ? ImVec4(1.0f, 0.3f, 0.3f, 1.0f) : ImVec4(0.3f, 1.0f, 0.3f, 1.0f),
+				"%s",
+				status_message_.c_str());
 	}
 
 	// Grid controls
@@ -134,15 +139,6 @@ void SpriteEditorPanel::RenderToolbar(engine::Engine& engine) {
 	ImGui::SameLine();
 	ImGui::SetNextItemWidth(80);
 	ImGui::SliderFloat("##zoom", &canvas_scale_, 0.5f, 4.0f, "%.1fx");
-
-	// Export controls
-	ImGui::SameLine();
-	ImGui::SetNextItemWidth(150);
-	ImGui::InputText("##export_path", export_path_buffer_, sizeof(export_path_buffer_));
-	ImGui::SameLine();
-	if (ImGui::Button("Export")) {
-		ExportAtlas();
-	}
 }
 
 void SpriteEditorPanel::LoadSourceImage(engine::Engine& engine, const std::string& path) {
@@ -155,7 +151,9 @@ void SpriteEditorPanel::LoadSourceImage(engine::Engine& engine, const std::strin
 		return;
 	}
 
-	auto image = engine::assets::AssetManager::LoadImage(path);
+	// TODO: Add LoadImage overload that takes a path and update this to use it
+	const auto relative_path = std::filesystem::relative(std::filesystem::path(path), image_dialog_.RootDirectory());
+	const auto image = engine::assets::AssetManager::LoadImage(relative_path.string());
 	if (!image || !image->IsValid()) {
 		status_message_ = "Failed to load image: " + path;
 		status_is_error_ = true;
@@ -169,7 +167,7 @@ void SpriteEditorPanel::LoadSourceImage(engine::Engine& engine, const std::strin
 	params.wrap_s = engine::rendering::TextureWrap::ClampToEdge;
 	params.wrap_t = engine::rendering::TextureWrap::ClampToEdge;
 
-	auto& tex_mgr = engine.renderer->GetTextureManager();
+	const auto& tex_mgr = engine.renderer->GetTextureManager();
 
 	if (gpu_texture_id_ != engine::rendering::INVALID_TEXTURE) {
 		tex_mgr.DestroyTexture(gpu_texture_id_);
@@ -188,7 +186,8 @@ void SpriteEditorPanel::LoadSourceImage(engine::Engine& engine, const std::strin
 	std::strncpy(image_path_buffer_, path.c_str(), sizeof(image_path_buffer_) - 1);
 	image_path_buffer_[sizeof(image_path_buffer_) - 1] = '\0';
 
-	status_message_ = "Loaded: " + path + " (" + std::to_string(image->width) + "x" + std::to_string(image->height) + ")";
+	status_message_ =
+			"Loaded: " + path + " (" + std::to_string(image->width) + "x" + std::to_string(image->height) + ")";
 }
 
 void SpriteEditorPanel::RenderCanvas() {
@@ -212,30 +211,27 @@ void SpriteEditorPanel::RenderCanvas() {
 
 	// Draw the image
 	if (gpu_texture_id_ != engine::rendering::INVALID_TEXTURE) {
-		auto* gl_tex = engine::rendering::GetGLTexture(gpu_texture_id_);
+		const auto* gl_tex = engine::rendering::GetGLTexture(gpu_texture_id_);
 		if (gl_tex != nullptr) {
 			const auto imgui_tex = static_cast<ImTextureID>(static_cast<uintptr_t>(gl_tex->handle));
 			const ImVec2 img_min = canvas_origin;
-			const ImVec2 img_max = ImVec2(canvas_origin.x + display_w, canvas_origin.y + display_h);
+			const auto img_max = ImVec2(canvas_origin.x + display_w, canvas_origin.y + display_h);
 			draw_list->AddImage(imgui_tex, img_min, img_max, ImVec2(0, 1), ImVec2(1, 0));
 		}
 	}
 
 	// Draw grid overlay
 	if (show_grid_ && grid_.cell_width > 0 && grid_.cell_height > 0) {
-		grid_.DrawGridOverlay(draw_list, canvas_origin, loaded_image_->width,
-			loaded_image_->height, canvas_scale_);
+		grid_.DrawGridOverlay(draw_list, canvas_origin, loaded_image_->width, loaded_image_->height, canvas_scale_);
 	}
 
 	// Draw existing sprite regions
 	for (int i = 0; i < static_cast<int>(sprites_.size()); ++i) {
 		const auto& sprite = sprites_[i];
-		const ImVec2 rect_min = ImVec2(
-			canvas_origin.x + sprite.x * canvas_scale_,
-			canvas_origin.y + sprite.y * canvas_scale_);
-		const ImVec2 rect_max = ImVec2(
-			rect_min.x + sprite.width * canvas_scale_,
-			rect_min.y + sprite.height * canvas_scale_);
+		const auto rect_min =
+				ImVec2(canvas_origin.x + sprite.x * canvas_scale_, canvas_origin.y + sprite.y * canvas_scale_);
+		const auto rect_max =
+				ImVec2(rect_min.x + sprite.width * canvas_scale_, rect_min.y + sprite.height * canvas_scale_);
 
 		const bool is_selected = (i == selected_sprite_);
 		const ImU32 fill_color = is_selected ? IM_COL32(255, 255, 0, 40) : IM_COL32(0, 200, 255, 30);
@@ -247,7 +243,8 @@ void SpriteEditorPanel::RenderCanvas() {
 
 		// Draw sprite name label
 		if (!sprite.name.empty()) {
-			draw_list->AddText(ImVec2(rect_min.x + 2, rect_min.y + 1), IM_COL32(255, 255, 255, 220), sprite.name.c_str());
+			draw_list->AddText(
+					ImVec2(rect_min.x + 2, rect_min.y + 1), IM_COL32(255, 255, 255, 220), sprite.name.c_str());
 		}
 	}
 
@@ -262,8 +259,8 @@ void SpriteEditorPanel::RenderCanvas() {
 		selection_end_ = mouse_pos;
 
 		// Draw selection rectangle
-		const ImU32 sel_fill = IM_COL32(255, 200, 0, 40);
-		const ImU32 sel_border = IM_COL32(255, 200, 0, 200);
+		constexpr ImU32 sel_fill = IM_COL32(255, 200, 0, 40);
+		constexpr ImU32 sel_border = IM_COL32(255, 200, 0, 200);
 		draw_list->AddRectFilled(selection_start_, selection_end_, sel_fill);
 		draw_list->AddRect(selection_start_, selection_end_, sel_border, 0.0f, 0, 1.5f);
 
@@ -315,8 +312,8 @@ void SpriteEditorPanel::RenderSpriteList() {
 		auto& sprite = sprites_[i];
 		ImGui::PushID(i);
 
-		const bool is_selected = (i == selected_sprite_);
-		if (ImGui::Selectable(("##sprite_" + std::to_string(i)).c_str(), is_selected, 0, ImVec2(0, 20))) {
+		if (const bool is_selected = (i == selected_sprite_);
+			ImGui::Selectable(("##sprite_" + std::to_string(i)).c_str(), is_selected, 0, ImVec2(0, 20))) {
 			selected_sprite_ = i;
 		}
 
@@ -371,7 +368,7 @@ void SpriteEditorPanel::RenderPreview() {
 		return;
 	}
 
-	auto* gl_tex = engine::rendering::GetGLTexture(gpu_texture_id_);
+	const auto* gl_tex = engine::rendering::GetGLTexture(gpu_texture_id_);
 	if (gl_tex == nullptr) {
 		return;
 	}
@@ -396,7 +393,8 @@ void SpriteEditorPanel::RenderPreview() {
 		const float scale = MAX_PREVIEW_SIZE / std::max(preview_w, preview_h);
 		preview_w *= scale;
 		preview_h *= scale;
-	} else {
+	}
+	else {
 		// Scale up small sprites for visibility
 		const float scale = std::min(MAX_PREVIEW_SIZE / std::max(preview_w, preview_h), 4.0f);
 		preview_w *= scale;
@@ -435,7 +433,22 @@ void SpriteEditorPanel::AutoGrid() {
 		}
 	}
 
-	status_message_ = "Created " + std::to_string(sprites_.size()) + " sprites (" + std::to_string(cols) + "x" + std::to_string(rows) + " grid)";
+	status_message_ = "Created " + std::to_string(sprites_.size()) + " sprites (" + std::to_string(cols) + "x"
+					  + std::to_string(rows) + " grid)";
+	status_is_error_ = false;
+}
+
+void SpriteEditorPanel::NewAtlas() {
+	sprites_.clear();
+	selected_sprite_ = -1;
+	image_path_.clear();
+	image_path_buffer_[0] = '\0';
+	export_path_buffer_[0] = '\0';
+	current_file_path_.clear();
+	loaded_image_.reset();
+	gpu_texture_id_ = engine::rendering::INVALID_TEXTURE;
+	grid_ = GridConfig{};
+	status_message_.clear();
 	status_is_error_ = false;
 }
 
@@ -478,7 +491,8 @@ void SpriteEditorPanel::ExportAtlas() {
 
 		status_message_ = "Exported " + std::to_string(sprites_.size()) + " sprites to " + export_path;
 		status_is_error_ = false;
-	} catch (const std::exception& e) {
+	}
+	catch (const std::exception& e) {
 		status_message_ = std::string("Export error: ") + e.what();
 		status_is_error_ = true;
 	}
@@ -486,7 +500,7 @@ void SpriteEditorPanel::ExportAtlas() {
 
 bool SpriteEditorPanel::ImportAtlas(const std::string& path) {
 	try {
-		auto text = engine::assets::AssetManager::LoadTextFile(std::filesystem::path(path));
+		const auto text = engine::assets::AssetManager::LoadTextFile(std::filesystem::path(path));
 		if (!text) {
 			return false;
 		}
@@ -494,7 +508,7 @@ bool SpriteEditorPanel::ImportAtlas(const std::string& path) {
 		json j = json::parse(*text);
 
 		// Read image path
-		std::string img_path = j.value("image", "");
+		const std::string img_path = j.value("image", "");
 
 		// Read sprites
 		std::vector<SpriteRegion> imported_sprites;
@@ -522,12 +536,14 @@ bool SpriteEditorPanel::ImportAtlas(const std::string& path) {
 
 		std::strncpy(export_path_buffer_, path.c_str(), sizeof(export_path_buffer_) - 1);
 		export_path_buffer_[sizeof(export_path_buffer_) - 1] = '\0';
+		current_file_path_ = path;
 
 		status_message_ = "Loaded " + std::to_string(sprites_.size()) + " sprites from " + path;
 		status_is_error_ = false;
 
 		return true;
-	} catch (const std::exception& e) {
+	}
+	catch (const std::exception& e) {
 		status_message_ = std::string("Failed to load atlas: ") + e.what();
 		status_is_error_ = true;
 		return false;

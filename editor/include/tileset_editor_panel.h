@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "editor_panel.h"
+#include "file_dialog.h"
 #include "grid_utils.h"
 
 import engine;
@@ -160,14 +161,11 @@ private:
 	char new_property_key_buffer_[256] = "";
 	char new_property_value_buffer_[256] = "";
 
-	// Save dialog state
-	bool show_save_dialog_ = false;
-	bool save_as_mode_ = false;
-	char save_path_buffer_[512] = "tileset.json";
-
-	// Open dialog state
-	bool show_open_dialog_ = false;
-	char open_path_buffer_[512] = "";
+	// File dialogs
+	FileDialogPopup open_dialog_{"Open Tileset", FileDialogMode::Open, {".json"}};
+	FileDialogPopup save_dialog_{"Save Tileset As", FileDialogMode::Save, {".json"}};
+	FileDialogPopup image_dialog_{
+			"Select Source Image", FileDialogMode::Open, {".png", ".jpg", ".jpeg", ".tga", ".bmp"}};
 
 	// Deferred image loading after OpenTileset
 	bool pending_image_load_ = false;

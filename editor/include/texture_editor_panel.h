@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "editor_panel.h"
+#include "file_dialog.h"
 
 import engine;
 import glm;
@@ -31,6 +32,7 @@ public:
 	~TextureEditorPanel() override;
 
 	[[nodiscard]] std::string_view GetPanelName() const override;
+	void RegisterAssetHandlers(AssetEditorRegistry& registry) override;
 
 	/**
 	 * @brief Render the texture editor panel
@@ -125,6 +127,10 @@ private:
 	static constexpr float GRID_SIZE = 64.0f;
 	static constexpr float NODE_WIDTH = 150.0f;
 	static constexpr float PIN_RADIUS = 6.0f;
+
+	// File dialogs
+	FileDialogPopup open_dialog_{"Open Texture", FileDialogMode::Open, {".json"}};
+	FileDialogPopup save_dialog_{"Save Texture As", FileDialogMode::Save, {".json"}};
 };
 
 /**

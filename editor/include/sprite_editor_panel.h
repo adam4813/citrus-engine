@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "editor_panel.h"
+#include "file_dialog.h"
 #include "grid_utils.h"
 
 import engine;
@@ -56,10 +57,12 @@ private:
 	void RenderPreview();
 
 	void LoadSourceImage(engine::Engine& engine, const std::string& path);
+	void NewAtlas();
 	void AutoGrid();
 	void ExportAtlas();
 	bool ImportAtlas(const std::string& path);
 
+	std::string current_file_path_;
 	std::string image_path_;
 	char image_path_buffer_[512] = "";
 	std::shared_ptr<engine::assets::Image> loaded_image_;
@@ -82,9 +85,11 @@ private:
 	// Export path
 	char export_path_buffer_[512] = "sprites.json";
 
-	// Open dialog state
-	bool show_open_dialog_ = false;
-	char open_path_buffer_[512] = "";
+	// File dialogs
+	FileDialogPopup open_dialog_{"Open Sprite Atlas", FileDialogMode::Open, {".json"}};
+	FileDialogPopup save_dialog_{"Save Sprite Atlas As", FileDialogMode::Save, {".json"}};
+	FileDialogPopup image_dialog_{
+			"Select Source Image", FileDialogMode::Open, {".png", ".jpg", ".jpeg", ".tga", ".bmp"}};
 
 	// Deferred image loading after OpenAtlas
 	bool pending_image_load_ = false;

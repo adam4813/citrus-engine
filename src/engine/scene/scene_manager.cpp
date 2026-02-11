@@ -501,6 +501,11 @@ void InitializeSceneSystem(ecs::ECSWorld& ecs_world) {
 	// Register built-in asset types
 	ShaderAssetInfo::RegisterType();
 	MeshAssetInfo::RegisterType();
+	TextureAssetInfo::RegisterType();
+	AnimationAssetInfo::RegisterType();
+	SoundAssetInfo::RegisterType();
+	DataTableAssetInfo::RegisterType();
+	PrefabAssetInfo::RegisterType();
 
 	g_scene_manager = std::make_unique<SceneManager>(ecs_world);
 }

@@ -19,7 +19,11 @@ export namespace engine::scene {
 enum class AssetType : uint8_t {
 	SHADER,
 	MESH,
-	// Future: TEXTURE, MATERIAL, etc.
+	TEXTURE,
+	ANIMATION_CLIP,
+	SOUND,
+	DATA_TABLE,
+	PREFAB,
 };
 
 // === ASSET FIELD REFLECTION SYSTEM ===
@@ -345,6 +349,104 @@ protected:
 	void DoInitialize() override;
 	bool DoLoad() override;
 	void DoUnload() override;
+};
+
+/// Texture asset definition
+struct TextureAssetInfo : AssetInfo {
+	static constexpr std::string_view TYPE_NAME = "texture";
+
+	std::string file_path;
+
+	TextureAssetInfo() : AssetInfo("", AssetType::TEXTURE) {}
+	TextureAssetInfo(std::string asset_name, std::string path) :
+			AssetInfo(std::move(asset_name), AssetType::TEXTURE), file_path(std::move(path)) {}
+
+	void ToJson(nlohmann::json& j) const override;
+
+	static void RegisterType();
+
+protected:
+	void DoInitialize() override;
+	bool DoLoad() override;
+};
+
+/// Animation clip asset definition
+struct AnimationAssetInfo : AssetInfo {
+	static constexpr std::string_view TYPE_NAME = "animation_clip";
+
+	std::string clip_path;
+
+	AnimationAssetInfo() : AssetInfo("", AssetType::ANIMATION_CLIP) {}
+	AnimationAssetInfo(std::string asset_name, std::string path) :
+			AssetInfo(std::move(asset_name), AssetType::ANIMATION_CLIP), clip_path(std::move(path)) {}
+
+	void ToJson(nlohmann::json& j) const override;
+
+	static void RegisterType();
+
+protected:
+	void DoInitialize() override;
+	bool DoLoad() override;
+};
+
+/// Sound asset definition
+struct SoundAssetInfo : AssetInfo {
+	static constexpr std::string_view TYPE_NAME = "sound";
+
+	std::string file_path;
+	float volume{1.0f};
+	bool loop{false};
+
+	SoundAssetInfo() : AssetInfo("", AssetType::SOUND) {}
+	SoundAssetInfo(std::string asset_name, std::string path) :
+			AssetInfo(std::move(asset_name), AssetType::SOUND), file_path(std::move(path)) {}
+
+	void ToJson(nlohmann::json& j) const override;
+
+	static void RegisterType();
+
+protected:
+	void DoInitialize() override;
+	bool DoLoad() override;
+};
+
+/// Data table asset definition
+struct DataTableAssetInfo : AssetInfo {
+	static constexpr std::string_view TYPE_NAME = "data_table";
+
+	std::string file_path;
+	std::string schema_name;
+
+	DataTableAssetInfo() : AssetInfo("", AssetType::DATA_TABLE) {}
+	DataTableAssetInfo(std::string asset_name, std::string path) :
+			AssetInfo(std::move(asset_name), AssetType::DATA_TABLE), file_path(std::move(path)) {}
+
+	void ToJson(nlohmann::json& j) const override;
+
+	static void RegisterType();
+
+protected:
+	void DoInitialize() override;
+	bool DoLoad() override;
+};
+
+/// Prefab asset definition
+struct PrefabAssetInfo : AssetInfo {
+	static constexpr std::string_view TYPE_NAME = "prefab";
+
+	std::string file_path;
+
+	PrefabAssetInfo() : AssetInfo("", AssetType::PREFAB) {}
+	PrefabAssetInfo(std::string asset_name, std::string path) :
+			AssetInfo(std::move(asset_name), AssetType::PREFAB), file_path(std::move(path)) {}
+
+	void ToJson(nlohmann::json& j) const override;
+
+	static void RegisterType();
+
+protected:
+	void DoInitialize() override;
+	bool DoLoad() override;
 };
 
 /// Polymorphic asset storage using shared_ptr (allows editor to hold references)

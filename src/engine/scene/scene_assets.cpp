@@ -249,6 +249,195 @@ void MeshAssetInfo::RegisterType() {
 			.Build();
 }
 
+// === TextureAssetInfo ===
+
+void TextureAssetInfo::ToJson(nlohmann::json& j) const {
+	AssetInfo::ToJson(j);
+	j["type"] = "texture";
+	j["file_path"] = file_path;
+}
+
+void TextureAssetInfo::DoInitialize() {
+	// Stub: reserve texture slot if needed
+}
+
+bool TextureAssetInfo::DoLoad() {
+	// Stub: load via AssetManager::LoadImage() when available
+	return true;
+}
+
+void TextureAssetInfo::RegisterType() {
+	AssetRegistry::Instance()
+			.RegisterType<TextureAssetInfo>(TextureAssetInfo::TYPE_NAME, AssetType::TEXTURE)
+			.DisplayName("Texture")
+			.Category("Rendering")
+			.Field("name", &TextureAssetInfo::name, "Name")
+			.Field("file_path", &TextureAssetInfo::file_path, "File Path", AssetFieldType::FilePath)
+			.FromJson([](const nlohmann::json& j) -> std::unique_ptr<AssetInfo> {
+				auto asset = std::make_unique<TextureAssetInfo>();
+				asset->name = j.value("name", "");
+				asset->file_path = j.value("file_path", "");
+				return asset;
+			})
+			.CreateDefault([]() -> std::shared_ptr<AssetInfo> {
+				return std::make_shared<TextureAssetInfo>("NewTexture", "");
+			})
+			.Build();
+}
+
+// === AnimationAssetInfo ===
+
+void AnimationAssetInfo::ToJson(nlohmann::json& j) const {
+	AssetInfo::ToJson(j);
+	j["type"] = "animation_clip";
+	j["clip_path"] = clip_path;
+}
+
+void AnimationAssetInfo::DoInitialize() {
+	// Stub: no initialization needed yet
+}
+
+bool AnimationAssetInfo::DoLoad() {
+	// Stub: load animation clip data when animation system is available
+	return true;
+}
+
+void AnimationAssetInfo::RegisterType() {
+	AssetRegistry::Instance()
+			.RegisterType<AnimationAssetInfo>(AnimationAssetInfo::TYPE_NAME, AssetType::ANIMATION_CLIP)
+			.DisplayName("Animation Clip")
+			.Category("Animation")
+			.Field("name", &AnimationAssetInfo::name, "Name")
+			.Field("clip_path", &AnimationAssetInfo::clip_path, "Clip Path", AssetFieldType::FilePath)
+			.FromJson([](const nlohmann::json& j) -> std::unique_ptr<AssetInfo> {
+				auto asset = std::make_unique<AnimationAssetInfo>();
+				asset->name = j.value("name", "");
+				asset->clip_path = j.value("clip_path", "");
+				return asset;
+			})
+			.CreateDefault([]() -> std::shared_ptr<AssetInfo> {
+				return std::make_shared<AnimationAssetInfo>("NewAnimation", "");
+			})
+			.Build();
+}
+
+// === SoundAssetInfo ===
+
+void SoundAssetInfo::ToJson(nlohmann::json& j) const {
+	AssetInfo::ToJson(j);
+	j["type"] = "sound";
+	j["file_path"] = file_path;
+	j["volume"] = volume;
+	j["loop"] = loop;
+}
+
+void SoundAssetInfo::DoInitialize() {
+	// Stub: no audio system yet
+}
+
+bool SoundAssetInfo::DoLoad() {
+	// Stub: no audio system yet
+	return true;
+}
+
+void SoundAssetInfo::RegisterType() {
+	AssetRegistry::Instance()
+			.RegisterType<SoundAssetInfo>(SoundAssetInfo::TYPE_NAME, AssetType::SOUND)
+			.DisplayName("Sound")
+			.Category("Audio")
+			.Field("name", &SoundAssetInfo::name, "Name")
+			.Field("file_path", &SoundAssetInfo::file_path, "File Path", AssetFieldType::FilePath)
+			.Field("volume", &SoundAssetInfo::volume, "Volume")
+			.Field("loop", &SoundAssetInfo::loop, "Loop")
+			.FromJson([](const nlohmann::json& j) -> std::unique_ptr<AssetInfo> {
+				auto asset = std::make_unique<SoundAssetInfo>();
+				asset->name = j.value("name", "");
+				asset->file_path = j.value("file_path", "");
+				asset->volume = j.value("volume", 1.0f);
+				asset->loop = j.value("loop", false);
+				return asset;
+			})
+			.CreateDefault([]() -> std::shared_ptr<AssetInfo> {
+				return std::make_shared<SoundAssetInfo>("NewSound", "");
+			})
+			.Build();
+}
+
+// === DataTableAssetInfo ===
+
+void DataTableAssetInfo::ToJson(nlohmann::json& j) const {
+	AssetInfo::ToJson(j);
+	j["type"] = "data_table";
+	j["file_path"] = file_path;
+	j["schema_name"] = schema_name;
+}
+
+void DataTableAssetInfo::DoInitialize() {
+	// Stub: no data table system yet
+}
+
+bool DataTableAssetInfo::DoLoad() {
+	// Stub: load JSON data when data table system is available
+	return true;
+}
+
+void DataTableAssetInfo::RegisterType() {
+	AssetRegistry::Instance()
+			.RegisterType<DataTableAssetInfo>(DataTableAssetInfo::TYPE_NAME, AssetType::DATA_TABLE)
+			.DisplayName("Data Table")
+			.Category("Data")
+			.Field("name", &DataTableAssetInfo::name, "Name")
+			.Field("file_path", &DataTableAssetInfo::file_path, "File Path", AssetFieldType::FilePath)
+			.Field("schema_name", &DataTableAssetInfo::schema_name, "Schema Name")
+			.FromJson([](const nlohmann::json& j) -> std::unique_ptr<AssetInfo> {
+				auto asset = std::make_unique<DataTableAssetInfo>();
+				asset->name = j.value("name", "");
+				asset->file_path = j.value("file_path", "");
+				asset->schema_name = j.value("schema_name", "");
+				return asset;
+			})
+			.CreateDefault([]() -> std::shared_ptr<AssetInfo> {
+				return std::make_shared<DataTableAssetInfo>("NewDataTable", "");
+			})
+			.Build();
+}
+
+// === PrefabAssetInfo ===
+
+void PrefabAssetInfo::ToJson(nlohmann::json& j) const {
+	AssetInfo::ToJson(j);
+	j["type"] = "prefab";
+	j["file_path"] = file_path;
+}
+
+void PrefabAssetInfo::DoInitialize() {
+	// Stub: prefab initialization handled by PrefabUtility
+}
+
+bool PrefabAssetInfo::DoLoad() {
+	// Stub: prefab loading handled by PrefabUtility
+	return true;
+}
+
+void PrefabAssetInfo::RegisterType() {
+	AssetRegistry::Instance()
+			.RegisterType<PrefabAssetInfo>(PrefabAssetInfo::TYPE_NAME, AssetType::PREFAB)
+			.DisplayName("Prefab")
+			.Category("Scene")
+			.Field("name", &PrefabAssetInfo::name, "Name")
+			.Field("file_path", &PrefabAssetInfo::file_path, "File Path", AssetFieldType::FilePath)
+			.FromJson([](const nlohmann::json& j) -> std::unique_ptr<AssetInfo> {
+				auto asset = std::make_unique<PrefabAssetInfo>();
+				asset->name = j.value("name", "");
+				asset->file_path = j.value("file_path", "");
+				return asset;
+			})
+			.CreateDefault([]() -> std::shared_ptr<AssetInfo> {
+				return std::make_shared<PrefabAssetInfo>("NewPrefab", "");
+			})
+			.Build();
+}
+
 void SceneAssets::Add(AssetPtr asset) {
 	if (asset) {
 		asset->Initialize(); // Allocate resources (e.g., reserve shader ID)

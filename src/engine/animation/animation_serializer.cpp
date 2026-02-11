@@ -128,7 +128,7 @@ json AnimationSerializer::ToJson(const AnimationClip& clip) {
 		tracks_json.push_back(TrackToJson(track));
 	}
 
-	return json{{"name", clip.name}, {"duration", clip.duration}, {"looping", clip.looping}, {"tracks", tracks_json}};
+	return json{{"asset_type", "animation"}, {"name", clip.name}, {"duration", clip.duration}, {"looping", clip.looping}, {"tracks", tracks_json}};
 }
 
 std::shared_ptr<AnimationClip> AnimationSerializer::FromJson(const json& j) {

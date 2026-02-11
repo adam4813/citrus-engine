@@ -86,7 +86,8 @@ static PinValue from_json_value(const json& j, PinType type) {
 std::string GraphSerializer::Serialize(const NodeGraph& graph) {
 	json j;
 
-	// Version
+	// Asset type and version
+	j["asset_type"] = "node_graph";
 	j["version"] = GRAPH_FORMAT_VERSION;
 
 	// Serialize nodes

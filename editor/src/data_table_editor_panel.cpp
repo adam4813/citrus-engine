@@ -1,5 +1,4 @@
 #include "data_table_editor_panel.h"
-
 #include "asset_editor_registry.h"
 
 #include <algorithm>
@@ -15,6 +14,11 @@ namespace editor {
 DataTableEditorPanel::DataTableEditorPanel() : table_(std::make_unique<engine::data::DataTable>()) {
 	table_->SetName("NewTable");
 	std::strcpy(table_name_buffer_, "NewTable");
+
+	open_dialog_.SetCallback([this](const std::string& path) { OpenTable(path); });
+	save_dialog_.SetCallback([this](const std::string& path) { SaveTable(path); });
+	export_dialog_.SetCallback([this](const std::string& path) { ExportToCSV(path); });
+	import_csv_dialog_.SetCallback([this](const std::string& path) { ImportFromCSV(path); });
 }
 
 DataTableEditorPanel::~DataTableEditorPanel() = default;
@@ -60,19 +64,20 @@ void DataTableEditorPanel::RenderMenuBar() {
 				NewTable();
 			}
 			if (ImGui::MenuItem("Open...")) {
-				// Placeholder: Would use file dialog
-				LoadTable("data_table.json");
+				open_dialog_.Open();
 			}
 			if (ImGui::MenuItem("Save", nullptr, false, !current_file_path_.empty())) {
 				SaveTable(current_file_path_);
 			}
 			if (ImGui::MenuItem("Save As...")) {
-				// Placeholder: Would use file dialog
-				SaveTable("data_table.json");
+				save_dialog_.Open("data_table.json");
 			}
 			ImGui::Separator();
 			if (ImGui::MenuItem("Export CSV...")) {
-				ExportToCSV("data_table.csv");
+				export_dialog_.Open("data_table.csv");
+			}
+			if (ImGui::MenuItem("Import CSV...")) {
+				import_csv_dialog_.Open();
 			}
 			ImGui::EndMenu();
 		}
@@ -101,6 +106,11 @@ void DataTableEditorPanel::RenderMenuBar() {
 
 		ImGui::EndMenuBar();
 	}
+
+	open_dialog_.Render();
+	save_dialog_.Render();
+	export_dialog_.Render();
+	import_csv_dialog_.Render();
 }
 
 void DataTableEditorPanel::RenderToolbar() {
@@ -605,6 +615,22 @@ bool DataTableEditorPanel::ExportToCSV(const std::string& path) {
 	try {
 		std::string csv_str = engine::data::DataSerializer::ExportTableToCSV(*table_);
 		return engine::assets::AssetManager::SaveTextFile(std::filesystem::path(path), csv_str);
+	}
+	catch (...) {
+		return false;
+	}
+}
+
+bool DataTableEditorPanel::ImportFromCSV(const std::string& path) {
+	try {
+		auto text = engine::assets::AssetManager::LoadTextFile(std::filesystem::path(path));
+		if (!text) {
+			return false;
+		}
+		auto imported = engine::data::DataSerializer::ImportTableFromCSV(*text, table_->GetName());
+		*table_ = std::move(imported);
+		std::strncpy(table_name_buffer_, table_->GetName().c_str(), sizeof(table_name_buffer_) - 1);
+		return true;
 	}
 	catch (...) {
 		return false;

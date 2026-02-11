@@ -1,5 +1,4 @@
 #include "editor_scene.h"
-
 #include "commands/clipboard_commands.h"
 #include "commands/entity_commands.h"
 #include "editor_utils.h"
@@ -30,6 +29,10 @@ void EditorScene::Initialize(engine::Engine& engine) {
 	scene_manager.SetActiveScene(editor_scene_id_);
 
 	state_.current_file_path = "";
+
+	// Set up scene file dialogs
+	open_scene_dialog_.SetCallback([this](const std::string& path) { OpenScene(path); });
+	save_scene_dialog_.SetCallback([this](const std::string& path) { SaveSceneAs(path); });
 
 	// Create editor camera (not part of the scene, used for viewport navigation)
 	// Manually created in Flecs ECS world, so it isn't under the scene root entity.
@@ -83,12 +86,20 @@ void EditorScene::Initialize(engine::Engine& engine) {
 
 	// Collect all panels for iteration (View menu, asset registration)
 	panels_ = {
-		&hierarchy_panel_, &properties_panel_, &viewport_panel_,
-		&asset_browser_panel_, &graph_editor_panel_, &shader_editor_panel_,
-		&texture_editor_panel_, &animation_editor_panel_,
-		&behavior_tree_editor_panel_, &tileset_editor_panel_,
-		&sprite_editor_panel_, &data_table_editor_panel_,
-		&code_editor_panel_, &sound_editor_panel_,
+			&hierarchy_panel_,
+			&properties_panel_,
+			&viewport_panel_,
+			&asset_browser_panel_,
+			&graph_editor_panel_,
+			&shader_editor_panel_,
+			&texture_editor_panel_,
+			&animation_editor_panel_,
+			&behavior_tree_editor_panel_,
+			&tileset_editor_panel_,
+			&sprite_editor_panel_,
+			&data_table_editor_panel_,
+			&code_editor_panel_,
+			&sound_editor_panel_,
 	};
 
 	// Set default visibility for panels that should be visible on startup
@@ -105,9 +116,9 @@ void EditorScene::Initialize(engine::Engine& engine) {
 	// Register prefab handler (needs EditorScene state, not panel-owned)
 	asset_editor_registry_.Register("prefab", [this](const std::string& path) {
 		auto& scene_manager = engine::scene::GetSceneManager();
-		if (auto* scene = scene_manager.TryGetScene(editor_scene_id_)) {
-			if (const auto entity = engine::scene::PrefabUtility::InstantiatePrefab(
-						path, scene, engine_->ecs, selected_entity_);
+		if (const auto* scene = scene_manager.TryGetScene(editor_scene_id_)) {
+			if (const auto entity =
+						engine::scene::PrefabUtility::InstantiatePrefab(path, scene, engine_->ecs, selected_entity_);
 				entity.is_valid()) {
 				OnEntitySelected(entity);
 				OnSceneModified();
@@ -116,9 +127,7 @@ void EditorScene::Initialize(engine::Engine& engine) {
 	});
 
 	// Generic asset file opener — dispatches via registry
-	callbacks.on_open_asset_file = [this](const std::string& path) {
-		asset_editor_registry_.TryOpen(path);
-	};
+	callbacks.on_open_asset_file = [this](const std::string& path) { asset_editor_registry_.TryOpen(path); };
 
 	callbacks.on_open_file = [this](const std::string& path) {
 		code_editor_panel_.OpenFile(path);
@@ -295,45 +304,8 @@ void EditorScene::RenderUI(engine::Engine& engine) {
 		ImGui::EndPopup();
 	}
 
-	if (state_.show_open_dialog) {
-		ImGui::OpenPopup("Open Scene");
-		state_.show_open_dialog = false;
-	}
-
-	if (ImGui::BeginPopupModal("Open Scene", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
-		ImGui::Text("Enter scene file path:");
-		ImGui::InputText("##filepath", file_path_buffer_, sizeof(file_path_buffer_));
-
-		if (ImGui::Button("Open", ImVec2(120, 0))) {
-			OpenScene(file_path_buffer_);
-			ImGui::CloseCurrentPopup();
-		}
-		ImGui::SameLine();
-		if (ImGui::Button("Cancel", ImVec2(120, 0))) {
-			ImGui::CloseCurrentPopup();
-		}
-		ImGui::EndPopup();
-	}
-
-	if (state_.show_save_as_dialog) {
-		ImGui::OpenPopup("Save Scene As");
-		state_.show_save_as_dialog = false;
-	}
-
-	if (ImGui::BeginPopupModal("Save Scene As", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
-		ImGui::Text("Enter save file path:");
-		ImGui::InputText("##savepath", file_path_buffer_, sizeof(file_path_buffer_));
-
-		if (ImGui::Button("Save", ImVec2(120, 0))) {
-			SaveSceneAs(file_path_buffer_);
-			ImGui::CloseCurrentPopup();
-		}
-		ImGui::SameLine();
-		if (ImGui::Button("Cancel", ImVec2(120, 0))) {
-			ImGui::CloseCurrentPopup();
-		}
-		ImGui::EndPopup();
-	}
+	open_scene_dialog_.Render();
+	save_scene_dialog_.Render();
 
 	if (state_.show_rename_entity_dialog) {
 		ImGui::OpenPopup("RenameEntityPopup");
@@ -370,24 +342,21 @@ void EditorScene::RenderMenuBar() {
 				state_.show_new_scene_dialog = true;
 			}
 			if (ImGui::MenuItem("Open...", "Ctrl+O")) {
-				file_path_buffer_[0] = '\0'; // Clear buffer for new input
-				state_.show_open_dialog = true;
+				open_scene_dialog_.Open();
 			}
 
 			ImGui::Separator();
 
 			if (ImGui::MenuItem("Save", "Ctrl+S")) {
 				if (state_.current_file_path.empty()) {
-					file_path_buffer_[0] = '\0'; // Clear buffer for new input
-					state_.show_save_as_dialog = true;
+					save_scene_dialog_.Open("scene.json");
 				}
 				else {
 					SaveScene();
 				}
 			}
 			if (ImGui::MenuItem("Save As...", "Ctrl+Shift+S")) {
-				file_path_buffer_[0] = '\0'; // Clear buffer for new input
-				state_.show_save_as_dialog = true;
+				save_scene_dialog_.Open("scene.json");
 			}
 
 			ImGui::Separator();
@@ -521,7 +490,7 @@ void EditorScene::OnSceneModified() {
 				prefab_doc["entities"] = entities_array;
 
 				if (!engine::assets::AssetManager::SaveTextFile(
-						std::filesystem::path(prefab_info->prefab_path), prefab_doc.dump(2))) {
+							std::filesystem::path(prefab_info->prefab_path), prefab_doc.dump(2))) {
 					std::cerr << "EditorScene: Failed to save prefab to: " << prefab_info->prefab_path << std::endl;
 				}
 			}
@@ -614,7 +583,6 @@ void EditorScene::NewScene() {
 	selected_entity_ = {};
 	selected_asset_.Clear();
 	selection_type_ = SelectionType::None;
-	file_path_buffer_[0] = '\0';
 	rename_entity_buffer_[0] = '\0';
 	hierarchy_panel_.ClearNodeState();
 	command_history_.Clear();

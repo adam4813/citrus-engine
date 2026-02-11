@@ -12,6 +12,7 @@
 #include "code_editor_panel.h"
 #include "command.h"
 #include "data_table_editor_panel.h"
+#include "file_dialog.h"
 #include "graph_editor_panel.h"
 #include "hierarchy_panel.h"
 #include "properties_panel.h"
@@ -39,8 +40,6 @@ enum class SelectionType { None, Entity, Asset };
 struct EditorState {
 	std::string current_file_path;
 	bool show_new_scene_dialog = false;
-	bool show_open_dialog = false;
-	bool show_save_as_dialog = false;
 	bool is_running = false; // Whether the scene is in "play" mode
 	bool show_rename_entity_dialog = false;
 };
@@ -201,8 +200,11 @@ private:
 	std::string clipboard_json_;
 
 	// Input buffer for dialogs
-	char file_path_buffer_[256] = "";
 	char rename_entity_buffer_[256] = "";
+
+	// File dialogs
+	FileDialogPopup open_scene_dialog_{"Open Scene", FileDialogMode::Open, {".json"}};
+	FileDialogPopup save_scene_dialog_{"Save Scene As", FileDialogMode::Save, {".json"}};
 };
 
 } // namespace editor

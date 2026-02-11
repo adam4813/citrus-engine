@@ -37,6 +37,8 @@ module;
 
 module engine.physics;
 
+import glm;
+
 // Jolt callback for trace messages
 static void JoltTraceImpl(const char* inFMT, ...) {
 	va_list list;

@@ -12,6 +12,8 @@ module;
 
 module engine.physics;
 
+import glm;
+
 namespace engine::physics {
 
 // PhysX backend implementation (Adapter Pattern)

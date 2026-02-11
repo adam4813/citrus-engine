@@ -18,6 +18,8 @@ module;
 
 module engine.physics;
 
+import glm;
+
 namespace engine::physics {
 
 // Bullet3 backend implementation

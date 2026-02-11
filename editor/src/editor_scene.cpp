@@ -4,7 +4,6 @@
 #include "commands/entity_commands.h"
 #include "editor_utils.h"
 
-#include <fstream>
 #include <imgui.h>
 #include <imgui_internal.h>
 #include <iostream>
@@ -521,10 +520,9 @@ void EditorScene::OnSceneModified() {
 				entities_array.push_back(entity_entry);
 				prefab_doc["entities"] = entities_array;
 
-				std::ofstream file(prefab_info->prefab_path);
-				if (file.is_open()) {
-					file << prefab_doc.dump(2);
-					file.close();
+				if (!engine::assets::AssetManager::SaveTextFile(
+						std::filesystem::path(prefab_info->prefab_path), prefab_doc.dump(2))) {
+					std::cerr << "EditorScene: Failed to save prefab to: " << prefab_info->prefab_path << std::endl;
 				}
 			}
 			catch (const std::exception& e) {

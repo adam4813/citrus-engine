@@ -10,6 +10,8 @@
 
 namespace editor {
 
+std::string_view PropertiesPanel::GetPanelName() const { return "Properties"; }
+
 void PropertiesPanel::SetCallbacks(const EditorCallbacks& callbacks) { callbacks_ = callbacks; }
 
 void PropertiesPanel::Render(
@@ -18,7 +20,7 @@ void PropertiesPanel::Render(
 		engine::scene::Scene* scene,
 		const AssetSelection& selected_asset,
 		const engine::ecs::Entity scene_active_camera) {
-	if (!is_visible_)
+	if (!IsVisible())
 		return;
 
 	ImGuiWindowClass win_class;
@@ -27,7 +29,7 @@ void PropertiesPanel::Render(
 										 | ImGuiDockNodeFlags_NoDockingOverEmpty;
 	ImGui::SetNextWindowClass(&win_class);
 
-	ImGui::Begin("Properties", &is_visible_);
+	ImGui::Begin("Properties", &VisibleRef());
 
 	if (selected_entity.is_valid()) {
 		std::string name = selected_entity.name().c_str();

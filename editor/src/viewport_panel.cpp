@@ -13,6 +13,8 @@
 
 namespace editor {
 
+std::string_view ViewportPanel::GetPanelName() const { return "Viewport"; }
+
 void ViewportPanel::SetCallbacks(const EditorCallbacks& callbacks) {
 	callbacks_ = callbacks;
 }
@@ -24,11 +26,11 @@ void ViewportPanel::Render(
 		const flecs::entity editor_camera,
 		const float delta_time,
 		const flecs::entity selected_entity) {
-	if (!is_visible_) {
+	if (!IsVisible()) {
 		return;
 	}
 
-	ImGui::Begin("Viewport", &is_visible_);
+	ImGui::Begin("Viewport", &VisibleRef());
 
 	// Track focus state for camera controls
 	is_focused_ = ImGui::IsWindowFocused();

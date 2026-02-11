@@ -18,12 +18,14 @@ AnimationEditorPanel::AnimationEditorPanel() {
 
 AnimationEditorPanel::~AnimationEditorPanel() = default;
 
+std::string_view AnimationEditorPanel::GetPanelName() const { return "Animation Editor"; }
+
 void AnimationEditorPanel::Render() {
-	if (!is_visible_) {
+	if (!IsVisible()) {
 		return;
 	}
 
-	ImGui::Begin("Animation Editor", &is_visible_, ImGuiWindowFlags_MenuBar);
+	ImGui::Begin("Animation Editor", &VisibleRef(), ImGuiWindowFlags_MenuBar);
 
 	RenderMenuBar();
 	RenderToolbar();

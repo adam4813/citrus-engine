@@ -5,6 +5,8 @@
 #include <string>
 #include <vector>
 
+#include "editor_panel.h"
+
 import engine.data;
 import glm;
 
@@ -16,30 +18,17 @@ namespace editor {
  * Provides a visual editor for creating and editing data tables with schema management,
  * inline cell editing, sorting, filtering, and CSV import/export capabilities.
  */
-class DataTableEditorPanel {
+class DataTableEditorPanel : public EditorPanel {
 public:
 	DataTableEditorPanel();
-	~DataTableEditorPanel();
+	~DataTableEditorPanel() override;
+
+	[[nodiscard]] std::string_view GetPanelName() const override;
 
 	/**
 	 * @brief Render the data table editor panel
 	 */
 	void Render();
-
-	/**
-	 * @brief Check if panel is visible
-	 */
-	[[nodiscard]] bool IsVisible() const { return is_visible_; }
-
-	/**
-	 * @brief Set panel visibility
-	 */
-	void SetVisible(bool visible) { is_visible_ = visible; }
-
-	/**
-	 * @brief Get mutable reference to visibility (for ImGui::MenuItem binding)
-	 */
-	bool& VisibleRef() { return is_visible_; }
 
 	/**
 	 * @brief Create a new empty data table
@@ -55,6 +44,11 @@ public:
 	 * @brief Load a data table from a file
 	 */
 	bool LoadTable(const std::string& path);
+
+	/**
+	 * @brief Register asset type handlers for this panel
+	 */
+	void RegisterAssetHandlers(AssetEditorRegistry& registry) override;
 
 	/**
 	 * @brief Open a data table file (for asset browser integration)
@@ -99,7 +93,6 @@ private:
 	// Helper to generate unique row key
 	std::string GenerateUniqueRowKey() const;
 
-	bool is_visible_ = false;
 	std::unique_ptr<engine::data::DataTable> table_;
 	std::string current_file_path_;
 	

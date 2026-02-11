@@ -6,6 +6,8 @@
 #include <unordered_map>
 #include <vector>
 
+#include "editor_panel.h"
+
 import engine;
 import glm;
 
@@ -32,12 +34,26 @@ struct TilesetDefinition {
 	std::string source_image_path;
 	int tile_width = 32;
 	int tile_height = 32;
+	int gap_x = 0;
+	int gap_y = 0;
+	int padding_x = 0;
+	int padding_y = 0;
 	std::vector<TileDefinition> tiles;
 
-	// Calculate grid dimensions from image dimensions
-	int GetGridColumns(int image_width) const { return (tile_width > 0) ? (image_width / tile_width) : 0; }
+	// Calculate grid dimensions from image dimensions accounting for gap/padding
+	int GetGridColumns(int image_width) const {
+		if (tile_width <= 0) return 0;
+		const int usable = image_width - padding_x;
+		if (usable <= 0) return 0;
+		return (usable + gap_x) / (tile_width + gap_x);
+	}
 
-	int GetGridRows(int image_height) const { return (tile_height > 0) ? (image_height / tile_height) : 0; }
+	int GetGridRows(int image_height) const {
+		if (tile_height <= 0) return 0;
+		const int usable = image_height - padding_y;
+		if (usable <= 0) return 0;
+		return (usable + gap_y) / (tile_height + gap_y);
+	}
 
 	// Get tile definition by ID, returns nullptr if not found
 	TileDefinition* GetTile(uint32_t id) {
@@ -71,31 +87,18 @@ enum class BrushMode { SingleTile, RectangleFill, Eraser };
  * properties, collision flags, tags, and custom metadata. Uses placeholder
  * colored rectangles instead of actual texture loading.
  */
-class TilesetEditorPanel {
+class TilesetEditorPanel : public EditorPanel {
 public:
 	TilesetEditorPanel();
-	~TilesetEditorPanel();
+	~TilesetEditorPanel() override;
+
+	[[nodiscard]] std::string_view GetPanelName() const override;
 
 	/**
 	 * @brief Render the tileset editor panel
 	 * @param engine Reference to the engine instance
 	 */
 	void Render(engine::Engine& engine);
-
-	/**
-	 * @brief Check if panel is visible
-	 */
-	[[nodiscard]] bool IsVisible() const { return is_visible_; }
-
-	/**
-	 * @brief Set panel visibility
-	 */
-	void SetVisible(bool visible) { is_visible_ = visible; }
-
-	/**
-	 * @brief Get mutable reference to visibility (for ImGui::MenuItem binding)
-	 */
-	bool& VisibleRef() { return is_visible_; }
 
 	/**
 	 * @brief Create a new empty tileset
@@ -111,6 +114,12 @@ public:
 	 * @brief Load a tileset from a file
 	 */
 	bool LoadTileset(const std::string& path);
+
+	/**
+	 * @brief Register asset type handlers for this panel
+	 * @param registry The asset editor registry to register with
+	 */
+	void RegisterAssetHandlers(AssetEditorRegistry& registry) override;
 
 	/**
 	 * @brief Open a tileset file (for asset browser integration)
@@ -143,7 +152,6 @@ private:
 	int GetImageWidth() const;
 	int GetImageHeight() const;
 
-	bool is_visible_ = false;
 	std::unique_ptr<TilesetDefinition> tileset_;
 	std::string current_file_path_;
 
@@ -170,6 +178,18 @@ private:
 	char new_tag_buffer_[256] = "";
 	char new_property_key_buffer_[256] = "";
 	char new_property_value_buffer_[256] = "";
+
+	// Save dialog state
+	bool show_save_dialog_ = false;
+	bool save_as_mode_ = false;
+	char save_path_buffer_[512] = "tileset.json";
+
+	// Open dialog state
+	bool show_open_dialog_ = false;
+	char open_path_buffer_[512] = "";
+
+	// Deferred image loading after OpenTileset
+	bool pending_image_load_ = false;
 };
 
 } // namespace editor

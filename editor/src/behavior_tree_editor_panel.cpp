@@ -15,12 +15,14 @@ BehaviorTreeEditorPanel::BehaviorTreeEditorPanel() {
 
 BehaviorTreeEditorPanel::~BehaviorTreeEditorPanel() = default;
 
+std::string_view BehaviorTreeEditorPanel::GetPanelName() const { return "Behavior Tree Editor"; }
+
 void BehaviorTreeEditorPanel::Render() {
-	if (!is_visible_) {
+	if (!IsVisible()) {
 		return;
 	}
 
-	ImGui::Begin("Behavior Tree Editor", &is_visible_);
+	ImGui::Begin("Behavior Tree Editor", &VisibleRef());
 
 	RenderToolbar();
 	ImGui::Separator();

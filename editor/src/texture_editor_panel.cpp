@@ -189,12 +189,25 @@ void RegisterTextureGraphNodes() {
 		registry.Register(blend_add);
 	}
 
+	// Texture input node
+	{
+		engine::graph::NodeTypeDefinition texture_sample;
+		texture_sample.name = "Texture Sample";
+		texture_sample.category = "Generators";
+		texture_sample.default_outputs = {Pin(0, "Color", PinType::Color, PinDirection::Output, glm::vec4(1.0f))};
+		texture_sample.default_inputs = {
+			Pin(0, "UV", PinType::Vec2, PinDirection::Input, glm::vec2(0.0f)),
+			Pin(0, "Path", PinType::String, PinDirection::Input, std::string("")),
+		};
+		registry.Register(texture_sample);
+	}
+
 	// Output node
 	{
 		engine::graph::NodeTypeDefinition output;
 		output.name = "Texture Output";
 		output.category = "Output";
-		output.default_outputs = {};
+		output.default_outputs = {Pin(0, "Color", PinType::Color, PinDirection::Output, glm::vec4(1.0f))};
 		output.default_inputs = {Pin(0, "Color", PinType::Color, PinDirection::Input, glm::vec4(1.0f))};
 		registry.Register(output);
 	}
@@ -210,12 +223,14 @@ TextureEditorPanel::TextureEditorPanel() : texture_graph_(std::make_unique<engin
 
 TextureEditorPanel::~TextureEditorPanel() = default;
 
+std::string_view TextureEditorPanel::GetPanelName() const { return "Texture Editor"; }
+
 void TextureEditorPanel::Render() {
-	if (!is_visible_) {
+	if (!IsVisible()) {
 		return;
 	}
 
-	ImGui::Begin("Texture Editor", &is_visible_, ImGuiWindowFlags_MenuBar);
+	ImGui::Begin("Texture Editor", &VisibleRef(), ImGuiWindowFlags_MenuBar);
 
 	RenderToolbar();
 
@@ -477,6 +492,31 @@ void TextureEditorPanel::RenderPreviewPanel() {
 		}
 		UpdatePreview();
 	}
+
+	ImGui::Spacing();
+	ImGui::Separator();
+	ImGui::Spacing();
+
+	// Image asset picker
+	ImGui::Text("Image Asset:");
+	ImGui::SetNextItemWidth(-1);
+	if (ImGui::InputText("##ImagePath", image_path_buf_, sizeof(image_path_buf_),
+						 ImGuiInputTextFlags_EnterReturnsTrue)) {
+		// Update any Texture Sample nodes with this path
+		for (const auto& node : texture_graph_->GetNodes()) {
+			if (node.type_name == "Texture Sample") {
+				if (auto* mutable_node = texture_graph_->GetNode(node.id)) {
+					for (auto& input : mutable_node->inputs) {
+						if (input.name == "Path") {
+							input.default_value = std::string(image_path_buf_);
+						}
+					}
+				}
+			}
+		}
+		UpdatePreview();
+	}
+	ImGui::TextDisabled("Enter path and press Enter");
 
 	ImGui::Spacing();
 	ImGui::Separator();

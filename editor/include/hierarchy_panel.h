@@ -1,6 +1,7 @@
 #pragma once
 
 #include "editor_callbacks.h"
+#include "editor_panel.h"
 
 #include <flecs.h>
 #include <unordered_map>
@@ -28,10 +29,12 @@ struct HierarchyNodeState {
  * Displays entities in a tree view with selection, context menus,
  * and per-node state (expanded, visible, locked).
  */
-class HierarchyPanel {
+class HierarchyPanel : public EditorPanel {
 public:
 	HierarchyPanel() = default;
-	~HierarchyPanel() = default;
+	~HierarchyPanel() override = default;
+
+	[[nodiscard]] std::string_view GetPanelName() const override;
 
 	/**
 	 * @brief Set callbacks for panel events
@@ -49,21 +52,6 @@ public:
 	 * @brief Set the ECS world reference (needed for delete command)
 	 */
 	void SetWorld(engine::ecs::ECSWorld* world) { world_ = world; }
-
-	/**
-	 * @brief Check if panel is visible
-	 */
-	[[nodiscard]] bool IsVisible() const { return is_visible_; }
-
-	/**
-	 * @brief Set panel visibility
-	 */
-	void SetVisible(bool visible) { is_visible_ = visible; }
-
-	/**
-	 * @brief Get mutable reference to visibility (for ImGui::MenuItem binding)
-	 */
-	bool& VisibleRef() { return is_visible_; }
 
 	/**
 	 * @brief Clear all node state (call when scene changes)
@@ -97,7 +85,6 @@ private:
 	bool EntityOrDescendantsMatchFilter(const engine::ecs::Entity entity) const;
 
 	EditorCallbacks callbacks_;
-	bool is_visible_ = true;
 	std::unordered_map<uint64_t, HierarchyNodeState> node_states_;
 	engine::ecs::ECSWorld* world_ = nullptr;
 

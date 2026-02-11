@@ -81,8 +81,46 @@ void EditorScene::Initialize(engine::Engine& engine) {
 	callbacks.on_copy_entity = [this]() { CopyEntity(); };
 	callbacks.on_paste_entity = [this]() { PasteEntity(); };
 	callbacks.on_duplicate_entity = [this]() { DuplicateEntity(); };
-	callbacks.on_open_tileset = [this](const std::string& path) { tileset_editor_panel_.OpenTileset(path); };
-	callbacks.on_open_data_table = [this](const std::string& path) { data_table_editor_panel_.OpenTable(path); };
+
+	// Collect all panels for iteration (View menu, asset registration)
+	panels_ = {
+		&hierarchy_panel_, &properties_panel_, &viewport_panel_,
+		&asset_browser_panel_, &graph_editor_panel_, &shader_editor_panel_,
+		&texture_editor_panel_, &animation_editor_panel_,
+		&behavior_tree_editor_panel_, &tileset_editor_panel_,
+		&sprite_editor_panel_, &data_table_editor_panel_,
+		&code_editor_panel_, &sound_editor_panel_,
+	};
+
+	// Set default visibility for panels that should be visible on startup
+	hierarchy_panel_.SetVisible(true);
+	properties_panel_.SetVisible(true);
+	viewport_panel_.SetVisible(true);
+	asset_browser_panel_.SetVisible(true);
+
+	// Each panel self-registers its asset type handlers
+	for (auto* panel : panels_) {
+		panel->RegisterAssetHandlers(asset_editor_registry_);
+	}
+
+	// Register prefab handler (needs EditorScene state, not panel-owned)
+	asset_editor_registry_.Register("prefab", [this](const std::string& path) {
+		auto& scene_manager = engine::scene::GetSceneManager();
+		if (auto* scene = scene_manager.TryGetScene(editor_scene_id_)) {
+			if (const auto entity = engine::scene::PrefabUtility::InstantiatePrefab(
+						path, scene, engine_->ecs, selected_entity_);
+				entity.is_valid()) {
+				OnEntitySelected(entity);
+				OnSceneModified();
+			}
+		}
+	});
+
+	// Generic asset file opener — dispatches via registry
+	callbacks.on_open_asset_file = [this](const std::string& path) {
+		asset_editor_registry_.TryOpen(path);
+	};
+
 	callbacks.on_open_file = [this](const std::string& path) {
 		code_editor_panel_.OpenFile(path);
 		code_editor_panel_.SetVisible(true);
@@ -208,6 +246,7 @@ void EditorScene::RenderUI(engine::Engine& engine) {
 		ImGui::DockBuilderDockWindow("Texture Editor", dock_id_bottom);
 		ImGui::DockBuilderDockWindow("Animation Editor", dock_id_bottom);
 		ImGui::DockBuilderDockWindow("Tileset Editor", dock_id_bottom);
+		ImGui::DockBuilderDockWindow("Sprite Editor", dock_id_bottom);
 		ImGui::DockBuilderDockWindow("Code Editor", dock_id_bottom);
 		ImGui::DockBuilderDockWindow("Data Table Editor", dock_id_bottom);
 		ImGui::DockBuilderFinish(dockspace_id);
@@ -231,6 +270,7 @@ void EditorScene::RenderUI(engine::Engine& engine) {
 	animation_editor_panel_.Render();
 	behavior_tree_editor_panel_.Render();
 	tileset_editor_panel_.Render(engine);
+	sprite_editor_panel_.Render(engine);
 	data_table_editor_panel_.Render();
 	sound_editor_panel_.Render();
 	code_editor_panel_.Render();
@@ -384,19 +424,9 @@ void EditorScene::RenderMenuBar() {
 		}
 
 		if (ImGui::BeginMenu("View")) {
-			ImGui::MenuItem("Hierarchy", nullptr, &hierarchy_panel_.VisibleRef());
-			ImGui::MenuItem("Properties", nullptr, &properties_panel_.VisibleRef());
-			ImGui::MenuItem("Viewport", nullptr, &viewport_panel_.VisibleRef());
-			ImGui::MenuItem("Assets", nullptr, &asset_browser_panel_.VisibleRef());
-			ImGui::MenuItem("Graph Editor", nullptr, &graph_editor_panel_.VisibleRef());
-			ImGui::MenuItem("Shader Editor", nullptr, &shader_editor_panel_.VisibleRef());
-			ImGui::MenuItem("Texture Editor", nullptr, &texture_editor_panel_.VisibleRef());
-			ImGui::MenuItem("Animation Editor", nullptr, &animation_editor_panel_.VisibleRef());
-			ImGui::MenuItem("Behavior Tree Editor", nullptr, &behavior_tree_editor_panel_.VisibleRef());
-			ImGui::MenuItem("Tileset Editor", nullptr, &tileset_editor_panel_.VisibleRef());
-			ImGui::MenuItem("Data Table Editor", nullptr, &data_table_editor_panel_.VisibleRef());
-			ImGui::MenuItem("Code Editor", nullptr, &code_editor_panel_.VisibleRef());
-			ImGui::MenuItem("Sound Editor", nullptr, &sound_editor_panel_.VisibleRef());
+			for (auto* panel : panels_) {
+				panel->RenderViewMenuItem();
+			}
 			ImGui::EndMenu();
 		}
 

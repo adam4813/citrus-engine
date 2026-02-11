@@ -12,12 +12,14 @@ GraphEditorPanel::GraphEditorPanel() : graph_(std::make_unique<engine::graph::No
 
 GraphEditorPanel::~GraphEditorPanel() = default;
 
+std::string_view GraphEditorPanel::GetPanelName() const { return "Graph Editor"; }
+
 void GraphEditorPanel::Render() {
-	if (!is_visible_) {
+	if (!IsVisible()) {
 		return;
 	}
 
-	ImGui::Begin("Graph Editor", &is_visible_, ImGuiWindowFlags_MenuBar);
+	ImGui::Begin("Graph Editor", &VisibleRef(), ImGuiWindowFlags_MenuBar);
 
 	RenderToolbar();
 

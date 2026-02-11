@@ -5,6 +5,8 @@
 #include <string>
 #include <vector>
 
+#include "editor_panel.h"
+
 namespace editor {
 
 /**
@@ -29,10 +31,12 @@ struct CodeFile {
  * - Find functionality (Ctrl+F)
  * - Modified indicator on tabs
  */
-class CodeEditorPanel {
+class CodeEditorPanel : public EditorPanel {
 public:
 	CodeEditorPanel();
-	~CodeEditorPanel();
+	~CodeEditorPanel() override;
+
+	[[nodiscard]] std::string_view GetPanelName() const override;
 
 	/**
 	 * @brief Render the code editor panel
@@ -40,25 +44,15 @@ public:
 	void Render();
 
 	/**
-	 * @brief Check if panel is visible
-	 */
-	[[nodiscard]] bool IsVisible() const { return is_visible_; }
-
-	/**
-	 * @brief Set panel visibility
-	 */
-	void SetVisible(bool visible) { is_visible_ = visible; }
-
-	/**
-	 * @brief Get mutable reference to visibility (for ImGui::MenuItem binding)
-	 */
-	bool& VisibleRef() { return is_visible_; }
-
-	/**
 	 * @brief Open a file from disk
 	 * @param path File path to open
 	 */
 	void OpenFile(const std::string& path);
+
+	/**
+	 * @brief Register asset type handlers for this panel
+	 */
+	void RegisterAssetHandlers(AssetEditorRegistry& registry) override;
 
 private:
 	void RenderMenuBar();
@@ -87,7 +81,6 @@ private:
 	// Find occurrences of search term
 	std::vector<size_t> FindOccurrences(const std::string& text, const std::string& search) const;
 
-	bool is_visible_ = true;
 	std::vector<CodeFile> open_files_;
 	int active_tab_index_ = -1;
 

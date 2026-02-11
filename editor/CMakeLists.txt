@@ -16,6 +16,7 @@ add_executable(
     src/main.cpp
     src/animation_editor_panel.cpp
     src/asset_browser_panel.cpp
+    src/asset_editor_registry.cpp
     src/code_editor_panel.cpp
     src/command.cpp
     src/commands/clipboard_commands.cpp
@@ -27,6 +28,7 @@ add_executable(
     src/properties_panel.cpp
     src/shader_editor_panel.cpp
     src/sound_editor_panel.cpp
+    src/sprite_editor_panel.cpp
     src/texture_editor_panel.cpp
     src/tileset_editor_panel.cpp
     src/viewport_panel.cpp)

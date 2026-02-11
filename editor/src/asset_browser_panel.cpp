@@ -8,6 +8,8 @@
 
 namespace editor {
 
+std::string_view AssetBrowserPanel::GetPanelName() const { return "Assets"; }
+
 void AssetBrowserPanel::SetCallbacks(const EditorCallbacks& callbacks) { callbacks_ = callbacks; }
 
 std::string AssetBrowserPanel::GetFileIcon(const std::filesystem::path& path) {
@@ -144,7 +146,7 @@ void AssetBrowserPanel::RefreshCurrentDirectory() {
 }
 
 void AssetBrowserPanel::Render(engine::scene::Scene* scene, const AssetSelection& selected_asset) {
-	if (!is_visible_)
+	if (!IsVisible())
 		return;
 
 	if (needs_refresh_) {
@@ -157,7 +159,7 @@ void AssetBrowserPanel::Render(engine::scene::Scene* scene, const AssetSelection
 										 | ImGuiDockNodeFlags_NoDockingOverEmpty;
 	ImGui::SetNextWindowClass(&win_class);
 
-	ImGui::Begin("Assets", &is_visible_);
+	ImGui::Begin("Assets", &VisibleRef());
 
 	if (!scene) {
 		ImGui::TextDisabled("No scene loaded");
@@ -430,30 +432,8 @@ void AssetBrowserPanel::RenderAssetItemList(const FileSystemItem& item) {
 			}
 			// Handle double-click actions
 			if (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left)) {
-				if (item.path.filename().string().ends_with(".prefab.json")) {
-					if (callbacks_.on_instantiate_prefab) {
-						callbacks_.on_instantiate_prefab(item.path.string());
-					}
-				}
-				else if (item.path.filename().string().ends_with(".tileset.json")) {
-					if (callbacks_.on_open_tileset) {
-						callbacks_.on_open_tileset(item.path.string());
-					}
-				}
-				else if (item.path.filename().string().ends_with(".data.json")) {
-					if (callbacks_.on_open_data_table) {
-						callbacks_.on_open_data_table(item.path.string());
-					}
-				}
-				else {
-					// Check if it's a code file
-					const auto ext = item.path.extension().string();
-					if (ext == ".lua" || ext == ".as" || ext == ".glsl" || ext == ".vert" || ext == ".frag"
-						|| ext == ".cpp" || ext == ".h" || ext == ".hpp" || ext == ".c" || ext == ".shader") {
-						if (callbacks_.on_open_file) {
-							callbacks_.on_open_file(item.path.string());
-						}
-					}
+				if (callbacks_.on_open_asset_file) {
+					callbacks_.on_open_asset_file(item.path.string());
 				}
 			}
 		}
@@ -504,30 +484,8 @@ void AssetBrowserPanel::RenderAssetItemGrid(const FileSystemItem& item) {
 			current_directory_ = item.path;
 			needs_refresh_ = true;
 		}
-		else if (item.path.filename().string().ends_with(".prefab.json")) {
-			if (callbacks_.on_instantiate_prefab) {
-				callbacks_.on_instantiate_prefab(item.path.string());
-			}
-		}
-		else if (item.path.filename().string().ends_with(".tileset.json")) {
-			if (callbacks_.on_open_tileset) {
-				callbacks_.on_open_tileset(item.path.string());
-			}
-		}
-		else if (item.path.filename().string().ends_with(".data.json")) {
-			if (callbacks_.on_open_data_table) {
-				callbacks_.on_open_data_table(item.path.string());
-			}
-		}
-		else {
-			// Check if it's a code file
-			const auto ext = item.path.extension().string();
-			if (ext == ".lua" || ext == ".as" || ext == ".glsl" || ext == ".vert" || ext == ".frag" || ext == ".cpp"
-				|| ext == ".h" || ext == ".hpp" || ext == ".c" || ext == ".shader") {
-				if (callbacks_.on_open_file) {
-					callbacks_.on_open_file(item.path.string());
-				}
-			}
+		else if (callbacks_.on_open_asset_file) {
+			callbacks_.on_open_asset_file(item.path.string());
 		}
 	}
 

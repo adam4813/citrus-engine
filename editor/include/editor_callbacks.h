@@ -41,9 +41,8 @@ struct EditorCallbacks {
 	VoidCallback on_copy_entity;             // Copy the selected entity
 	VoidCallback on_paste_entity;            // Paste from clipboard
 	VoidCallback on_duplicate_entity;        // Duplicate the selected entity
-	FilePathCallback on_open_tileset;        // Open a tileset file in the tileset editor
-	FilePathCallback on_open_data_table;     // Open a data table file in the data table editor
-	StringCallback on_open_file;             // Open a file in the code editor
+	FilePathCallback on_open_asset_file;     // Open any asset file via AssetEditorRegistry
+	StringCallback on_open_file;             // Open a file in the code editor (legacy, for non-JSON)
 	FilePathCallback on_file_selected;       // A file was single-clicked in asset browser
 };
 

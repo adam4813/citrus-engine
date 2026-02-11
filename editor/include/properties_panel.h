@@ -2,6 +2,7 @@
 
 #include "asset_browser_panel.h"
 #include "editor_callbacks.h"
+#include "editor_panel.h"
 
 import engine;
 import glm;
@@ -15,10 +16,12 @@ namespace editor {
  * When no entity is selected but an asset is, shows asset properties.
  * When nothing is selected, shows scene-level properties.
  */
-class PropertiesPanel {
+class PropertiesPanel : public EditorPanel {
 public:
 	PropertiesPanel() = default;
-	~PropertiesPanel() = default;
+	~PropertiesPanel() override = default;
+
+	[[nodiscard]] std::string_view GetPanelName() const override;
 
 	/**
 	 * @brief Set callbacks for panel events
@@ -40,21 +43,6 @@ public:
 		   const AssetSelection& selected_asset,
 		   engine::ecs::Entity scene_active_camera);
 
-	/**
-	 * @brief Check if panel is visible
-	 */
-	[[nodiscard]] bool IsVisible() const { return is_visible_; }
-
-	/**
-	 * @brief Set panel visibility
-	 */
-	void SetVisible(bool visible) { is_visible_ = visible; }
-
-	/**
-	 * @brief Get mutable reference to visibility (for ImGui::MenuItem binding)
-	 */
-	bool& VisibleRef() { return is_visible_; }
-
 private:
 	void RenderComponentSections(engine::ecs::Entity entity, engine::scene::Scene* scene) const;
 	void RenderComponentFields(
@@ -64,7 +52,6 @@ private:
 	void RenderAssetProperties(engine::scene::Scene* scene, const AssetSelection& selected_asset) const;
 
 	EditorCallbacks callbacks_;
-	bool is_visible_ = true;
 };
 
 } // namespace editor

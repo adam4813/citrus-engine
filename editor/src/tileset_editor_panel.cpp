@@ -1,5 +1,7 @@
 #include "tileset_editor_panel.h"
 
+#include "asset_editor_registry.h"
+
 #include <imgui.h>
 #include <nlohmann/json.hpp>
 
@@ -13,14 +15,30 @@ namespace editor {
 
 TilesetEditorPanel::TilesetEditorPanel() : tileset_(std::make_unique<TilesetDefinition>()) {}
 
+std::string_view TilesetEditorPanel::GetPanelName() const { return "Tileset Editor"; }
+
+void TilesetEditorPanel::RegisterAssetHandlers(AssetEditorRegistry& registry) {
+	registry.Register("tileset", [this](const std::string& path) {
+		OpenTileset(path);
+	});
+}
+
 TilesetEditorPanel::~TilesetEditorPanel() = default;
 
 void TilesetEditorPanel::Render(engine::Engine& engine) {
-	if (!is_visible_) {
+	if (!IsVisible()) {
 		return;
 	}
 
-	ImGui::Begin("Tileset Editor", &is_visible_, ImGuiWindowFlags_MenuBar);
+	ImGui::Begin("Tileset Editor", &VisibleRef(), ImGuiWindowFlags_MenuBar);
+
+	// Handle deferred image loading from OpenTileset
+	if (pending_image_load_) {
+		pending_image_load_ = false;
+		if (!tileset_->source_image_path.empty()) {
+			LoadSourceImage(engine, tileset_->source_image_path);
+		}
+	}
 
 	RenderToolbar(engine);
 
@@ -49,22 +67,66 @@ void TilesetEditorPanel::RenderToolbar(engine::Engine& engine) {
 				NewTileset();
 			}
 			if (ImGui::MenuItem("Open...")) {
-				LoadTileset("tileset.json");
+				show_open_dialog_ = true;
 			}
 			if (ImGui::MenuItem("Save")) {
 				if (!current_file_path_.empty()) {
 					SaveTileset(current_file_path_);
 				} else {
-					SaveTileset("tileset.json");
+					show_save_dialog_ = true;
+					save_as_mode_ = false;
 				}
 			}
 			if (ImGui::MenuItem("Save As...")) {
-				SaveTileset("tileset.json");
+				show_save_dialog_ = true;
+				save_as_mode_ = true;
 			}
 			ImGui::EndMenu();
 		}
 
 		ImGui::EndMenuBar();
+	}
+
+	// Save file dialog popup
+	if (show_save_dialog_) {
+		ImGui::OpenPopup("Save Tileset As");
+		show_save_dialog_ = false;
+	}
+	if (ImGui::BeginPopupModal("Save Tileset As", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+		ImGui::Text("Enter file path:");
+		ImGui::SetNextItemWidth(300);
+		ImGui::InputText("##save_path", save_path_buffer_, sizeof(save_path_buffer_));
+		ImGui::Separator();
+		if (ImGui::Button("Save", ImVec2(120, 0))) {
+			SaveTileset(save_path_buffer_);
+			ImGui::CloseCurrentPopup();
+		}
+		ImGui::SameLine();
+		if (ImGui::Button("Cancel", ImVec2(120, 0))) {
+			ImGui::CloseCurrentPopup();
+		}
+		ImGui::EndPopup();
+	}
+
+	// Open file dialog popup
+	if (show_open_dialog_) {
+		ImGui::OpenPopup("Open Tileset");
+		show_open_dialog_ = false;
+	}
+	if (ImGui::BeginPopupModal("Open Tileset", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+		ImGui::Text("Enter tileset file path:");
+		ImGui::SetNextItemWidth(300);
+		ImGui::InputText("##open_path", open_path_buffer_, sizeof(open_path_buffer_));
+		ImGui::Separator();
+		if (ImGui::Button("Open", ImVec2(120, 0))) {
+			OpenTileset(open_path_buffer_);
+			ImGui::CloseCurrentPopup();
+		}
+		ImGui::SameLine();
+		if (ImGui::Button("Cancel", ImVec2(120, 0))) {
+			ImGui::CloseCurrentPopup();
+		}
+		ImGui::EndPopup();
 	}
 
 	// Source image selection
@@ -102,6 +164,33 @@ void TilesetEditorPanel::RenderToolbar(engine::Engine& engine) {
 	// Clamp to reasonable values
 	tileset_->tile_width = std::max(1, std::min(512, tileset_->tile_width));
 	tileset_->tile_height = std::max(1, std::min(512, tileset_->tile_height));
+
+	// Gap and padding controls
+	ImGui::Text("Gap:");
+	ImGui::SameLine();
+	ImGui::SetNextItemWidth(80);
+	ImGui::InputInt("##gap_x", &tileset_->gap_x, 1, 10);
+	ImGui::SameLine();
+	ImGui::Text("x");
+	ImGui::SameLine();
+	ImGui::SetNextItemWidth(80);
+	ImGui::InputInt("##gap_y", &tileset_->gap_y, 1, 10);
+
+	tileset_->gap_x = std::max(0, std::min(256, tileset_->gap_x));
+	tileset_->gap_y = std::max(0, std::min(256, tileset_->gap_y));
+
+	ImGui::Text("Padding:");
+	ImGui::SameLine();
+	ImGui::SetNextItemWidth(80);
+	ImGui::InputInt("##padding_x", &tileset_->padding_x, 1, 10);
+	ImGui::SameLine();
+	ImGui::Text("x");
+	ImGui::SameLine();
+	ImGui::SetNextItemWidth(80);
+	ImGui::InputInt("##padding_y", &tileset_->padding_y, 1, 10);
+
+	tileset_->padding_x = std::max(0, std::min(256, tileset_->padding_x));
+	tileset_->padding_y = std::max(0, std::min(256, tileset_->padding_y));
 
 	// Zoom control
 	ImGui::SameLine();
@@ -180,18 +269,23 @@ void TilesetEditorPanel::RenderTilesetGrid() {
 		ImGui::Text("Placeholder Grid: %d x %d tiles", grid_cols, grid_rows);
 	}
 
-	// Calculate display sizes
-	const float tile_display_w = tileset_->tile_width * tile_display_scale_;
-	const float tile_display_h = tileset_->tile_height * tile_display_scale_;
+	// Calculate display sizes accounting for gap and padding
+	const float scale = tile_display_scale_;
+	const float tile_display_w = tileset_->tile_width * scale;
+	const float tile_display_h = tileset_->tile_height * scale;
+	const float gap_display_x = tileset_->gap_x * scale;
+	const float gap_display_y = tileset_->gap_y * scale;
+	const float padding_display_x = tileset_->padding_x * scale;
+	const float padding_display_y = tileset_->padding_y * scale;
 
 	// Get draw list for custom rendering
 	ImDrawList* draw_list = ImGui::GetWindowDrawList();
 	const ImVec2 grid_origin = ImGui::GetCursorScreenPos();
 	const ImVec2 mouse_pos = ImGui::GetMousePos();
 
-	// Reserve space for the grid
-	const float grid_width = grid_cols * tile_display_w;
-	const float grid_height = grid_rows * tile_display_h;
+	// Reserve space for the grid (full image scaled)
+	const float grid_width = static_cast<float>(image_width) * scale;
+	const float grid_height = static_cast<float>(image_height) * scale;
 	ImGui::InvisibleButton("TilesetCanvas", ImVec2(grid_width, grid_height));
 
 	// Handle tile selection
@@ -223,8 +317,8 @@ void TilesetEditorPanel::RenderTilesetGrid() {
 		for (int y = 0; y < grid_rows; ++y) {
 			for (int x = 0; x < grid_cols; ++x) {
 				const ImVec2 tile_min = ImVec2(
-					grid_origin.x + x * tile_display_w,
-					grid_origin.y + y * tile_display_h);
+					grid_origin.x + padding_display_x + x * (tile_display_w + gap_display_x),
+					grid_origin.y + padding_display_y + y * (tile_display_h + gap_display_y));
 				const ImVec2 tile_max = ImVec2(
 					tile_min.x + tile_display_w,
 					tile_min.y + tile_display_h);
@@ -243,8 +337,8 @@ void TilesetEditorPanel::RenderTilesetGrid() {
 		for (int x = 0; x < grid_cols; ++x) {
 			const uint32_t tile_id = GetTileIdFromCoords(x, y);
 			const ImVec2 tile_min = ImVec2(
-				grid_origin.x + x * tile_display_w,
-				grid_origin.y + y * tile_display_h);
+				grid_origin.x + padding_display_x + x * (tile_display_w + gap_display_x),
+				grid_origin.y + padding_display_y + y * (tile_display_h + gap_display_y));
 			const ImVec2 tile_max = ImVec2(
 				tile_min.x + tile_display_w,
 				tile_min.y + tile_display_h);
@@ -263,12 +357,22 @@ void TilesetEditorPanel::RenderTilesetGrid() {
 
 	// Hover highlight
 	if (ImGui::IsItemHovered()) {
-		const int hover_x = static_cast<int>((mouse_pos.x - grid_origin.x) / tile_display_w);
-		const int hover_y = static_cast<int>((mouse_pos.y - grid_origin.y) / tile_display_h);
-		if (hover_x >= 0 && hover_x < grid_cols && hover_y >= 0 && hover_y < grid_rows) {
+		// Convert mouse position to tile coordinates accounting for gap/padding
+		const float rel_x = mouse_pos.x - grid_origin.x - padding_display_x;
+		const float rel_y = mouse_pos.y - grid_origin.y - padding_display_y;
+		const float cell_w = tile_display_w + gap_display_x;
+		const float cell_h = tile_display_h + gap_display_y;
+		const int hover_x = (cell_w > 0) ? static_cast<int>(rel_x / cell_w) : 0;
+		const int hover_y = (cell_h > 0) ? static_cast<int>(rel_y / cell_h) : 0;
+		// Check mouse is within tile area (not in gap)
+		const float in_tile_x = rel_x - hover_x * cell_w;
+		const float in_tile_y = rel_y - hover_y * cell_h;
+		if (hover_x >= 0 && hover_x < grid_cols && hover_y >= 0 && hover_y < grid_rows
+			&& in_tile_x >= 0 && in_tile_x < tile_display_w
+			&& in_tile_y >= 0 && in_tile_y < tile_display_h) {
 			const ImVec2 hover_min = ImVec2(
-				grid_origin.x + hover_x * tile_display_w,
-				grid_origin.y + hover_y * tile_display_h);
+				grid_origin.x + padding_display_x + hover_x * cell_w,
+				grid_origin.y + padding_display_y + hover_y * cell_h);
 			const ImVec2 hover_max = ImVec2(
 				hover_min.x + tile_display_w,
 				hover_min.y + tile_display_h);
@@ -411,11 +515,13 @@ void TilesetEditorPanel::RenderTilePreview() {
 	if (loaded_image_ && gpu_texture_id_ != engine::rendering::INVALID_TEXTURE) {
 		auto* gl_tex = engine::rendering::GetGLTexture(gpu_texture_id_);
 		if (gl_tex != nullptr) {
-			// Calculate UVs for this tile (flipped vertically for OpenGL)
-			const float u0 = static_cast<float>(tile_x * tileset_->tile_width) / static_cast<float>(image_width);
-			const float u1 = static_cast<float>((tile_x + 1) * tileset_->tile_width) / static_cast<float>(image_width);
-			const float v0 = 1.0f - static_cast<float>(tile_y * tileset_->tile_height) / static_cast<float>(image_height);
-			const float v1 = 1.0f - static_cast<float>((tile_y + 1) * tileset_->tile_height) / static_cast<float>(image_height);
+			// Calculate UVs for this tile accounting for gap/padding (flipped vertically for OpenGL)
+			const float px_x = static_cast<float>(tileset_->padding_x + tile_x * (tileset_->tile_width + tileset_->gap_x));
+			const float px_y = static_cast<float>(tileset_->padding_y + tile_y * (tileset_->tile_height + tileset_->gap_y));
+			const float u0 = px_x / static_cast<float>(image_width);
+			const float u1 = (px_x + tileset_->tile_width) / static_cast<float>(image_width);
+			const float v0 = 1.0f - px_y / static_cast<float>(image_height);
+			const float v1 = 1.0f - (px_y + tileset_->tile_height) / static_cast<float>(image_height);
 
 			const auto imgui_tex = static_cast<ImTextureID>(static_cast<uintptr_t>(gl_tex->handle));
 			ImGui::Image(imgui_tex, ImVec2(PREVIEW_SIZE, PREVIEW_SIZE), ImVec2(u0, v0), ImVec2(u1, v1));
@@ -491,10 +597,12 @@ void TilesetEditorPanel::RenderTilePalette() {
 					int tx = 0;
 					int ty = 0;
 					GetCoordsFromTileId(selected_tiles_[i], tx, ty);
-					const float u0 = static_cast<float>(tx * tileset_->tile_width) / static_cast<float>(image_width);
-					const float u1 = static_cast<float>((tx + 1) * tileset_->tile_width) / static_cast<float>(image_width);
-					const float v0 = 1.0f - static_cast<float>(ty * tileset_->tile_height) / static_cast<float>(image_height);
-					const float v1 = 1.0f - static_cast<float>((ty + 1) * tileset_->tile_height) / static_cast<float>(image_height);
+					const float px_x = static_cast<float>(tileset_->padding_x + tx * (tileset_->tile_width + tileset_->gap_x));
+					const float px_y = static_cast<float>(tileset_->padding_y + ty * (tileset_->tile_height + tileset_->gap_y));
+					const float u0 = px_x / static_cast<float>(image_width);
+					const float u1 = (px_x + tileset_->tile_width) / static_cast<float>(image_width);
+					const float v0 = 1.0f - px_y / static_cast<float>(image_height);
+					const float v1 = 1.0f - (px_y + tileset_->tile_height) / static_cast<float>(image_height);
 					const auto imgui_tex = static_cast<ImTextureID>(static_cast<uintptr_t>(gl_tex->handle));
 					draw_list->AddImage(imgui_tex, tile_min, tile_max, ImVec2(u0, v0), ImVec2(u1, v1));
 				}
@@ -532,9 +640,14 @@ void TilesetEditorPanel::NewTileset() {
 bool TilesetEditorPanel::SaveTileset(const std::string& path) {
 	try {
 		json j;
+		j["asset_type"] = "tileset";
 		j["source_image_path"] = tileset_->source_image_path;
 		j["tile_width"] = tileset_->tile_width;
 		j["tile_height"] = tileset_->tile_height;
+		j["gap_x"] = tileset_->gap_x;
+		j["gap_y"] = tileset_->gap_y;
+		j["padding_x"] = tileset_->padding_x;
+		j["padding_y"] = tileset_->padding_y;
 
 		json tiles_array = json::array();
 		for (const auto& tile : tileset_->tiles) {
@@ -572,6 +685,10 @@ bool TilesetEditorPanel::LoadTileset(const std::string& path) {
 		new_tileset->source_image_path = j.value("source_image_path", "");
 		new_tileset->tile_width = j.value("tile_width", 32);
 		new_tileset->tile_height = j.value("tile_height", 32);
+		new_tileset->gap_x = j.value("gap_x", 0);
+		new_tileset->gap_y = j.value("gap_y", 0);
+		new_tileset->padding_x = j.value("padding_x", 0);
+		new_tileset->padding_y = j.value("padding_y", 0);
 
 		if (j.contains("tiles") && j["tiles"].is_array()) {
 			for (const auto& tile_json : j["tiles"]) {
@@ -599,6 +716,11 @@ bool TilesetEditorPanel::LoadTileset(const std::string& path) {
 		tileset_ = std::move(new_tileset);
 		current_file_path_ = path;
 		selected_tiles_.clear();
+
+		// Populate image path buffer so user can see the source image path
+		std::strncpy(image_path_buffer_, tileset_->source_image_path.c_str(), sizeof(image_path_buffer_) - 1);
+		image_path_buffer_[sizeof(image_path_buffer_) - 1] = '\0';
+
 		return true;
 	} catch (const std::exception&) {
 		return false;
@@ -608,6 +730,8 @@ bool TilesetEditorPanel::LoadTileset(const std::string& path) {
 void TilesetEditorPanel::OpenTileset(const std::string& path) {
 	if (LoadTileset(path)) {
 		SetVisible(true);
+		// Defer image loading until next Render() call which has engine access
+		pending_image_load_ = !tileset_->source_image_path.empty();
 	}
 }
 
@@ -623,13 +747,21 @@ void TilesetEditorPanel::GetCoordsFromTileId(uint32_t id, int& out_x, int& out_y
 }
 
 void TilesetEditorPanel::HandleTileSelection(const ImVec2& mouse_pos, const ImVec2& grid_origin) {
-	const float tile_display_w = tileset_->tile_width * tile_display_scale_;
-	const float tile_display_h = tileset_->tile_height * tile_display_scale_;
+	const float scale = tile_display_scale_;
+	const float tile_display_w = tileset_->tile_width * scale;
+	const float tile_display_h = tileset_->tile_height * scale;
+	const float gap_display_x = tileset_->gap_x * scale;
+	const float gap_display_y = tileset_->gap_y * scale;
+	const float padding_display_x = tileset_->padding_x * scale;
+	const float padding_display_y = tileset_->padding_y * scale;
 
-	const ImVec2 relative_pos = ImVec2(mouse_pos.x - grid_origin.x, mouse_pos.y - grid_origin.y);
-	
-	const int x = static_cast<int>(relative_pos.x / tile_display_w);
-	const int y = static_cast<int>(relative_pos.y / tile_display_h);
+	const float rel_x = mouse_pos.x - grid_origin.x - padding_display_x;
+	const float rel_y = mouse_pos.y - grid_origin.y - padding_display_y;
+
+	const float cell_w = tile_display_w + gap_display_x;
+	const float cell_h = tile_display_h + gap_display_y;
+	const int x = (cell_w > 0) ? static_cast<int>(rel_x / cell_w) : 0;
+	const int y = (cell_h > 0) ? static_cast<int>(rel_y / cell_h) : 0;
 
 	const int image_width = GetImageWidth();
 	const int image_height = GetImageHeight();

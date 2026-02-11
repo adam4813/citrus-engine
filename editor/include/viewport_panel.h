@@ -4,6 +4,7 @@
 #include <imgui.h>
 
 #include "editor_callbacks.h"
+#include "editor_panel.h"
 
 import engine;
 import glm;
@@ -26,10 +27,12 @@ enum class GizmoSpace { World, Local };
  * Renders the scene to a framebuffer and displays it in the viewport.
  * Uses the editor camera for rendering in edit mode.
  */
-class ViewportPanel {
+class ViewportPanel : public EditorPanel {
 public:
 	ViewportPanel() = default;
-	~ViewportPanel() = default;
+	~ViewportPanel() override = default;
+
+	[[nodiscard]] std::string_view GetPanelName() const override;
 
 	/**
 	 * @brief Render the viewport panel
@@ -52,21 +55,6 @@ public:
 	 * @brief Set editor callbacks for panel-to-editor communication
 	 */
 	void SetCallbacks(const EditorCallbacks& callbacks);
-
-	/**
-	 * @brief Check if panel is visible
-	 */
-	[[nodiscard]] bool IsVisible() const { return is_visible_; }
-
-	/**
-	 * @brief Set panel visibility
-	 */
-	void SetVisible(bool visible) { is_visible_ = visible; }
-
-	/**
-	 * @brief Get mutable reference to visibility (for ImGui::MenuItem binding)
-	 */
-	bool& VisibleRef() { return is_visible_; }
 
 private:
 	void RenderPlayModeIndicator(const ImVec2& cursor_pos);
@@ -115,7 +103,6 @@ private:
 	static void DrawAxisLabel(ImDrawList* draw_list, const ImVec2& pos, const char* label, ImU32 color);
 
 	engine::rendering::Framebuffer framebuffer_;
-	bool is_visible_ = true;
 	bool is_focused_ = false;
 	uint32_t last_width_ = 0;
 	uint32_t last_height_ = 0;

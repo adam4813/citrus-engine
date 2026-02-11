@@ -4,6 +4,8 @@
 #include <memory>
 #include <string>
 
+#include "editor_panel.h"
+
 import engine;
 import glm;
 
@@ -16,30 +18,17 @@ namespace editor {
  * This is a minimal implementation - consumer editors (shader, texture, etc.)
  * will build on top of this for their specific needs.
  */
-class GraphEditorPanel {
+class GraphEditorPanel : public EditorPanel {
 public:
 	GraphEditorPanel();
-	~GraphEditorPanel();
+	~GraphEditorPanel() override;
+
+	[[nodiscard]] std::string_view GetPanelName() const override;
 
 	/**
 	 * @brief Render the graph editor panel
 	 */
 	void Render();
-
-	/**
-	 * @brief Check if panel is visible
-	 */
-	[[nodiscard]] bool IsVisible() const { return is_visible_; }
-
-	/**
-	 * @brief Set panel visibility
-	 */
-	void SetVisible(bool visible) { is_visible_ = visible; }
-
-	/**
-	 * @brief Get mutable reference to visibility (for ImGui::MenuItem binding)
-	 */
-	bool& VisibleRef() { return is_visible_; }
 
 	/**
 	 * @brief Get the current graph
@@ -90,7 +79,6 @@ private:
 	// Find which link (if any) is near the mouse for selection/deletion
 	int FindLinkUnderMouse(const ImVec2& mouse_pos) const;
 
-	bool is_visible_ = true;
 	std::unique_ptr<engine::graph::NodeGraph> graph_;
 
 	// Editor state

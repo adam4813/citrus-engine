@@ -1,5 +1,7 @@
 #include "sound_editor_panel.h"
 
+#include "asset_editor_registry.h"
+
 #include <imgui.h>
 #include <nlohmann/json.hpp>
 
@@ -21,12 +23,18 @@ SoundEditorPanel::SoundEditorPanel() {
 
 SoundEditorPanel::~SoundEditorPanel() = default;
 
+std::string_view SoundEditorPanel::GetPanelName() const { return "Sound Editor"; }
+
+void SoundEditorPanel::RegisterAssetHandlers(AssetEditorRegistry& registry) {
+	registry.Register("sound", [this](const std::string& path) { OpenSound(path); SetVisible(true); });
+}
+
 void SoundEditorPanel::Render() {
-	if (!is_visible_) {
+	if (!IsVisible()) {
 		return;
 	}
 
-	ImGui::Begin("Sound Editor", &is_visible_, ImGuiWindowFlags_MenuBar);
+	ImGui::Begin("Sound Editor", &VisibleRef(), ImGuiWindowFlags_MenuBar);
 
 	RenderMenuBar();
 
@@ -528,6 +536,7 @@ bool SoundEditorPanel::LoadPresetFromJson(const std::string& path) {
 bool SoundEditorPanel::SavePresetToJson(const std::string& path) {
 	try {
 		json j;
+		j["asset_type"] = "sound";
 
 		// Save preset parameters
 		j["waveform"] = static_cast<int>(preset_.waveform);

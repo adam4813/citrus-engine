@@ -17,12 +17,14 @@ ShaderEditorPanel::ShaderEditorPanel() : shader_graph_(std::make_unique<engine::
 
 ShaderEditorPanel::~ShaderEditorPanel() = default;
 
+std::string_view ShaderEditorPanel::GetPanelName() const { return "Shader Editor"; }
+
 void ShaderEditorPanel::Render(engine::scene::Scene* scene) {
-	if (!is_visible_) {
+	if (!IsVisible()) {
 		return;
 	}
 
-	ImGui::Begin("Shader Editor", &is_visible_, ImGuiWindowFlags_MenuBar);
+	ImGui::Begin("Shader Editor", &VisibleRef(), ImGuiWindowFlags_MenuBar);
 
 	RenderToolbar(scene);
 

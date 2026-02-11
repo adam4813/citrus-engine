@@ -1,5 +1,7 @@
 #include "code_editor_panel.h"
 
+#include "asset_editor_registry.h"
+
 #include <algorithm>
 #include <cstring>
 #include <filesystem>
@@ -14,12 +16,20 @@ CodeEditorPanel::CodeEditorPanel() = default;
 
 CodeEditorPanel::~CodeEditorPanel() = default;
 
+std::string_view CodeEditorPanel::GetPanelName() const { return "Code Editor"; }
+
+void CodeEditorPanel::RegisterAssetHandlers(AssetEditorRegistry& registry) {
+	for (const auto& ext : {".lua", ".as", ".glsl", ".vert", ".frag", ".cpp", ".h", ".hpp", ".c", ".shader"}) {
+		registry.RegisterExtension(ext, [this](const std::string& path) { OpenFile(path); SetVisible(true); });
+	}
+}
+
 void CodeEditorPanel::Render() {
-	if (!is_visible_) {
+	if (!IsVisible()) {
 		return;
 	}
 
-	ImGui::Begin("Code Editor", &is_visible_, ImGuiWindowFlags_MenuBar);
+	ImGui::Begin("Code Editor", &VisibleRef(), ImGuiWindowFlags_MenuBar);
 
 	RenderMenuBar();
 	RenderFileTabs();

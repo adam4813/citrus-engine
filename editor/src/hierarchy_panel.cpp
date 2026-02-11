@@ -10,10 +10,12 @@
 
 namespace editor {
 
+std::string_view HierarchyPanel::GetPanelName() const { return "Hierarchy"; }
+
 void HierarchyPanel::SetCallbacks(const EditorCallbacks& callbacks) { callbacks_ = callbacks; }
 
 void HierarchyPanel::Render(const engine::scene::SceneId scene_id, const engine::ecs::Entity selected_entity) {
-	if (!is_visible_) {
+	if (!IsVisible()) {
 		return;
 	}
 
@@ -23,7 +25,7 @@ void HierarchyPanel::Render(const engine::scene::SceneId scene_id, const engine:
 										 | ImGuiDockNodeFlags_NoDockingOverEmpty;
 	ImGui::SetNextWindowClass(&win_class);
 
-	ImGui::Begin("Hierarchy", &is_visible_);
+	ImGui::Begin("Hierarchy", &VisibleRef());
 
 	// Search bar
 	ImGui::SetNextItemWidth(-50.0f); // Leave space for clear button

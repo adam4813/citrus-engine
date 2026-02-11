@@ -1,8 +1,11 @@
 #include "data_table_editor_panel.h"
 
+#include "asset_editor_registry.h"
+
 #include <algorithm>
 #include <filesystem>
 #include <imgui.h>
+#include <nlohmann/json.hpp>
 #include <variant>
 
 import engine;
@@ -16,13 +19,19 @@ DataTableEditorPanel::DataTableEditorPanel() : table_(std::make_unique<engine::d
 
 DataTableEditorPanel::~DataTableEditorPanel() = default;
 
+std::string_view DataTableEditorPanel::GetPanelName() const { return "Data Table Editor"; }
+
+void DataTableEditorPanel::RegisterAssetHandlers(AssetEditorRegistry& registry) {
+	registry.Register("data_table", [this](const std::string& path) { OpenTable(path); });
+}
+
 void DataTableEditorPanel::Render() {
-	if (!is_visible_) {
+	if (!IsVisible()) {
 		return;
 	}
 
 	ImGui::SetNextWindowSize(ImVec2(800, 600), ImGuiCond_FirstUseEver);
-	ImGui::Begin("Data Table Editor", &is_visible_, ImGuiWindowFlags_MenuBar);
+	ImGui::Begin("Data Table Editor", &VisibleRef(), ImGuiWindowFlags_MenuBar);
 
 	RenderMenuBar();
 	RenderToolbar();
@@ -548,6 +557,11 @@ void DataTableEditorPanel::NewTable() {
 bool DataTableEditorPanel::SaveTable(const std::string& path) {
 	try {
 		std::string json_str = engine::data::DataSerializer::SerializeTable(*table_);
+
+		// Inject asset_type into the serialized JSON
+		auto j = nlohmann::json::parse(json_str);
+		j["asset_type"] = "data_table";
+		json_str = j.dump(2);
 
 		if (!engine::assets::AssetManager::SaveTextFile(std::filesystem::path(path), json_str)) {
 			return false;

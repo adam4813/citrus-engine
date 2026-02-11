@@ -5,6 +5,8 @@
 #include <string>
 #include <vector>
 
+#include "editor_panel.h"
+
 namespace editor {
 
 /**
@@ -17,30 +19,17 @@ namespace editor {
  * - Save/Load sound presets to .sfx.json
  * - Export to WAV (future)
  */
-class SoundEditorPanel {
+class SoundEditorPanel : public EditorPanel {
 public:
 	SoundEditorPanel();
-	~SoundEditorPanel();
+	~SoundEditorPanel() override;
+
+	[[nodiscard]] std::string_view GetPanelName() const override;
 
 	/**
 	 * @brief Render the sound editor panel
 	 */
 	void Render();
-
-	/**
-	 * @brief Check if panel is visible
-	 */
-	[[nodiscard]] bool IsVisible() const { return is_visible_; }
-
-	/**
-	 * @brief Set panel visibility
-	 */
-	void SetVisible(bool visible) { is_visible_ = visible; }
-
-	/**
-	 * @brief Get mutable reference to visibility (for ImGui::MenuItem binding)
-	 */
-	bool& VisibleRef() { return is_visible_; }
 
 	/**
 	 * @brief Create a new empty sound preset
@@ -51,6 +40,11 @@ public:
 	 * @brief Open a sound preset from file
 	 */
 	bool OpenSound(const std::string& path);
+
+	/**
+	 * @brief Register asset type handlers for this panel
+	 */
+	void RegisterAssetHandlers(AssetEditorRegistry& registry) override;
 
 	/**
 	 * @brief Save the current sound preset to file
@@ -134,7 +128,6 @@ private:
 	// ========================================================================
 	// State
 	// ========================================================================
-	bool is_visible_ = true;
 	SoundPreset preset_;
 	std::string preset_name_ = "Untitled";
 	std::string current_file_path_;

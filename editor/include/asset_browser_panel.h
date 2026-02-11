@@ -1,6 +1,7 @@
 #pragma once
 
 #include "editor_callbacks.h"
+#include "editor_panel.h"
 
 #include <filesystem>
 #include <memory>
@@ -56,10 +57,12 @@ struct AssetSelection {
  * Supports selection for editing in Properties panel and context menus for
  * creating new assets.
  */
-class AssetBrowserPanel {
+class AssetBrowserPanel : public EditorPanel {
 public:
 	AssetBrowserPanel() = default;
-	~AssetBrowserPanel() = default;
+	~AssetBrowserPanel() override = default;
+
+	[[nodiscard]] std::string_view GetPanelName() const override;
 
 	/**
 	 * @brief Set callbacks for panel events
@@ -72,21 +75,6 @@ public:
 	 * @param selected_asset Currently selected asset (for highlighting)
 	 */
 	void Render(engine::scene::Scene* scene, const AssetSelection& selected_asset);
-
-	/**
-	 * @brief Check if panel is visible
-	 */
-	[[nodiscard]] bool IsVisible() const { return is_visible_; }
-
-	/**
-	 * @brief Set panel visibility
-	 */
-	void SetVisible(bool visible) { is_visible_ = visible; }
-
-	/**
-	 * @brief Get mutable reference to visibility (for ImGui::MenuItem binding)
-	 */
-	bool& VisibleRef() { return is_visible_; }
 
 private:
 	/**
@@ -173,7 +161,6 @@ private:
 	bool PassesFilter(const FileSystemItem& item) const;
 
 	EditorCallbacks callbacks_;
-	bool is_visible_ = true;
 	bool prefabs_scanned_ = false;
 	std::vector<std::string> prefab_files_; // Cached list of .prefab.json paths
 

@@ -3,9 +3,11 @@
 #include <flecs.h>
 #include <memory>
 #include <string>
+#include <vector>
 
 #include "animation_editor_panel.h"
 #include "asset_browser_panel.h"
+#include "asset_editor_registry.h"
 #include "behavior_tree_editor_panel.h"
 #include "code_editor_panel.h"
 #include "command.h"
@@ -15,6 +17,7 @@
 #include "properties_panel.h"
 #include "shader_editor_panel.h"
 #include "sound_editor_panel.h"
+#include "sprite_editor_panel.h"
 #include "texture_editor_panel.h"
 #include "tileset_editor_panel.h"
 #include "viewport_panel.h"
@@ -178,8 +181,15 @@ private:
 	TextureEditorPanel texture_editor_panel_;
 	CodeEditorPanel code_editor_panel_;
 	AnimationEditorPanel animation_editor_panel_;
+	SpriteEditorPanel sprite_editor_panel_;
 	TilesetEditorPanel tileset_editor_panel_;
 	BehaviorTreeEditorPanel behavior_tree_editor_panel_;
+
+	// All panels for iteration (View menu, asset handler registration)
+	std::vector<EditorPanel*> panels_;
+
+	// Asset editor registry for generic file dispatch
+	AssetEditorRegistry asset_editor_registry_;
 
 	// Command history for undo/redo
 	CommandHistory command_history_;

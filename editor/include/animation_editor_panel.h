@@ -5,6 +5,8 @@
 #include <string>
 #include <vector>
 
+#include "editor_panel.h"
+
 import engine;
 import glm;
 
@@ -21,30 +23,17 @@ namespace editor {
  * - Keyframe property editor (value, interpolation mode)
  * - Zoom and scroll support
  */
-class AnimationEditorPanel {
+class AnimationEditorPanel : public EditorPanel {
 public:
 	AnimationEditorPanel();
-	~AnimationEditorPanel();
+	~AnimationEditorPanel() override;
+
+	[[nodiscard]] std::string_view GetPanelName() const override;
 
 	/**
 	 * @brief Render the animation editor panel
 	 */
 	void Render();
-
-	/**
-	 * @brief Check if panel is visible
-	 */
-	[[nodiscard]] bool IsVisible() const { return is_visible_; }
-
-	/**
-	 * @brief Set panel visibility
-	 */
-	void SetVisible(bool visible) { is_visible_ = visible; }
-
-	/**
-	 * @brief Get mutable reference to visibility (for ImGui::MenuItem binding)
-	 */
-	bool& VisibleRef() { return is_visible_; }
 
 	/**
 	 * @brief Get the current animation clip
@@ -108,7 +97,6 @@ private:
 	void Stop();
 	void UpdatePlayback(float delta_time);
 
-	bool is_visible_ = true;
 	engine::animation::AnimationClip clip_;
 
 	// Timeline state

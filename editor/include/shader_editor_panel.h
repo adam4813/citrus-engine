@@ -5,6 +5,8 @@
 #include <string>
 #include <vector>
 
+#include "editor_panel.h"
+
 import engine;
 import glm;
 
@@ -19,20 +21,18 @@ namespace editor {
  * - Uniform inspector: Auto-detects and displays shader uniforms
  * - Opens shader assets from scene, edits their vertex/fragment files
  */
-class ShaderEditorPanel {
+class ShaderEditorPanel : public EditorPanel {
 public:
 	ShaderEditorPanel();
-	~ShaderEditorPanel();
+	~ShaderEditorPanel() override;
+
+	[[nodiscard]] std::string_view GetPanelName() const override;
 
 	/**
 	 * @brief Render the shader editor panel
 	 * @param scene The current scene (for listing shader assets)
 	 */
 	void Render(engine::scene::Scene* scene);
-
-	[[nodiscard]] bool IsVisible() const { return is_visible_; }
-	void SetVisible(bool visible) { is_visible_ = visible; }
-	bool& VisibleRef() { return is_visible_; }
 
 	/**
 	 * @brief Open a shader asset for editing
@@ -73,7 +73,6 @@ private:
 	// ========================================================================
 	// State
 	// ========================================================================
-	bool is_visible_ = true;
 
 	// Editor mode
 	enum class EditorMode { Code, NodeGraph };

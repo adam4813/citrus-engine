@@ -5,6 +5,8 @@
 #include <string>
 #include <vector>
 
+#include "editor_panel.h"
+
 import engine;
 
 namespace editor {
@@ -19,30 +21,17 @@ namespace editor {
  * - Add/remove nodes via context menu
  * - Save/load behavior trees as .bt.json files
  */
-class BehaviorTreeEditorPanel {
+class BehaviorTreeEditorPanel : public EditorPanel {
 public:
 	BehaviorTreeEditorPanel();
-	~BehaviorTreeEditorPanel();
+	~BehaviorTreeEditorPanel() override;
+
+	[[nodiscard]] std::string_view GetPanelName() const override;
 
 	/**
 	 * @brief Render the behavior tree editor panel
 	 */
 	void Render();
-
-	/**
-	 * @brief Check if panel is visible
-	 */
-	[[nodiscard]] bool IsVisible() const { return is_visible_; }
-
-	/**
-	 * @brief Set panel visibility
-	 */
-	void SetVisible(bool visible) { is_visible_ = visible; }
-
-	/**
-	 * @brief Get mutable reference to visibility (for ImGui::MenuItem binding)
-	 */
-	bool& VisibleRef() { return is_visible_; }
 
 	/**
 	 * @brief Create a new empty behavior tree
@@ -69,7 +58,6 @@ private:
 	// Helper to create nodes
 	std::unique_ptr<engine::ai::BTNode> CreateNode(const std::string& node_type, const std::string& name);
 
-	bool is_visible_ = false;
 	std::unique_ptr<engine::ai::BTNode> root_node_;
 	engine::ai::BTNode* selected_node_ = nullptr;
 	std::string current_file_path_;

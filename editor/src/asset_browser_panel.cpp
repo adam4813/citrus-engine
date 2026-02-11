@@ -365,32 +365,39 @@ void AssetBrowserPanel::RenderContentView() {
 	}
 
 	if (view_mode_ == AssetViewMode::Grid) {
-		// Grid view with icons
-		const float item_size = 80.0f;
-		const float padding = 10.0f;
+		// Grid view with uniform cells
+		const float cell_size = 90.0f;
+		const float padding = 8.0f;
 		const float window_width = ImGui::GetContentRegionAvail().x;
-		const int columns = std::max(1, static_cast<int>((window_width + padding) / (item_size + padding)));
+		const int columns = std::max(1, static_cast<int>(window_width / (cell_size + padding)));
 
-		int col = 0;
-		for (const auto& item : current_items_) {
-			if (!PassesFilter(item)) {
-				continue;
+		if (ImGui::BeginTable("GridView", columns)) {
+			for (int c = 0; c < columns; ++c) {
+				ImGui::TableSetupColumn(nullptr, ImGuiTableColumnFlags_WidthFixed, cell_size);
 			}
 
-			ImGui::PushID(item.path.string().c_str());
+			int col = 0;
+			for (const auto& item : current_items_) {
+				if (!PassesFilter(item)) {
+					continue;
+				}
 
-			if (col > 0) {
-				ImGui::SameLine();
+				if (col == 0) {
+					ImGui::TableNextRow();
+				}
+				ImGui::TableSetColumnIndex(col);
+
+				ImGui::PushID(item.path.string().c_str());
+				RenderAssetItemGrid(item);
+				ImGui::PopID();
+
+				col++;
+				if (col >= columns) {
+					col = 0;
+				}
 			}
 
-			RenderAssetItemGrid(item);
-
-			col++;
-			if (col >= columns) {
-				col = 0;
-			}
-
-			ImGui::PopID();
+			ImGui::EndTable();
 		}
 	}
 	else {
@@ -450,18 +457,21 @@ void AssetBrowserPanel::RenderAssetItemList(const FileSystemItem& item) {
 }
 
 void AssetBrowserPanel::RenderAssetItemGrid(const FileSystemItem& item) {
-	const float item_size = 80.0f;
+	const float cell_width = ImGui::GetContentRegionAvail().x;
+	const float icon_size = 64.0f;
 	const bool is_selected = (item.path == selected_item_path_);
 
-	ImVec2 button_size(item_size, item_size);
-
 	ImGui::BeginGroup();
+
+	// Center the icon button within the cell
+	const float icon_offset = std::max(0.0f, (cell_width - icon_size) * 0.5f);
+	ImGui::SetCursorPosX(ImGui::GetCursorPosX() + icon_offset);
 
 	if (is_selected) {
 		ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetStyleColorVec4(ImGuiCol_ButtonActive));
 	}
 
-	if (ImGui::Button(item.type_icon.c_str(), button_size)) {
+	if (ImGui::Button(item.type_icon.c_str(), ImVec2(icon_size, icon_size))) {
 		if (item.is_directory) {
 			current_directory_ = item.path;
 			needs_refresh_ = true;
@@ -498,12 +508,11 @@ void AssetBrowserPanel::RenderAssetItemGrid(const FileSystemItem& item) {
 	// Display name below icon (truncated to cell width)
 	const std::string& name = item.display_name;
 	const float text_width = ImGui::CalcTextSize(name.c_str()).x;
-	if (text_width > item_size) {
-		// Truncate with ellipsis
+	if (text_width > cell_width) {
 		std::string truncated;
 		for (size_t i = 0; i < name.size(); ++i) {
 			const std::string candidate = name.substr(0, i) + "...";
-			if (ImGui::CalcTextSize(candidate.c_str()).x > item_size) {
+			if (ImGui::CalcTextSize(candidate.c_str()).x > cell_width) {
 				break;
 			}
 			truncated = candidate;
@@ -511,8 +520,7 @@ void AssetBrowserPanel::RenderAssetItemGrid(const FileSystemItem& item) {
 		ImGui::TextUnformatted(truncated.c_str());
 	}
 	else {
-		// Center the text
-		const float offset = (item_size - text_width) * 0.5f;
+		const float offset = std::max(0.0f, (cell_width - text_width) * 0.5f);
 		ImGui::SetCursorPosX(ImGui::GetCursorPosX() + offset);
 		ImGui::TextUnformatted(name.c_str());
 	}

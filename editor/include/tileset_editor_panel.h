@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "editor_panel.h"
+#include "grid_utils.h"
 
 import engine;
 import glm;
@@ -32,28 +33,8 @@ struct TileDefinition {
  */
 struct TilesetDefinition {
 	std::string source_image_path;
-	int tile_width = 32;
-	int tile_height = 32;
-	int gap_x = 0;
-	int gap_y = 0;
-	int padding_x = 0;
-	int padding_y = 0;
+	GridConfig grid;
 	std::vector<TileDefinition> tiles;
-
-	// Calculate grid dimensions from image dimensions accounting for gap/padding
-	int GetGridColumns(int image_width) const {
-		if (tile_width <= 0) return 0;
-		const int usable = image_width - padding_x;
-		if (usable <= 0) return 0;
-		return (usable + gap_x) / (tile_width + gap_x);
-	}
-
-	int GetGridRows(int image_height) const {
-		if (tile_height <= 0) return 0;
-		const int usable = image_height - padding_y;
-		if (usable <= 0) return 0;
-		return (usable + gap_y) / (tile_height + gap_y);
-	}
 
 	// Get tile definition by ID, returns nullptr if not found
 	TileDefinition* GetTile(uint32_t id) {

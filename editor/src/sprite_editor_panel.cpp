@@ -120,20 +120,9 @@ void SpriteEditorPanel::RenderToolbar(engine::Engine& engine) {
 	}
 
 	// Grid controls
-	ImGui::Text("Grid:");
-	ImGui::SameLine();
-	ImGui::SetNextItemWidth(60);
-	ImGui::InputInt("##grid_w", &grid_width_, 0, 0);
-	ImGui::SameLine();
-	ImGui::Text("x");
-	ImGui::SameLine();
-	ImGui::SetNextItemWidth(60);
-	ImGui::InputInt("##grid_h", &grid_height_, 0, 0);
+	RenderGridConfigUI(grid_);
 	ImGui::SameLine();
 	ImGui::Checkbox("Show Grid", &show_grid_);
-
-	grid_width_ = std::max(1, std::min(512, grid_width_));
-	grid_height_ = std::max(1, std::min(512, grid_height_));
 
 	ImGui::SameLine();
 	if (ImGui::Button("Auto Grid")) {
@@ -233,23 +222,9 @@ void SpriteEditorPanel::RenderCanvas() {
 	}
 
 	// Draw grid overlay
-	if (show_grid_ && grid_width_ > 0 && grid_height_ > 0) {
-		const float cell_w = grid_width_ * canvas_scale_;
-		const float cell_h = grid_height_ * canvas_scale_;
-		const ImU32 grid_color = IM_COL32(255, 255, 255, 40);
-
-		for (float gx = 0; gx <= display_w; gx += cell_w) {
-			draw_list->AddLine(
-				ImVec2(canvas_origin.x + gx, canvas_origin.y),
-				ImVec2(canvas_origin.x + gx, canvas_origin.y + display_h),
-				grid_color);
-		}
-		for (float gy = 0; gy <= display_h; gy += cell_h) {
-			draw_list->AddLine(
-				ImVec2(canvas_origin.x, canvas_origin.y + gy),
-				ImVec2(canvas_origin.x + display_w, canvas_origin.y + gy),
-				grid_color);
-		}
+	if (show_grid_ && grid_.cell_width > 0 && grid_.cell_height > 0) {
+		grid_.DrawGridOverlay(draw_list, canvas_origin, loaded_image_->width,
+			loaded_image_->height, canvas_scale_);
 	}
 
 	// Draw existing sprite regions
@@ -444,17 +419,18 @@ void SpriteEditorPanel::AutoGrid() {
 	sprites_.clear();
 	selected_sprite_ = -1;
 
-	const int cols = loaded_image_->width / grid_width_;
-	const int rows = loaded_image_->height / grid_height_;
+	const int cols = grid_.GetColumns(loaded_image_->width);
+	const int rows = grid_.GetRows(loaded_image_->height);
 
 	for (int row = 0; row < rows; ++row) {
 		for (int col = 0; col < cols; ++col) {
 			SpriteRegion region;
 			region.name = "sprite_" + std::to_string(row * cols + col);
-			region.x = col * grid_width_;
-			region.y = row * grid_height_;
-			region.width = grid_width_;
-			region.height = grid_height_;
+			const auto origin = grid_.CellOrigin(col, row);
+			region.x = static_cast<int>(origin.x);
+			region.y = static_cast<int>(origin.y);
+			region.width = grid_.cell_width;
+			region.height = grid_.cell_height;
 			sprites_.push_back(region);
 		}
 	}

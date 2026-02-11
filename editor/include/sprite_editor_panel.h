@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "editor_panel.h"
+#include "grid_utils.h"
 
 import engine;
 
@@ -66,8 +67,7 @@ private:
 	std::string status_message_;
 	bool status_is_error_ = false;
 
-	int grid_width_ = 32;
-	int grid_height_ = 32;
+	GridConfig grid_;
 	bool show_grid_ = true;
 	float canvas_scale_ = 2.0f;
 

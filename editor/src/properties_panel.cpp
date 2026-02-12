@@ -205,6 +205,30 @@ void PropertiesPanel::RenderComponentFields(
 			ImGui::Text("%s: (read-only)", field.name.c_str());
 			break;
 		}
+		case engine::ecs::FieldType::Enum:
+		{
+			auto* value = static_cast<int*>(field_ptr);
+			if (const auto& labels = field.enum_labels;
+				!labels.empty() && *value >= 0 && *value < static_cast<int>(labels.size())) {
+				if (ImGui::BeginCombo(field.name.c_str(), labels[*value].c_str())) {
+					for (int i = 0; i < static_cast<int>(labels.size()); ++i) {
+						const bool is_selected = (*value == i);
+						if (ImGui::Selectable(labels[i].c_str(), is_selected)) {
+							*value = i;
+							modified = true;
+						}
+						if (is_selected) {
+							ImGui::SetItemDefaultFocus();
+						}
+					}
+					ImGui::EndCombo();
+				}
+			}
+			else {
+				ImGui::Text("%s: %d", field.name.c_str(), *value);
+			}
+			break;
+		}
 		case engine::ecs::FieldType::ListInt:
 		case engine::ecs::FieldType::ListFloat:
 		case engine::ecs::FieldType::ListString:

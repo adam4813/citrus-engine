@@ -188,6 +188,7 @@ ECSWorld::ECSWorld() {
 			.Field("spatial", &audio::AudioSource::spatial)
 			.Field("position", &audio::AudioSource::position)
 			.Field("state", &audio::AudioSource::state)
+			.EnumLabels({"Stopped", "Playing", "Paused"})
 			.Field("play_handle", &audio::AudioSource::play_handle)
 			.Build();
 
@@ -208,6 +209,7 @@ ECSWorld::ECSWorld() {
 	registry.Register<physics::RigidBody>("RigidBody", world_)
 			.Category("Physics")
 			.Field("motion_type", &physics::RigidBody::motion_type)
+			.EnumLabels({"Static", "Kinematic", "Dynamic"})
 			.Field("mass", &physics::RigidBody::mass)
 			.Field("linear_damping", &physics::RigidBody::linear_damping)
 			.Field("angular_damping", &physics::RigidBody::angular_damping)
@@ -221,6 +223,7 @@ ECSWorld::ECSWorld() {
 	registry.Register<physics::CollisionShape>("CollisionShape", world_)
 			.Category("Physics")
 			.Field("type", &physics::CollisionShape::type)
+			.EnumLabels({"Box", "Sphere", "Capsule", "Cylinder", "ConvexHull", "Mesh"})
 			.Field("box_half_extents", &physics::CollisionShape::box_half_extents)
 			.Field("sphere_radius", &physics::CollisionShape::sphere_radius)
 			.Field("capsule_radius", &physics::CollisionShape::capsule_radius)

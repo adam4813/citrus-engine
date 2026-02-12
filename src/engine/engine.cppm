@@ -29,6 +29,7 @@ export import engine.rendering;
 export import engine.os;
 export import engine.input;
 export import engine.scripting;
+export import engine.physics;
 export import engine.ui;
 export import engine.audio;
 

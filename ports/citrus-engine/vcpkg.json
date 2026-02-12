@@ -8,6 +8,7 @@
   "supports": "windows | linux | osx | emscripten",
   "dependencies": [
     "angelscript",
+    "bullet3",
     "flecs",
     {
       "name": "glad",
@@ -22,6 +23,7 @@
         "opengl3-binding"
       ]
     },
+    "joltphysics",
     "lua",
     "nlohmann-json",
     "spdlog",

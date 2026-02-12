@@ -10,9 +10,11 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 # Find required dependencies that the engine needs
 find_dependency(Angelscript CONFIG)
+find_dependency(Bullet CONFIG REQUIRED)
 find_dependency(glfw3 CONFIG)
 find_dependency(glm CONFIG)
 find_dependency(flecs CONFIG)
+find_dependency(Jolt CONFIG REQUIRED)
 find_dependency(spdlog CONFIG)
 find_dependency(nlohmann_json CONFIG)
 find_dependency(imgui CONFIG)

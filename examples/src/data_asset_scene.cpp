@@ -4,11 +4,12 @@
 #include "example_scene.h"
 #include "scene_registry.h"
 
-import engine;
-import glm;
-
 #include <iostream>
 #include <memory>
+#include <variant>
+
+import engine;
+import glm;
 
 using namespace engine;
 using namespace engine::data;

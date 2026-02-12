@@ -9,6 +9,7 @@ module engine.scene.serializer;
 
 import engine.assets;
 import engine.ecs;
+import engine.physics;
 import engine.platform;
 import engine.scene;
 import glm;
@@ -16,6 +17,19 @@ import glm;
 using json = nlohmann::json;
 
 namespace engine::scene {
+
+namespace {
+void ImportPhysicsModule(const std::string& backend, ecs::ECSWorld& world) {
+	auto& ecs = world.GetWorld();
+	if (backend == "jolt") {
+		ecs.import <physics::JoltPhysicsModule>();
+	}
+	else if (backend == "bullet3") {
+		ecs.import <physics::Bullet3PhysicsModule>();
+	}
+	// "none" or empty = no physics module imported
+}
+} // namespace
 
 bool SceneSerializer::Save(const Scene& scene, ecs::ECSWorld& world, const platform::fs::Path& path) {
 	try {
@@ -37,6 +51,7 @@ bool SceneSerializer::Save(const Scene& scene, ecs::ECSWorld& world, const platf
 		settings["ambient_light"] = {ambient.r, ambient.g, ambient.b, ambient.a};
 		auto gravity = scene.GetGravity();
 		settings["gravity"] = {gravity.x, gravity.y};
+		settings["physics_backend"] = scene.GetPhysicsBackend();
 		settings["author"] = scene.GetAuthor();
 		settings["description"] = scene.GetDescription();
 		doc["settings"] = settings;
@@ -122,6 +137,9 @@ SceneId SceneSerializer::Load(const platform::fs::Path& path, SceneManager& mana
 				auto grav = settings["gravity"];
 				scene.SetGravity(glm::vec2(grav[0], grav[1]));
 			}
+			if (settings.contains("physics_backend")) {
+				scene.SetPhysicsBackend(settings["physics_backend"].get<std::string>());
+			}
 			if (settings.contains("author")) {
 				scene.SetAuthor(settings["author"].get<std::string>());
 			}
@@ -129,6 +147,9 @@ SceneId SceneSerializer::Load(const platform::fs::Path& path, SceneManager& mana
 				scene.SetDescription(settings["description"].get<std::string>());
 			}
 		}
+
+		// Import physics backend module based on scene settings
+		ImportPhysicsModule(scene.GetPhysicsBackend(), world);
 
 		// Add assets BEFORE entities (order matters - entities may reference assets)
 		if (doc.contains("assets") && doc["assets"].is_array()) {

@@ -30,7 +30,8 @@ enum class FieldType {
 	ListFloat,
 	ListString,
 	ReadOnly, // Display-only string
-	AssetRef // Reference to a scene asset (dropdown)
+	AssetRef, // Reference to a scene asset (dropdown)
+	Enum // Integer-backed enum displayed as combo box
 };
 
 /**
@@ -42,6 +43,7 @@ struct FieldInfo {
 	size_t offset{}; // Byte offset into component struct
 	size_t size{}; // Size of the field in bytes
 	std::string asset_type; // For AssetRef: the asset type key (e.g., "shader", "mesh")
+	std::vector<std::string> enum_labels; // For Enum: display labels (index = integer value)
 };
 
 /**
@@ -182,6 +184,18 @@ public:
 	}
 	ComponentRegistration& AssetRef(const std::string_view asset_type_key) {
 		return AssetRef(std::string(asset_type_key));
+	}
+
+	/**
+	 * @brief Mark the last field as an enum with the given display labels
+	 * Labels are indexed by the integer value of the enum. Chain after Field().
+	 */
+	ComponentRegistration& EnumLabels(std::vector<std::string> labels) {
+		if (!info_.fields.empty()) {
+			info_.fields.back().type = FieldType::Enum;
+			info_.fields.back().enum_labels = std::move(labels);
+		}
+		return *this;
 	}
 
 	void Build();

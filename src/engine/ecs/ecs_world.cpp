@@ -9,6 +9,7 @@ module;
 
 module engine.ecs;
 import engine;
+import engine.physics;
 import glm;
 
 using namespace engine::components;
@@ -187,6 +188,7 @@ ECSWorld::ECSWorld() {
 			.Field("spatial", &audio::AudioSource::spatial)
 			.Field("position", &audio::AudioSource::position)
 			.Field("state", &audio::AudioSource::state)
+			.EnumLabels({"Stopped", "Playing", "Paused"})
 			.Field("play_handle", &audio::AudioSource::play_handle)
 			.Build();
 
@@ -202,6 +204,52 @@ ECSWorld::ECSWorld() {
 			.Category("AI")
 			.Field("behavior_tree_asset", &BehaviorTreeComponent::behavior_tree_asset)
 			.Build();
+
+	// Register physics components
+	registry.Register<physics::RigidBody>("RigidBody", world_)
+			.Category("Physics")
+			.Field("motion_type", &physics::RigidBody::motion_type)
+			.EnumLabels({"Static", "Kinematic", "Dynamic"})
+			.Field("mass", &physics::RigidBody::mass)
+			.Field("linear_damping", &physics::RigidBody::linear_damping)
+			.Field("angular_damping", &physics::RigidBody::angular_damping)
+			.Field("friction", &physics::RigidBody::friction)
+			.Field("restitution", &physics::RigidBody::restitution)
+			.Field("enable_ccd", &physics::RigidBody::enable_ccd)
+			.Field("use_gravity", &physics::RigidBody::use_gravity)
+			.Field("gravity_scale", &physics::RigidBody::gravity_scale)
+			.Build();
+
+	registry.Register<physics::CollisionShape>("CollisionShape", world_)
+			.Category("Physics")
+			.Field("type", &physics::CollisionShape::type)
+			.EnumLabels({"Box", "Sphere", "Capsule", "Cylinder", "ConvexHull", "Mesh"})
+			.Field("box_half_extents", &physics::CollisionShape::box_half_extents)
+			.Field("sphere_radius", &physics::CollisionShape::sphere_radius)
+			.Field("capsule_radius", &physics::CollisionShape::capsule_radius)
+			.Field("capsule_height", &physics::CollisionShape::capsule_height)
+			.Field("cylinder_radius", &physics::CollisionShape::cylinder_radius)
+			.Field("cylinder_height", &physics::CollisionShape::cylinder_height)
+			.Field("offset", &physics::CollisionShape::offset)
+			.Build();
+
+	registry.Register<physics::PhysicsVelocity>("PhysicsVelocity", world_)
+			.Category("Physics")
+			.Field("linear", &physics::PhysicsVelocity::linear)
+			.Field("angular", &physics::PhysicsVelocity::angular)
+			.Build();
+
+	registry.Register<physics::PhysicsWorldConfig>("PhysicsWorldConfig", world_)
+			.Category("Physics")
+			.Field("gravity", &physics::PhysicsWorldConfig::gravity)
+			.Field("fixed_timestep", &physics::PhysicsWorldConfig::fixed_timestep)
+			.Field("max_substeps", &physics::PhysicsWorldConfig::max_substeps)
+			.Field("enable_sleeping", &physics::PhysicsWorldConfig::enable_sleeping)
+			.Build();
+
+	// Tag components
+	registry.Register<physics::IsTrigger>("IsTrigger", world_).Category("Physics").Build();
+	registry.Register<physics::IsSleeping>("IsSleeping", world_).Category("Physics").Build();
 
 	// Set up shader reference integration (ShaderRef component, With trait, observers)
 	SetupShaderRefIntegration();

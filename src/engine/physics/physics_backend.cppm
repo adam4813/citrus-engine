@@ -12,6 +12,8 @@ export module engine.physics:backend;
 export import :types;
 export import :components;
 
+import glm;
+
 export namespace engine::physics {
 
 // Result of syncing a body from the backend (position, rotation, velocity after step)

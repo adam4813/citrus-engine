@@ -9,6 +9,7 @@ module;
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include <thread>
 
 #include <spdlog/spdlog.h>
 

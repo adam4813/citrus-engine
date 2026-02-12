@@ -372,6 +372,7 @@ public:
 			info.m_angularDamping = body.angular_damping;
 
 			data.body = std::make_unique<btRigidBody>(info);
+			// FIXME: Entity IDs are stored in btCollisionObject::setUserPointer() by casting a 64-bit EntityId it will truncate on wasm32
 			data.body->setUserPointer(reinterpret_cast<void*>(static_cast<uintptr_t>(entity)));
 
 			// Set kinematic if needed

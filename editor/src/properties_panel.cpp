@@ -23,6 +23,11 @@ void PropertiesPanel::Render(
 	if (!IsVisible())
 		return;
 
+	if (scene != last_scene_) {
+		last_scene_ = scene;
+		physics_backend_changed_ = false;
+	}
+
 	ImGuiWindowClass win_class;
 	win_class.DockNodeFlagsOverrideSet = ImGuiDockNodeFlags_NoWindowMenuButton | ImGuiDockNodeFlags_NoCloseButton
 										 | ImGuiDockNodeFlags_NoDockingOverMe | ImGuiDockNodeFlags_NoDockingOverOther
@@ -394,8 +399,34 @@ void PropertiesPanel::RenderSceneProperties(
 		}
 	}
 
-	// Physics Settings (placeholder until F18)
+	// Physics Settings
 	if (ImGui::CollapsingHeader("Physics", ImGuiTreeNodeFlags_DefaultOpen)) {
+		// Physics backend selector
+		static const char* backend_labels[] = {"Jolt Physics", "Bullet3", "None"};
+		static const char* backend_values[] = {"jolt", "bullet3", "none"};
+
+		std::string current_backend = scene->GetPhysicsBackend();
+		int current_idx = 0;
+		for (int i = 0; i < 3; ++i) {
+			if (current_backend == backend_values[i]) {
+				current_idx = i;
+				break;
+			}
+		}
+
+		if (ImGui::Combo("Physics Backend", &current_idx, backend_labels, 3)) {
+			scene->SetPhysicsBackend(backend_values[current_idx]);
+			if (callbacks_.on_scene_modified) {
+				callbacks_.on_scene_modified();
+			}
+			// Physics backend change requires scene reload to take effect
+			physics_backend_changed_ = true;
+		}
+
+		if (physics_backend_changed_) {
+			ImGui::TextColored(ImVec4(1.0F, 0.8F, 0.2F, 1.0F), "Save and reload scene to apply backend change.");
+		}
+
 		glm::vec2 gravity = scene->GetGravity();
 		if (ImGui::InputFloat2("Gravity", &gravity[0])) {
 			scene->SetGravity(gravity);
@@ -403,7 +434,6 @@ void PropertiesPanel::RenderSceneProperties(
 				callbacks_.on_scene_modified();
 			}
 		}
-		ImGui::TextDisabled("(Physics system coming in F18)");
 	}
 
 	// Collect all entities with Camera component (excluding EditorCamera)

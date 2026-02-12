@@ -52,6 +52,8 @@ private:
 	void RenderAssetProperties(engine::scene::Scene* scene, const AssetSelection& selected_asset) const;
 
 	EditorCallbacks callbacks_;
+	mutable bool physics_backend_changed_{false};
+	mutable engine::scene::Scene* last_scene_{nullptr};
 };
 
 } // namespace editor

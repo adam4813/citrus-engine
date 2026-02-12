@@ -109,6 +109,9 @@ public:
 	void SetGravity(const glm::vec2& gravity) const;
 	glm::vec2 GetGravity() const;
 
+	void SetPhysicsBackend(const std::string& backend) const;
+	std::string GetPhysicsBackend() const;
+
 	void SetAuthor(const std::string& author) const;
 	std::string GetAuthor() const;
 

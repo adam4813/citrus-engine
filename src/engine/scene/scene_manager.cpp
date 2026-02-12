@@ -35,7 +35,8 @@ struct Scene::Impl {
 	// Scene settings
 	glm::vec4 background_color{0.2f, 0.3f, 0.4f, 1.0f}; // Default background color
 	glm::vec4 ambient_light{0.1f, 0.1f, 0.1f, 1.0f}; // Ambient light color with intensity
-	glm::vec2 gravity{0.0f, -9.81f}; // Physics gravity (disabled until F18)
+	glm::vec2 gravity{0.0f, -9.81f};
+	std::string physics_backend{"jolt"}; // "jolt", "bullet3", or "none"
 	std::string author;
 	std::string description;
 
@@ -170,6 +171,9 @@ glm::vec4 Scene::GetAmbientLight() const { return pimpl_->ambient_light; }
 
 void Scene::SetGravity(const glm::vec2& gravity) const { pimpl_->gravity = gravity; }
 glm::vec2 Scene::GetGravity() const { return pimpl_->gravity; }
+
+void Scene::SetPhysicsBackend(const std::string& backend) const { pimpl_->physics_backend = backend; }
+std::string Scene::GetPhysicsBackend() const { return pimpl_->physics_backend; }
 
 void Scene::SetAuthor(const std::string& author) const { pimpl_->author = author; }
 std::string Scene::GetAuthor() const { return pimpl_->author; }

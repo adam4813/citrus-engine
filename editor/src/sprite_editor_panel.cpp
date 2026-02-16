@@ -39,11 +39,9 @@ void SpriteEditorPanel::RegisterAssetHandlers(AssetEditorRegistry& registry) {
 }
 
 void SpriteEditorPanel::Render(engine::Engine& engine) {
-	if (!IsVisible()) {
+	if (!BeginPanel(ImGuiWindowFlags_MenuBar)) {
 		return;
 	}
-
-	ImGui::Begin("Sprite Editor", &VisibleRef(), ImGuiWindowFlags_MenuBar);
 
 	// Handle deferred image loading from OpenAtlas
 	if (pending_image_load_) {
@@ -75,7 +73,7 @@ void SpriteEditorPanel::Render(engine::Engine& engine) {
 	RenderPreview();
 	ImGui::EndChild();
 
-	ImGui::End();
+	EndPanel();
 }
 
 void SpriteEditorPanel::RenderToolbar(engine::Engine& engine) {
@@ -125,7 +123,9 @@ void SpriteEditorPanel::RenderToolbar(engine::Engine& engine) {
 	}
 
 	// Grid controls
-	RenderGridConfigUI(grid_);
+	if (RenderGridConfigUI(grid_)) {
+		SetDirty(true);
+	}
 	ImGui::SameLine();
 	ImGui::Checkbox("Show Grid", &show_grid_);
 
@@ -294,6 +294,7 @@ void SpriteEditorPanel::RenderCanvas() {
 				region.height = ph;
 				sprites_.push_back(region);
 				selected_sprite_ = static_cast<int>(sprites_.size()) - 1;
+				SetDirty(true);
 			}
 		}
 	}
@@ -326,6 +327,7 @@ void SpriteEditorPanel::RenderSpriteList() {
 		ImGui::SetNextItemWidth(120);
 		if (ImGui::InputText("##name", name_buf, sizeof(name_buf))) {
 			sprite.name = name_buf;
+			SetDirty(true);
 		}
 
 		ImGui::SameLine();
@@ -334,6 +336,7 @@ void SpriteEditorPanel::RenderSpriteList() {
 		ImGui::SameLine();
 		if (ImGui::SmallButton("X")) {
 			sprites_.erase(sprites_.begin() + i);
+			SetDirty(true);
 			if (selected_sprite_ >= static_cast<int>(sprites_.size())) {
 				selected_sprite_ = static_cast<int>(sprites_.size()) - 1;
 			}
@@ -347,6 +350,7 @@ void SpriteEditorPanel::RenderSpriteList() {
 	if (ImGui::Button("Clear All")) {
 		sprites_.clear();
 		selected_sprite_ = -1;
+		SetDirty(true);
 	}
 }
 
@@ -433,9 +437,11 @@ void SpriteEditorPanel::AutoGrid() {
 		}
 	}
 
+	SetDirty(true);
 	status_message_ = "Created " + std::to_string(sprites_.size()) + " sprites (" + std::to_string(cols) + "x"
 					  + std::to_string(rows) + " grid)";
 	status_is_error_ = false;
+	SetDirty(false);
 }
 
 void SpriteEditorPanel::NewAtlas() {
@@ -450,6 +456,7 @@ void SpriteEditorPanel::NewAtlas() {
 	grid_ = GridConfig{};
 	status_message_.clear();
 	status_is_error_ = false;
+	SetDirty(false);
 }
 
 void SpriteEditorPanel::ExportAtlas() {
@@ -489,6 +496,7 @@ void SpriteEditorPanel::ExportAtlas() {
 			return;
 		}
 
+		SetDirty(false);
 		status_message_ = "Exported " + std::to_string(sprites_.size()) + " sprites to " + export_path;
 		status_is_error_ = false;
 	}
@@ -541,6 +549,7 @@ bool SpriteEditorPanel::ImportAtlas(const std::string& path) {
 		status_message_ = "Loaded " + std::to_string(sprites_.size()) + " sprites from " + path;
 		status_is_error_ = false;
 
+		SetDirty(false);
 		return true;
 	}
 	catch (const std::exception& e) {

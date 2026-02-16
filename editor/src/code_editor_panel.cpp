@@ -36,11 +36,9 @@ void CodeEditorPanel::RegisterAssetHandlers(AssetEditorRegistry& registry) {
 }
 
 void CodeEditorPanel::Render() {
-	if (!IsVisible()) {
+	if (!BeginPanel(ImGuiWindowFlags_MenuBar)) {
 		return;
 	}
-
-	ImGui::Begin("Code Editor", &VisibleRef(), ImGuiWindowFlags_MenuBar);
 
 	RenderMenuBar();
 	RenderFileTabs();
@@ -51,7 +49,7 @@ void CodeEditorPanel::Render() {
 
 	RenderEditor();
 
-	ImGui::End();
+	EndPanel();
 }
 
 void CodeEditorPanel::RenderMenuBar() {
@@ -199,6 +197,7 @@ void CodeEditorPanel::RenderEditor() {
 		if (edit_buffer != file.content) {
 			file.content = edit_buffer;
 			file.is_modified = true;
+			SetDirty(true);
 		}
 	}
 
@@ -329,6 +328,15 @@ bool CodeEditorPanel::SaveCurrentFile() {
 	}
 
 	file->is_modified = false;
+	// Update panel dirty state based on remaining modified files
+	bool any_modified = false;
+	for (const auto& f : open_files_) {
+		if (f.is_modified) {
+			any_modified = true;
+			break;
+		}
+	}
+	SetDirty(any_modified);
 	return true;
 }
 
@@ -353,6 +361,15 @@ void CodeEditorPanel::CloseTab(int index) {
 	if (active_tab_index_ >= static_cast<int>(open_files_.size())) {
 		active_tab_index_ = static_cast<int>(open_files_.size()) - 1;
 	}
+	// Update panel dirty state
+	bool any_modified = false;
+	for (const auto& f : open_files_) {
+		if (f.is_modified) {
+			any_modified = true;
+			break;
+		}
+	}
+	SetDirty(any_modified);
 }
 
 void CodeEditorPanel::ShowFindBar() {

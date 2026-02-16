@@ -39,11 +39,9 @@ void AnimationEditorPanel::RegisterAssetHandlers(AssetEditorRegistry& registry) 
 }
 
 void AnimationEditorPanel::Render() {
-	if (!IsVisible()) {
+	if (!BeginPanel(ImGuiWindowFlags_MenuBar)) {
 		return;
 	}
-
-	ImGui::Begin("Animation Editor", &VisibleRef(), ImGuiWindowFlags_MenuBar);
 
 	RenderMenuBar();
 	RenderToolbar();
@@ -103,6 +101,7 @@ void AnimationEditorPanel::Render() {
 				float time = keyframe.time;
 				if (ImGui::DragFloat("Time", &time, 0.01f, 0.0f, clip_.duration)) {
 					keyframe.time = std::clamp(time, 0.0f, clip_.duration);
+					SetDirty(true);
 				}
 
 				// Value (only support float for now)
@@ -110,6 +109,7 @@ void AnimationEditorPanel::Render() {
 					float value = std::get<float>(keyframe.value);
 					if (ImGui::DragFloat("Value", &value, 0.01f)) {
 						keyframe.value = value;
+						SetDirty(true);
 					}
 				}
 
@@ -118,6 +118,7 @@ void AnimationEditorPanel::Render() {
 				const char* interp_items[] = {"Step", "Linear", "Cubic"};
 				if (ImGui::Combo("Interpolation", &interp_mode, interp_items, 3)) {
 					track.interpolation = static_cast<engine::animation::InterpolationMode>(interp_mode);
+					SetDirty(true);
 				}
 			}
 		}
@@ -128,7 +129,7 @@ void AnimationEditorPanel::Render() {
 		ImGui::EndPopup();
 	}
 
-	ImGui::End();
+	EndPanel();
 
 	// Update playback
 	if (is_playing_ && !is_paused_) {
@@ -219,6 +220,7 @@ void AnimationEditorPanel::RenderToolbar() {
 	ImGui::SetNextItemWidth(100.0f);
 	if (ImGui::DragFloat("Duration", &clip_.duration, 0.1f, 0.1f, 60.0f, "%.1f s")) {
 		current_time_ = std::min(current_time_, clip_.duration);
+		SetDirty(true);
 	}
 }
 
@@ -400,6 +402,7 @@ void AnimationEditorPanel::RenderTracks() {
 		const float mouse_x = ImGui::GetMousePos().x;
 		const float new_time = std::clamp(XToTime(mouse_x), 0.0f, clip_.duration);
 		clip_.tracks[selected_track_].keyframes[selected_keyframe_].time = new_time;
+		SetDirty(true);
 	}
 	else if (is_dragging_keyframe_ && ImGui::IsMouseReleased(ImGuiMouseButton_Left)) {
 		is_dragging_keyframe_ = false;
@@ -533,6 +536,7 @@ void AnimationEditorPanel::AddKeyframe(int track_index, float time) {
 	auto& track = clip_.tracks[track_index];
 	// Default value: 0.0f
 	track.AddKeyframe(time, 0.0f);
+	SetDirty(true);
 
 	std::cout << "Added keyframe to track '" << track.target_property << "' at time " << time << std::endl;
 }
@@ -549,6 +553,7 @@ void AnimationEditorPanel::DeleteKeyframe(int track_index, int keyframe_index) {
 
 	track.keyframes.erase(track.keyframes.begin() + keyframe_index);
 	ClearSelection();
+	SetDirty(true);
 
 	std::cout << "Deleted keyframe from track '" << track.target_property << "'" << std::endl;
 }
@@ -568,6 +573,7 @@ void AnimationEditorPanel::AddTrack(const std::string& property_name) {
 	track.target_property = property_name;
 	track.interpolation = engine::animation::InterpolationMode::Linear;
 	clip_.AddTrack(std::move(track));
+	SetDirty(true);
 
 	std::cout << "Added track: " << property_name << std::endl;
 }
@@ -580,6 +586,7 @@ void AnimationEditorPanel::RemoveTrack(int track_index) {
 	const std::string track_name = clip_.tracks[track_index].target_property;
 	clip_.tracks.erase(clip_.tracks.begin() + track_index);
 	ClearSelection();
+	SetDirty(true);
 
 	std::cout << "Removed track: " << track_name << std::endl;
 }
@@ -619,12 +626,14 @@ void AnimationEditorPanel::NewClip() {
 	current_time_ = 0.0f;
 	ClearSelection();
 	Stop();
+	SetDirty(false);
 
 	std::cout << "Created new animation clip" << std::endl;
 }
 
 bool AnimationEditorPanel::SaveClip(const std::string& path) {
 	if (engine::animation::AnimationSerializer::SaveToFile(clip_, path)) {
+		SetDirty(false);
 		std::cout << "Saved animation clip to: " << path << std::endl;
 		return true;
 	}
@@ -641,6 +650,7 @@ bool AnimationEditorPanel::LoadClip(const std::string& path) {
 		current_time_ = 0.0f;
 		ClearSelection();
 		Stop();
+		SetDirty(false);
 		std::cout << "Loaded animation clip from: " << path << std::endl;
 		return true;
 	}

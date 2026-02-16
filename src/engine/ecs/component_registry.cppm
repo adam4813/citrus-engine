@@ -44,6 +44,7 @@ struct FieldInfo {
 	size_t size{}; // Size of the field in bytes
 	std::string asset_type; // For AssetRef: the asset type key (e.g., "shader", "mesh")
 	std::vector<std::string> enum_labels; // For Enum: display labels (index = integer value)
+	std::vector<std::string> enum_tooltips; // For Enum: tooltips for each option (index = integer value)
 };
 
 /**
@@ -194,6 +195,17 @@ public:
 		if (!info_.fields.empty()) {
 			info_.fields.back().type = FieldType::Enum;
 			info_.fields.back().enum_labels = std::move(labels);
+		}
+		return *this;
+	}
+
+	/**
+	 * @brief Add tooltips for the last field's enum options
+	 * Tooltips are indexed by the integer value of the enum. Chain after EnumLabels().
+	 */
+	ComponentRegistration& EnumTooltips(std::vector<std::string> tips) {
+		if (!info_.fields.empty()) {
+			info_.fields.back().enum_tooltips = std::move(tips);
 		}
 		return *this;
 	}

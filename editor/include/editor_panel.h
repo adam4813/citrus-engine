@@ -72,7 +72,11 @@ protected:
 	 */
 	bool BeginPanel(ImGuiWindowFlags flags = 0) {
 		if (!is_visible_) return false;
-		ImGui::Begin(std::string(GetPanelName()).c_str(), &is_visible_, flags);
+		std::string title(GetPanelName());
+		if (is_dirty_) {
+			title += "*";
+		}
+		ImGui::Begin(title.c_str(), &is_visible_, flags);
 		return true;
 	}
 

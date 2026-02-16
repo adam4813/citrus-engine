@@ -36,11 +36,9 @@ void GraphEditorPanel::RegisterAssetHandlers(AssetEditorRegistry& registry) {
 }
 
 void GraphEditorPanel::Render() {
-	if (!IsVisible()) {
+	if (!BeginPanel(ImGuiWindowFlags_MenuBar)) {
 		return;
 	}
-
-	ImGui::Begin("Graph Editor", &VisibleRef(), ImGuiWindowFlags_MenuBar);
 
 	RenderToolbar();
 
@@ -51,7 +49,7 @@ void GraphEditorPanel::Render() {
 
 	ImGui::EndChild();
 
-	ImGui::End();
+	EndPanel();
 }
 
 void GraphEditorPanel::RenderToolbar() {
@@ -166,9 +164,11 @@ void GraphEditorPanel::RenderCanvas() {
 				if (end_is_output != link_start_is_output_ && end_node_id != link_start_node_id_) {
 					if (link_start_is_output_) {
 						graph_->AddLink(link_start_node_id_, link_start_pin_index_, end_node_id, end_pin_index);
+						SetDirty(true);
 					}
 					else {
 						graph_->AddLink(end_node_id, end_pin_index, link_start_node_id_, link_start_pin_index_);
+						SetDirty(true);
 					}
 				}
 			}
@@ -201,10 +201,12 @@ void GraphEditorPanel::RenderCanvas() {
 		if (selected_link_id_ >= 0) {
 			graph_->RemoveLink(selected_link_id_);
 			selected_link_id_ = -1;
+			SetDirty(true);
 		}
 		else if (selected_node_id_ >= 0) {
 			graph_->RemoveNode(selected_node_id_);
 			selected_node_id_ = -1;
+			SetDirty(true);
 		}
 	}
 
@@ -347,6 +349,7 @@ void GraphEditorPanel::RenderNode(const engine::graph::Node& node) {
 		if (auto* mutable_node = graph_->GetNode(node.id)) {
 			mutable_node->position.x += delta.x / canvas_zoom_;
 			mutable_node->position.y += delta.y / canvas_zoom_;
+			SetDirty(true);
 		}
 	}
 
@@ -436,6 +439,7 @@ void GraphEditorPanel::RenderAddNodeMenu() {
 					const float y = (context_menu_pos_.y - canvas_p0_.y - canvas_offset_.y) / canvas_zoom_;
 
 					const int node_id = graph_->AddNode(type->name, glm::vec2(x, y));
+					SetDirty(true);
 
 					// Initialize the node with default pins from the type definition
 					if (auto* node = graph_->GetNode(node_id)) {
@@ -545,10 +549,15 @@ void GraphEditorPanel::NewGraph() {
 	is_creating_link_ = false;
 	canvas_offset_ = ImVec2(0.0f, 0.0f);
 	canvas_zoom_ = 1.0f;
+	SetDirty(false);
 }
 
 bool GraphEditorPanel::SaveGraph(const std::string& path) {
-	return engine::graph::GraphSerializer::Save(*graph_, path);
+	if (engine::graph::GraphSerializer::Save(*graph_, path)) {
+		SetDirty(false);
+		return true;
+	}
+	return false;
 }
 
 bool GraphEditorPanel::LoadGraph(const std::string& path) {
@@ -557,6 +566,7 @@ bool GraphEditorPanel::LoadGraph(const std::string& path) {
 		*graph_ = std::move(new_graph);
 		selected_node_id_ = -1;
 		hovered_node_id_ = -1;
+		SetDirty(false);
 		return true;
 	}
 	return false;

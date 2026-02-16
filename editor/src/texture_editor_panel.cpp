@@ -292,11 +292,9 @@ void TextureEditorPanel::RegisterAssetHandlers(AssetEditorRegistry& registry) {
 }
 
 void TextureEditorPanel::Render() {
-	if (!IsVisible()) {
+	if (!BeginPanel(ImGuiWindowFlags_MenuBar)) {
 		return;
 	}
-
-	ImGui::Begin("Texture Editor", &VisibleRef(), ImGuiWindowFlags_MenuBar);
 
 	RenderToolbar();
 
@@ -315,7 +313,7 @@ void TextureEditorPanel::Render() {
 	RenderPreviewPanel();
 	ImGui::EndChild();
 
-	ImGui::End();
+	EndPanel();
 }
 
 void TextureEditorPanel::RenderToolbar() {
@@ -435,9 +433,11 @@ void TextureEditorPanel::RenderGraphCanvas() {
 				if (end_is_output != link_start_is_output_ && end_node_id != link_start_node_id_) {
 					if (link_start_is_output_) {
 						texture_graph_->AddLink(link_start_node_id_, link_start_pin_index_, end_node_id, end_pin_index);
+						SetDirty(true);
 					}
 					else {
 						texture_graph_->AddLink(end_node_id, end_pin_index, link_start_node_id_, link_start_pin_index_);
+						SetDirty(true);
 					}
 					UpdatePreview();
 				}
@@ -469,11 +469,13 @@ void TextureEditorPanel::RenderGraphCanvas() {
 		if (selected_link_id_ >= 0) {
 			texture_graph_->RemoveLink(selected_link_id_);
 			selected_link_id_ = -1;
+			SetDirty(true);
 			UpdatePreview();
 		}
 		else if (selected_node_id_ >= 0) {
 			texture_graph_->RemoveNode(selected_node_id_);
 			selected_node_id_ = -1;
+			SetDirty(true);
 			UpdatePreview();
 		}
 	}
@@ -718,6 +720,7 @@ void TextureEditorPanel::RenderGraphNode(const engine::graph::Node& node) {
 		if (auto* mutable_node = texture_graph_->GetNode(node.id)) {
 			mutable_node->position.x += delta.x / canvas_zoom_;
 			mutable_node->position.y += delta.y / canvas_zoom_;
+			SetDirty(true);
 		}
 	}
 
@@ -764,6 +767,7 @@ void TextureEditorPanel::RenderGraphContextMenu() {
 		case ContextTarget::Node:
 			if (ImGui::MenuItem("Delete Node")) {
 				texture_graph_->RemoveNode(context_node_id_);
+				SetDirty(true);
 				if (selected_node_id_ == context_node_id_) {
 					selected_node_id_ = -1;
 				}
@@ -774,6 +778,7 @@ void TextureEditorPanel::RenderGraphContextMenu() {
 		case ContextTarget::Link:
 			if (ImGui::MenuItem("Delete Connection")) {
 				texture_graph_->RemoveLink(context_link_id_);
+				SetDirty(true);
 				if (selected_link_id_ == context_link_id_) {
 					selected_link_id_ = -1;
 				}
@@ -805,6 +810,7 @@ void TextureEditorPanel::RenderAddNodeMenu() {
 					const float y = (context_menu_pos_.y - canvas_p0_.y - canvas_offset_.y) / canvas_zoom_;
 
 					const int node_id = texture_graph_->AddNode(type->name, glm::vec2(x, y));
+					SetDirty(true);
 
 					if (auto* node = texture_graph_->GetNode(node_id)) {
 						node->inputs = type->default_inputs;
@@ -944,6 +950,7 @@ void TextureEditorPanel::NewTexture() {
 	texture_graph_->AddLink(color_node_id, 0, output_node_id, 0);
 
 	UpdatePreview();
+	SetDirty(false);
 }
 
 bool TextureEditorPanel::OpenTexture(const std::string& path) {
@@ -953,6 +960,7 @@ bool TextureEditorPanel::OpenTexture(const std::string& path) {
 		selected_node_id_ = -1;
 		hovered_node_id_ = -1;
 		UpdatePreview();
+		SetDirty(false);
 		return true;
 	}
 	return false;
@@ -966,6 +974,7 @@ bool TextureEditorPanel::SaveTexture(const std::string& path) {
 
 	if (engine::assets::AssetManager::SaveTextFile(std::filesystem::path(path), j.dump(2))) {
 		current_file_path_ = path;
+		SetDirty(false);
 		return true;
 	}
 	return false;

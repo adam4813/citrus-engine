@@ -122,39 +122,41 @@ struct GridConfig {
 };
 
 /// Render ImGui controls for a GridConfig and clamp values.
-inline void RenderGridConfigUI(GridConfig& config) {
+inline bool RenderGridConfigUI(GridConfig& config) {
+	bool changed = false;
 	ImGui::Text("Grid:");
 	ImGui::SameLine();
 	ImGui::SetNextItemWidth(60);
-	ImGui::InputInt("##grid_w", &config.cell_width, 0, 0);
+	changed |= ImGui::InputInt("##grid_w", &config.cell_width, 0, 0);
 	ImGui::SameLine();
 	ImGui::Text("x");
 	ImGui::SameLine();
 	ImGui::SetNextItemWidth(60);
-	ImGui::InputInt("##grid_h", &config.cell_height, 0, 0);
+	changed |= ImGui::InputInt("##grid_h", &config.cell_height, 0, 0);
 
 	ImGui::Text("Gap:");
 	ImGui::SameLine();
 	ImGui::SetNextItemWidth(60);
-	ImGui::InputInt("##gap_x", &config.gap_x, 0, 0);
+	changed |= ImGui::InputInt("##gap_x", &config.gap_x, 0, 0);
 	ImGui::SameLine();
 	ImGui::Text("x");
 	ImGui::SameLine();
 	ImGui::SetNextItemWidth(60);
-	ImGui::InputInt("##gap_y", &config.gap_y, 0, 0);
+	changed |= ImGui::InputInt("##gap_y", &config.gap_y, 0, 0);
 
 	ImGui::SameLine();
 	ImGui::Text("Padding:");
 	ImGui::SameLine();
 	ImGui::SetNextItemWidth(60);
-	ImGui::InputInt("##pad_x", &config.padding_x, 0, 0);
+	changed |= ImGui::InputInt("##pad_x", &config.padding_x, 0, 0);
 	ImGui::SameLine();
 	ImGui::Text("x");
 	ImGui::SameLine();
 	ImGui::SetNextItemWidth(60);
-	ImGui::InputInt("##pad_y", &config.padding_y, 0, 0);
+	changed |= ImGui::InputInt("##pad_y", &config.padding_y, 0, 0);
 
 	config.Clamp();
+	return changed;
 }
 
 } // namespace editor

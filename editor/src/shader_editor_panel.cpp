@@ -20,11 +20,9 @@ ShaderEditorPanel::~ShaderEditorPanel() = default;
 std::string_view ShaderEditorPanel::GetPanelName() const { return "Shader Editor"; }
 
 void ShaderEditorPanel::Render(engine::scene::Scene* scene) {
-	if (!IsVisible()) {
+	if (!BeginPanel(ImGuiWindowFlags_MenuBar)) {
 		return;
 	}
-
-	ImGui::Begin("Shader Editor", &VisibleRef(), ImGuiWindowFlags_MenuBar);
 
 	RenderToolbar(scene);
 
@@ -57,7 +55,7 @@ void ShaderEditorPanel::Render(engine::scene::Scene* scene) {
 
 	ImGui::EndChild();
 
-	ImGui::End();
+	EndPanel();
 }
 
 void ShaderEditorPanel::RenderToolbar(engine::scene::Scene* scene) {
@@ -165,6 +163,7 @@ void ShaderEditorPanel::RenderCodeEditor() {
 						ImVec2(-1, -1),
 						ImGuiInputTextFlags_AllowTabInput)) {
 				vertex_source_ = vertex_buffer_;
+				SetDirty(true);
 			}
 
 			ImGui::EndChild();
@@ -206,6 +205,7 @@ void ShaderEditorPanel::RenderCodeEditor() {
 						ImVec2(-1, -1),
 						ImGuiInputTextFlags_AllowTabInput)) {
 				fragment_source_ = fragment_buffer_;
+				SetDirty(true);
 			}
 
 			ImGui::EndChild();
@@ -446,6 +446,7 @@ void ShaderEditorPanel::RenderUniformInspector() {
 			ImGui::PushID(uniform.name.c_str());
 			if (ImGui::InputText("##default", buffer, sizeof(buffer))) {
 				uniform.default_value = buffer;
+				SetDirty(true);
 			}
 			ImGui::PopID();
 		}
@@ -484,6 +485,7 @@ void ShaderEditorPanel::NewShader() {
 
 	// Clear graph
 	shader_graph_ = std::make_unique<engine::graph::NodeGraph>();
+	SetDirty(false);
 }
 
 void ShaderEditorPanel::OpenAsset(engine::scene::ShaderAssetInfo* asset) {
@@ -510,6 +512,7 @@ void ShaderEditorPanel::OpenAsset(engine::scene::ShaderAssetInfo* asset) {
 	buffer_generation_++;
 
 	ExtractUniforms();
+	SetDirty(false);
 	SetVisible(true);
 }
 
@@ -565,6 +568,7 @@ bool ShaderEditorPanel::SaveSourceToFiles() {
 	if (success) {
 		has_errors_ = false;
 		error_message_ = "";
+		SetDirty(false);
 	}
 
 	return success;

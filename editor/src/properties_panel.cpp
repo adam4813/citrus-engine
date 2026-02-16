@@ -222,6 +222,9 @@ void PropertiesPanel::RenderComponentFields(
 							*value = i;
 							modified = true;
 						}
+						if (!field.enum_tooltips.empty() && i < static_cast<int>(field.enum_tooltips.size())) {
+							ImGui::SetItemTooltip("%s", field.enum_tooltips[i].c_str());
+						}
 						if (is_selected) {
 							ImGui::SetItemDefaultFocus();
 						}

@@ -31,11 +31,9 @@ void TilesetEditorPanel::RegisterAssetHandlers(AssetEditorRegistry& registry) {
 TilesetEditorPanel::~TilesetEditorPanel() = default;
 
 void TilesetEditorPanel::Render(engine::Engine& engine) {
-	if (!IsVisible()) {
+	if (!BeginPanel(ImGuiWindowFlags_MenuBar)) {
 		return;
 	}
-
-	ImGui::Begin("Tileset Editor", &VisibleRef(), ImGuiWindowFlags_MenuBar);
 
 	// Handle deferred image loading from OpenTileset
 	if (pending_image_load_) {
@@ -62,7 +60,7 @@ void TilesetEditorPanel::Render(engine::Engine& engine) {
 	RenderTilePalette();
 	ImGui::EndChild();
 
-	ImGui::End();
+	EndPanel();
 }
 
 void TilesetEditorPanel::RenderToolbar(engine::Engine& engine) {
@@ -121,7 +119,9 @@ void TilesetEditorPanel::RenderToolbar(engine::Engine& engine) {
 	}
 
 	// Grid config controls (tile size, gap, padding)
-	RenderGridConfigUI(tileset_->grid);
+	if (RenderGridConfigUI(tileset_->grid)) {
+		SetDirty(true);
+	}
 
 	// Zoom control
 	ImGui::SameLine();
@@ -322,10 +322,13 @@ void TilesetEditorPanel::RenderTileProperties() {
 	name_buffer[sizeof(name_buffer) - 1] = '\0';
 	if (ImGui::InputText("Name", name_buffer, sizeof(name_buffer))) {
 		tile_def->name = name_buffer;
+		SetDirty(true);
 	}
 
 	// Collision flag
-	ImGui::Checkbox("Collision", &tile_def->collision);
+	if (ImGui::Checkbox("Collision", &tile_def->collision)) {
+		SetDirty(true);
+	}
 
 	ImGui::Separator();
 	ImGui::Text("Tags");
@@ -337,6 +340,7 @@ void TilesetEditorPanel::RenderTileProperties() {
 		ImGui::SameLine();
 		if (ImGui::SmallButton("Remove")) {
 			tile_def->tags.erase(tile_def->tags.begin() + i);
+			SetDirty(true);
 			ImGui::PopID();
 			break;
 		}
@@ -349,6 +353,7 @@ void TilesetEditorPanel::RenderTileProperties() {
 	if (ImGui::Button("Add Tag") && new_tag_buffer_[0] != '\0') {
 		tile_def->tags.emplace_back(new_tag_buffer_);
 		new_tag_buffer_[0] = '\0';
+		SetDirty(true);
 	}
 
 	ImGui::Separator();
@@ -368,11 +373,13 @@ void TilesetEditorPanel::RenderTileProperties() {
 		ImGui::SetNextItemWidth(150);
 		if (ImGui::InputText("##value", value_buffer, sizeof(value_buffer))) {
 			value = value_buffer;
+			SetDirty(true);
 		}
 
 		ImGui::SameLine();
 		if (ImGui::SmallButton("Remove")) {
 			keys_to_remove.push_back(key);
+			SetDirty(true);
 		}
 		ImGui::PopID();
 	}
@@ -390,6 +397,7 @@ void TilesetEditorPanel::RenderTileProperties() {
 			tile_def->custom_properties[new_property_key_buffer_] = new_property_value_buffer_;
 			new_property_key_buffer_[0] = '\0';
 			new_property_value_buffer_[0] = '\0';
+			SetDirty(true);
 		}
 	}
 }
@@ -538,6 +546,7 @@ void TilesetEditorPanel::NewTileset() {
 	gpu_texture_id_ = engine::rendering::INVALID_TEXTURE;
 	image_path_buffer_[0] = '\0';
 	load_error_message_.clear();
+	SetDirty(false);
 }
 
 bool TilesetEditorPanel::SaveTileset(const std::string& path) {
@@ -569,6 +578,7 @@ bool TilesetEditorPanel::SaveTileset(const std::string& path) {
 		}
 
 		current_file_path_ = path;
+		SetDirty(false);
 		return true;
 	}
 	catch (const std::exception&) {
@@ -625,6 +635,7 @@ bool TilesetEditorPanel::LoadTileset(const std::string& path) {
 		std::strncpy(image_path_buffer_, tileset_->source_image_path.c_str(), sizeof(image_path_buffer_) - 1);
 		image_path_buffer_[sizeof(image_path_buffer_) - 1] = '\0';
 
+		SetDirty(false);
 		return true;
 	}
 	catch (const std::exception&) {

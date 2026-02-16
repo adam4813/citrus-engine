@@ -37,11 +37,9 @@ void BehaviorTreeEditorPanel::RegisterAssetHandlers(AssetEditorRegistry& registr
 }
 
 void BehaviorTreeEditorPanel::Render() {
-	if (!IsVisible()) {
+	if (!BeginPanel(ImGuiWindowFlags_MenuBar)) {
 		return;
 	}
-
-	ImGui::Begin("Behavior Tree Editor", &VisibleRef(), ImGuiWindowFlags_MenuBar);
 
 	RenderToolbar();
 
@@ -58,7 +56,7 @@ void BehaviorTreeEditorPanel::Render() {
 
 	RenderContextMenu();
 
-	ImGui::End();
+	EndPanel();
 }
 
 void BehaviorTreeEditorPanel::RenderToolbar() {
@@ -150,36 +148,45 @@ void BehaviorTreeEditorPanel::RenderNodeTree(engine::ai::BTNode* node, int depth
 		if (ImGui::BeginMenu("Composite")) {
 			if (ImGui::MenuItem("Selector")) {
 				node->AddChild(std::make_unique<engine::ai::SelectorNode>("New Selector"));
+				SetDirty(true);
 			}
 			if (ImGui::MenuItem("Sequence")) {
 				node->AddChild(std::make_unique<engine::ai::SequenceNode>("New Sequence"));
+				SetDirty(true);
 			}
 			if (ImGui::MenuItem("Parallel")) {
 				node->AddChild(std::make_unique<engine::ai::ParallelNode>("New Parallel"));
+				SetDirty(true);
 			}
 			ImGui::EndMenu();
 		}
 		if (ImGui::BeginMenu("Decorator")) {
 			if (ImGui::MenuItem("Inverter")) {
 				node->AddChild(std::make_unique<engine::ai::InverterNode>("New Inverter"));
+				SetDirty(true);
 			}
 			if (ImGui::MenuItem("Repeater")) {
 				node->AddChild(std::make_unique<engine::ai::RepeaterNode>("New Repeater"));
+				SetDirty(true);
 			}
 			if (ImGui::MenuItem("Succeeder")) {
 				node->AddChild(std::make_unique<engine::ai::SucceederNode>("New Succeeder"));
+				SetDirty(true);
 			}
 			ImGui::EndMenu();
 		}
 		if (ImGui::BeginMenu("Action")) {
 			if (ImGui::MenuItem("Wait")) {
 				node->AddChild(std::make_unique<engine::ai::WaitNode>("New Wait"));
+				SetDirty(true);
 			}
 			if (ImGui::MenuItem("Log")) {
 				node->AddChild(std::make_unique<engine::ai::LogNode>("New Log"));
+				SetDirty(true);
 			}
 			if (ImGui::MenuItem("Condition")) {
 				node->AddChild(std::make_unique<engine::ai::ConditionNode>("New Condition"));
+				SetDirty(true);
 			}
 			ImGui::EndMenu();
 		}
@@ -216,6 +223,7 @@ void BehaviorTreeEditorPanel::RenderPropertiesPanel() {
 
 		if (ImGui::InputText("Name", name_buffer, sizeof(name_buffer))) {
 			selected_node_->SetName(name_buffer);
+			SetDirty(true);
 		}
 
 		// Type-specific properties
@@ -283,12 +291,15 @@ void BehaviorTreeEditorPanel::RenderContextMenu() {
 			if (ImGui::BeginMenu("Add Root Node")) {
 				if (ImGui::MenuItem("Selector")) {
 					root_node_ = std::make_unique<engine::ai::SelectorNode>("Root Selector");
+				SetDirty(true);
 				}
 				if (ImGui::MenuItem("Sequence")) {
 					root_node_ = std::make_unique<engine::ai::SequenceNode>("Root Sequence");
+				SetDirty(true);
 				}
 				if (ImGui::MenuItem("Parallel")) {
 					root_node_ = std::make_unique<engine::ai::ParallelNode>("Root Parallel");
+				SetDirty(true);
 				}
 				ImGui::EndMenu();
 			}
@@ -301,6 +312,7 @@ void BehaviorTreeEditorPanel::NewTree() {
 	root_node_.reset();
 	selected_node_ = nullptr;
 	current_file_path_.clear();
+	SetDirty(false);
 }
 
 bool BehaviorTreeEditorPanel::SaveTree(const std::string& path) {
@@ -320,7 +332,11 @@ bool BehaviorTreeEditorPanel::SaveTree(const std::string& path) {
 	}
 	content += "}\n";
 
-	return engine::assets::AssetManager::SaveTextFile(std::filesystem::path(path), content);
+	if (engine::assets::AssetManager::SaveTextFile(std::filesystem::path(path), content)) {
+		SetDirty(false);
+		return true;
+	}
+	return false;
 }
 
 bool BehaviorTreeEditorPanel::LoadTree(const std::string& path) {
@@ -334,6 +350,7 @@ bool BehaviorTreeEditorPanel::LoadTree(const std::string& path) {
 	root_node_->AddChild(std::make_unique<engine::ai::LogNode>("Test Log", "Hello from loaded tree!"));
 	root_node_->AddChild(std::make_unique<engine::ai::WaitNode>("Test Wait", 2.0F));
 
+	SetDirty(false);
 	return true;
 }
 

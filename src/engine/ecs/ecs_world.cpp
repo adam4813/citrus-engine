@@ -210,6 +210,11 @@ ECSWorld::ECSWorld() {
 			.Category("Physics")
 			.Field("motion_type", &physics::RigidBody::motion_type)
 			.EnumLabels({"Static", "Kinematic", "Dynamic"})
+			.EnumTooltips({
+				"Immovable object (floors, walls) — zero mass, infinite inertia",
+				"Script-controlled motion (moving platforms, elevators) — not affected by forces",
+				"Physics-simulated (falling objects, projectiles) — affected by gravity and forces"
+			})
 			.Field("mass", &physics::RigidBody::mass)
 			.Field("linear_damping", &physics::RigidBody::linear_damping)
 			.Field("angular_damping", &physics::RigidBody::angular_damping)
@@ -224,6 +229,14 @@ ECSWorld::ECSWorld() {
 			.Category("Physics")
 			.Field("type", &physics::CollisionShape::type)
 			.EnumLabels({"Box", "Sphere", "Capsule", "Cylinder", "ConvexHull", "Mesh"})
+			.EnumTooltips({
+				"Rectangular box collider",
+				"Spherical collider",
+				"Capsule collider (cylinder with rounded ends)",
+				"Cylindrical collider",
+				"Convex hull from mesh vertices",
+				"Triangle mesh collider (static only)"
+			})
 			.Field("box_half_extents", &physics::CollisionShape::box_half_extents)
 			.Field("sphere_radius", &physics::CollisionShape::sphere_radius)
 			.Field("capsule_radius", &physics::CollisionShape::capsule_radius)
@@ -245,6 +258,7 @@ ECSWorld::ECSWorld() {
 			.Field("fixed_timestep", &physics::PhysicsWorldConfig::fixed_timestep)
 			.Field("max_substeps", &physics::PhysicsWorldConfig::max_substeps)
 			.Field("enable_sleeping", &physics::PhysicsWorldConfig::enable_sleeping)
+			.Field("show_debug_physics", &physics::PhysicsWorldConfig::show_debug_physics)
 			.Build();
 
 	// Tag components

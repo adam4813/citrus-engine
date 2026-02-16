@@ -30,12 +30,10 @@ void DataTableEditorPanel::RegisterAssetHandlers(AssetEditorRegistry& registry) 
 }
 
 void DataTableEditorPanel::Render() {
-	if (!IsVisible()) {
+	ImGui::SetNextWindowSize(ImVec2(800, 600), ImGuiCond_FirstUseEver);
+	if (!BeginPanel(ImGuiWindowFlags_MenuBar)) {
 		return;
 	}
-
-	ImGui::SetNextWindowSize(ImVec2(800, 600), ImGuiCond_FirstUseEver);
-	ImGui::Begin("Data Table Editor", &VisibleRef(), ImGuiWindowFlags_MenuBar);
 
 	RenderMenuBar();
 	RenderToolbar();
@@ -54,7 +52,7 @@ void DataTableEditorPanel::Render() {
 		RenderSpreadsheet();
 	}
 
-	ImGui::End();
+	EndPanel();
 }
 
 void DataTableEditorPanel::RenderMenuBar() {
@@ -120,6 +118,7 @@ void DataTableEditorPanel::RenderToolbar() {
 	ImGui::SetNextItemWidth(200);
 	if (ImGui::InputText("##table_name", table_name_buffer_, sizeof(table_name_buffer_))) {
 		table_->SetName(table_name_buffer_);
+		SetDirty(true);
 	}
 
 	ImGui::SameLine();
@@ -143,6 +142,7 @@ void DataTableEditorPanel::RenderToolbar() {
 	ImGui::SameLine();
 	if (ImGui::Button("Add Row")) {
 		AddRow();
+		SetDirty(true);
 	}
 
 	ImGui::SameLine();
@@ -222,6 +222,7 @@ void DataTableEditorPanel::RenderSpreadsheet() {
 			ImGui::SetNextItemWidth(-FLT_MIN);
 			if (ImGui::InputText("##key", key_buffer, sizeof(key_buffer))) {
 				row.key = key_buffer;
+				SetDirty(true);
 			}
 
 			// Data columns
@@ -234,10 +235,12 @@ void DataTableEditorPanel::RenderSpreadsheet() {
 			ImGui::TableNextColumn();
 			if (ImGui::SmallButton("Delete")) {
 				DeleteRow(row_idx);
+				SetDirty(true);
 			}
 			ImGui::SameLine();
 			if (ImGui::SmallButton("Duplicate")) {
 				DuplicateRow(row_idx);
+				SetDirty(true);
 			}
 
 			ImGui::PopID();
@@ -262,6 +265,7 @@ void DataTableEditorPanel::RenderSchemaEditor() {
 	if (ImGui::Button("Add##add_column")) {
 		if (std::strlen(new_column_name_buffer_) > 0) {
 			AddColumn();
+			SetDirty(true);
 		}
 	}
 
@@ -297,6 +301,7 @@ void DataTableEditorPanel::RenderSchemaEditor() {
 
 		if (ImGui::Button("Delete", ImVec2(120, 0))) {
 			DeleteColumn(column_to_delete_);
+			SetDirty(true);
 			ImGui::CloseCurrentPopup();
 		}
 		ImGui::SameLine();
@@ -311,7 +316,9 @@ void DataTableEditorPanel::RenderCell(
 		const std::string& column_name, engine::data::DataValue& value, size_t row_index) {
 	ImGui::PushID(static_cast<int>(row_index * 1000 + std::hash<std::string>{}(column_name)));
 	ImGui::SetNextItemWidth(-FLT_MIN);
-	RenderValueEditor("##cell", value, "");
+	if (RenderValueEditor("##cell", value, "")) {
+		SetDirty(true);
+	}
 	ImGui::PopID();
 }
 
@@ -562,6 +569,7 @@ void DataTableEditorPanel::NewTable() {
 	table_->SetName("NewTable");
 	std::strcpy(table_name_buffer_, "NewTable");
 	current_file_path_.clear();
+	SetDirty(false);
 }
 
 bool DataTableEditorPanel::SaveTable(const std::string& path) {
@@ -578,6 +586,7 @@ bool DataTableEditorPanel::SaveTable(const std::string& path) {
 		}
 
 		current_file_path_ = path;
+		SetDirty(false);
 		return true;
 	}
 	catch (...) {
@@ -599,6 +608,7 @@ bool DataTableEditorPanel::LoadTable(const std::string& path) {
 		table_name_buffer_[sizeof(table_name_buffer_) - 1] = '\0';
 
 		current_file_path_ = path;
+		SetDirty(false);
 		return true;
 	}
 	catch (...) {
@@ -630,6 +640,7 @@ bool DataTableEditorPanel::ImportFromCSV(const std::string& path) {
 		auto imported = engine::data::DataSerializer::ImportTableFromCSV(*text, table_->GetName());
 		*table_ = std::move(imported);
 		std::strncpy(table_name_buffer_, table_->GetName().c_str(), sizeof(table_name_buffer_) - 1);
+		SetDirty(true);
 		return true;
 	}
 	catch (...) {

@@ -3,7 +3,15 @@
   "name": "citrus-examples",
   "version": "0.0.1",
   "dependencies": [
-    "citrus-engine"
+    "citrus-engine",
+    {
+      "name": "imgui",
+      "features": [
+        "docking-experimental",
+        "glfw-binding",
+        "opengl3-binding"
+      ]
+    }
   ],
   "supports": "windows | linux | osx | emscripten",
   "builtin-baseline": "dd3097e305afa53f7b4312371f62058d2e665320",

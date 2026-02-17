@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.28)
+cmake_minimum_required(VERSION 3.30)
 
 # Examples project configuration
 project(
@@ -9,6 +9,7 @@ project(
 
 # Find the Citrus Engine via vcpkg (uses overlay port from ../ports)
 find_package(citrus-engine CONFIG REQUIRED)
+find_package(imgui CONFIG REQUIRED)
 
 # Examples application
 add_executable(
@@ -29,7 +30,7 @@ target_include_directories(citrus-examples
                            PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 # Link to the engine (provides all dependencies transitively)
-target_link_libraries(citrus-examples PRIVATE citrus-engine::engine-core)
+target_link_libraries(citrus-examples PRIVATE citrus-engine::engine-core imgui::imgui)
 
 # Setup asset handling
 setup_asset_preload(citrus-examples "${CMAKE_CURRENT_SOURCE_DIR}/assets")

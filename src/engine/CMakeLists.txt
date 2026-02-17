@@ -1,9 +1,20 @@
-﻿# Engine Core Library Configuration
-
-# Engine library configuration - set up as C++20 module
+﻿# Engine library configuration - set up as C++20 module
 add_library(engine-core STATIC)
 
-set_compiler_options(engine-core)
+target_compile_options(engine-core PRIVATE
+    $<$<CXX_COMPILER_ID:MSVC>:/W4 /permissive- /bigobj /Zc:__cplusplus /experimental:external /external:W0 /experimental:module>
+    $<$<OR:$<CXX_COMPILER_ID:GNU>,$<CXX_COMPILER_ID:Clang>>:-Wall -Wextra -Wpedantic>
+    $<$<CXX_COMPILER_ID:GNU>:-fmodules-ts>
+    $<$<AND:$<CONFIG:Release>,$<OR:$<CXX_COMPILER_ID:GNU>,$<CXX_COMPILER_ID:Clang>>>:-O3>
+)
+target_compile_definitions(engine-core PRIVATE
+    $<$<CXX_COMPILER_ID:MSVC>:_CRT_SECURE_NO_WARNINGS>
+)
+target_compile_features(engine-core PRIVATE cxx_std_23 INTERFACE cxx_std_20)
+
+message(STATUS "Compiler: ${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION}")
+message(STATUS "C++ Standard: ${CMAKE_CXX_STANDARD}")
+message(STATUS "Build Type: ${CMAKE_BUILD_TYPE}")
 
 # Ensure debug information is available for library consumers
 set_target_properties(engine-core PROPERTIES
@@ -27,9 +38,7 @@ if (CMAKE_BUILD_TYPE STREQUAL "Debug" OR CMAKE_BUILD_TYPE STREQUAL "RelWithDebIn
         set(ENGINE_PDB_FILE "${CMAKE_CURRENT_BINARY_DIR}/engine-core.pdb")
 
         # Install PDB files alongside the library (only if it exists)
-        install(FILES "${ENGINE_PDB_FILE}"
-            DESTINATION lib
-            OPTIONAL)
+        install(FILES "${ENGINE_PDB_FILE}" DESTINATION lib OPTIONAL)
     elseif (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
         # Ensure debug symbols are preserved for debug builds
         target_compile_options(engine-core PRIVATE -g)
@@ -250,7 +259,6 @@ if (EMSCRIPTEN)
     )
 endif ()
 
-target_compile_features(engine-core PUBLIC cxx_std_20)
 target_compile_definitions(engine-core PUBLIC NOMINMAX)
 
 if (NOT EMSCRIPTEN)

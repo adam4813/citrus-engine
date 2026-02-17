@@ -88,11 +88,11 @@ struct PrefabInstance {
 
 // A single cell in the tilemap that can contain multiple tiles
 struct TilemapCell {
-	std::vector<uint32_t> tile_ids; // List of tile IDs in this cell (for layering)
+	std::vector<std::uint32_t> tile_ids; // List of tile IDs in this cell (for layering)
 
-	void AddTile(const uint32_t tile_id) { tile_ids.push_back(tile_id); }
+	void AddTile(const std::uint32_t tile_id) { tile_ids.push_back(tile_id); }
 
-	void RemoveTile(const uint32_t tile_id) { std::erase(tile_ids, tile_id); }
+	void RemoveTile(const std::uint32_t tile_id) { std::erase(tile_ids, tile_id); }
 
 	void ClearTiles() { tile_ids.clear(); }
 
@@ -101,29 +101,29 @@ struct TilemapCell {
 
 // A single layer of the tilemap
 struct TilemapLayer {
-	std::unordered_map<uint64_t, TilemapCell> cells; // Key: packed (x,y) coordinates
+	std::unordered_map<std::uint64_t, TilemapCell> cells; // Key: packed (x,y) coordinates
 	std::shared_ptr<assets::Tileset> tileset;
 	bool visible = true;
 	float opacity = 1.0f;
 
 	// Pack x,y coordinates into a single key for the hash map
-	static uint64_t PackCoords(const int32_t x, const int32_t y) {
-		return (static_cast<uint64_t>(static_cast<uint32_t>(x)) << 32)
-			   | static_cast<uint64_t>(static_cast<uint32_t>(y));
+	static std::uint64_t PackCoords(const std::int32_t x, const std::int32_t y) {
+		return (static_cast<std::uint64_t>(static_cast<std::uint32_t>(x)) << 32)
+			   | static_cast<std::uint64_t>(static_cast<std::uint32_t>(y));
 	}
 
 	// Unpack coordinates from the key
-	static std::pair<int32_t, int32_t> UnpackCoords(const uint64_t key) {
-		int32_t x = static_cast<int32_t>(key >> 32);
-		int32_t y = static_cast<int32_t>(key & 0xFFFFFFFF);
+	static std::pair<std::int32_t, std::int32_t> UnpackCoords(const std::uint64_t key) {
+		std::int32_t x = static_cast<std::int32_t>(key >> 32);
+		std::int32_t y = static_cast<std::int32_t>(key & 0xFFFFFFFF);
 		return {x, y};
 	}
 
 	// Get or create a cell at the given grid position
-	TilemapCell& GetCell(const int32_t x, const int32_t y) { return cells[PackCoords(x, y)]; }
+	TilemapCell& GetCell(const std::int32_t x, const std::int32_t y) { return cells[PackCoords(x, y)]; }
 
 	// Get a cell at the given grid position (const version)
-	const TilemapCell* GetCell(const int32_t x, const int32_t y) const {
+	const TilemapCell* GetCell(const std::int32_t x, const std::int32_t y) const {
 		const auto it = cells.find(PackCoords(x, y));
 		return it != cells.end() ? &it->second : nullptr;
 	}
@@ -132,10 +132,12 @@ struct TilemapLayer {
 	void SetTileset(const std::shared_ptr<assets::Tileset>& tileset_ptr) { tileset = tileset_ptr; }
 
 	// Add a tile to a specific grid position
-	void SetTile(const int32_t x, const int32_t y, const uint32_t tile_id) { GetCell(x, y).AddTile(tile_id); }
+	void SetTile(const std::int32_t x, const std::int32_t y, const std::uint32_t tile_id) {
+		GetCell(x, y).AddTile(tile_id);
+	}
 
 	// Remove all tiles from a specific grid position
-	void ClearTile(const int32_t x, const int32_t y) {
+	void ClearTile(const std::int32_t x, const std::int32_t y) {
 		const auto it = cells.find(PackCoords(x, y));
 		if (it != cells.end()) {
 			it->second.ClearTiles();
@@ -192,8 +194,8 @@ struct Tilemap {
 	glm::ivec2 WorldToGrid(const glm::vec2& world_pos) const {
 		const glm::vec2 adjusted_pos = world_pos - grid_offset;
 		return glm::ivec2(
-				static_cast<int32_t>(std::floor(adjusted_pos.x / tile_size.x)),
-				static_cast<int32_t>(std::floor(adjusted_pos.y / tile_size.y)));
+				static_cast<std::int32_t>(std::floor(adjusted_pos.x / tile_size.x)),
+				static_cast<std::int32_t>(std::floor(adjusted_pos.y / tile_size.y)));
 	}
 
 	// Convert grid coordinates to world position (center of tile)

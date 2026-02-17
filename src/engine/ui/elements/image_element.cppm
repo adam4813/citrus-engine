@@ -1,6 +1,7 @@
 module;
 
 #include <memory>
+#include <vector>
 
 export module engine.ui:elements.image;
 

@@ -210,11 +210,10 @@ ECSWorld::ECSWorld() {
 			.Category("Physics")
 			.Field("motion_type", &physics::RigidBody::motion_type)
 			.EnumLabels({"Static", "Kinematic", "Dynamic"})
-			.EnumTooltips({
-				"Immovable object (floors, walls) — zero mass, infinite inertia",
-				"Script-controlled motion (moving platforms, elevators) — not affected by forces",
-				"Physics-simulated (falling objects, projectiles) — affected by gravity and forces"
-			})
+			.EnumTooltips(
+					{"Immovable object (floors, walls) — zero mass, infinite inertia",
+					 "Script-controlled motion (moving platforms, elevators) — not affected by forces",
+					 "Physics-simulated (falling objects, projectiles) — affected by gravity and forces"})
 			.Field("mass", &physics::RigidBody::mass)
 			.Field("linear_damping", &physics::RigidBody::linear_damping)
 			.Field("angular_damping", &physics::RigidBody::angular_damping)
@@ -229,14 +228,13 @@ ECSWorld::ECSWorld() {
 			.Category("Physics")
 			.Field("type", &physics::CollisionShape::type)
 			.EnumLabels({"Box", "Sphere", "Capsule", "Cylinder", "ConvexHull", "Mesh"})
-			.EnumTooltips({
-				"Rectangular box collider",
-				"Spherical collider",
-				"Capsule collider (cylinder with rounded ends)",
-				"Cylindrical collider",
-				"Convex hull from mesh vertices",
-				"Triangle mesh collider (static only)"
-			})
+			.EnumTooltips(
+					{"Rectangular box collider",
+					 "Spherical collider",
+					 "Capsule collider (cylinder with rounded ends)",
+					 "Cylindrical collider",
+					 "Convex hull from mesh vertices",
+					 "Triangle mesh collider (static only)"})
 			.Field("box_half_extents", &physics::CollisionShape::box_half_extents)
 			.Field("sphere_radius", &physics::CollisionShape::sphere_radius)
 			.Field("capsule_radius", &physics::CollisionShape::capsule_radius)
@@ -254,6 +252,7 @@ ECSWorld::ECSWorld() {
 
 	registry.Register<physics::PhysicsWorldConfig>("PhysicsWorldConfig", world_)
 			.Category("Physics")
+			.Hidden()
 			.Field("gravity", &physics::PhysicsWorldConfig::gravity)
 			.Field("fixed_timestep", &physics::PhysicsWorldConfig::fixed_timestep)
 			.Field("max_substeps", &physics::PhysicsWorldConfig::max_substeps)
@@ -509,6 +508,67 @@ void ECSWorld::SubmitRenderCommands(const rendering::Renderer& renderer) {
 
 				renderer.SubmitRenderCommand(cmd);
 			});
+
+	// Physics debug drawing
+	// Check if debug drawing is enabled
+	if (world_.has<physics::PhysicsWorldConfig>()) {
+		const auto& physics_config = world_.get<physics::PhysicsWorldConfig>();
+		if (physics_config.show_debug_physics) {
+			// Set debug camera matrices
+			renderer.SetDebugCamera(active_camera->view_matrix, active_camera->projection_matrix);
+
+			// Green color with slight transparency for debug shapes
+			constexpr rendering::Color debug_color{0.0f, 1.0f, 0.0f, 0.7f};
+
+			// Query all entities with CollisionShape and Transform
+			world_.query<const physics::CollisionShape, const Transform>().each(
+					[&](const physics::CollisionShape& shape, const Transform& transform) {
+						// Apply position offset from shape
+						const glm::vec3 shape_center = transform.position + shape.offset;
+
+						switch (shape.type) {
+						case physics::ShapeType::Box:
+						{
+							// DrawWireCube expects size, not half-extents
+							const glm::vec3 size = shape.box_half_extents * 2.0f;
+							renderer.DrawWireCube(shape_center, size, debug_color);
+							break;
+						}
+						case physics::ShapeType::Sphere:
+						{
+							renderer.DrawWireSphere(shape_center, shape.sphere_radius, debug_color);
+							break;
+						}
+						case physics::ShapeType::Capsule:
+						{
+							// Approximate capsule as sphere + vertical line
+							const float half_height = shape.capsule_height * 0.5f;
+							renderer.DrawWireSphere(
+									shape_center + glm::vec3(0, half_height, 0), shape.capsule_radius, debug_color);
+							renderer.DrawWireSphere(
+									shape_center - glm::vec3(0, half_height, 0), shape.capsule_radius, debug_color);
+							renderer.DrawLine(
+									shape_center + glm::vec3(0, half_height, 0),
+									shape_center - glm::vec3(0, half_height, 0),
+									debug_color);
+							break;
+						}
+						case physics::ShapeType::Cylinder:
+						{
+							// Approximate cylinder as box with circular cross-section
+							const glm::vec3 size{
+									shape.cylinder_radius * 2.0f, shape.cylinder_height, shape.cylinder_radius * 2.0f};
+							renderer.DrawWireCube(shape_center, size, debug_color);
+							break;
+						}
+						default: break;
+						}
+					});
+
+			// Flush all accumulated debug lines
+			renderer.FlushDebugLines();
+		}
+	}
 }
 
 void ECSWorld::SetupMovementSystem() const {

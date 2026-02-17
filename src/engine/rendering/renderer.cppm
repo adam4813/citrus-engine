@@ -68,11 +68,15 @@ public:
 	void SubmitUIBatch(const UIBatchRenderCommand& command) const;
 
 	// Immediate mode rendering (for debugging)
-	void DrawLine(const Vec3& start, const Vec3& end, const Color& color = colors::white);
+	void DrawLine(const Vec3& start, const Vec3& end, const Color& color = colors::white) const;
 
-	void DrawWireCube(const Vec3& center, const Vec3& size, const Color& color = colors::white);
+	void DrawWireCube(const Vec3& center, const Vec3& size, const Color& color = colors::white) const;
 
-	void DrawWireSphere(const Vec3& center, float radius, const Color& color = colors::white);
+	void DrawWireSphere(const Vec3& center, float radius, const Color& color = colors::white) const;
+
+	void SetDebugCamera(const glm::mat4& view, const glm::mat4& projection) const;
+
+	void FlushDebugLines() const;
 
 	// Render settings
 	void SetClearColor(const Color& color) const;

@@ -48,6 +48,14 @@ struct Renderer::Impl {
 
 	// Built-in shaders
 	ShaderId sprite_shader_id = INVALID_SHADER;
+	ShaderId debug_line_shader_id = INVALID_SHADER;
+
+	// Debug line rendering
+	GLuint debug_line_vao = 0;
+	GLuint debug_line_vbo = 0;
+	std::vector<float> debug_line_vertices; // x,y,z,r,g,b,a per vertex
+	glm::mat4 debug_view_matrix{1.0f};
+	glm::mat4 debug_projection_matrix{1.0f};
 
 	// Statistics
 	uint32_t draw_call_count = 0;
@@ -118,11 +126,73 @@ void main() {
 		return false;
 	}
 
+	// Create debug line shader
+	const std::string debug_line_vertex_shader = R"(#version 300 es
+
+layout(location = 0) in vec3 a_Position;
+layout(location = 1) in vec4 a_Color;
+
+uniform mat4 u_ViewProjection;
+
+out vec4 v_Color;
+
+void main() {
+    gl_Position = u_ViewProjection * vec4(a_Position, 1.0);
+    v_Color = a_Color;
+}
+)";
+
+	const std::string debug_line_fragment_shader = R"(#version 300 es
+precision mediump float;
+
+in vec4 v_Color;
+out vec4 FragColor;
+
+void main() {
+    FragColor = v_Color;
+}
+)";
+
+	pimpl_->debug_line_shader_id = pimpl_->shader_manager.LoadShaderFromString(
+			"debug_line_shader", debug_line_vertex_shader, debug_line_fragment_shader);
+
+	if (pimpl_->debug_line_shader_id == INVALID_SHADER) {
+		// Log error - debug line shader creation failed
+		return false;
+	}
+
+	// Create debug line VAO and VBO
+	glGenVertexArrays(1, &pimpl_->debug_line_vao);
+	glGenBuffers(1, &pimpl_->debug_line_vbo);
+
+	glBindVertexArray(pimpl_->debug_line_vao);
+	glBindBuffer(GL_ARRAY_BUFFER, pimpl_->debug_line_vbo);
+
+	// Position attribute (location 0)
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 7 * sizeof(float), (void*)0);
+
+	// Color attribute (location 1)
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, 7 * sizeof(float), (void*)(3 * sizeof(float)));
+
+	glBindVertexArray(0);
+
 	pimpl_->initialized = true;
 	return true;
 }
 
-void Renderer::Shutdown() const { pimpl_->initialized = false; }
+void Renderer::Shutdown() const {
+	if (pimpl_->debug_line_vao != 0) {
+		glDeleteVertexArrays(1, &pimpl_->debug_line_vao);
+		pimpl_->debug_line_vao = 0;
+	}
+	if (pimpl_->debug_line_vbo != 0) {
+		glDeleteBuffers(1, &pimpl_->debug_line_vbo);
+		pimpl_->debug_line_vbo = 0;
+	}
+	pimpl_->initialized = false;
+}
 
 void Renderer::BeginFrame() const {
 	pimpl_->draw_call_count = 0;
@@ -410,10 +480,11 @@ void Renderer::SubmitUIBatch(const UIBatchRenderCommand& command) const {
 	if (command.enable_scissor) {
 		// OpenGL scissor uses bottom-left origin, but UI uses top-left origin
 		glEnable(GL_SCISSOR_TEST);
-		glScissor(command.scissor_x,
-				  static_cast<int>(pimpl_->window_height) - command.scissor_y - command.scissor_height, // Flip Y
-				  command.scissor_width,
-				  command.scissor_height);
+		glScissor(
+				command.scissor_x,
+				static_cast<int>(pimpl_->window_height) - command.scissor_y - command.scissor_height, // Flip Y
+				command.scissor_width,
+				command.scissor_height);
 		CheckGLError("After setting scissor");
 	}
 
@@ -460,16 +531,98 @@ void Renderer::SubmitUIBatch(const UIBatchRenderCommand& command) const {
 	pimpl_->triangle_count += command.index_count / 3;
 }
 
-void Renderer::DrawLine(const Vec3& start, const Vec3& end, const Color& color) {
-	// TODO: Implement debug line drawing
+void Renderer::DrawLine(const Vec3& start, const Vec3& end, const Color& color) const {
+	// Add line vertices to buffer (position + color per vertex)
+	pimpl_->debug_line_vertices.push_back(start.x);
+	pimpl_->debug_line_vertices.push_back(start.y);
+	pimpl_->debug_line_vertices.push_back(start.z);
+	pimpl_->debug_line_vertices.push_back(color.r);
+	pimpl_->debug_line_vertices.push_back(color.g);
+	pimpl_->debug_line_vertices.push_back(color.b);
+	pimpl_->debug_line_vertices.push_back(color.a);
+
+	pimpl_->debug_line_vertices.push_back(end.x);
+	pimpl_->debug_line_vertices.push_back(end.y);
+	pimpl_->debug_line_vertices.push_back(end.z);
+	pimpl_->debug_line_vertices.push_back(color.r);
+	pimpl_->debug_line_vertices.push_back(color.g);
+	pimpl_->debug_line_vertices.push_back(color.b);
+	pimpl_->debug_line_vertices.push_back(color.a);
 }
 
-void Renderer::DrawWireCube(const Vec3& center, const Vec3& size, const Color& color) {
-	// TODO: Implement debug cube drawing
+void Renderer::DrawWireCube(const Vec3& center, const Vec3& size, const Color& color) const {
+	// Calculate half-extents
+	const Vec3 half = size * 0.5f;
+
+	// 8 corners of the cube
+	const Vec3 corners[8] = {
+			center + Vec3(-half.x, -half.y, -half.z),
+			center + Vec3(half.x, -half.y, -half.z),
+			center + Vec3(half.x, half.y, -half.z),
+			center + Vec3(-half.x, half.y, -half.z),
+			center + Vec3(-half.x, -half.y, half.z),
+			center + Vec3(half.x, -half.y, half.z),
+			center + Vec3(half.x, half.y, half.z),
+			center + Vec3(-half.x, half.y, half.z),
+	};
+
+	// Draw 12 edges
+	// Bottom face
+	DrawLine(corners[0], corners[1], color);
+	DrawLine(corners[1], corners[2], color);
+	DrawLine(corners[2], corners[3], color);
+	DrawLine(corners[3], corners[0], color);
+
+	// Top face
+	DrawLine(corners[4], corners[5], color);
+	DrawLine(corners[5], corners[6], color);
+	DrawLine(corners[6], corners[7], color);
+	DrawLine(corners[7], corners[4], color);
+
+	// Vertical edges
+	DrawLine(corners[0], corners[4], color);
+	DrawLine(corners[1], corners[5], color);
+	DrawLine(corners[2], corners[6], color);
+	DrawLine(corners[3], corners[7], color);
 }
 
-void Renderer::DrawWireSphere(const Vec3& center, float radius, const Color& color) {
-	// TODO: Implement debug sphere drawing
+void Renderer::DrawWireSphere(const Vec3& center, float radius, const Color& color) const {
+	// Draw 3 circles in XY, XZ, and YZ planes
+	constexpr int segments = 16;
+	constexpr float angle_step = 2.0f * 3.14159265359f / segments;
+
+	// XY plane circle (around Z axis)
+	for (int i = 0; i < segments; ++i) {
+		const float angle1 = i * angle_step;
+		const float angle2 = (i + 1) % segments * angle_step;
+
+		const Vec3 p1 = center + Vec3(radius * std::cos(angle1), radius * std::sin(angle1), 0.0f);
+		const Vec3 p2 = center + Vec3(radius * std::cos(angle2), radius * std::sin(angle2), 0.0f);
+
+		DrawLine(p1, p2, color);
+	}
+
+	// XZ plane circle (around Y axis)
+	for (int i = 0; i < segments; ++i) {
+		const float angle1 = i * angle_step;
+		const float angle2 = (i + 1) % segments * angle_step;
+
+		const Vec3 p1 = center + Vec3(radius * std::cos(angle1), 0.0f, radius * std::sin(angle1));
+		const Vec3 p2 = center + Vec3(radius * std::cos(angle2), 0.0f, radius * std::sin(angle2));
+
+		DrawLine(p1, p2, color);
+	}
+
+	// YZ plane circle (around X axis)
+	for (int i = 0; i < segments; ++i) {
+		const float angle1 = i * angle_step;
+		const float angle2 = (i + 1) % segments * angle_step;
+
+		const Vec3 p1 = center + Vec3(0.0f, radius * std::cos(angle1), radius * std::sin(angle1));
+		const Vec3 p2 = center + Vec3(0.0f, radius * std::cos(angle2), radius * std::sin(angle2));
+
+		DrawLine(p1, p2, color);
+	}
 }
 
 void Renderer::SetCamera(const components::Camera& camera) {
@@ -504,6 +657,61 @@ uint32_t Renderer::GetTriangleCount() const { return pimpl_->triangle_count; }
 void Renderer::ResetStatistics() const {
 	pimpl_->draw_call_count = 0;
 	pimpl_->triangle_count = 0;
+}
+
+void Renderer::SetDebugCamera(const glm::mat4& view, const glm::mat4& projection) const {
+	pimpl_->debug_view_matrix = view;
+	pimpl_->debug_projection_matrix = projection;
+}
+
+void Renderer::FlushDebugLines() const {
+	if (pimpl_->debug_line_vertices.empty()) {
+		return;
+	}
+
+	// Use debug line shader
+	const Shader& shader = pimpl_->shader_manager.GetShader(pimpl_->debug_line_shader_id);
+	if (!shader.IsValid()) {
+		pimpl_->debug_line_vertices.clear();
+		return;
+	}
+
+	shader.Use();
+
+	// Set view-projection matrix
+	const glm::mat4 vp = pimpl_->debug_projection_matrix * pimpl_->debug_view_matrix;
+	shader.SetUniform("u_ViewProjection", vp);
+
+	// Upload vertex data
+	glBindVertexArray(pimpl_->debug_line_vao);
+	glBindBuffer(GL_ARRAY_BUFFER, pimpl_->debug_line_vbo);
+	glBufferData(
+			GL_ARRAY_BUFFER,
+			pimpl_->debug_line_vertices.size() * sizeof(float),
+			pimpl_->debug_line_vertices.data(),
+			GL_DYNAMIC_DRAW);
+
+	// Disable depth test so debug lines draw on top
+	glDisable(GL_DEPTH_TEST);
+
+	// Enable blending for transparency
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+	// Draw lines
+	const int vertex_count = static_cast<int>(pimpl_->debug_line_vertices.size()) / 7;
+	glDrawArrays(GL_LINES, 0, vertex_count);
+
+	// Restore state
+	glEnable(GL_DEPTH_TEST);
+	glDisable(GL_BLEND);
+
+	glBindVertexArray(0);
+
+	// Clear the buffer for next frame
+	pimpl_->debug_line_vertices.clear();
+
+	pimpl_->draw_call_count++;
 }
 
 TextureManager& Renderer::GetTextureManager() const { return pimpl_->texture_manager; }

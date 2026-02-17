@@ -313,6 +313,9 @@ void PropertiesPanel::RenderAddComponentButton(const engine::ecs::Entity entity)
 			 const auto& category : registry.GetCategories()) {
 			if (ImGui::BeginMenu(category.c_str())) {
 				for (const auto* comp : registry.GetComponentsByCategory(category)) {
+					if (comp->hidden) {
+						continue;
+					}
 					if (entity.has(comp->id)) {
 						ImGui::TextDisabled("%s (already added)", comp->name.c_str());
 					}
@@ -430,12 +433,30 @@ void PropertiesPanel::RenderSceneProperties(
 			ImGui::TextColored(ImVec4(1.0F, 0.8F, 0.2F, 1.0F), "Save and reload scene to apply backend change.");
 		}
 
-		glm::vec2 gravity = scene->GetGravity();
-		if (ImGui::InputFloat2("Gravity", &gravity[0])) {
-			scene->SetGravity(gravity);
-			if (callbacks_.on_scene_modified) {
-				callbacks_.on_scene_modified();
+		if (const flecs::world& fw = world.GetWorld(); fw.has<engine::physics::PhysicsWorldConfig>()) {
+			auto& [gravity, fixed_timestep, max_substeps, enable_sleeping, show_debug_physics] =
+					fw.get_mut<engine::physics::PhysicsWorldConfig>();
+			if (ImGui::InputFloat3("Gravity", &gravity[0])) {
+				if (callbacks_.on_scene_modified) {
+					callbacks_.on_scene_modified();
+				}
 			}
+			if (ImGui::InputFloat("Fixed Timestep", &fixed_timestep, 0.001F, 0.01F, "%.4f")) {
+				if (callbacks_.on_scene_modified) {
+					callbacks_.on_scene_modified();
+				}
+			}
+			if (ImGui::InputInt("Max Substeps", &max_substeps)) {
+				if (callbacks_.on_scene_modified) {
+					callbacks_.on_scene_modified();
+				}
+			}
+			if (ImGui::Checkbox("Enable Sleeping", &enable_sleeping)) {
+				if (callbacks_.on_scene_modified) {
+					callbacks_.on_scene_modified();
+				}
+			}
+			ImGui::Checkbox("Show Debug Physics", &show_debug_physics);
 		}
 	}
 

@@ -55,6 +55,7 @@ struct ComponentInfo {
 	std::string category; // User-defined category string
 	flecs::entity_t id = 0;
 	std::vector<FieldInfo> fields;
+	bool hidden = false; // If true, component is hidden from "Add Component" menu (e.g. world singletons)
 };
 
 // === TYPE DEDUCTION TRAITS ===
@@ -134,6 +135,11 @@ public:
 
 	ComponentRegistration& Category(const std::string& cat) {
 		info_.category = cat;
+		return *this;
+	}
+
+	ComponentRegistration& Hidden() {
+		info_.hidden = true;
 		return *this;
 	}
 

@@ -106,9 +106,6 @@ public:
 	void SetAmbientLight(const glm::vec4& color) const;
 	glm::vec4 GetAmbientLight() const;
 
-	void SetGravity(const glm::vec2& gravity) const;
-	glm::vec2 GetGravity() const;
-
 	void SetPhysicsBackend(const std::string& backend) const;
 	std::string GetPhysicsBackend() const;
 

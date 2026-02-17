@@ -72,6 +72,7 @@ struct PhysicsWorldConfig {
 	float fixed_timestep{1.0F / 60.0F};
 	int max_substeps{4};
 	bool enable_sleeping{true};
+	bool show_debug_physics{false};
 };
 
 // Constraint as relationship data (used with flecs relationships)

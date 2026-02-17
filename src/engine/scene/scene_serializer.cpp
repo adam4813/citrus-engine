@@ -49,8 +49,6 @@ bool SceneSerializer::Save(const Scene& scene, ecs::ECSWorld& world, const platf
 		settings["background_color"] = {bg_color.r, bg_color.g, bg_color.b, bg_color.a};
 		auto ambient = scene.GetAmbientLight();
 		settings["ambient_light"] = {ambient.r, ambient.g, ambient.b, ambient.a};
-		auto gravity = scene.GetGravity();
-		settings["gravity"] = {gravity.x, gravity.y};
 		settings["physics_backend"] = scene.GetPhysicsBackend();
 		settings["author"] = scene.GetAuthor();
 		settings["description"] = scene.GetDescription();
@@ -70,6 +68,24 @@ bool SceneSerializer::Save(const Scene& scene, ecs::ECSWorld& world, const platf
 		// Serialize entities using flecs
 		const std::string flecs_json = SerializeEntities(scene, world);
 		doc["flecs_data"] = flecs_json;
+
+		// Serialize world singletons (physics config, etc.)
+		{
+			json singletons;
+			const flecs::world& fw = world.GetWorld();
+			if (fw.has<physics::PhysicsWorldConfig>()) {
+				const auto& cfg = fw.get<physics::PhysicsWorldConfig>();
+				json physics_cfg;
+				physics_cfg["gravity"] = {cfg.gravity.x, cfg.gravity.y, cfg.gravity.z};
+				physics_cfg["fixed_timestep"] = cfg.fixed_timestep;
+				physics_cfg["max_substeps"] = cfg.max_substeps;
+				physics_cfg["enable_sleeping"] = cfg.enable_sleeping;
+				singletons["PhysicsWorldConfig"] = physics_cfg;
+			}
+			if (!singletons.empty()) {
+				doc["singletons"] = singletons;
+			}
+		}
 
 		// Save active camera entity path (if any) - after entities
 		if (const std::string active_camera_path = GetActiveCameraPath(world); !active_camera_path.empty()) {
@@ -133,10 +149,6 @@ SceneId SceneSerializer::Load(const platform::fs::Path& path, SceneManager& mana
 				auto amb = settings["ambient_light"];
 				scene.SetAmbientLight(glm::vec4(amb[0], amb[1], amb[2], amb[3]));
 			}
-			if (settings.contains("gravity") && settings["gravity"].is_array()) {
-				auto grav = settings["gravity"];
-				scene.SetGravity(glm::vec2(grav[0], grav[1]));
-			}
 			if (settings.contains("physics_backend")) {
 				scene.SetPhysicsBackend(settings["physics_backend"].get<std::string>());
 			}
@@ -150,6 +162,28 @@ SceneId SceneSerializer::Load(const platform::fs::Path& path, SceneManager& mana
 
 		// Import physics backend module based on scene settings
 		ImportPhysicsModule(scene.GetPhysicsBackend(), world);
+
+		// Restore world singletons (must be after physics module import creates defaults)
+		if (doc.contains("singletons")) {
+			if (const auto& singletons = doc["singletons"]; singletons.contains("PhysicsWorldConfig")) {
+				const auto& pcfg = singletons["PhysicsWorldConfig"];
+				auto& flecs_world = world.GetWorld();
+				auto& cfg = flecs_world.get_mut<physics::PhysicsWorldConfig>();
+				if (pcfg.contains("gravity") && pcfg["gravity"].is_array()) {
+					auto g = pcfg["gravity"];
+					cfg.gravity = glm::vec3(g[0], g[1], g[2]);
+				}
+				if (pcfg.contains("fixed_timestep")) {
+					cfg.fixed_timestep = pcfg["fixed_timestep"].get<float>();
+				}
+				if (pcfg.contains("max_substeps")) {
+					cfg.max_substeps = pcfg["max_substeps"].get<int>();
+				}
+				if (pcfg.contains("enable_sleeping")) {
+					cfg.enable_sleeping = pcfg["enable_sleeping"].get<bool>();
+				}
+			}
+		}
 
 		// Add assets BEFORE entities (order matters - entities may reference assets)
 		if (doc.contains("assets") && doc["assets"].is_array()) {

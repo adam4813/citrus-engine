@@ -33,7 +33,7 @@ Bullet3PhysicsModule::Bullet3PhysicsModule(const flecs::world& world) {
 
 	// Get config from PhysicsWorldConfig singleton
 	PhysicsConfig config;
-	const auto& [gravity, fixed_timestep, max_substeps, enable_sleeping] = world.get<PhysicsWorldConfig>();
+	const auto& [gravity, fixed_timestep, max_substeps, enable_sleeping, show_debug_physics] = world.get<PhysicsWorldConfig>();
 	config.gravity = gravity;
 	config.fixed_timestep = fixed_timestep;
 	config.max_substeps = max_substeps;

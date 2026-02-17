@@ -13,13 +13,6 @@
     "glfw3",
     "glm",
     "gtest",
-    {
-      "name": "imgui",
-      "features": [
-        "glfw-binding",
-        "opengl3-binding"
-      ]
-    },
     "joltphysics",
     "lua",
     "nlohmann-json",

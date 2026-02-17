@@ -237,7 +237,6 @@ target_link_libraries(engine-core
     glm::glm-header-only
     spdlog::spdlog
     nlohmann_json::nlohmann_json
-    imgui::imgui
     Jolt::Jolt
     BulletDynamics
     BulletCollision

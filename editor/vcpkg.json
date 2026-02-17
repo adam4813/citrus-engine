@@ -7,7 +7,9 @@
     {
       "name": "imgui",
       "features": [
-        "docking-experimental"
+        "docking-experimental",
+        "glfw-binding",
+        "opengl3-binding"
       ]
     }
   ],

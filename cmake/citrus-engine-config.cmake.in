@@ -17,7 +17,6 @@ find_dependency(flecs CONFIG)
 find_dependency(Jolt CONFIG REQUIRED)
 find_dependency(spdlog CONFIG)
 find_dependency(nlohmann_json CONFIG)
-find_dependency(imgui CONFIG)
 find_dependency(unofficial-lua CONFIG)
 
 if(NOT EMSCRIPTEN)

@@ -58,7 +58,7 @@ public:
 	static void Unbind();
 
 	/**
-	 * @brief Get the color texture ID for use with ImGui or other systems
+	 * @brief Get the color texture ID
 	 * @return OpenGL texture ID of the color attachment
 	 */
 	[[nodiscard]] uint32_t GetColorTextureId() const;

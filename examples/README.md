@@ -276,6 +276,32 @@ auto texture = LoadTexture("assets/textures/example.png");
   - Illustrates scene lifecycle (load/unload)
   - Interactive UI for switching between scenes and viewing scene state
   - This example bridges the gap between simple example scenes and the full engine scene system
+- **Data Assets**: Demonstrates the data asset system
+  - Schema definition and registration
+  - DataAsset creation from schemas
+  - DataTable with rows and columns (loot table example)
+  - JSON and CSV serialization/deserialization
+
+### UI Examples
+
+- **UI Image Element**: Demonstrates the Image UI element for rendering sprites
+  - Creating Image elements with bounds
+  - Loading and setting sprites
+  - Composing Images with children (text, other images)
+  - Reactive updates (changing sprites, toggling visibility)
+- **UI Showcase**: Comprehensive demonstration of all UI components with UITheme styling
+  - Buttons (normal, primary, disabled) with click callbacks
+  - Checkboxes with toggle callbacks
+  - Sliders with value-changed callbacks
+  - ProgressBar, TabContainer, Divider
+  - ConfirmationDialog
+  - TooltipComponent
+- **UI Components**: Demonstrates layout, constraint, and scroll components
+  - Container element with LayoutComponent (vertical, horizontal, grid, stack, justify)
+  - ConstraintComponent with anchor presets
+  - ScrollComponent for scrollable containers
+  - ContainerBuilder fluent API
+  - Interactive ImGui controls for real-time manipulation
 
 ### Future Examples
 
@@ -285,5 +311,4 @@ More examples will be added to demonstrate:
 - Physics integration
 - Audio system
 - Complex input handling
-- UI components
 - And more!

@@ -29,8 +29,14 @@ private:
 	uint32_t font_texture_id = 0;
 	flecs::entity camera_entity;
 
-	void CreateMainCamera(engine::ecs::ECSWorld& ecs) {
-		camera_entity = ecs.CreateEntity("MainCamera");
+	void CreateMainCamera(engine::Engine& eng) {
+		camera_entity = eng.ecs.CreateEntity("MainCamera");
+
+		uint32_t fb_width = 1280;
+		uint32_t fb_height = 720;
+		if (eng.renderer) {
+			eng.renderer->GetFramebufferSize(fb_width, fb_height);
+		}
 
 		// Position camera at (0, 0, -1) looking towards the origin for the example scenes
 		camera_entity.set<engine::components::Transform>({{0.0f, 0.0f, -1.0f}});
@@ -38,11 +44,11 @@ private:
 				.target = {0.0f, 0.0f, 0.0f}, // Look at the origin
 				.up = {0.0f, 1.0f, 0.0f},
 				.fov = 60.0f,
-				.aspect_ratio = static_cast<float>(800) / static_cast<float>(600),
+				.aspect_ratio = static_cast<float>(fb_width) / static_cast<float>(fb_height),
 				.near_plane = 0.1f,
 				.far_plane = 100.0f,
 		});
-		ecs.SetActiveCamera(camera_entity);
+		eng.ecs.SetActiveCamera(camera_entity);
 	}
 
 public:
@@ -55,7 +61,7 @@ public:
 		engine::ui::text_renderer::FontManager::Initialize("fonts/Kenney Future.ttf", 16);
 		engine::ui::batch_renderer::BatchRenderer::Initialize();
 		font_texture_id = engine::ui::text_renderer::FontManager::GetDefaultFont()->GetTextureId();
-		CreateMainCamera(engine.ecs);
+		CreateMainCamera(engine);
 	}
 
 	void Shutdown(engine::Engine& engine) override {

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <imgui.h>
 #include <memory>
 #include <string>
@@ -83,10 +84,23 @@ private:
 	float GenerateOscillatorSample(float phase) const;
 
 	// ========================================================================
+	// Full Audio Synthesis
+	// ========================================================================
+	std::vector<float> SynthesizeFullAudio(int sample_rate) const;
+	static std::vector<uint8_t> BuildWavFile(const std::vector<float>& samples, int sample_rate);
+
+	// ========================================================================
+	// Playback
+	// ========================================================================
+	void PlayPreview();
+	void StopPreview();
+
+	// ========================================================================
 	// File I/O
 	// ========================================================================
 	bool LoadPresetFromJson(const std::string& path);
 	bool SavePresetToJson(const std::string& path);
+	bool ExportWav(const std::string& path);
 
 	// ========================================================================
 	// Sound Synthesis Parameters
@@ -135,6 +149,9 @@ private:
 
 	// Transport state
 	bool is_playing_ = false;
+	uint32_t playback_handle_ = 0;
+	uint32_t playback_clip_id_ = 0;
+	std::string playback_temp_path_;
 
 	// Waveform visualization
 	static constexpr int WAVEFORM_SAMPLE_COUNT = 512;
@@ -143,6 +160,7 @@ private:
 	// File dialogs
 	FileDialogPopup open_dialog_{"Open Sound Preset", FileDialogMode::Open, {".json"}};
 	FileDialogPopup save_dialog_{"Save Sound Preset As", FileDialogMode::Save, {".json"}};
+	FileDialogPopup export_wav_dialog_{"Export WAV", FileDialogMode::Save, {".wav"}};
 };
 
 } // namespace editor

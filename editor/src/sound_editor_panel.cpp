@@ -21,9 +21,10 @@ SoundEditorPanel::SoundEditorPanel() {
 
 	open_dialog_.SetCallback([this](const std::string& path) { OpenSound(path); });
 	save_dialog_.SetCallback([this](const std::string& path) { SaveSound(path); });
+	export_wav_dialog_.SetCallback([this](const std::string& path) { ExportWav(path); });
 }
 
-SoundEditorPanel::~SoundEditorPanel() = default;
+SoundEditorPanel::~SoundEditorPanel() { StopPreview(); }
 
 std::string_view SoundEditorPanel::GetPanelName() const { return "Sound Editor"; }
 
@@ -97,7 +98,7 @@ void SoundEditorPanel::RenderMenuBar() {
 			}
 			ImGui::Separator();
 			if (ImGui::MenuItem("Export WAV...")) {
-				ImGui::OpenPopup("ExportNotImplemented");
+				export_wav_dialog_.Open("sound.wav");
 			}
 			ImGui::EndMenu();
 		}
@@ -106,15 +107,7 @@ void SoundEditorPanel::RenderMenuBar() {
 
 	open_dialog_.Render();
 	save_dialog_.Render();
-
-	// Export not implemented popup
-	if (ImGui::BeginPopupModal("ExportNotImplemented", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
-		ImGui::Text("WAV export is not yet implemented.");
-		if (ImGui::Button("OK", ImVec2(120, 0))) {
-			ImGui::CloseCurrentPopup();
-		}
-		ImGui::EndPopup();
-	}
+	export_wav_dialog_.Render();
 }
 
 void SoundEditorPanel::RenderWaveformSelector() {
@@ -212,14 +205,12 @@ void SoundEditorPanel::RenderTransportControls() {
 
 	if (!is_playing_) {
 		if (ImGui::Button("Play", ImVec2(button_width, 0))) {
-			is_playing_ = true;
-			// TODO: Trigger audio playback (stretch goal)
+			PlayPreview();
 		}
 	}
 	else {
 		if (ImGui::Button("Stop", ImVec2(button_width, 0))) {
-			is_playing_ = false;
-			// TODO: Stop audio playback
+			StopPreview();
 		}
 	}
 
@@ -452,10 +443,287 @@ float SoundEditorPanel::GenerateOscillatorSample(const float phase) const {
 }
 
 // ========================================================================
+// Full Audio Synthesis (sfxr-style)
+// ========================================================================
+
+std::vector<float> SoundEditorPanel::SynthesizeFullAudio(const int sample_rate) const {
+	constexpr float pi = 3.14159265359f;
+	constexpr float two_pi = 2.0f * pi;
+
+	const float total_time = preset_.attack_time + preset_.sustain_time + preset_.decay_time;
+	if (total_time <= 0.0f) {
+		return {};
+	}
+
+	const int total_samples = static_cast<int>(total_time * static_cast<float>(sample_rate));
+	if (total_samples <= 0) {
+		return {};
+	}
+
+	std::vector<float> samples(total_samples);
+
+	const float dt = 1.0f / static_cast<float>(sample_rate);
+
+	// Synthesis state
+	float phase = 0.0f;
+	float frequency = preset_.base_frequency;
+
+	// Phaser state (delay buffer)
+	constexpr int PHASER_BUFFER_SIZE = 1024;
+	std::vector<float> phaser_buffer(PHASER_BUFFER_SIZE, 0.0f);
+	int phaser_pos = 0;
+	float phaser_offset = preset_.phaser_offset * 100.0f; // Convert to sample offset
+
+	// Filter state
+	float lp_sample = 0.0f;
+	float lp_cutoff = preset_.lowpass_cutoff;
+	float hp_sample = 0.0f;
+
+	// Noise RNG
+	std::mt19937 noise_gen(42);
+	std::uniform_real_distribution<float> noise_dist(-1.0f, 1.0f);
+
+	for (int i = 0; i < total_samples; ++i) {
+		const float t = static_cast<float>(i) * dt;
+
+		// --- Envelope ---
+		float envelope = 0.0f;
+		if (t < preset_.attack_time) {
+			// Attack: ramp from 0 to sustain_level
+			envelope = (preset_.attack_time > 0.0f)
+				? preset_.sustain_level * (t / preset_.attack_time)
+				: preset_.sustain_level;
+		} else if (t < preset_.attack_time + preset_.sustain_time) {
+			envelope = preset_.sustain_level;
+		} else {
+			// Decay: ramp from sustain_level to 0
+			const float decay_t = t - preset_.attack_time - preset_.sustain_time;
+			envelope = (preset_.decay_time > 0.0f)
+				? preset_.sustain_level * (1.0f - decay_t / preset_.decay_time)
+				: 0.0f;
+		}
+		envelope = std::clamp(envelope, 0.0f, 1.0f);
+
+		// --- Frequency slide ---
+		frequency += preset_.frequency_slide * 1000.0f * dt;
+		frequency = std::clamp(frequency, preset_.frequency_min, preset_.frequency_max);
+
+		// --- Vibrato ---
+		float vibrato_mod = 0.0f;
+		if (preset_.vibrato_depth > 0.0f && preset_.vibrato_speed > 0.0f) {
+			vibrato_mod = preset_.vibrato_depth * frequency * 0.5f
+				* std::sin(two_pi * preset_.vibrato_speed * t);
+		}
+
+		const float current_freq = frequency + vibrato_mod;
+
+		// --- Oscillator ---
+		float sample = 0.0f;
+		switch (preset_.waveform) {
+		case WaveformType::Sine:
+			sample = std::sin(phase);
+			break;
+		case WaveformType::Square:
+			sample = (std::fmod(phase, two_pi) < pi) ? 1.0f : -1.0f;
+			break;
+		case WaveformType::Saw:
+			sample = (std::fmod(phase, two_pi) / pi) - 1.0f;
+			break;
+		case WaveformType::Triangle: {
+			const float norm = std::fmod(phase, two_pi) / two_pi;
+			sample = (norm < 0.5f) ? (4.0f * norm - 1.0f) : (3.0f - 4.0f * norm);
+			break;
+		}
+		case WaveformType::Noise:
+			sample = noise_dist(noise_gen);
+			break;
+		}
+
+		// Advance phase
+		phase += two_pi * current_freq * dt;
+		if (phase > two_pi) {
+			phase -= two_pi * std::floor(phase / two_pi);
+		}
+
+		// --- Low-pass filter ---
+		lp_cutoff += preset_.lowpass_sweep * dt;
+		lp_cutoff = std::clamp(lp_cutoff, 0.0f, 1.0f);
+		if (lp_cutoff < 1.0f) {
+			// Simple one-pole low-pass: coefficient from normalized cutoff
+			const float lp_coeff = std::clamp(lp_cutoff * lp_cutoff, 0.0001f, 1.0f);
+			lp_sample += lp_coeff * (sample - lp_sample);
+			sample = lp_sample;
+		}
+
+		// --- High-pass filter ---
+		if (preset_.highpass_cutoff > 0.0f) {
+			const float hp_coeff = std::clamp(
+				1.0f - preset_.highpass_cutoff * preset_.highpass_cutoff, 0.0f, 0.9999f);
+			hp_sample = hp_coeff * (hp_sample + sample - lp_sample);
+			sample -= hp_sample;
+		}
+
+		// --- Phaser ---
+		if (std::abs(preset_.phaser_offset) > 0.001f) {
+			phaser_offset += preset_.phaser_sweep * dt * 100.0f;
+			const int offset = std::clamp(
+				static_cast<int>(std::abs(phaser_offset)), 1, PHASER_BUFFER_SIZE - 1);
+			phaser_buffer[phaser_pos] = sample;
+			const int read_pos = (phaser_pos - offset + PHASER_BUFFER_SIZE) % PHASER_BUFFER_SIZE;
+			sample += phaser_buffer[read_pos];
+			phaser_pos = (phaser_pos + 1) % PHASER_BUFFER_SIZE;
+		}
+
+		// --- Apply envelope and volume ---
+		sample *= envelope * preset_.master_volume * preset_.gain;
+
+		samples[i] = std::clamp(sample, -1.0f, 1.0f);
+	}
+
+	return samples;
+}
+
+// ========================================================================
+// WAV File Construction
+// ========================================================================
+
+std::vector<uint8_t> SoundEditorPanel::BuildWavFile(
+		const std::vector<float>& samples, const int sample_rate) {
+	const uint32_t num_samples = static_cast<uint32_t>(samples.size());
+	constexpr uint16_t num_channels = 1;
+	constexpr uint16_t bits_per_sample = 16;
+	constexpr uint16_t block_align = num_channels * (bits_per_sample / 8);
+	const uint32_t byte_rate = static_cast<uint32_t>(sample_rate) * block_align;
+	const uint32_t data_size = num_samples * block_align;
+	const uint32_t file_size = 36 + data_size;
+
+	std::vector<uint8_t> wav;
+	wav.reserve(44 + data_size);
+
+	// Helper to write little-endian values
+	auto write_u16 = [&](uint16_t v) {
+		wav.push_back(static_cast<uint8_t>(v & 0xFF));
+		wav.push_back(static_cast<uint8_t>((v >> 8) & 0xFF));
+	};
+	auto write_u32 = [&](uint32_t v) {
+		wav.push_back(static_cast<uint8_t>(v & 0xFF));
+		wav.push_back(static_cast<uint8_t>((v >> 8) & 0xFF));
+		wav.push_back(static_cast<uint8_t>((v >> 16) & 0xFF));
+		wav.push_back(static_cast<uint8_t>((v >> 24) & 0xFF));
+	};
+	auto write_tag = [&](const char tag[4]) {
+		wav.push_back(static_cast<uint8_t>(tag[0]));
+		wav.push_back(static_cast<uint8_t>(tag[1]));
+		wav.push_back(static_cast<uint8_t>(tag[2]));
+		wav.push_back(static_cast<uint8_t>(tag[3]));
+	};
+
+	// RIFF header
+	write_tag("RIFF");
+	write_u32(file_size);
+	write_tag("WAVE");
+
+	// fmt chunk
+	write_tag("fmt ");
+	write_u32(16);                                      // chunk size
+	write_u16(1);                                       // PCM format
+	write_u16(num_channels);
+	write_u32(static_cast<uint32_t>(sample_rate));
+	write_u32(byte_rate);
+	write_u16(block_align);
+	write_u16(bits_per_sample);
+
+	// data chunk
+	write_tag("data");
+	write_u32(data_size);
+
+	// Convert float samples [-1, 1] to 16-bit PCM
+	for (const float s : samples) {
+		const float clamped = std::clamp(s, -1.0f, 1.0f);
+		auto pcm = static_cast<int16_t>(clamped * 32767.0f);
+		wav.push_back(static_cast<uint8_t>(pcm & 0xFF));
+		wav.push_back(static_cast<uint8_t>((pcm >> 8) & 0xFF));
+	}
+
+	return wav;
+}
+
+// ========================================================================
+// Playback
+// ========================================================================
+
+void SoundEditorPanel::PlayPreview() {
+	StopPreview();
+
+	constexpr int sample_rate = 44100;
+	auto samples = SynthesizeFullAudio(sample_rate);
+	if (samples.empty()) {
+		return;
+	}
+
+	// Write to a temporary WAV file for miniaudio playback
+	auto wav_data = BuildWavFile(samples, sample_rate);
+	playback_temp_path_ = (std::filesystem::temp_directory_path() / "citrus_sfx_preview.wav").string();
+
+	if (!engine::assets::AssetManager::SaveBinaryFile(
+			std::filesystem::path(playback_temp_path_), wav_data)) {
+		return;
+	}
+
+	auto& audio = engine::audio::AudioSystem::Get();
+	if (!audio.IsInitialized()) {
+		audio.Initialize();
+	}
+
+	playback_clip_id_ = audio.LoadClip(playback_temp_path_);
+	if (playback_clip_id_ == 0) {
+		return;
+	}
+
+	playback_handle_ = audio.PlaySound(playback_clip_id_, 1.0f, false);
+	if (playback_handle_ != 0) {
+		is_playing_ = true;
+	}
+}
+
+void SoundEditorPanel::StopPreview() {
+	if (playback_handle_ != 0) {
+		auto& audio = engine::audio::AudioSystem::Get();
+		audio.StopSound(playback_handle_);
+		playback_handle_ = 0;
+	}
+	playback_clip_id_ = 0;
+	is_playing_ = false;
+
+	// Clean up temp file
+	if (!playback_temp_path_.empty()) {
+		std::filesystem::remove(std::filesystem::path(playback_temp_path_));
+		playback_temp_path_.clear();
+	}
+}
+
+// ========================================================================
+// WAV Export
+// ========================================================================
+
+bool SoundEditorPanel::ExportWav(const std::string& path) {
+	constexpr int sample_rate = 44100;
+	auto samples = SynthesizeFullAudio(sample_rate);
+	if (samples.empty()) {
+		return false;
+	}
+
+	auto wav_data = BuildWavFile(samples, sample_rate);
+	return engine::assets::AssetManager::SaveBinaryFile(
+		std::filesystem::path(path), wav_data);
+}
+
+// ========================================================================
 // Public API
 // ========================================================================
 
 void SoundEditorPanel::NewSound() {
+	StopPreview();
 	preset_ = SoundPreset();
 	preset_name_ = "Untitled";
 	current_file_path_ = "";

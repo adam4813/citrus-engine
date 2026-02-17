@@ -612,9 +612,7 @@ void ECSWorld::SetupSpatialSystem() const {
 
 void ECSWorld::SetupTransformSystem() const {
 	world_.observer<const Transform, WorldTransform>("TransformPropagation")
-			.term_at(0)
-			.self()
-			.up()
+			.event(flecs::OnAdd)
 			.event(flecs::OnSet)
 			.each([](const flecs::entity entity, const Transform& transform, WorldTransform& world_transform) {
 				glm::mat4 world_matrix = component_helpers::ComputeTransformMatrix(transform);

@@ -992,7 +992,6 @@ void ViewportPanel::PickEntityAtMousePosition(
 
 	// Find the closest entity under the ray
 	flecs::entity picked_entity;
-	float closest_distance = std::numeric_limits<float>::max();
 
 	// Get the scene root to iterate entities
 	if (!scene) {
@@ -1004,43 +1003,71 @@ void ViewportPanel::PickEntityAtMousePosition(
 		return;
 	}
 
-	// Iterate all entities with WorldTransform and either Renderable or Sprite
-	scene_root.world().each([&](flecs::entity entity, const engine::components::WorldTransform& world_transform) {
-		// Skip if entity is not visible (check if it has Renderable and is not visible)
-		if (entity.has<engine::rendering::Renderable>()) {
-			const auto& renderable = entity.get<engine::rendering::Renderable>();
-			if (!renderable.visible) {
-				return;
+	// Try physics raycasting first if physics backend is available
+	bool used_physics = false;
+	if (scene_root.world().has<engine::physics::PhysicsBackendPtr>()) {
+		const auto backend_ptr = scene_root.world().get<engine::physics::PhysicsBackendPtr>();
+		if (backend_ptr.backend) {
+			// Construct physics ray
+			engine::physics::Ray ray;
+			ray.origin = ray_origin;
+			ray.direction = ray_world;
+			ray.max_distance = 10000.0f; // Large distance for viewport picking
+			ray.collision_mask = 0xFFFFFFFF; // Pick all layers
+
+			// Perform raycast
+			if (auto result = backend_ptr.backend->Raycast(ray)) {
+				if (result->HasHit()) {
+					picked_entity = scene_root.world().entity(result->entity);
+					used_physics = true;
+				}
 			}
 		}
+	}
 
-		// Extract entity position from world transform matrix
-		const glm::vec3 entity_pos(
-				world_transform.matrix[3][0], world_transform.matrix[3][1], world_transform.matrix[3][2]);
+	// Fallback to distance-based picking if physics didn't find anything
+	// (e.g., entities without collision shapes)
+	if (!used_physics || !picked_entity.is_valid()) {
+		float closest_distance = std::numeric_limits<float>::max();
 
-		// Simple distance-based picking - compute distance from ray to entity position
-		// Using point-to-line distance formula
-		const glm::vec3 ray_to_entity = entity_pos - ray_origin;
-		const float t = glm::dot(ray_to_entity, ray_world);
+		// Iterate all entities with WorldTransform and either Renderable or Sprite
+		scene_root.world().each([&](flecs::entity entity, const engine::components::WorldTransform& world_transform) {
+			// Skip if entity is not visible (check if it has Renderable and is not visible)
+			if (entity.has<engine::rendering::Renderable>()) {
+				const auto& renderable = entity.get<engine::rendering::Renderable>();
+				if (!renderable.visible) {
+					return;
+				}
+			}
 
-		// Only consider entities in front of the camera
-		if (t < 0.0f) {
-			return;
-		}
+			// Extract entity position from world transform matrix
+			const glm::vec3 entity_pos(
+					world_transform.matrix[3][0], world_transform.matrix[3][1], world_transform.matrix[3][2]);
 
-		// Point on ray closest to entity
-		const glm::vec3 closest_point = ray_origin + ray_world * t;
-		const float distance = glm::length(entity_pos - closest_point);
+			// Simple distance-based picking - compute distance from ray to entity position
+			// Using point-to-line distance formula
+			const glm::vec3 ray_to_entity = entity_pos - ray_origin;
+			const float t = glm::dot(ray_to_entity, ray_world);
 
-		// Use a simple picking radius for 2D-like picking
-		// This could be improved with bounding boxes or sprite sizes
-		constexpr float pick_radius = 1.0f;
+			// Only consider entities in front of the camera
+			if (t < 0.0f) {
+				return;
+			}
 
-		if (distance < pick_radius && t < closest_distance) {
-			picked_entity = entity;
-			closest_distance = t;
-		}
-	});
+			// Point on ray closest to entity
+			const glm::vec3 closest_point = ray_origin + ray_world * t;
+			const float distance = glm::length(entity_pos - closest_point);
+
+			// Use a simple picking radius for 2D-like picking
+			// This could be improved with bounding boxes or sprite sizes
+			constexpr float pick_radius = 1.0f;
+
+			if (distance < pick_radius && t < closest_distance) {
+				picked_entity = entity;
+				closest_distance = t;
+			}
+		});
+	}
 
 	// Call the selection callback with the picked entity (or invalid entity if nothing picked)
 	callbacks_.on_entity_selected(picked_entity);

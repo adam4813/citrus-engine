@@ -1,0 +1,21 @@
+{
+  "asset_type": "sound",
+  "attack_time": 0.0,
+  "base_frequency": 440.0,
+  "decay_time": 0.0,
+  "frequency_max": 1000.0,
+  "frequency_min": 100.0,
+  "frequency_slide": 0.0,
+  "gain": 1.0,
+  "highpass_cutoff": 0.0,
+  "lowpass_cutoff": 1.0,
+  "lowpass_sweep": 0.0,
+  "master_volume": 0.5,
+  "phaser_offset": 0.0,
+  "phaser_sweep": 0.0,
+  "sustain_level": 1.0,
+  "sustain_time": 0.30000001192092896,
+  "vibrato_depth": 0.0,
+  "vibrato_speed": 0.0,
+  "waveform": 0
+}

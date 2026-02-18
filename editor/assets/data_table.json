@@ -1,0 +1,40 @@
+{
+  "asset_type": "data_table",
+  "columns": [
+    {
+      "name": "Test"
+    },
+    {
+      "name": "Test2"
+    }
+  ],
+  "name": "XYZ",
+  "rows": [
+    {
+      "key": "row_1",
+      "values": {
+        "Test": {
+          "type": "string",
+          "value": "1"
+        },
+        "Test2": {
+          "type": "string",
+          "value": "1"
+        }
+      }
+    },
+    {
+      "key": "row_2",
+      "values": {
+        "Test": {
+          "type": "string",
+          "value": "2"
+        },
+        "Test2": {
+          "type": "string",
+          "value": "2"
+        }
+      }
+    }
+  ]
+}

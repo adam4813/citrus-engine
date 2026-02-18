@@ -1,0 +1,28 @@
+{
+  "asset_type": "animation",
+  "duration": 5.0,
+  "looping": false,
+  "name": "New Animation",
+  "tracks": [
+    {
+      "interpolation": "linear",
+      "keyframes": [
+        {
+          "time": 0.0,
+          "value": {
+            "type": "float",
+            "value": 0.0
+          }
+        },
+        {
+          "time": 2.866666555404663,
+          "value": {
+            "type": "float",
+            "value": 0.0
+          }
+        }
+      ],
+      "property": "position.x"
+    }
+  ]
+}

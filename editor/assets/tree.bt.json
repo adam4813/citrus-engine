@@ -1,0 +1,8 @@
+{
+  "type": "behavior_tree",
+  "version": "1.0",
+  "root": {
+    "type": "Selector",
+    "name": "Loaded Root 3"
+  }
+}

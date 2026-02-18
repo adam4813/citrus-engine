@@ -1,0 +1,426 @@
+{
+  "asset_type": "procedural_texture",
+  "links": [
+    {
+      "from_node": 4,
+      "from_pin": 0,
+      "id": 5,
+      "to_node": 1,
+      "to_pin": 0
+    },
+    {
+      "from_node": 6,
+      "from_pin": 0,
+      "id": 7,
+      "to_node": 4,
+      "to_pin": 0
+    },
+    {
+      "from_node": 9,
+      "from_pin": 0,
+      "id": 11,
+      "to_node": 8,
+      "to_pin": 0
+    },
+    {
+      "from_node": 8,
+      "from_pin": 0,
+      "id": 12,
+      "to_node": 10,
+      "to_pin": 0
+    },
+    {
+      "from_node": 9,
+      "from_pin": 1,
+      "id": 13,
+      "to_node": 10,
+      "to_pin": 1
+    },
+    {
+      "from_node": 9,
+      "from_pin": 2,
+      "id": 14,
+      "to_node": 10,
+      "to_pin": 2
+    },
+    {
+      "from_node": 9,
+      "from_pin": 3,
+      "id": 15,
+      "to_node": 10,
+      "to_pin": 3
+    },
+    {
+      "from_node": 10,
+      "from_pin": 0,
+      "id": 16,
+      "to_node": 2,
+      "to_pin": 0
+    },
+    {
+      "from_node": 1,
+      "from_pin": 0,
+      "id": 17,
+      "to_node": 9,
+      "to_pin": 0
+    },
+    {
+      "from_node": 18,
+      "from_pin": 0,
+      "id": 19,
+      "to_node": 8,
+      "to_pin": 1
+    },
+    {
+      "from_node": 6,
+      "from_pin": 0,
+      "id": 20,
+      "to_node": 18,
+      "to_pin": 0
+    },
+    {
+      "from_node": 21,
+      "from_pin": 0,
+      "id": 22,
+      "to_node": 18,
+      "to_pin": 2
+    },
+    {
+      "from_node": 23,
+      "from_pin": 0,
+      "id": 24,
+      "to_node": 18,
+      "to_pin": 1
+    }
+  ],
+  "nodes": [
+    {
+      "id": 1,
+      "inputs": [
+        {
+          "default_value": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "id": 0,
+          "name": "Color",
+          "type": 7
+        }
+      ],
+      "outputs": [
+        {
+          "default_value": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "id": 0,
+          "name": "Color",
+          "type": 7
+        }
+      ],
+      "position": [
+        362.0,
+        94.0
+      ],
+      "properties": null,
+      "type": "Solid Color"
+    },
+    {
+      "id": 2,
+      "inputs": [
+        {
+          "default_value": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "id": 0,
+          "name": "Color",
+          "type": 7
+        }
+      ],
+      "outputs": [
+        {
+          "default_value": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "id": 0,
+          "name": "Color",
+          "type": 7
+        }
+      ],
+      "position": [
+        784.0,
+        92.0
+      ],
+      "properties": null,
+      "type": "Texture Output"
+    },
+    {
+      "id": 4,
+      "inputs": [
+        {
+          "default_value": [
+            0.0,
+            0.0
+          ],
+          "id": 0,
+          "name": "UV",
+          "type": 4
+        }
+      ],
+      "outputs": [
+        {
+          "default_value": [
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "id": 0,
+          "name": "Color",
+          "type": 7
+        }
+      ],
+      "position": [
+        170.0,
+        96.0
+      ],
+      "properties": null,
+      "type": "TextureSample"
+    },
+    {
+      "id": 6,
+      "inputs": [],
+      "outputs": [
+        {
+          "default_value": [
+            0.0,
+            0.0
+          ],
+          "id": 0,
+          "name": "Vector",
+          "type": 4
+        }
+      ],
+      "position": [
+        -20.0,
+        201.0
+      ],
+      "properties": null,
+      "type": "Vec2"
+    },
+    {
+      "id": 8,
+      "inputs": [
+        {
+          "default_value": 0.0,
+          "id": 0,
+          "name": "A",
+          "type": 3
+        },
+        {
+          "default_value": 0.0,
+          "id": 0,
+          "name": "B",
+          "type": 3
+        }
+      ],
+      "outputs": [
+        {
+          "default_value": 0.0,
+          "id": 0,
+          "name": "Result",
+          "type": 3
+        }
+      ],
+      "position": [
+        656.0,
+        394.0
+      ],
+      "properties": null,
+      "type": "Add"
+    },
+    {
+      "id": 9,
+      "inputs": [
+        {
+          "default_value": [
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "id": 0,
+          "name": "Color",
+          "type": 7
+        }
+      ],
+      "outputs": [
+        {
+          "default_value": 0.0,
+          "id": 0,
+          "name": "R",
+          "type": 3
+        },
+        {
+          "default_value": 0.0,
+          "id": 0,
+          "name": "G",
+          "type": 3
+        },
+        {
+          "default_value": 0.0,
+          "id": 0,
+          "name": "B",
+          "type": 3
+        },
+        {
+          "default_value": 0.0,
+          "id": 0,
+          "name": "A",
+          "type": 3
+        }
+      ],
+      "position": [
+        567.0,
+        92.0
+      ],
+      "properties": null,
+      "type": "ChannelSplit"
+    },
+    {
+      "id": 10,
+      "inputs": [
+        {
+          "default_value": 0.0,
+          "id": 0,
+          "name": "R",
+          "type": 3
+        },
+        {
+          "default_value": 0.0,
+          "id": 0,
+          "name": "G",
+          "type": 3
+        },
+        {
+          "default_value": 0.0,
+          "id": 0,
+          "name": "B",
+          "type": 3
+        },
+        {
+          "default_value": 1.0,
+          "id": 0,
+          "name": "A",
+          "type": 3
+        }
+      ],
+      "outputs": [
+        {
+          "default_value": [
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "id": 0,
+          "name": "Color",
+          "type": 7
+        }
+      ],
+      "position": [
+        845.0,
+        278.0
+      ],
+      "properties": null,
+      "type": "ChannelMerge"
+    },
+    {
+      "id": 18,
+      "inputs": [
+        {
+          "default_value": [
+            0.0,
+            0.0
+          ],
+          "id": 0,
+          "name": "UV",
+          "type": 4
+        },
+        {
+          "default_value": 0.0,
+          "id": 0,
+          "name": "Scale",
+          "type": 3
+        },
+        {
+          "default_value": 0.0,
+          "id": 0,
+          "name": "Octaves",
+          "type": 3
+        }
+      ],
+      "outputs": [
+        {
+          "default_value": 0.0,
+          "id": 0,
+          "name": "Value",
+          "type": 3
+        }
+      ],
+      "position": [
+        423.0,
+        441.0
+      ],
+      "properties": null,
+      "type": "Perlin Noise"
+    },
+    {
+      "id": 21,
+      "inputs": [],
+      "outputs": [
+        {
+          "default_value": 0.0,
+          "id": 0,
+          "name": "Value",
+          "type": 3
+        }
+      ],
+      "position": [
+        116.0,
+        484.0
+      ],
+      "properties": null,
+      "type": "Constant"
+    },
+    {
+      "id": 23,
+      "inputs": [],
+      "outputs": [
+        {
+          "default_value": 0.0,
+          "id": 0,
+          "name": "Time",
+          "type": 3
+        }
+      ],
+      "position": [
+        110.0,
+        401.0
+      ],
+      "properties": null,
+      "type": "Time"
+    }
+  ],
+  "version": 1
+}

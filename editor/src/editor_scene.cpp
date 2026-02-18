@@ -1,6 +1,7 @@
 #include "editor_scene.h"
 #include "commands/clipboard_commands.h"
 #include "commands/entity_commands.h"
+#include "commands/transform_command.h"
 #include "editor_utils.h"
 
 #include <imgui.h>
@@ -36,7 +37,9 @@ void EditorScene::Initialize(engine::Engine& engine) {
 
 	// Create editor camera (not part of the scene, used for viewport navigation)
 	// Manually created in Flecs ECS world, so it isn't under the scene root entity.
-	// TODO: Ensure this is excluded from scene serialization (Phase 1.5)
+	// NOTE: Editor camera is automatically excluded from serialization because it's not
+	// a child of the scene root. Only the active camera *reference* needs to be swapped
+	// during save/load (see SaveScene/OpenScene camera hack).
 	editor_camera_ = engine.ecs.GetWorld().entity("EditorCamera");
 	editor_camera_.set<engine::components::Transform>({{0.0f, 0.0f, 5.0f}}); // Position at z=5
 	editor_camera_.set<engine::components::Camera>({
@@ -522,10 +525,9 @@ void EditorScene::OnAddChildEntity(const engine::ecs::Entity parent) {
 void EditorScene::OnAddComponent(const engine::ecs::Entity entity, const std::string& component_name) {
 	const auto& registry = engine::ecs::ComponentRegistry::Instance();
 	if (const auto* comp = registry.FindComponent(component_name)) {
-		// Use flecs API directly to add component by ID
-		entity.add(comp->id);
-		// Note: Adding components doesn't go through command history yet (would need an AddComponentCommand)
-		// Mark scene as modified by executing a no-op to maintain dirty state
+		// Create and execute an AddComponentCommand for undo/redo support
+		auto command = std::make_unique<AddComponentCommand>(entity, comp->id, component_name);
+		command_history_.Execute(std::move(command));
 		std::cout << "EditorScene: Added component '" << component_name << "' to entity" << std::endl;
 	}
 	else {
@@ -643,9 +645,11 @@ void EditorScene::SaveScene() {
 
 	auto& scene_manager = engine::scene::GetSceneManager();
 
-	// HACK: Before saving, switch active camera from editor camera to scene's intended camera
+	// HACK: Before saving, switch active camera from editor camera to scene's intended camera.
 	// This prevents the editor camera from being serialized as the active camera.
-	// Use scene_active_camera_ if valid, otherwise set to invalid entity (no active camera)
+	// The editor camera entity itself is automatically excluded from serialization because
+	// it's not a child of the scene root (see SerializeEntities in scene_serializer.cpp).
+	// Use scene_active_camera_ if valid, otherwise set to invalid entity (no active camera).
 	engine_->ecs.SetActiveCamera(scene_active_camera_);
 
 	if (const engine::platform::fs::Path file_path(state_.current_file_path);

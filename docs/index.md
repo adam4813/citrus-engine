@@ -14,6 +14,13 @@ Citrus Engine is a modern C++20 game engine featuring ECS architecture, cross-pl
 
 ## Documentation
 
+### Getting Started
+- [Getting Started Guide](getting-started.md) - Set up your first project and build a hello world
+
+### Core Concepts
+- [Architecture Overview](architecture.md) - ECS fundamentals, game loop, and module structure
+- [Scene Management](scenes.md) - Creating scenes, entity hierarchies, prefabs, and serialization
+
 ### Subsystems
 - [Physics API](physics.md) - Rigid bodies, collision shapes, raycasting, and character controllers
 - [Audio API](audio.md) - Loading sounds, 3D spatial audio, and audio playback
@@ -28,10 +35,6 @@ Citrus Engine is a modern C++20 game engine featuring ECS architecture, cross-pl
 
 ### Reference
 - [API Reference](api/index.md) - Auto-generated API documentation from code
-
-## Getting Started
-
-For build instructions and setup, see the [README](https://github.com/adam4813/citrus-engine/blob/main/README.md).
 
 ## API Documentation
 

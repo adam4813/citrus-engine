@@ -33,6 +33,14 @@ markdown_extensions:
 
 nav:
   - Home: index.md
+  - Getting Started: getting-started.md
+  - Core Concepts:
+    - Architecture Overview: architecture.md
+    - Scene Management: scenes.md
+  - Subsystems:
+    - Physics: physics.md
+    - Audio: audio.md
+    - Assets: asset-system.md
   - UI System:
     - Component System: ui-components.md
     - Mouse Events: ui_mouse_events_guide.md

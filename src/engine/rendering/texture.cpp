@@ -3,9 +3,9 @@ module;
 
 #include <memory>
 #include <ranges>
+#include <spdlog/spdlog.h>
 #include <string>
 #include <unordered_map>
-#include <spdlog/spdlog.h>
 #ifdef __EMSCRIPTEN__
 #include <GLES3/gl3.h>
 #else
@@ -90,7 +90,25 @@ struct TextureManager::Impl {
 	TextureId default_normal_texture = INVALID_TEXTURE;
 };
 
-TextureManager::TextureManager() : pimpl_(std::make_unique<Impl>()) {}
+TextureManager::TextureManager() : pimpl_(std::make_unique<Impl>()) {
+	// Create default 1x1 white texture
+	constexpr uint32_t white_pixel = 0xFFFFFFFF; // RGBA white
+	TextureCreateInfo white_info{
+			.width = 1, .height = 1, .format = TextureFormat::RGBA8, .parameters = {}, .data = &white_pixel};
+	pimpl_->white_texture = CreateTexture("__white_texture", white_info);
+
+	// Create default 1x1 black texture
+	constexpr uint32_t black_pixel = 0x000000FF; // RGBA black with full alpha
+	TextureCreateInfo black_info{
+			.width = 1, .height = 1, .format = TextureFormat::RGBA8, .parameters = {}, .data = &black_pixel};
+	pimpl_->black_texture = CreateTexture("__black_texture", black_info);
+
+	// Create default 1x1 normal map (pointing up: RGB = 128, 128, 255)
+	constexpr uint32_t normal_pixel = 0xFF8080FF; // RGBA: 128, 128, 255, 255
+	TextureCreateInfo normal_info{
+			.width = 1, .height = 1, .format = TextureFormat::RGBA8, .parameters = {}, .data = &normal_pixel};
+	pimpl_->default_normal_texture = CreateTexture("__default_normal", normal_info);
+}
 
 TextureManager::~TextureManager() = default;
 
@@ -132,8 +150,16 @@ TextureId TextureManager::CreateTexture(const std::string& name, const TextureCr
 	// Check for errors after texture upload
 	err = glGetError();
 	if (err != GL_NO_ERROR) {
-		spdlog::error("[Texture] Error creating texture '{}': format={}, gl_internal={}, gl_format={}, size={}x{}, error=0x{:x}",
-				name, static_cast<int>(info.format), gl_internal_format, gl_format, info.width, info.height, err);
+		spdlog::error(
+				"[Texture] Error creating texture '{}': format={}, gl_internal={}, gl_format={}, size={}x{}, "
+				"error=0x{:x}",
+				name,
+				static_cast<int>(info.format),
+				gl_internal_format,
+				gl_format,
+				info.width,
+				info.height,
+				err);
 	}
 
 	glBindTexture(GL_TEXTURE_2D, 0);

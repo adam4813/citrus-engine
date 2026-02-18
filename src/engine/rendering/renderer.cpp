@@ -178,6 +178,9 @@ void main() {
 
 	glBindVertexArray(0);
 
+	// Initialize material manager with default materials
+	pimpl_->material_manager.Initialize(pimpl_->shader_manager);
+
 	pimpl_->initialized = true;
 	return true;
 }
@@ -245,8 +248,24 @@ void Renderer::SubmitRenderCommand(const RenderCommand& command) const {
 		material.Apply(*shader);
 	}
 
+	// If no texture was bound by the material, bind the white texture to slot 0
+	// This ensures shaders that expect textures don't fail
+	if (const TextureId white_tex = pimpl_->texture_manager.GetWhiteTexture(); white_tex != INVALID_TEXTURE) {
+		if (const auto* gl_white_tex = GetGLTexture(white_tex)) {
+			glActiveTexture(GL_TEXTURE0);
+			glBindTexture(GL_TEXTURE_2D, gl_white_tex->handle);
+			shader->SetUniform("u_Texture", 0);
+		}
+	}
+
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+#ifndef __EMSCRIPTEN__
+	// Save current polygon mode for restoration
+	GLint previous_polygon_mode[2];
+	glGetIntegerv(GL_POLYGON_MODE, previous_polygon_mode);
+#endif
 
 	for (const auto& [enable_flags, disable_flags] : command.render_state_stack) {
 		for (auto& flag : enable_flags) {
@@ -288,7 +307,7 @@ void Renderer::SubmitRenderCommand(const RenderCommand& command) const {
 	glBindVertexArray(0);
 
 	for (const auto& [enable_flags, disable_flags] : command.render_state_stack) {
-		// Restore render states
+		// Restore render states (reverse the operations)
 		for (auto& flag : disable_flags) {
 			switch (flag) {
 			case RenderFlag::DepthTest: glEnable(GL_DEPTH_TEST); break;
@@ -298,7 +317,8 @@ void Renderer::SubmitRenderCommand(const RenderCommand& command) const {
 #ifdef __EMSCRIPTEN__
 // Not available in WebGL/GLES3, skip or find an alternative
 #else
-				glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+				// Restore to previous polygon mode, not just toggle to GL_LINE
+				glPolygonMode(GL_FRONT_AND_BACK, previous_polygon_mode[0]);
 #endif
 				break;
 			case RenderFlag::DepthMask: glDepthMask(GL_TRUE); break;
@@ -314,7 +334,8 @@ void Renderer::SubmitRenderCommand(const RenderCommand& command) const {
 #ifdef __EMSCRIPTEN__
 // Not available in WebGL/GLES3, skip or find an alternative
 #else
-				glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+				// Restore to previous polygon mode, not just toggle to GL_FILL
+				glPolygonMode(GL_FRONT_AND_BACK, previous_polygon_mode[0]);
 #endif
 				break;
 			case RenderFlag::DepthMask: glDepthMask(GL_FALSE); break;
@@ -587,6 +608,10 @@ void Renderer::DrawWireCube(const Vec3& center, const Vec3& size, const Color& c
 }
 
 void Renderer::DrawWireSphere(const Vec3& center, float radius, const Color& color) const {
+	DrawWireSphere(center, Vec3(radius), color);
+}
+
+void Renderer::DrawWireSphere(const Vec3& center, const Vec3& radius, const Color& color) const {
 	// Draw 3 circles in XY, XZ, and YZ planes
 	constexpr int segments = 16;
 	constexpr float angle_step = 2.0f * 3.14159265359f / segments;
@@ -596,8 +621,8 @@ void Renderer::DrawWireSphere(const Vec3& center, float radius, const Color& col
 		const float angle1 = i * angle_step;
 		const float angle2 = (i + 1) % segments * angle_step;
 
-		const Vec3 p1 = center + Vec3(radius * std::cos(angle1), radius * std::sin(angle1), 0.0f);
-		const Vec3 p2 = center + Vec3(radius * std::cos(angle2), radius * std::sin(angle2), 0.0f);
+		const Vec3 p1 = center + Vec3(radius.x * std::cos(angle1), radius.x * std::sin(angle1), 0.0f);
+		const Vec3 p2 = center + Vec3(radius.x * std::cos(angle2), radius.x * std::sin(angle2), 0.0f);
 
 		DrawLine(p1, p2, color);
 	}
@@ -607,8 +632,8 @@ void Renderer::DrawWireSphere(const Vec3& center, float radius, const Color& col
 		const float angle1 = i * angle_step;
 		const float angle2 = (i + 1) % segments * angle_step;
 
-		const Vec3 p1 = center + Vec3(radius * std::cos(angle1), 0.0f, radius * std::sin(angle1));
-		const Vec3 p2 = center + Vec3(radius * std::cos(angle2), 0.0f, radius * std::sin(angle2));
+		const Vec3 p1 = center + Vec3(radius.y * std::cos(angle1), 0.0f, radius.y * std::sin(angle1));
+		const Vec3 p2 = center + Vec3(radius.y * std::cos(angle2), 0.0f, radius.y * std::sin(angle2));
 
 		DrawLine(p1, p2, color);
 	}
@@ -618,20 +643,12 @@ void Renderer::DrawWireSphere(const Vec3& center, float radius, const Color& col
 		const float angle1 = i * angle_step;
 		const float angle2 = (i + 1) % segments * angle_step;
 
-		const Vec3 p1 = center + Vec3(0.0f, radius * std::cos(angle1), radius * std::sin(angle1));
-		const Vec3 p2 = center + Vec3(0.0f, radius * std::cos(angle2), radius * std::sin(angle2));
+		const Vec3 p1 = center + Vec3(0.0f, radius.z * std::cos(angle1), radius.z * std::sin(angle1));
+		const Vec3 p2 = center + Vec3(0.0f, radius.z * std::cos(angle2), radius.z * std::sin(angle2));
 
 		DrawLine(p1, p2, color);
 	}
 }
-
-void Renderer::SetCamera(const components::Camera& camera) {
-	//pimpl_->camera = camera;
-}
-
-/*const Camera& Renderer::GetCamera() const {
-        return pimpl_->camera;
-    }*/
 
 void Renderer::SetClearColor(const Color& color) const { pimpl_->clear_color = color; }
 

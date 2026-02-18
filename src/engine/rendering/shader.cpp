@@ -236,9 +236,50 @@ struct ShaderManager::Impl {
 	std::unordered_map<ShaderId, std::unique_ptr<Shader>> shaders;
 	std::unordered_map<std::string, ShaderId> name_to_id;
 	ShaderId next_id = 1;
+
+	ShaderId default_2d_shader_id = INVALID_SHADER;
+	ShaderId default_3d_shader_id = INVALID_SHADER;
+	ShaderId unlit_shader_id = INVALID_SHADER;
+
+	void InitializeDefaultShaders(const ShaderManager& manager) {
+		// clang-format off
+		// Load 2D shader (basic.vert/basic.frag)
+		default_2d_shader_id = manager.LoadShader(
+			"__default_2d",
+			"assets/shaders/basic.vert",
+			"assets/shaders/basic.frag"
+		);
+
+		if (default_2d_shader_id == INVALID_SHADER) {
+			spdlog::warn("Failed to load default 2D shader");
+		}
+
+		// Load 3D lit shader (lit_3d.vert/lit_3d.frag)
+		default_3d_shader_id = manager.LoadShader(
+			"__default_3d_lit",
+			"assets/shaders/lit_3d.vert",
+			"assets/shaders/lit_3d.frag"
+		);
+
+		if (default_3d_shader_id == INVALID_SHADER) {
+			spdlog::warn("Failed to load default 3D lit shader");
+		}
+
+		// Load unlit shader (unlit.vert/unlit.frag)
+		unlit_shader_id = manager.LoadShader(
+			"__unlit",
+			"assets/shaders/unlit.vert",
+			"assets/shaders/unlit.frag"
+		);
+
+		if (unlit_shader_id == INVALID_SHADER) {
+			spdlog::warn("Failed to load unlit shader");
+		}
+		// clang-format on
+	}
 };
 
-ShaderManager::ShaderManager() : pimpl_(std::make_unique<Impl>()) {}
+ShaderManager::ShaderManager() : pimpl_(std::make_unique<Impl>()) { pimpl_->InitializeDefaultShaders(*this); }
 
 ShaderManager::~ShaderManager() = default;
 
@@ -351,15 +392,9 @@ void ShaderManager::Clear() const {
 	pimpl_->name_to_id.clear();
 }
 
-ShaderId ShaderManager::GetDefault2DShader() const {
-	return 1; // TODO: Return actual default 2D shader
-}
+ShaderId ShaderManager::GetDefault2DShader() const { return pimpl_->default_2d_shader_id; }
 
-ShaderId ShaderManager::GetDefault3DShader() const {
-	return 2; // TODO: Return actual default 3D shader
-}
+ShaderId ShaderManager::GetDefault3DShader() const { return pimpl_->default_3d_shader_id; }
 
-ShaderId ShaderManager::GetUnlitShader() const {
-	return 3; // TODO: Return actual unlit shader
-}
+ShaderId ShaderManager::GetUnlitShader() const { return pimpl_->unlit_shader_id; }
 } // namespace engine::rendering

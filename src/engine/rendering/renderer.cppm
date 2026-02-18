@@ -46,11 +46,6 @@ public:
 
 	void EndFrame();
 
-	// Camera management
-	void SetCamera(const components::Camera& camera);
-
-	//const Camera& GetCamera() const;
-
 	// Resource manager access
 	TextureManager& GetTextureManager() const;
 
@@ -73,6 +68,7 @@ public:
 	void DrawWireCube(const Vec3& center, const Vec3& size, const Color& color = colors::white) const;
 
 	void DrawWireSphere(const Vec3& center, float radius, const Color& color = colors::white) const;
+	void DrawWireSphere(const Vec3& center, const Vec3& radius, const Color& color = colors::white) const;
 
 	void SetDebugCamera(const glm::mat4& view, const glm::mat4& projection) const;
 

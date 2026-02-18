@@ -482,10 +482,35 @@ void ECSWorld::SubmitRenderCommands(const rendering::Renderer& renderer) {
 		active_camera = &camera_data;
 	}
 
-	// Set up lighting uniforms from first Light component in scene
-	auto& shader_mgr = renderer.GetShaderManager();
+	// Collect all lights in the scene (up to 4)
+	constexpr int MAX_LIGHTS = 4;
+	std::vector<Light> scene_lights;
+	std::vector<glm::vec3> light_positions;
+
+	// Query all entities with Light component and Transform
+	world_.query<const Light, const Transform>().each(
+			[&scene_lights, &light_positions](flecs::entity e, const Light& light, const Transform& transform) {
+				if (scene_lights.size() < MAX_LIGHTS) {
+					scene_lights.push_back(light);
+					light_positions.push_back(transform.position);
+				}
+			});
+
+	// TEMP: Hold the first light for backward compatability
 	glm::vec3 light_dir{0.2f, -1.0f, -0.3f}; // Default fallback
-	world_.query<const Light>().each([&light_dir](const Light& light) { light_dir = glm::normalize(light.direction); });
+	if (scene_lights.size() > 0) {
+		light_dir = glm::normalize(scene_lights[0].direction);
+	}
+
+	// Get camera position for specular calculations
+	glm::vec3 camera_position{0.0f, 0.0f, 10.0f}; // Default
+	if (camera_entity.is_valid() && camera_entity.has<Transform>()) {
+		const auto& cam_transform = camera_entity.get<Transform>();
+		camera_position = cam_transform.position;
+	}
+
+	auto& mat_mgr = renderer.GetMaterialManager();
+	auto& shader_mgr = renderer.GetShaderManager();
 
 	// Single query loop for all renderables
 	const auto renderable_query = world_.query<const WorldTransform, const rendering::Renderable>();
@@ -501,12 +526,65 @@ void ECSWorld::SubmitRenderCommands(const rendering::Renderer& renderer) {
 						.render_state_stack = renderable.render_state_stack,
 						.camera_view = active_camera->view_matrix};
 
-				// Short term: set light direction uniform here
-				const auto& shader = shader_mgr.GetShader(renderable.shader);
-				shader.Use();
-				shader.SetUniform("u_LightDir", light_dir);
-
 				cmd.transform = transform.matrix;
+
+				// Set lighting uniforms for lit shaders
+				const auto& shader = shader_mgr.GetShader(renderable.shader);
+				if (shader.IsValid()) {
+					shader.Use();
+					// TEMP: Use the first light, backward compatability
+					shader.SetUniform("u_LightDir", light_dir);
+
+					// Set camera position
+					shader.SetUniform("u_CameraPos", camera_position);
+
+					// Set ambient lighting
+					shader.SetUniform("u_AmbientColor", glm::vec3(1.0f, 1.0f, 1.0f));
+					shader.SetUniform("u_AmbientIntensity", 0.5f);
+
+					// Set material properties from the entity's material (if valid)
+					if (mat_mgr.IsValid(renderable.material)) {
+						const auto& material = mat_mgr.GetMaterial(renderable.material);
+						material.Apply(shader);
+					}
+					else {
+						shader.SetUniform("u_Color", glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
+						shader.SetUniform("u_Shininess", 32.0f);
+					}
+
+					// Calculate normal matrix (inverse transpose of model matrix)
+					glm::mat4 normal_matrix = glm::transpose(glm::inverse(cmd.transform));
+					shader.SetUniform("u_NormalMatrix", normal_matrix);
+
+					// Set number of lights
+					shader.SetUniform("u_NumLights", static_cast<int>(scene_lights.size()));
+
+					// Set light properties
+					for (size_t i = 0; i < scene_lights.size() && i < MAX_LIGHTS; ++i) {
+						const Light& light = scene_lights[i];
+						const std::string idx = "[" + std::to_string(i) + "]";
+
+						// Light type
+						shader.SetUniform("u_LightTypes" + idx, static_cast<int>(light.type));
+
+						// Position/Direction (for directional lights, this is the direction)
+						if (light.type == Light::Type::Directional) {
+							shader.SetUniform("u_LightPositions" + idx, glm::normalize(light.direction));
+						}
+						else {
+							shader.SetUniform("u_LightPositions" + idx, light_positions[i]);
+						}
+
+						// Color and intensity
+						glm::vec3 light_color(light.color.r, light.color.g, light.color.b);
+						shader.SetUniform("u_LightColors" + idx, light_color);
+						shader.SetUniform("u_LightIntensities" + idx, light.intensity);
+
+						// Range and attenuation (for point/spot lights)
+						shader.SetUniform("u_LightRanges" + idx, light.range);
+						shader.SetUniform("u_LightAttenuations" + idx, light.attenuation);
+					}
+				}
 
 				renderer.SubmitRenderCommand(cmd);
 			});

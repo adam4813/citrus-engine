@@ -1,8 +1,8 @@
 module;
 
 #include <memory>
-#include <unordered_map>
 #include <string>
+#include <unordered_map>
 
 export module engine.rendering:material;
 
@@ -10,89 +10,91 @@ import :types;
 import :shader;
 
 export namespace engine::rendering {
-    struct MaterialCreateInfo {
-        ShaderId shader = INVALID_SHADER;
-        std::unordered_map<std::string, int> int_properties;
-        std::unordered_map<std::string, float> float_properties;
-        std::unordered_map<std::string, Vec2> vec2_properties;
-        std::unordered_map<std::string, Vec3> vec3_properties;
-        std::unordered_map<std::string, Vec4> vec4_properties;
-        std::unordered_map<std::string, TextureId> texture_properties;
-    };
+struct MaterialCreateInfo {
+	ShaderId shader = INVALID_SHADER;
+	std::unordered_map<std::string, int> int_properties;
+	std::unordered_map<std::string, float> float_properties;
+	std::unordered_map<std::string, Vec2> vec2_properties;
+	std::unordered_map<std::string, Vec3> vec3_properties;
+	std::unordered_map<std::string, Vec4> vec4_properties;
+	std::unordered_map<std::string, TextureId> texture_properties;
+};
 
-    class Material {
-    public:
-        Material();
+class Material {
+public:
+	Material();
 
-        explicit Material(ShaderId shader);
+	explicit Material(ShaderId shader);
 
-        ~Material();
+	~Material();
 
-        // Property setters
-        void SetShader(ShaderId shader);
+	// Property setters
+	void SetShader(ShaderId shader);
 
-        void SetProperty(const std::string &name, int value);
+	void SetProperty(const std::string& name, int value);
 
-        void SetProperty(const std::string &name, float value);
+	void SetProperty(const std::string& name, float value);
 
-        void SetProperty(const std::string &name, const Vec2 &value);
+	void SetProperty(const std::string& name, const Vec2& value);
 
-        void SetProperty(const std::string &name, const Vec3 &value);
+	void SetProperty(const std::string& name, const Vec3& value);
 
-        void SetProperty(const std::string &name, const Vec4 &value);
+	void SetProperty(const std::string& name, const Vec4& value);
 
-        void SetTexture(const std::string &name, TextureId texture);
+	void SetTexture(const std::string& name, TextureId texture);
 
-        // Property getters
-        template<typename T>
-        T GetProperty(const std::string &name) const;
+	// Property getters
+	template <typename T> T GetProperty(const std::string& name) const;
 
-        TextureId GetTexture(const std::string &name) const;
+	TextureId GetTexture(const std::string& name) const;
 
-        ShaderId GetShader() const;
+	ShaderId GetShader() const;
 
-        // Apply material (set all uniforms)
-        void Apply(const Shader &shader) const;
+	// Apply material (set all uniforms)
+	void Apply(const Shader& shader) const;
 
-    private:
-        struct Impl;
-        std::unique_ptr<Impl> pimpl_;
-    };
+private:
+	struct Impl;
+	std::unique_ptr<Impl> pimpl_;
+};
 
-    class MaterialManager {
-    public:
-        MaterialManager();
+class MaterialManager {
+public:
+	MaterialManager();
 
-        ~MaterialManager();
+	~MaterialManager();
 
-        // Material creation
-        MaterialId CreateMaterial(const std::string &name, const MaterialCreateInfo &info);
+	// Initialization - creates default materials
+	void Initialize(const ShaderManager& shader_manager);
 
-        MaterialId CreateMaterial(const std::string &name, ShaderId shader);
+	// Material creation
+	MaterialId CreateMaterial(const std::string& name, const MaterialCreateInfo& info) const;
 
-        // Material access
-        Material &GetMaterial(MaterialId id);
+	MaterialId CreateMaterial(const std::string& name, ShaderId shader);
 
-        const Material &GetMaterial(MaterialId id) const;
+	// Material access
+	Material& GetMaterial(MaterialId id);
 
-        MaterialId FindMaterial(const std::string &name) const;
+	const Material& GetMaterial(MaterialId id) const;
 
-        // Resource management
-        void DestroyMaterial(MaterialId id);
+	MaterialId FindMaterial(const std::string& name) const;
 
-        bool IsValid(MaterialId id) const;
+	// Resource management
+	void DestroyMaterial(MaterialId id);
 
-        void Clear();
+	bool IsValid(MaterialId id) const;
 
-        // Get default materials
-        MaterialId GetDefaultMaterial() const;
+	void Clear();
 
-        MaterialId GetSpriteMaterial() const;
+	// Get default materials
+	MaterialId GetDefaultMaterial() const;
 
-        MaterialId GetUnlitMaterial() const;
+	MaterialId GetSpriteMaterial() const;
 
-    private:
-        struct Impl;
-        std::unique_ptr<Impl> pimpl_;
-    };
-}
+	MaterialId GetUnlitMaterial() const;
+
+private:
+	struct Impl;
+	std::unique_ptr<Impl> pimpl_;
+};
+} // namespace engine::rendering

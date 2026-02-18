@@ -522,33 +522,45 @@ void ECSWorld::SubmitRenderCommands(const rendering::Renderer& renderer) {
 			// Green color with slight transparency for debug shapes
 			constexpr rendering::Color debug_color{0.0f, 1.0f, 0.0f, 0.7f};
 
-			// Query all entities with CollisionShape and Transform
-			world_.query<const physics::CollisionShape, const Transform>().each(
-					[&](const physics::CollisionShape& shape, const Transform& transform) {
-						// Apply position offset from shape
-						const glm::vec3 shape_center = transform.position + shape.offset;
+			// Query all entities with CollisionShape and WorldTransform
+			world_.query<const physics::CollisionShape, const WorldTransform>().each(
+					[&](const physics::CollisionShape& shape, const WorldTransform& world_transform) {
+						// Extract position from world transform matrix
+						const auto world_position = glm::vec3(
+								world_transform.matrix[3][0],
+								world_transform.matrix[3][1],
+								world_transform.matrix[3][2]);
+
+						const auto world_scale = glm::vec3(
+								glm::length(glm::vec3(world_transform.matrix[0])),
+								glm::length(glm::vec3(world_transform.matrix[1])),
+								glm::length(glm::vec3(world_transform.matrix[2])));
+
+						// Apply position offset from shape, transformed by world matrix
+						const glm::vec4 offset_world = world_transform.matrix * glm::vec4(shape.offset, 0.0f);
+						const glm::vec3 shape_center = world_position + glm::vec3(offset_world);
 
 						switch (shape.type) {
 						case physics::ShapeType::Box:
 						{
 							// DrawWireCube expects size, not half-extents
-							const glm::vec3 size = shape.box_half_extents * 2.0f;
+							const glm::vec3 size = shape.box_half_extents * 2.0f * world_scale;
 							renderer.DrawWireCube(shape_center, size, debug_color);
 							break;
 						}
 						case physics::ShapeType::Sphere:
 						{
-							renderer.DrawWireSphere(shape_center, shape.sphere_radius, debug_color);
+							renderer.DrawWireSphere(
+									shape_center, glm::vec3(shape.sphere_radius) * world_scale, debug_color);
 							break;
 						}
 						case physics::ShapeType::Capsule:
 						{
 							// Approximate capsule as sphere + vertical line
-							const float half_height = shape.capsule_height * 0.5f;
-							renderer.DrawWireSphere(
-									shape_center + glm::vec3(0, half_height, 0), shape.capsule_radius, debug_color);
-							renderer.DrawWireSphere(
-									shape_center - glm::vec3(0, half_height, 0), shape.capsule_radius, debug_color);
+							const float half_height = shape.capsule_height * 0.5f * world_scale.length();
+							const auto radius = glm::vec3(shape.capsule_radius) * world_scale;
+							renderer.DrawWireSphere(shape_center + glm::vec3(0, half_height, 0), radius, debug_color);
+							renderer.DrawWireSphere(shape_center - glm::vec3(0, half_height, 0), radius, debug_color);
 							renderer.DrawLine(
 									shape_center + glm::vec3(0, half_height, 0),
 									shape_center - glm::vec3(0, half_height, 0),
@@ -557,9 +569,10 @@ void ECSWorld::SubmitRenderCommands(const rendering::Renderer& renderer) {
 						}
 						case physics::ShapeType::Cylinder:
 						{
+							const auto scale_length = world_scale.length();
+							const float radius = shape.cylinder_radius * 2.0f * scale_length;
 							// Approximate cylinder as box with circular cross-section
-							const glm::vec3 size{
-									shape.cylinder_radius * 2.0f, shape.cylinder_height, shape.cylinder_radius * 2.0f};
+							const glm::vec3 size{radius, shape.cylinder_height * scale_length, radius};
 							renderer.DrawWireCube(shape_center, size, debug_color);
 							break;
 						}

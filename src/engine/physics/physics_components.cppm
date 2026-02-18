@@ -1,6 +1,7 @@
 module;
 
 #include <cstdint>
+#include <memory>
 #include <vector>
 
 export module engine.physics:components;
@@ -73,6 +74,11 @@ struct PhysicsWorldConfig {
 	int max_substeps{4};
 	bool enable_sleeping{true};
 	bool show_debug_physics{false};
+};
+
+// Singleton component to hold the physics backend pointer (for raycasting, etc.)
+struct PhysicsBackendPtr {
+	std::shared_ptr<class IPhysicsBackend> backend{};
 };
 
 // Constraint as relationship data (used with flecs relationships)

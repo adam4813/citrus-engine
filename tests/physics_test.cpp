@@ -195,6 +195,7 @@ TEST_F(JoltModuleTest, module_imports_successfully) {
 TEST_F(JoltModuleTest, entity_with_physics_components_syncs_to_backend) {
 	auto e = world_.entity()
 					 .set<engine::components::Transform>({{0.0F, 10.0F, 0.0F}})
+					 .set<engine::components::WorldTransform>({})
 					 .set<RigidBody>({.motion_type = MotionType::Dynamic, .mass = 1.0F})
 					 .set<CollisionShape>({.type = ShapeType::Sphere, .sphere_radius = 0.5F});
 
@@ -208,6 +209,7 @@ TEST_F(JoltModuleTest, entity_with_physics_components_syncs_to_backend) {
 TEST_F(JoltModuleTest, static_body_does_not_get_velocity) {
 	auto e = world_.entity()
 					 .set<engine::components::Transform>({{0.0F, 0.0F, 0.0F}})
+					 .set<engine::components::WorldTransform>({})
 					 .set<RigidBody>({.motion_type = MotionType::Static})
 					 .set<CollisionShape>({.type = ShapeType::Box});
 
@@ -220,6 +222,7 @@ TEST_F(JoltModuleTest, static_body_does_not_get_velocity) {
 TEST_F(JoltModuleTest, dynamic_body_falls_under_gravity) {
 	auto e = world_.entity()
 					 .set<engine::components::Transform>({{0.0F, 10.0F, 0.0F}})
+					 .set<engine::components::WorldTransform>({})
 					 .set<RigidBody>({.motion_type = MotionType::Dynamic, .mass = 1.0F})
 					 .set<CollisionShape>({.type = ShapeType::Sphere, .sphere_radius = 0.5F});
 
@@ -242,6 +245,7 @@ TEST_F(JoltModuleTest, dynamic_body_falls_under_gravity) {
 TEST_F(JoltModuleTest, removing_rigidbody_cleans_up) {
 	auto e = world_.entity()
 					 .set<engine::components::Transform>({{0.0F, 5.0F, 0.0F}})
+					 .set<engine::components::WorldTransform>({})
 					 .set<RigidBody>({.motion_type = MotionType::Dynamic})
 					 .set<CollisionShape>({.type = ShapeType::Box});
 
@@ -260,6 +264,7 @@ TEST_F(JoltModuleTest, removing_rigidbody_cleans_up) {
 TEST_F(JoltModuleTest, physics_force_is_applied) {
 	auto e = world_.entity()
 					 .set<engine::components::Transform>({{0.0F, 10.0F, 0.0F}})
+					 .set<engine::components::WorldTransform>({})
 					 .set<RigidBody>({.motion_type = MotionType::Dynamic, .mass = 1.0F, .use_gravity = false})
 					 .set<CollisionShape>({.type = ShapeType::Sphere, .sphere_radius = 0.5F});
 
@@ -316,6 +321,7 @@ TEST_F(Bullet3ModuleTest, module_imports_successfully) { SUCCEED(); }
 TEST_F(Bullet3ModuleTest, entity_with_physics_components_syncs) {
 	auto e = world_.entity()
 					 .set<engine::components::Transform>({{0.0F, 10.0F, 0.0F}})
+					 .set<engine::components::WorldTransform>({})
 					 .set<RigidBody>({.motion_type = MotionType::Dynamic, .mass = 1.0F})
 					 .set<CollisionShape>({.type = ShapeType::Sphere, .sphere_radius = 0.5F});
 
@@ -327,6 +333,7 @@ TEST_F(Bullet3ModuleTest, entity_with_physics_components_syncs) {
 TEST_F(Bullet3ModuleTest, dynamic_body_falls_under_gravity) {
 	auto e = world_.entity()
 					 .set<engine::components::Transform>({{0.0F, 10.0F, 0.0F}})
+					 .set<engine::components::WorldTransform>({})
 					 .set<RigidBody>({.motion_type = MotionType::Dynamic, .mass = 1.0F})
 					 .set<CollisionShape>({.type = ShapeType::Sphere, .sphere_radius = 0.5F});
 

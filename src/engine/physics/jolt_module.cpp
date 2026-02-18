@@ -34,7 +34,8 @@ JoltPhysicsModule::JoltPhysicsModule(const flecs::world& world) {
 
 	// Get default config from PhysicsWorldConfig singleton
 	PhysicsConfig config;
-	const auto& [gravity, fixed_timestep, max_substeps, enable_sleeping, show_debug_physics] = world.get<PhysicsWorldConfig>();
+	const auto& [gravity, fixed_timestep, max_substeps, enable_sleeping, show_debug_physics] =
+			world.get<PhysicsWorldConfig>();
 	config.gravity = gravity;
 	config.fixed_timestep = fixed_timestep;
 	config.max_substeps = max_substeps;
@@ -45,6 +46,9 @@ JoltPhysicsModule::JoltPhysicsModule(const flecs::world& world) {
 		return;
 	}
 
+	// Store backend pointer in singleton for external access (e.g., raycasting from editor)
+	world.set<PhysicsBackendPtr>({backend});
+
 	// Find the Simulation phase created by ECSWorld
 	// Use the Simulation phase if it exists, otherwise fall back to OnUpdate
 	// Use root scope lookup since the phase is created at root level by ECSWorld
@@ -54,22 +58,14 @@ JoltPhysicsModule::JoltPhysicsModule(const flecs::world& world) {
 	}
 
 	// Observer: When RigidBody + CollisionShape are set on an entity, sync to backend
-	world.observer<const components::Transform, const RigidBody, const CollisionShape>("JoltSyncToBackend")
+	world.observer<const components::WorldTransform, const RigidBody, const CollisionShape>("JoltSyncToBackend")
 			.event(flecs::OnSet)
 			.each([backend](
 						  const flecs::entity e,
-						  const components::Transform& t,
+						  const components::WorldTransform& wt,
 						  const RigidBody& rb,
 						  const CollisionShape& cs) {
-				PhysicsTransform pt;
-				pt.position = t.position;
-				// Convert euler angles to quaternion
-				const glm::quat qx = glm::angleAxis(t.rotation.x, glm::vec3(1, 0, 0));
-				const glm::quat qy = glm::angleAxis(t.rotation.y, glm::vec3(0, 1, 0));
-				const glm::quat qz = glm::angleAxis(t.rotation.z, glm::vec3(0, 0, 1));
-				pt.rotation = qz * qy * qx;
-
-				backend->SyncBodyToBackend(e.id(), pt, rb, cs);
+				backend->SyncBodyToBackend(e.id(), PhysicsTransform::FromMatrix(wt.matrix), rb, cs);
 
 				// Add PhysicsVelocity if not present (for dynamic bodies)
 				if (rb.motion_type == MotionType::Dynamic && !e.has<PhysicsVelocity>()) {
@@ -149,9 +145,12 @@ JoltPhysicsModule::JoltPhysicsModule(const flecs::world& world) {
 				v.angular = angular_velocity;
 			});
 
-	// System: Distribute collision events to entities
+	// System: Clear old collision events, then distribute new ones
 	world.system("JoltCollisionEvents").kind(simulation_phase).run([backend](const flecs::iter& it) {
 		const auto world = it.world();
+
+		// Clear previous frame's collision events
+		world.query<CollisionEvents>().each([](CollisionEvents& ce) { ce.events.clear(); });
 
 		for (const auto events = backend->GetCollisionEvents(); const auto& event : events) {
 			auto entity_a = world.entity(event.entity_a);

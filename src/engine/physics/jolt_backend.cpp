@@ -7,9 +7,9 @@ module;
 #include <optional>
 #include <ranges>
 #include <string>
+#include <thread>
 #include <unordered_map>
 #include <vector>
-#include <thread>
 
 #include <spdlog/spdlog.h>
 
@@ -206,15 +206,19 @@ private:
 	}
 
 	// Helper to convert CollisionShape component to ShapeConfig
-	static ShapeConfig ToShapeConfig(const CollisionShape& shape) {
+	static ShapeConfig ToShapeConfig(const CollisionShape& shape, const PhysicsTransform& transform) {
+		// For non-uniform scaling, we take the maximum scale component to ensure the shape fully encompasses the scaled dimensions.
+		// TODO: Update non-uniform scaling for non-boxes
+		const auto scale = glm::length(transform.scale) > 0.0F ? transform.scale : glm::vec3(1.0F); // Avoid zero scale
+		const auto max_scale = std::max({scale.x, scale.y, scale.z});
 		ShapeConfig config;
 		config.type = shape.type;
-		config.box_half_extents = shape.box_half_extents;
-		config.sphere_radius = shape.sphere_radius;
-		config.capsule_radius = shape.capsule_radius;
-		config.capsule_height = shape.capsule_height;
-		config.cylinder_radius = shape.cylinder_radius;
-		config.cylinder_height = shape.cylinder_height;
+		config.box_half_extents = shape.box_half_extents * scale; // Apply world scale to box half-extents
+		config.sphere_radius = shape.sphere_radius * max_scale; // Use max scale for sphere radius
+		config.capsule_radius = shape.capsule_radius * max_scale; // Use max scale for capsule radius
+		config.capsule_height = shape.capsule_height * max_scale; // Use max scale for capsule height
+		config.cylinder_radius = shape.cylinder_radius * max_scale; // Use max scale for cylinder radius
+		config.cylinder_height = shape.cylinder_height * max_scale; // Use max scale for cylinder height
 		config.offset = shape.offset;
 		config.rotation = shape.rotation;
 		return config;
@@ -449,7 +453,7 @@ public:
 		auto it = entity_to_body_.find(entity);
 
 		// Create shape from CollisionShape component
-		ShapeConfig shapeConfig = ToShapeConfig(shape);
+		ShapeConfig shapeConfig = ToShapeConfig(shape, transform);
 		JPH::ShapeRefC joltShape = CreateShape(shapeConfig);
 		if (!joltShape) {
 			spdlog::error("[JoltPhysics] Failed to create shape for entity {}", entity);

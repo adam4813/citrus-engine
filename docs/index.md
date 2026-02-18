@@ -15,6 +15,7 @@ Citrus Engine is a modern C++20 game engine featuring ECS architecture, cross-pl
 ## Documentation
 
 ### Subsystems
+- [Physics API](physics.md) - Rigid bodies, collision shapes, raycasting, and character controllers
 - [Audio API](audio.md) - Loading sounds, 3D spatial audio, and audio playback
 - [Asset System](asset-system.md) - Shaders, textures, and resource management
 

@@ -2,6 +2,7 @@
 
 #include "editor_callbacks.h"
 #include "editor_panel.h"
+#include "file_dialog.h"
 #include "file_utils.h"
 
 #include <filesystem>
@@ -60,7 +61,7 @@ struct AssetSelection {
  */
 class AssetBrowserPanel : public EditorPanel {
 public:
-	AssetBrowserPanel() = default;
+	AssetBrowserPanel();
 	~AssetBrowserPanel() override = default;
 
 	[[nodiscard]] std::string_view GetPanelName() const override;
@@ -142,6 +143,31 @@ private:
 	void RefreshCurrentDirectory();
 
 	/**
+	 * @brief Render rename dialog popup
+	 */
+	void RenderRenameDialog();
+
+	/**
+	 * @brief Render delete confirmation dialog popup
+	 */
+	void RenderDeleteConfirmationDialog();
+
+	/**
+	 * @brief Create a new scene file with default content
+	 */
+	void CreateNewSceneFile();
+
+	/**
+	 * @brief Create a new prefab file with default content
+	 */
+	void CreateNewPrefabFile();
+
+	/**
+	 * @brief Show import asset file dialog
+	 */
+	void ShowImportAssetDialog();
+
+	/**
 	 * @brief Get the asset file type from extension
 	 */
 	static AssetFileType GetAssetFileType(const std::filesystem::path& path);
@@ -164,6 +190,18 @@ private:
 	AssetFileType filter_type_{AssetFileType::All};
 	bool needs_refresh_{true};
 	std::filesystem::path selected_item_path_;
+
+	// Rename dialog state
+	bool show_rename_dialog_{false};
+	std::filesystem::path rename_target_path_;
+	char rename_buffer_[256]{};
+
+	// Delete confirmation dialog state
+	bool pending_delete_{false};
+	std::filesystem::path delete_target_path_;
+
+	// Import asset dialog
+	std::unique_ptr<FileDialogPopup> import_dialog_;
 };
 
 } // namespace editor

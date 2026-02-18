@@ -135,6 +135,21 @@ add_engine_test(data_module_test
     data_module_test.cpp
 )
 
+# Add AI behavior tree test
+add_engine_test(ai_test
+    ai_test.cpp
+)
+
+# Add animation system test
+add_engine_test(animation_test
+    animation_test.cpp
+)
+
+# Add asset manager test
+add_engine_test(asset_manager_test
+    asset_manager_test.cpp
+)
+
 # Add audio system test
 add_engine_test(audio_test
     audio_test.cpp

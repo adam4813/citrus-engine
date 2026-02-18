@@ -134,3 +134,8 @@ add_engine_test(graph_framework_test
 add_engine_test(data_module_test
     data_module_test.cpp
 )
+
+# Add audio system test
+add_engine_test(audio_test
+    audio_test.cpp
+)

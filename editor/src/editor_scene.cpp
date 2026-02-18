@@ -795,6 +795,12 @@ void EditorScene::StopScene() {
 	std::cout << "EditorScene: Stopping scene..." << std::endl;
 	state_.is_running = false;
 
+	// Stop all playing sounds before restoring snapshot
+	auto& audio_sys = engine::audio::AudioSystem::Get();
+	if (audio_sys.IsInitialized()) {
+		audio_sys.StopAllSounds();
+	}
+
 	// Deselect before destroying entities
 	selected_entity_ = {};
 	selection_type_ = SelectionType::None;

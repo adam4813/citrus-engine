@@ -125,40 +125,55 @@ void SoundEditorPanel::RenderWaveformSelector() {
 void SoundEditorPanel::RenderFrequencyControls() {
 	ImGui::Text("Frequency");
 
-	if (ImGui::SliderFloat("Base Frequency (Hz)", &preset_.base_frequency, 20.0f, 2000.0f, "%.1f")) SetDirty(true);
-	if (ImGui::SliderFloat("Min Frequency (Hz)", &preset_.frequency_min, 20.0f, 2000.0f, "%.1f")) SetDirty(true);
-	if (ImGui::SliderFloat("Max Frequency (Hz)", &preset_.frequency_max, 20.0f, 2000.0f, "%.1f")) SetDirty(true);
-	if (ImGui::SliderFloat("Frequency Slide", &preset_.frequency_slide, -1.0f, 1.0f, "%.3f")) SetDirty(true);
+	if (ImGui::SliderFloat("Base Frequency (Hz)", &preset_.base_frequency, 20.0f, 2000.0f, "%.1f"))
+		SetDirty(true);
+	if (ImGui::SliderFloat("Min Frequency (Hz)", &preset_.frequency_min, 20.0f, 2000.0f, "%.1f"))
+		SetDirty(true);
+	if (ImGui::SliderFloat("Max Frequency (Hz)", &preset_.frequency_max, 20.0f, 2000.0f, "%.1f"))
+		SetDirty(true);
+	if (ImGui::SliderFloat("Frequency Slide", &preset_.frequency_slide, -1.0f, 1.0f, "%.3f"))
+		SetDirty(true);
 }
 
 void SoundEditorPanel::RenderEnvelopeControls() {
 	ImGui::Text("Envelope");
 
-	if (ImGui::SliderFloat("Attack Time (s)", &preset_.attack_time, 0.0f, 1.0f, "%.3f")) SetDirty(true);
-	if (ImGui::SliderFloat("Sustain Time (s)", &preset_.sustain_time, 0.0f, 2.0f, "%.3f")) SetDirty(true);
-	if (ImGui::SliderFloat("Sustain Level", &preset_.sustain_level, 0.0f, 1.0f, "%.3f")) SetDirty(true);
-	if (ImGui::SliderFloat("Decay Time (s)", &preset_.decay_time, 0.0f, 2.0f, "%.3f")) SetDirty(true);
+	if (ImGui::SliderFloat("Attack Time (s)", &preset_.attack_time, 0.0f, 1.0f, "%.3f"))
+		SetDirty(true);
+	if (ImGui::SliderFloat("Sustain Time (s)", &preset_.sustain_time, 0.0f, 2.0f, "%.3f"))
+		SetDirty(true);
+	if (ImGui::SliderFloat("Sustain Level", &preset_.sustain_level, 0.0f, 1.0f, "%.3f"))
+		SetDirty(true);
+	if (ImGui::SliderFloat("Decay Time (s)", &preset_.decay_time, 0.0f, 2.0f, "%.3f"))
+		SetDirty(true);
 }
 
 void SoundEditorPanel::RenderEffectControls() {
 	ImGui::Text("Effects");
 
 	if (ImGui::TreeNode("Vibrato")) {
-		if (ImGui::SliderFloat("Depth##Vibrato", &preset_.vibrato_depth, 0.0f, 1.0f, "%.3f")) SetDirty(true);
-		if (ImGui::SliderFloat("Speed (Hz)##Vibrato", &preset_.vibrato_speed, 0.0f, 20.0f, "%.1f")) SetDirty(true);
+		if (ImGui::SliderFloat("Depth##Vibrato", &preset_.vibrato_depth, 0.0f, 1.0f, "%.3f"))
+			SetDirty(true);
+		if (ImGui::SliderFloat("Speed (Hz)##Vibrato", &preset_.vibrato_speed, 0.0f, 20.0f, "%.1f"))
+			SetDirty(true);
 		ImGui::TreePop();
 	}
 
 	if (ImGui::TreeNode("Phaser")) {
-		if (ImGui::SliderFloat("Offset##Phaser", &preset_.phaser_offset, 0.0f, 1.0f, "%.3f")) SetDirty(true);
-		if (ImGui::SliderFloat("Sweep##Phaser", &preset_.phaser_sweep, -1.0f, 1.0f, "%.3f")) SetDirty(true);
+		if (ImGui::SliderFloat("Offset##Phaser", &preset_.phaser_offset, 0.0f, 1.0f, "%.3f"))
+			SetDirty(true);
+		if (ImGui::SliderFloat("Sweep##Phaser", &preset_.phaser_sweep, -1.0f, 1.0f, "%.3f"))
+			SetDirty(true);
 		ImGui::TreePop();
 	}
 
 	if (ImGui::TreeNode("Filter")) {
-		if (ImGui::SliderFloat("Low-pass Cutoff", &preset_.lowpass_cutoff, 0.0f, 1.0f, "%.3f")) SetDirty(true);
-		if (ImGui::SliderFloat("Low-pass Sweep", &preset_.lowpass_sweep, -1.0f, 1.0f, "%.3f")) SetDirty(true);
-		if (ImGui::SliderFloat("High-pass Cutoff", &preset_.highpass_cutoff, 0.0f, 1.0f, "%.3f")) SetDirty(true);
+		if (ImGui::SliderFloat("Low-pass Cutoff", &preset_.lowpass_cutoff, 0.0f, 1.0f, "%.3f"))
+			SetDirty(true);
+		if (ImGui::SliderFloat("Low-pass Sweep", &preset_.lowpass_sweep, -1.0f, 1.0f, "%.3f"))
+			SetDirty(true);
+		if (ImGui::SliderFloat("High-pass Cutoff", &preset_.highpass_cutoff, 0.0f, 1.0f, "%.3f"))
+			SetDirty(true);
 		ImGui::TreePop();
 	}
 }
@@ -166,8 +181,10 @@ void SoundEditorPanel::RenderEffectControls() {
 void SoundEditorPanel::RenderVolumeControls() {
 	ImGui::Text("Volume");
 
-	if (ImGui::SliderFloat("Master Volume", &preset_.master_volume, 0.0f, 1.0f, "%.3f")) SetDirty(true);
-	if (ImGui::SliderFloat("Gain", &preset_.gain, 0.0f, 2.0f, "%.3f")) SetDirty(true);
+	if (ImGui::SliderFloat("Master Volume", &preset_.master_volume, 0.0f, 1.0f, "%.3f"))
+		SetDirty(true);
+	if (ImGui::SliderFloat("Gain", &preset_.gain, 0.0f, 2.0f, "%.3f"))
+		SetDirty(true);
 }
 
 void SoundEditorPanel::RenderPresetButtons() {
@@ -201,10 +218,20 @@ void SoundEditorPanel::RenderPresetButtons() {
 void SoundEditorPanel::RenderTransportControls() {
 	ImGui::Text("Transport");
 
-	const float button_width = (ImGui::GetContentRegionAvail().x - ImGui::GetStyle().ItemSpacing.x) / 2.0f;
+	// Auto-reset playing state when sound finishes naturally
+	if (is_playing_ && playback_handle_ != 0) {
+		auto& audio = engine::audio::AudioSystem::Get();
+		if (!audio.IsSoundPlaying(playback_handle_)) {
+			is_playing_ = false;
+			playback_handle_ = 0;
+		}
+	}
+
+	const float button_width = (ImGui::GetContentRegionAvail().x - ImGui::GetStyle().ItemSpacing.x * 2.0f) / 3.0f;
 
 	if (!is_playing_) {
 		if (ImGui::Button("Play", ImVec2(button_width, 0))) {
+			RegeneratePreview();
 			PlayPreview();
 		}
 	}
@@ -217,8 +244,19 @@ void SoundEditorPanel::RenderTransportControls() {
 	ImGui::SameLine();
 
 	if (ImGui::Button("Generate", ImVec2(button_width, 0))) {
-		// Regenerate waveform preview
-		GenerateWaveform(waveform_samples_, WAVEFORM_SAMPLE_COUNT);
+		RegeneratePreview();
+	}
+
+	ImGui::SameLine();
+
+	const bool has_export = !export_wav_path_.empty();
+	if (ImGui::Button(has_export ? "Re-export WAV" : "Export WAV...", ImVec2(button_width, 0))) {
+		if (has_export) {
+			ExportWav(export_wav_path_);
+		}
+		else {
+			export_wav_dialog_.Open("sound.wav");
+		}
 	}
 }
 
@@ -227,7 +265,7 @@ void SoundEditorPanel::RenderWaveformVisualizer() {
 
 	// Generate waveform if not yet generated
 	if (waveform_samples_.empty() || waveform_samples_.size() != WAVEFORM_SAMPLE_COUNT) {
-		GenerateWaveform(waveform_samples_, WAVEFORM_SAMPLE_COUNT);
+		RegeneratePreview();
 	}
 
 	// Draw waveform using ImGui draw list
@@ -291,7 +329,7 @@ void SoundEditorPanel::RandomizePickup() {
 	preset_.master_volume = 0.5f;
 	SetDirty(true);
 
-	GenerateWaveform(waveform_samples_, WAVEFORM_SAMPLE_COUNT);
+	RegeneratePreview();
 }
 
 void SoundEditorPanel::RandomizeLaser() {
@@ -308,7 +346,7 @@ void SoundEditorPanel::RandomizeLaser() {
 	preset_.master_volume = 0.5f;
 	SetDirty(true);
 
-	GenerateWaveform(waveform_samples_, WAVEFORM_SAMPLE_COUNT);
+	RegeneratePreview();
 }
 
 void SoundEditorPanel::RandomizeExplosion() {
@@ -326,7 +364,7 @@ void SoundEditorPanel::RandomizeExplosion() {
 	preset_.master_volume = 0.6f;
 	SetDirty(true);
 
-	GenerateWaveform(waveform_samples_, WAVEFORM_SAMPLE_COUNT);
+	RegeneratePreview();
 }
 
 void SoundEditorPanel::RandomizeJump() {
@@ -343,7 +381,7 @@ void SoundEditorPanel::RandomizeJump() {
 	preset_.master_volume = 0.5f;
 	SetDirty(true);
 
-	GenerateWaveform(waveform_samples_, WAVEFORM_SAMPLE_COUNT);
+	RegeneratePreview();
 }
 
 void SoundEditorPanel::RandomizeHit() {
@@ -361,7 +399,7 @@ void SoundEditorPanel::RandomizeHit() {
 	preset_.master_volume = 0.5f;
 	SetDirty(true);
 
-	GenerateWaveform(waveform_samples_, WAVEFORM_SAMPLE_COUNT);
+	RegeneratePreview();
 }
 
 void SoundEditorPanel::RandomizeAll() {
@@ -393,52 +431,30 @@ void SoundEditorPanel::RandomizeAll() {
 	preset_.gain = std::uniform_real_distribution<float>(0.8f, 1.5f)(gen);
 	SetDirty(true);
 
-	GenerateWaveform(waveform_samples_, WAVEFORM_SAMPLE_COUNT);
+	RegeneratePreview();
 }
 
 // ========================================================================
 // Waveform Generation
 // ========================================================================
 
-void SoundEditorPanel::GenerateWaveform(std::vector<float>& samples, const int sample_count) {
-	samples.resize(sample_count);
+void SoundEditorPanel::RegeneratePreview() {
+	constexpr int preview_rate = 44100;
+	auto full_samples = SynthesizeFullAudio(preview_rate);
 
-	for (int i = 0; i < sample_count; ++i) {
-		// Simple phase calculation (0 to 2*PI over the sample count)
-		const float phase = (static_cast<float>(i) / static_cast<float>(sample_count)) * 2.0f * 3.14159265359f;
-		samples[i] = GenerateOscillatorSample(phase);
-	}
-}
+	waveform_samples_.resize(WAVEFORM_SAMPLE_COUNT);
 
-float SoundEditorPanel::GenerateOscillatorSample(const float phase) const {
-	const float pi = 3.14159265359f;
-
-	switch (preset_.waveform) {
-	case WaveformType::Sine: return std::sin(phase);
-
-	case WaveformType::Square: return (std::sin(phase) >= 0.0f) ? 1.0f : -1.0f;
-
-	case WaveformType::Saw:
-		// Sawtooth: linear rise from -1 to 1
-		return (phase / pi) - 1.0f;
-
-	case WaveformType::Triangle:
-	{
-		// Triangle wave
-		const float t = phase / (2.0f * pi);
-		return (t < 0.5f) ? (4.0f * t - 1.0f) : (3.0f - 4.0f * t);
+	if (full_samples.empty()) {
+		std::fill(waveform_samples_.begin(), waveform_samples_.end(), 0.0f);
+		return;
 	}
 
-	case WaveformType::Noise:
-	{
-		// Simple noise (pseudo-random based on phase)
-		static std::random_device rd;
-		static std::mt19937 gen(rd());
-		static std::uniform_real_distribution<float> dist(-1.0f, 1.0f);
-		return dist(gen);
-	}
-
-	default: return 0.0f;
+	// Downsample the full synthesis to fit the preview display
+	const auto full_count = static_cast<int>(full_samples.size());
+	for (int i = 0; i < WAVEFORM_SAMPLE_COUNT; ++i) {
+		const float t = static_cast<float>(i) / static_cast<float>(WAVEFORM_SAMPLE_COUNT - 1);
+		const int src_idx = std::min(static_cast<int>(t * static_cast<float>(full_count - 1)), full_count - 1);
+		waveform_samples_[i] = full_samples[src_idx];
 	}
 }
 
@@ -478,6 +494,7 @@ std::vector<float> SoundEditorPanel::SynthesizeFullAudio(const int sample_rate) 
 	float lp_sample = 0.0f;
 	float lp_cutoff = preset_.lowpass_cutoff;
 	float hp_sample = 0.0f;
+	float prev_sample = 0.0f;
 
 	// Noise RNG
 	std::mt19937 noise_gen(42);
@@ -490,17 +507,17 @@ std::vector<float> SoundEditorPanel::SynthesizeFullAudio(const int sample_rate) 
 		float envelope = 0.0f;
 		if (t < preset_.attack_time) {
 			// Attack: ramp from 0 to sustain_level
-			envelope = (preset_.attack_time > 0.0f)
-				? preset_.sustain_level * (t / preset_.attack_time)
-				: preset_.sustain_level;
-		} else if (t < preset_.attack_time + preset_.sustain_time) {
+			envelope = (preset_.attack_time > 0.0f) ? preset_.sustain_level * (t / preset_.attack_time)
+													: preset_.sustain_level;
+		}
+		else if (t < preset_.attack_time + preset_.sustain_time) {
 			envelope = preset_.sustain_level;
-		} else {
+		}
+		else {
 			// Decay: ramp from sustain_level to 0
 			const float decay_t = t - preset_.attack_time - preset_.sustain_time;
-			envelope = (preset_.decay_time > 0.0f)
-				? preset_.sustain_level * (1.0f - decay_t / preset_.decay_time)
-				: 0.0f;
+			envelope =
+					(preset_.decay_time > 0.0f) ? preset_.sustain_level * (1.0f - decay_t / preset_.decay_time) : 0.0f;
 		}
 		envelope = std::clamp(envelope, 0.0f, 1.0f);
 
@@ -511,8 +528,7 @@ std::vector<float> SoundEditorPanel::SynthesizeFullAudio(const int sample_rate) 
 		// --- Vibrato ---
 		float vibrato_mod = 0.0f;
 		if (preset_.vibrato_depth > 0.0f && preset_.vibrato_speed > 0.0f) {
-			vibrato_mod = preset_.vibrato_depth * frequency * 0.5f
-				* std::sin(two_pi * preset_.vibrato_speed * t);
+			vibrato_mod = preset_.vibrato_depth * frequency * 0.5f * std::sin(two_pi * preset_.vibrato_speed * t);
 		}
 
 		const float current_freq = frequency + vibrato_mod;
@@ -520,23 +536,16 @@ std::vector<float> SoundEditorPanel::SynthesizeFullAudio(const int sample_rate) 
 		// --- Oscillator ---
 		float sample = 0.0f;
 		switch (preset_.waveform) {
-		case WaveformType::Sine:
-			sample = std::sin(phase);
-			break;
-		case WaveformType::Square:
-			sample = (std::fmod(phase, two_pi) < pi) ? 1.0f : -1.0f;
-			break;
-		case WaveformType::Saw:
-			sample = (std::fmod(phase, two_pi) / pi) - 1.0f;
-			break;
-		case WaveformType::Triangle: {
+		case WaveformType::Sine: sample = std::sin(phase); break;
+		case WaveformType::Square: sample = (std::fmod(phase, two_pi) < pi) ? 1.0f : -1.0f; break;
+		case WaveformType::Saw: sample = (std::fmod(phase, two_pi) / pi) - 1.0f; break;
+		case WaveformType::Triangle:
+		{
 			const float norm = std::fmod(phase, two_pi) / two_pi;
 			sample = (norm < 0.5f) ? (4.0f * norm - 1.0f) : (3.0f - 4.0f * norm);
 			break;
 		}
-		case WaveformType::Noise:
-			sample = noise_dist(noise_gen);
-			break;
+		case WaveformType::Noise: sample = noise_dist(noise_gen); break;
 		}
 
 		// Advance phase
@@ -557,17 +566,16 @@ std::vector<float> SoundEditorPanel::SynthesizeFullAudio(const int sample_rate) 
 
 		// --- High-pass filter ---
 		if (preset_.highpass_cutoff > 0.0f) {
-			const float hp_coeff = std::clamp(
-				1.0f - preset_.highpass_cutoff * preset_.highpass_cutoff, 0.0f, 0.9999f);
-			hp_sample = hp_coeff * (hp_sample + sample - lp_sample);
-			sample -= hp_sample;
+			const float hp_coeff = std::clamp(1.0f - preset_.highpass_cutoff * preset_.highpass_cutoff, 0.0f, 0.9999f);
+			hp_sample = hp_coeff * (hp_sample + sample - prev_sample);
+			sample = hp_sample;
 		}
+		prev_sample = sample;
 
 		// --- Phaser ---
 		if (std::abs(preset_.phaser_offset) > 0.001f) {
 			phaser_offset += preset_.phaser_sweep * dt * 100.0f;
-			const int offset = std::clamp(
-				static_cast<int>(std::abs(phaser_offset)), 1, PHASER_BUFFER_SIZE - 1);
+			const int offset = std::clamp(static_cast<int>(std::abs(phaser_offset)), 1, PHASER_BUFFER_SIZE - 1);
 			phaser_buffer[phaser_pos] = sample;
 			const int read_pos = (phaser_pos - offset + PHASER_BUFFER_SIZE) % PHASER_BUFFER_SIZE;
 			sample += phaser_buffer[read_pos];
@@ -587,8 +595,7 @@ std::vector<float> SoundEditorPanel::SynthesizeFullAudio(const int sample_rate) 
 // WAV File Construction
 // ========================================================================
 
-std::vector<uint8_t> SoundEditorPanel::BuildWavFile(
-		const std::vector<float>& samples, const int sample_rate) {
+std::vector<uint8_t> SoundEditorPanel::BuildWavFile(const std::vector<float>& samples, const int sample_rate) {
 	const uint32_t num_samples = static_cast<uint32_t>(samples.size());
 	constexpr uint16_t num_channels = 1;
 	constexpr uint16_t bits_per_sample = 16;
@@ -625,8 +632,8 @@ std::vector<uint8_t> SoundEditorPanel::BuildWavFile(
 
 	// fmt chunk
 	write_tag("fmt ");
-	write_u32(16);                                      // chunk size
-	write_u16(1);                                       // PCM format
+	write_u32(16); // chunk size
+	write_u16(1); // PCM format
 	write_u16(num_channels);
 	write_u32(static_cast<uint32_t>(sample_rate));
 	write_u32(byte_rate);
@@ -663,10 +670,12 @@ void SoundEditorPanel::PlayPreview() {
 
 	// Write to a temporary WAV file for miniaudio playback
 	auto wav_data = BuildWavFile(samples, sample_rate);
-	playback_temp_path_ = (std::filesystem::temp_directory_path() / "citrus_sfx_preview.wav").string();
+	// Use a unique filename each time to bypass miniaudio's resource manager cache
+	playback_temp_path_ =
+			(std::filesystem::temp_directory_path() / ("citrus_sfx_preview_" + std::to_string(preview_counter_++) + ".wav"))
+					.string();
 
-	if (!engine::assets::AssetManager::SaveBinaryFile(
-			std::filesystem::path(playback_temp_path_), wav_data)) {
+	if (!engine::assets::AssetManager::SaveBinaryFile(std::filesystem::path(playback_temp_path_), wav_data)) {
 		return;
 	}
 
@@ -680,19 +689,22 @@ void SoundEditorPanel::PlayPreview() {
 		return;
 	}
 
-	playback_handle_ = audio.PlaySound(playback_clip_id_, 1.0f, false);
+	playback_handle_ = audio.PlaySoundClip(playback_clip_id_, 1.0f, false);
 	if (playback_handle_ != 0) {
 		is_playing_ = true;
 	}
 }
 
 void SoundEditorPanel::StopPreview() {
+	auto& audio = engine::audio::AudioSystem::Get();
 	if (playback_handle_ != 0) {
-		auto& audio = engine::audio::AudioSystem::Get();
 		audio.StopSound(playback_handle_);
 		playback_handle_ = 0;
 	}
-	playback_clip_id_ = 0;
+	if (playback_clip_id_ != 0) {
+		audio.UnloadClip(playback_clip_id_);
+		playback_clip_id_ = 0;
+	}
 	is_playing_ = false;
 
 	// Clean up temp file
@@ -714,8 +726,15 @@ bool SoundEditorPanel::ExportWav(const std::string& path) {
 	}
 
 	auto wav_data = BuildWavFile(samples, sample_rate);
-	return engine::assets::AssetManager::SaveBinaryFile(
-		std::filesystem::path(path), wav_data);
+	if (engine::assets::AssetManager::SaveBinaryFile(std::filesystem::path(path), wav_data)) {
+		export_wav_path_ = path;
+		// Auto-save the preset to persist the export path association
+		if (!current_file_path_.empty()) {
+			SavePresetToJson(current_file_path_);
+		}
+		return true;
+	}
+	return false;
 }
 
 // ========================================================================
@@ -727,10 +746,11 @@ void SoundEditorPanel::NewSound() {
 	preset_ = SoundPreset();
 	preset_name_ = "Untitled";
 	current_file_path_ = "";
+	export_wav_path_ = "";
 	is_playing_ = false;
 	SetDirty(false);
 
-	GenerateWaveform(waveform_samples_, WAVEFORM_SAMPLE_COUNT);
+	RegeneratePreview();
 }
 
 bool SoundEditorPanel::OpenSound(const std::string& path) {
@@ -738,7 +758,7 @@ bool SoundEditorPanel::OpenSound(const std::string& path) {
 		current_file_path_ = path;
 		preset_name_ = path;
 		SetDirty(false);
-		GenerateWaveform(waveform_samples_, WAVEFORM_SAMPLE_COUNT);
+		RegeneratePreview();
 		return true;
 	}
 	return false;
@@ -827,6 +847,9 @@ bool SoundEditorPanel::LoadPresetFromJson(const std::string& path) {
 		if (j.contains("gain")) {
 			preset_.gain = j["gain"].get<float>();
 		}
+		if (j.contains("export_wav_path")) {
+			export_wav_path_ = j["export_wav_path"].get<std::string>();
+		}
 
 		return true;
 	}
@@ -864,6 +887,10 @@ bool SoundEditorPanel::SavePresetToJson(const std::string& path) {
 
 		j["master_volume"] = preset_.master_volume;
 		j["gain"] = preset_.gain;
+
+		if (!export_wav_path_.empty()) {
+			j["export_wav_path"] = export_wav_path_;
+		}
 
 		return engine::assets::AssetManager::SaveTextFile(std::filesystem::path(path), j.dump(2));
 	}

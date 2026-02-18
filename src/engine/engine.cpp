@@ -53,6 +53,9 @@ bool Engine::Init(const uint32_t window_width, const uint32_t window_height) {
 		return false;
 	}
 
+	// Initialize audio system
+	audio::AudioSystem::Get().Initialize();
+
 	// ECSWorld is constructed automatically
 	scene::InitializeSceneSystem(ecs);
 	return true;
@@ -84,6 +87,8 @@ void Engine::Update(const float dt, const UpdateMode mode) {
 void Engine::Shutdown() {
 	// Shutdown scripting system (unique_ptr handles cleanup automatically)
 	scripting_system.reset();
+	// Shutdown audio system
+	audio::AudioSystem::Get().Shutdown();
 	// Shutdown input system
 	input::Input::Shutdown();
 	// Shutdown renderer

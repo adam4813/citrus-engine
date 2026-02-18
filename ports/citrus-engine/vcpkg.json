@@ -18,6 +18,7 @@
     "glm",
     "joltphysics",
     "lua",
+    "miniaudio",
     "nlohmann-json",
     "spdlog",
     "stb",

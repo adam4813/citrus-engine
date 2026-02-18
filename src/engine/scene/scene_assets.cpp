@@ -332,11 +332,11 @@ void SoundAssetInfo::ToJson(nlohmann::json& j) const {
 }
 
 void SoundAssetInfo::DoInitialize() {
-	// Stub: no audio system yet
+	// Audio clips are loaded on-demand by the SoundRef observer in the ECS system
 }
 
 bool SoundAssetInfo::DoLoad() {
-	// Stub: no audio system yet
+	// Audio clips are loaded on-demand by the SoundRef observer in the ECS system
 	return true;
 }
 

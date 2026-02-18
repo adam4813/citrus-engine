@@ -80,8 +80,7 @@ private:
 	// ========================================================================
 	// Waveform Generation (for visualization)
 	// ========================================================================
-	void GenerateWaveform(std::vector<float>& samples, int sample_count);
-	float GenerateOscillatorSample(float phase) const;
+	void RegeneratePreview();
 
 	// ========================================================================
 	// Full Audio Synthesis
@@ -151,7 +150,9 @@ private:
 	bool is_playing_ = false;
 	uint32_t playback_handle_ = 0;
 	uint32_t playback_clip_id_ = 0;
+	uint32_t preview_counter_ = 0;
 	std::string playback_temp_path_;
+	std::string export_wav_path_; // Associated WAV export path for re-exporting
 
 	// Waveform visualization
 	static constexpr int WAVEFORM_SAMPLE_COUNT = 512;

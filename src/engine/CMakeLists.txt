@@ -160,6 +160,9 @@ target_sources(engine-core PRIVATE
     assets/asset_manager.cpp
     assets/tileset.cpp
 
+    # Audio module implementation
+    audio/audio_system.cpp
+
     # Data module implementation
     data/data_serializer.cpp
 
@@ -244,6 +247,7 @@ target_link_libraries(engine-core
     PRIVATE
     Angelscript::angelscript
     lua
+    miniaudio::miniaudio
 )
 
 if (EMSCRIPTEN)

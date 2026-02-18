@@ -175,13 +175,12 @@ ECSWorld::ECSWorld() {
 			.Field("prefab_path", &PrefabInstance::prefab_path)
 			.Build();
 
-	// Register audio components
+	// Register audio components (basic registration - SoundRef integration added in SetupSoundRefIntegration)
 	// Register PlayState enum for proper serialization
 	world_.component<audio::PlayState>();
 
 	registry.Register<audio::AudioSource>("AudioSource", world_)
 			.Category("Audio")
-			.Field("clip_id", &audio::AudioSource::clip_id)
 			.Field("volume", &audio::AudioSource::volume)
 			.Field("pitch", &audio::AudioSource::pitch)
 			.Field("looping", &audio::AudioSource::looping)
@@ -189,7 +188,6 @@ ECSWorld::ECSWorld() {
 			.Field("position", &audio::AudioSource::position)
 			.Field("state", &audio::AudioSource::state)
 			.EnumLabels({"Stopped", "Playing", "Paused"})
-			.Field("play_handle", &audio::AudioSource::play_handle)
 			.Build();
 
 	registry.Register<audio::AudioListener>("AudioListener", world_)
@@ -270,6 +268,9 @@ ECSWorld::ECSWorld() {
 	// Set up mesh reference integration (MeshRef component, With trait, observers)
 	SetupMeshRefIntegration();
 
+	// Set up sound reference integration (SoundRef component, With trait, observers)
+	SetupSoundRefIntegration();
+
 	// Set up built-in systems
 	SetupMovementSystem();
 	SetupRotationSystem();
@@ -277,6 +278,7 @@ ECSWorld::ECSWorld() {
 	SetupSpatialSystem();
 	SetupTransformSystem();
 	SetupAnimationSystem();
+	SetupAudioSystem();
 }
 
 // Get the underlying flecs world
@@ -746,6 +748,119 @@ void ECSWorld::SetupMeshRefIntegration() {
 void ECSWorld::SetupAnimationSystem() const {
 	// Register the animation system with the flecs world
 	AnimationSystem::Register(world_);
+}
+
+void ECSWorld::SetupAudioSystem() const {
+	// Audio ECS system: sync AudioSource/AudioListener components with AudioSystem
+	// Runs in simulation phase — only active during play mode, not in editor mode
+	world_.system<audio::AudioSource>("AudioSourceSystem")
+			.kind(simulation_phase_)
+			.each([](flecs::entity entity, audio::AudioSource& source) {
+				auto& audio_sys = audio::AudioSystem::Get();
+				if (!audio_sys.IsInitialized()) {
+					return;
+				}
+
+				switch (source.state) {
+				case audio::PlayState::Playing:
+					if (source.play_handle == 0 && source.clip_id != 0) {
+						source.play_handle = audio_sys.PlaySoundClip(source.clip_id, source.volume, source.looping);
+					}
+					else if (source.play_handle != 0) {
+						// Resume if transitioning from Paused→Playing
+						audio_sys.ResumeSound(source.play_handle);
+					}
+					if (source.play_handle != 0) {
+						audio_sys.SetVolume(source.play_handle, source.volume);
+						audio_sys.SetPitch(source.play_handle, source.pitch);
+						if (source.spatial) {
+							// Sync position from WorldTransform if available
+							if (entity.has<WorldTransform>()) {
+								const auto& wt = entity.get<WorldTransform>();
+								audio_sys.SetSourcePosition(
+										source.play_handle, wt.matrix[3][0], wt.matrix[3][1], wt.matrix[3][2]);
+							}
+							else {
+								audio_sys.SetSourcePosition(
+										source.play_handle, source.position.x, source.position.y, source.position.z);
+							}
+						}
+					}
+					break;
+				case audio::PlayState::Paused:
+					if (source.play_handle != 0) {
+						audio_sys.PauseSound(source.play_handle);
+					}
+					break;
+				case audio::PlayState::Stopped:
+					if (source.play_handle != 0) {
+						audio_sys.StopSound(source.play_handle);
+						source.play_handle = 0;
+					}
+					break;
+				}
+			});
+
+	// Sync the listener position with the AudioSystem (also simulation-only)
+	world_.system<const audio::AudioListener>("AudioListenerSystem")
+			.kind(simulation_phase_)
+			.each([]([[maybe_unused]] flecs::entity entity, const audio::AudioListener& listener) {
+				auto& audio_sys = audio::AudioSystem::Get();
+				if (audio_sys.IsInitialized()) {
+					audio_sys.SetListenerPosition(listener);
+				}
+			});
+}
+
+void ECSWorld::SetupSoundRefIntegration() {
+	auto& registry = ComponentRegistry::Instance();
+
+	// Register SoundRef component - stores sound asset name for serialization
+	registry.Register<audio::SoundRef>("SoundRef", world_)
+			.Category("Audio")
+			.Field("name", &audio::SoundRef::name)
+			.AssetRef(scene::SoundAssetInfo::TYPE_NAME)
+			.Build();
+
+	// Add (With, SoundRef) trait to AudioSource - auto-adds SoundRef when AudioSource is added
+	if (!world_.component<audio::AudioSource>().add(flecs::With, world_.component<audio::SoundRef>())) {
+		return;
+	}
+
+	// Observer: SoundRef.name → AudioSource.clip_id (resolve name to clip ID)
+	// Lazily loads the clip from the scene's SoundAssetInfo if not yet cached
+	world_.observer<audio::SoundRef, audio::AudioSource>("SoundRefToAudioSource")
+			.event(flecs::OnSet)
+			.each([](flecs::entity, const audio::SoundRef& ref, audio::AudioSource& source) {
+				if (ref.name.empty()) {
+					source.clip_id = 0;
+					return;
+				}
+
+				auto& audio_sys = audio::AudioSystem::Get();
+				if (!audio_sys.IsInitialized()) {
+					return;
+				}
+
+				// Check if already loaded by name
+				if (uint32_t id = audio_sys.FindClipByName(ref.name); id != 0) {
+					source.clip_id = id;
+					return;
+				}
+
+				// Lazy load: look up SoundAssetInfo from the active scene
+				auto& scene_mgr = scene::GetSceneManager();
+				const auto active_id = scene_mgr.GetActiveScene();
+				if (active_id == scene::INVALID_SCENE) {
+					return;
+				}
+				const auto& scene = scene_mgr.GetScene(active_id);
+				if (auto sound_asset = scene.GetAssets().FindTyped<scene::SoundAssetInfo>(ref.name)) {
+					if (!sound_asset->file_path.empty()) {
+						source.clip_id = audio_sys.LoadClipNamed(ref.name, sound_asset->file_path);
+					}
+				}
+			});
 }
 
 } // namespace engine::ecs

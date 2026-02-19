@@ -169,6 +169,9 @@ target_sources(engine-core PRIVATE
 
     ecs/component_registry.cpp
     ecs/ecs_world.cpp
+    ecs/ecs_systems.cpp
+    ecs/ecs_transform.cpp
+    ecs/ecs_render.cpp
 
     # Graph module implementation
     graph/types.cpp

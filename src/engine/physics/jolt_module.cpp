@@ -127,22 +127,32 @@ JoltPhysicsModule::JoltPhysicsModule(const flecs::world& world) {
 	});
 
 	// System: Sync results from backend back to ECS components
-	world.system<components::Transform, PhysicsVelocity, const RigidBody>("JoltSyncFromBackend")
+	world.system<components::WorldTransform, PhysicsVelocity, const RigidBody>("JoltSyncFromBackend")
 			.kind(simulation_phase)
-			.each([backend](const flecs::entity e, components::Transform& t, PhysicsVelocity& v, const RigidBody& rb) {
+			.each([backend](const flecs::entity e, components::WorldTransform& wt, PhysicsVelocity& v, const RigidBody& rb) {
 				if (rb.motion_type != MotionType::Dynamic || !backend->HasBody(e.id())) {
 					return;
 				}
 
-				auto [position, rotation, linear_velocity, angular_velocity] = backend->SyncBodyFromBackend(e.id());
-				t.position = position;
+				const auto [position, rotation, linear_velocity, angular_velocity] =
+						backend->SyncBodyFromBackend(e.id());
 
-				// Convert quaternion back to euler angles
-				const glm::vec3 euler = glm::eulerAngles(rotation);
-				t.rotation = euler;
+				// Physics owns WorldTransform — write world-space values directly.
+				// Transform stays local-space (initial offset from parent).
+				wt.position = position;
+				wt.rotation = glm::eulerAngles(rotation);
+				// Preserve scale from TransformPropagation (physics doesn't affect scale)
+				wt.ComputeMatrix();
 
 				v.linear = linear_velocity;
 				v.angular = angular_velocity;
+
+				// Cascade to children so their WorldTransform updates
+				e.children([](const flecs::entity child) {
+					if (child.has<components::Transform>()) {
+						child.modified<components::Transform>();
+					}
+				});
 			});
 
 	// System: Clear old collision events, then distribute new ones

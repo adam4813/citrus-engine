@@ -39,6 +39,7 @@ nav:
     - Scene Management: scenes.md
   - Subsystems:
     - Physics: physics.md
+    - Physics Parenting: physics-parenting.md
     - Audio: audio.md
     - Assets: asset-system.md
   - UI System:

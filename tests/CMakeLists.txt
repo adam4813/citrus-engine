@@ -154,3 +154,8 @@ add_engine_test(asset_manager_test
 add_engine_test(audio_test
     audio_test.cpp
 )
+
+# Add physics parenting test (nested body sync)
+add_engine_test(physics_parenting_test
+    physics_parenting_test.cpp
+)

@@ -1040,9 +1040,8 @@ void ViewportPanel::PickEntityAtMousePosition(
 				}
 			}
 
-			// Extract entity position from world transform matrix
-			const glm::vec3 entity_pos(
-					world_transform.matrix[3][0], world_transform.matrix[3][1], world_transform.matrix[3][2]);
+			// Extract entity position from world transform
+			const glm::vec3 entity_pos = world_transform.position;
 
 			// Simple distance-based picking - compute distance from ray to entity position
 			// Using point-to-line distance formula

@@ -589,76 +589,18 @@ void ECSWorld::SubmitRenderCommands(const rendering::Renderer& renderer) {
 				renderer.SubmitRenderCommand(cmd);
 			});
 
-	// Physics debug drawing
-	// Check if debug drawing is enabled
+	// Physics debug drawing — delegate to the active physics backend
 	if (world_.has<physics::PhysicsWorldConfig>()) {
 		const auto& physics_config = world_.get<physics::PhysicsWorldConfig>();
-		if (physics_config.show_debug_physics) {
-			// Set debug camera matrices
+		if (physics_config.show_debug_physics && world_.has<physics::PhysicsBackendPtr>()) {
 			renderer.SetDebugCamera(active_camera->view_matrix, active_camera->projection_matrix);
 
-			// Green color with slight transparency for debug shapes
-			constexpr rendering::Color debug_color{0.0f, 1.0f, 0.0f, 0.7f};
+			const auto& backend_ptr = world_.get<physics::PhysicsBackendPtr>();
+			if (backend_ptr.backend) {
+				physics::RendererDebugAdapter adapter(renderer);
+				backend_ptr.backend->DebugDraw(adapter);
+			}
 
-			// Query all entities with CollisionShape and WorldTransform
-			world_.query<const physics::CollisionShape, const WorldTransform>().each(
-					[&](const physics::CollisionShape& shape, const WorldTransform& world_transform) {
-						// Extract position from world transform matrix
-						const auto world_position = glm::vec3(
-								world_transform.matrix[3][0],
-								world_transform.matrix[3][1],
-								world_transform.matrix[3][2]);
-
-						const auto world_scale = glm::vec3(
-								glm::length(glm::vec3(world_transform.matrix[0])),
-								glm::length(glm::vec3(world_transform.matrix[1])),
-								glm::length(glm::vec3(world_transform.matrix[2])));
-
-						// Apply position offset from shape, transformed by world matrix
-						const glm::vec4 offset_world = world_transform.matrix * glm::vec4(shape.offset, 0.0f);
-						const glm::vec3 shape_center = world_position + glm::vec3(offset_world);
-
-						switch (shape.type) {
-						case physics::ShapeType::Box:
-						{
-							// DrawWireCube expects size, not half-extents
-							const glm::vec3 size = shape.box_half_extents * 2.0f * world_scale;
-							renderer.DrawWireCube(shape_center, size, debug_color);
-							break;
-						}
-						case physics::ShapeType::Sphere:
-						{
-							renderer.DrawWireSphere(
-									shape_center, glm::vec3(shape.sphere_radius) * world_scale, debug_color);
-							break;
-						}
-						case physics::ShapeType::Capsule:
-						{
-							// Approximate capsule as sphere + vertical line
-							const float half_height = shape.capsule_height * 0.5f * world_scale.length();
-							const auto radius = glm::vec3(shape.capsule_radius) * world_scale;
-							renderer.DrawWireSphere(shape_center + glm::vec3(0, half_height, 0), radius, debug_color);
-							renderer.DrawWireSphere(shape_center - glm::vec3(0, half_height, 0), radius, debug_color);
-							renderer.DrawLine(
-									shape_center + glm::vec3(0, half_height, 0),
-									shape_center - glm::vec3(0, half_height, 0),
-									debug_color);
-							break;
-						}
-						case physics::ShapeType::Cylinder:
-						{
-							const auto scale_length = world_scale.length();
-							const float radius = shape.cylinder_radius * 2.0f * scale_length;
-							// Approximate cylinder as box with circular cross-section
-							const glm::vec3 size{radius, shape.cylinder_height * scale_length, radius};
-							renderer.DrawWireCube(shape_center, size, debug_color);
-							break;
-						}
-						default: break;
-						}
-					});
-
-			// Flush all accumulated debug lines
 			renderer.FlushDebugLines();
 		}
 	}
@@ -704,14 +646,51 @@ void ECSWorld::SetupSpatialSystem() const {
 }
 
 void ECSWorld::SetupTransformSystem() const {
-	world_.observer<const Transform, WorldTransform>("TransformPropagation")
+	world_.observer<const Transform, WorldTransform, physics::RigidBody*>("TransformPropagation")
 			.event(flecs::OnAdd)
 			.event(flecs::OnSet)
-			.each([](const flecs::entity entity, const Transform& transform, WorldTransform& world_transform) {
+			.each([](const flecs::entity entity,
+					 const Transform& transform,
+					 WorldTransform& world_transform,
+					 const physics::RigidBody* rigid_body) {
+				// Dynamic physics bodies operate in world space (like Unity).
+				// Physics writes WorldTransform directly — skip recomputing from local Transform.
+				if (rigid_body != nullptr && rigid_body->motion_type == physics::MotionType::Dynamic) {
+					// Cascade to children only — WorldTransform was set by physics
+					entity.children([](const flecs::entity child) {
+						if (child.has<Transform>()) {
+							child.modified<Transform>();
+						}
+					});
+					return;
+				}
+
 				glm::mat4 world_matrix = component_helpers::ComputeTransformMatrix(transform);
+
 				if (const auto parent = entity.parent(); parent.is_valid() && parent.has<WorldTransform>()) {
-					const auto [parent_world_matrix] = parent.get<WorldTransform>();
-					world_matrix = parent_world_matrix * world_matrix;
+					const auto& parent_wt = parent.get<WorldTransform>();
+					world_matrix = parent_wt.matrix * world_matrix;
+				}
+
+				// Decompose the world matrix into position/rotation/scale
+				world_transform.position = glm::vec3(world_matrix[3]);
+
+				const glm::vec3 col0(world_matrix[0]);
+				const glm::vec3 col1(world_matrix[1]);
+				const glm::vec3 col2(world_matrix[2]);
+				world_transform.scale = glm::vec3(glm::length(col0), glm::length(col1), glm::length(col2));
+
+				if (constexpr float kEpsilon = 1e-6F; world_transform.scale.x > kEpsilon
+													  && world_transform.scale.y > kEpsilon
+													  && world_transform.scale.z > kEpsilon) {
+					const glm::mat3 rot_mat(
+							col0 / world_transform.scale.x,
+							col1 / world_transform.scale.y,
+							col2 / world_transform.scale.z);
+					world_transform.rotation = glm::eulerAngles(glm::quat_cast(rot_mat));
+				}
+				else {
+					world_transform.rotation = transform.rotation;
 				}
 
 				world_transform.matrix = world_matrix;
@@ -869,7 +848,7 @@ void ECSWorld::SetupAudioSystem() const {
 							if (entity.has<WorldTransform>()) {
 								const auto& wt = entity.get<WorldTransform>();
 								audio_sys.SetSourcePosition(
-										source.play_handle, wt.matrix[3][0], wt.matrix[3][1], wt.matrix[3][2]);
+										source.play_handle, wt.position.x, wt.position.y, wt.position.z);
 							}
 							else {
 								audio_sys.SetSourcePosition(

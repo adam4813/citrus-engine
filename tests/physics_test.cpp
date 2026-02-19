@@ -237,9 +237,9 @@ TEST_F(JoltModuleTest, dynamic_body_falls_under_gravity) {
 		world_.progress(1.0F / 60.0F);
 	}
 
-	const auto& t = e.get<engine::components::Transform>();
+	const auto& wt = e.get<engine::components::WorldTransform>();
 	// After 1 second of gravity, Y should be less than starting position
-	EXPECT_LT(t.position.y, 10.0F);
+	EXPECT_LT(wt.position.y, 10.0F);
 }
 
 TEST_F(JoltModuleTest, removing_rigidbody_cleans_up) {
@@ -277,9 +277,9 @@ TEST_F(JoltModuleTest, physics_force_is_applied) {
 		world_.progress(1.0F / 60.0F);
 	}
 
-	const auto& t = e.get<engine::components::Transform>();
+	const auto& wt = e.get<engine::components::WorldTransform>();
 	// Should have moved in X direction
-	EXPECT_GT(t.position.x, 0.0F);
+	EXPECT_GT(wt.position.x, 0.0F);
 
 	// PhysicsForce should have been removed (clear_after_apply)
 	EXPECT_FALSE(e.has<PhysicsForce>());
@@ -341,6 +341,5 @@ TEST_F(Bullet3ModuleTest, dynamic_body_falls_under_gravity) {
 		world_.progress(1.0F / 60.0F);
 	}
 
-	const auto& t = e.get<engine::components::Transform>();
-	EXPECT_LT(t.position.y, 10.0F);
-}
+	const auto& wt = e.get<engine::components::WorldTransform>();
+	EXPECT_LT(wt.position.y, 10.0F);}

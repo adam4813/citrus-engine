@@ -1,5 +1,4 @@
 #include "editor_scene.h"
-#include "commands/clipboard_commands.h"
 #include "commands/entity_commands.h"
 #include "commands/prefab_command.h"
 #include "commands/transform_command.h"
@@ -8,9 +7,6 @@
 #include <imgui.h>
 #include <imgui_internal.h>
 #include <iostream>
-#include <nlohmann/json.hpp>
-
-using json = nlohmann::json;
 
 namespace editor {
 
@@ -31,6 +27,17 @@ void EditorScene::Initialize(engine::Engine& engine) {
 	scene_manager.SetActiveScene(editor_scene_id_);
 
 	state_.current_file_path = "";
+
+	// Set up project manager template path (relative to editor executable)
+	{
+		namespace fs = std::filesystem;
+		auto template_dir = fs::current_path() / ".." / "templates" / "game-project";
+		if (!fs::exists(template_dir)) {
+			// Try relative to source tree (common during development)
+			template_dir = fs::current_path() / "templates" / "game-project";
+		}
+		project_manager_.SetTemplatePath(fs::weakly_canonical(template_dir));
+	}
 
 	// Set up scene file dialogs
 	open_scene_dialog_.SetCallback([this](const std::string& path) { OpenScene(path); });
@@ -114,6 +121,7 @@ void EditorScene::Initialize(engine::Engine& engine) {
 			&data_table_editor_panel_,
 			&code_editor_panel_,
 			&sound_editor_panel_,
+			&build_output_panel_,
 	};
 
 	// Set default visibility for panels that should be visible on startup
@@ -271,6 +279,7 @@ void EditorScene::RenderUI(engine::Engine& engine) {
 		ImGui::DockBuilderDockWindow("Sprite Editor", dock_id_bottom);
 		ImGui::DockBuilderDockWindow("Code Editor", dock_id_bottom);
 		ImGui::DockBuilderDockWindow("Data Table Editor", dock_id_bottom);
+		ImGui::DockBuilderDockWindow("Build Output", dock_id_bottom);
 		ImGui::DockBuilderFinish(dockspace_id);
 	}
 
@@ -296,6 +305,7 @@ void EditorScene::RenderUI(engine::Engine& engine) {
 	data_table_editor_panel_.Render();
 	sound_editor_panel_.Render();
 	code_editor_panel_.Render();
+	build_output_panel_.Render(project_manager_);
 
 	// Handle dialogs
 	if (state_.show_new_scene_dialog) {
@@ -321,6 +331,76 @@ void EditorScene::RenderUI(engine::Engine& engine) {
 	open_scene_dialog_.Render();
 	save_scene_dialog_.Render();
 
+	// -- Project dialogs --
+	if (show_new_project_dialog_) {
+		ImGui::OpenPopup("New Project");
+		show_new_project_dialog_ = false;
+	}
+	if (ImGui::BeginPopupModal("New Project", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+		ImGui::Text("Create a new game project from template");
+		ImGui::Separator();
+		ImGui::InputText("Project Name", new_project_name_buffer_, sizeof(new_project_name_buffer_));
+		ImGui::InputText("Parent Directory", new_project_dir_buffer_, sizeof(new_project_dir_buffer_));
+		ImGui::Spacing();
+		if (ImGui::Button("Create", ImVec2(120, 0))) {
+			if (new_project_name_buffer_[0] != '\0' && new_project_dir_buffer_[0] != '\0') {
+				project_manager_.CreateProject(new_project_name_buffer_, new_project_dir_buffer_);
+				build_output_panel_.SetVisible(true);
+			}
+			ImGui::CloseCurrentPopup();
+		}
+		ImGui::SameLine();
+		if (ImGui::Button("Cancel", ImVec2(120, 0))) {
+			ImGui::CloseCurrentPopup();
+		}
+		ImGui::EndPopup();
+	}
+
+	if (show_open_project_dialog_) {
+		ImGui::OpenPopup("Open Project");
+		show_open_project_dialog_ = false;
+	}
+	if (ImGui::BeginPopupModal("Open Project", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+		ImGui::Text("Open an existing game project");
+		ImGui::Separator();
+		ImGui::InputText("Project Directory", open_project_dir_buffer_, sizeof(open_project_dir_buffer_));
+		ImGui::Spacing();
+		if (ImGui::Button("Open", ImVec2(120, 0))) {
+			if (open_project_dir_buffer_[0] != '\0') {
+				project_manager_.OpenProject(open_project_dir_buffer_);
+				build_output_panel_.SetVisible(true);
+			}
+			ImGui::CloseCurrentPopup();
+		}
+		ImGui::SameLine();
+		if (ImGui::Button("Cancel", ImVec2(120, 0))) {
+			ImGui::CloseCurrentPopup();
+		}
+		ImGui::EndPopup();
+	}
+
+	if (show_export_dialog_) {
+		ImGui::OpenPopup("Export Project");
+		show_export_dialog_ = false;
+	}
+	if (ImGui::BeginPopupModal("Export Project", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+		ImGui::Text("Export built project to a directory");
+		ImGui::Separator();
+		ImGui::InputText("Export Directory", export_dir_buffer_, sizeof(export_dir_buffer_));
+		ImGui::Spacing();
+		if (ImGui::Button("Export", ImVec2(120, 0))) {
+			if (export_dir_buffer_[0] != '\0') {
+				project_manager_.ExportProject(export_dir_buffer_);
+			}
+			ImGui::CloseCurrentPopup();
+		}
+		ImGui::SameLine();
+		if (ImGui::Button("Cancel", ImVec2(120, 0))) {
+			ImGui::CloseCurrentPopup();
+		}
+		ImGui::EndPopup();
+	}
+
 	if (state_.show_rename_entity_dialog) {
 		ImGui::OpenPopup("RenameEntityPopup");
 		const auto& scene_entity = selected_entity_.get<engine::ecs::SceneEntity>();
@@ -345,113 +425,6 @@ void EditorScene::RenderUI(engine::Engine& engine) {
 		}
 		ImGui::EndPopup();
 	}
-}
-
-void EditorScene::RenderMenuBar() {
-	constexpr float MENU_PADDING = 6.0f;
-	ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, {MENU_PADDING, MENU_PADDING});
-	if (ImGui::BeginMainMenuBar()) {
-		if (ImGui::BeginMenu("File")) {
-			if (ImGui::MenuItem("New", "Ctrl+N")) {
-				state_.show_new_scene_dialog = true;
-			}
-			if (ImGui::MenuItem("Open...", "Ctrl+O")) {
-				open_scene_dialog_.Open();
-			}
-
-			ImGui::Separator();
-
-			if (ImGui::MenuItem("Save", "Ctrl+S")) {
-				if (state_.current_file_path.empty()) {
-					save_scene_dialog_.Open("scene.json");
-				}
-				else {
-					SaveScene();
-				}
-			}
-			if (ImGui::MenuItem("Save As...", "Ctrl+Shift+S")) {
-				save_scene_dialog_.Open("scene.json");
-			}
-
-			ImGui::Separator();
-
-			if (ImGui::MenuItem("Exit", "Alt+F4")) {
-				// TODO: Handle exit with unsaved changes check
-			}
-
-			ImGui::EndMenu();
-		}
-
-		if (ImGui::BeginMenu("Edit")) {
-			if (ImGui::MenuItem("Undo", "Ctrl+Z", false, command_history_.CanUndo())) {
-				command_history_.Undo();
-			}
-			if (ImGui::MenuItem("Redo", "Ctrl+Y", false, command_history_.CanRedo())) {
-				command_history_.Redo();
-			}
-			ImGui::Separator();
-			if (ImGui::MenuItem("Cut", "Ctrl+X", false, selected_entity_.is_valid())) {
-				CutEntity();
-			}
-			if (ImGui::MenuItem("Copy", "Ctrl+C", false, selected_entity_.is_valid())) {
-				CopyEntity();
-			}
-			if (ImGui::MenuItem("Paste", "Ctrl+V", false, !clipboard_json_.empty())) {
-				PasteEntity();
-			}
-			if (ImGui::MenuItem("Duplicate", "Ctrl+D", false, selected_entity_.is_valid())) {
-				DuplicateEntity();
-			}
-			ImGui::EndMenu();
-		}
-
-		if (ImGui::BeginMenu("View")) {
-			for (auto* panel : panels_) {
-				panel->RenderViewMenuItem();
-			}
-			ImGui::EndMenu();
-		}
-
-		if (ImGui::BeginMenu("Scene")) {
-			if (ImGui::MenuItem("Add Entity")) {
-				// Add a new entity to the scene using command
-				auto& scene_manager = engine::scene::GetSceneManager();
-				if (auto* scene = scene_manager.TryGetScene(editor_scene_id_)) {
-					auto command = std::make_unique<CreateEntityCommand>(scene, engine::ecs::Entity());
-					command_history_.Execute(std::move(command));
-				}
-			}
-			ImGui::EndMenu();
-		}
-
-		ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 2 - 30); // Centered approx
-		ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, {MENU_PADDING / 2.f, MENU_PADDING / 2.f});
-		ImGui::SetCursorPosY(MENU_PADDING / 2.f);
-		// Play/Stop buttons
-		if (!state_.is_running) {
-			if (ImGui::Button("Play")) {
-				PlayScene();
-			}
-		}
-		else {
-			if (ImGui::Button("Stop")) {
-				StopScene();
-			}
-		}
-		ImGui::PopStyleVar();
-
-		// Display current scene info on the right side of menu bar
-		std::string title = state_.current_file_path.empty() ? "Untitled" : state_.current_file_path;
-		if (command_history_.IsDirty()) {
-			title += " *";
-		}
-		const float text_width = ImGui::CalcTextSize(title.c_str()).x;
-		ImGui::SetCursorPosX(ImGui::GetWindowWidth() - text_width - 20);
-		ImGui::TextDisabled("%s", title.c_str());
-
-		ImGui::EndMainMenuBar();
-	}
-	ImGui::PopStyleVar();
 }
 
 // ========================================================================
@@ -506,125 +479,6 @@ void EditorScene::OnAssetDeleted(const engine::scene::AssetType type, const std:
 		selected_asset_.Clear();
 		selection_type_ = SelectionType::None;
 	}
-}
-
-// ========================================================================
-// File Operations
-// ========================================================================
-
-void EditorScene::NewScene() {
-	std::cout << "EditorScene: Creating new scene..." << std::endl;
-
-	const auto& scene_manager = engine::scene::GetSceneManager();
-
-	// Destroy the old scene
-	if (editor_scene_id_ != engine::scene::INVALID_SCENE) {
-		scene_manager.DestroyScene(editor_scene_id_);
-	}
-
-	// Create a new scene
-	editor_scene_id_ = scene_manager.CreateScene("UntitledScene");
-	scene_manager.SetActiveScene(editor_scene_id_);
-
-	// Reset state
-	state_.current_file_path = "";
-	selected_entity_ = {};
-	selected_asset_.Clear();
-	selection_type_ = SelectionType::None;
-	rename_entity_buffer_[0] = '\0';
-	hierarchy_panel_.ClearNodeState();
-	command_history_.Clear();
-
-	std::cout << "EditorScene: New scene created" << std::endl;
-}
-
-void EditorScene::OpenScene(const std::string& path) {
-	std::cout << "EditorScene: Opening scene from: " << path << std::endl;
-
-	auto& scene_manager = engine::scene::GetSceneManager();
-
-	// Destroy the old scene
-	if (editor_scene_id_ != engine::scene::INVALID_SCENE) {
-		scene_manager.DestroyScene(editor_scene_id_);
-	}
-
-	// Load scene from file using engine serializer
-	const engine::platform::fs::Path file_path(path);
-	editor_scene_id_ = scene_manager.LoadSceneFromFile(file_path);
-
-	if (editor_scene_id_ == engine::scene::INVALID_SCENE) {
-		std::cerr << "EditorScene: Failed to load scene from: " << path << std::endl;
-		// Fall back to creating a new empty scene
-		editor_scene_id_ = scene_manager.CreateScene("Untitled");
-	}
-
-	scene_manager.SetActiveScene(editor_scene_id_);
-
-	// Store the scene's active camera (loaded from file) before switching to editor camera
-	scene_active_camera_ = engine_->ecs.GetActiveCamera();
-	// Filter out editor camera in case it was serialized (shouldn't happen but be safe)
-	if (scene_active_camera_ == editor_camera_) {
-		scene_active_camera_ = {};
-	}
-
-	// HACK: Reset to editor camera for viewport rendering
-	engine_->ecs.SetActiveCamera(editor_camera_);
-
-	// Update state
-	state_.current_file_path = path;
-	selected_entity_ = {};
-	selected_asset_.Clear();
-	selection_type_ = SelectionType::None;
-	hierarchy_panel_.ClearNodeState();
-	command_history_.Clear();
-
-	std::cout << "EditorScene: Scene loaded from: " << path << std::endl;
-}
-
-void EditorScene::SaveScene() {
-	if (state_.current_file_path.empty()) {
-		std::cout << "EditorScene: No file path set, cannot save" << std::endl;
-		return;
-	}
-
-	std::cout << "EditorScene: Saving scene to: " << state_.current_file_path << std::endl;
-
-	auto& scene_manager = engine::scene::GetSceneManager();
-
-	// HACK: Before saving, switch active camera from editor camera to scene's intended camera.
-	// This prevents the editor camera from being serialized as the active camera.
-	// The editor camera entity itself is automatically excluded from serialization because
-	// it's not a child of the scene root (see SerializeEntities in scene_serializer.cpp).
-	// Use scene_active_camera_ if valid, otherwise set to invalid entity (no active camera).
-	engine_->ecs.SetActiveCamera(scene_active_camera_);
-
-	if (const engine::platform::fs::Path file_path(state_.current_file_path);
-		scene_manager.SaveScene(editor_scene_id_, file_path)) {
-		command_history_.SetSavePosition();
-		std::cout << "EditorScene: Scene saved successfully" << std::endl;
-	}
-	else {
-		std::cerr << "EditorScene: Failed to save scene" << std::endl;
-	}
-
-	// HACK: Restore editor camera as active after save
-	engine_->ecs.SetActiveCamera(editor_camera_);
-}
-
-void EditorScene::SaveSceneAs(const std::string& path) {
-	std::cout << "EditorScene: Saving scene as: " << path << std::endl;
-
-	// Update the file path
-	state_.current_file_path = path;
-
-	// Update the scene file path
-	auto& scene_manager = engine::scene::GetSceneManager();
-	if (const auto* scene = scene_manager.TryGetScene(editor_scene_id_)) {
-		scene->SetFilePath(path);
-	}
-
-	// Save
-	SaveScene();
 }
 
 // ========================================================================
@@ -773,127 +627,5 @@ void EditorScene::StopScene() {
 	engine_->ecs.SetActiveCamera(editor_camera_);
 }
 
-// ========================================================================
-// Clipboard Operations
-// ========================================================================
-
-void EditorScene::CopyEntity() {
-	if (!selected_entity_.is_valid()) {
-		std::cout << "EditorScene: No entity selected to copy" << std::endl;
-		return;
-	}
-
-	try {
-		// Create clipboard JSON format
-		json clipboard_data;
-		clipboard_data["entities"] = json::array();
-
-		// Serialize entity and all children
-		std::function<void(engine::ecs::Entity, json&)> serialize_tree = [&](const engine::ecs::Entity entity,
-																			 json& entities_array) {
-			if (!entity.is_valid()) {
-				return;
-			}
-
-			// Serialize this entity
-			json entity_entry;
-			entity_entry["path"] = entity.path().c_str();
-			entity_entry["data"] = entity.to_json().c_str();
-			entities_array.push_back(entity_entry);
-
-			// Serialize children
-			entity.children([&](const engine::ecs::Entity child) { serialize_tree(child, entities_array); });
-		};
-
-		serialize_tree(selected_entity_, clipboard_data["entities"]);
-
-		// Store in clipboard
-		clipboard_json_ = clipboard_data.dump();
-
-		// Also copy to OS clipboard using ImGui
-		ImGui::SetClipboardText(clipboard_json_.c_str());
-
-		const std::string entity_name = selected_entity_.name().c_str();
-		std::cout << "EditorScene: Copied entity '" << entity_name << "' to clipboard" << std::endl;
-	}
-	catch (const std::exception& e) {
-		std::cerr << "EditorScene: Error copying entity: " << e.what() << std::endl;
-	}
-}
-
-void EditorScene::CutEntity() {
-	if (!selected_entity_.is_valid()) {
-		std::cout << "EditorScene: No entity selected to cut" << std::endl;
-		return;
-	}
-
-	// Copy the entity first
-	CopyEntity();
-
-	// Then delete it using command for undo support
-	auto& scene_manager = engine::scene::GetSceneManager();
-	if (auto* scene = scene_manager.TryGetScene(editor_scene_id_)) {
-		auto command = std::make_unique<CutEntityCommand>(scene, engine_->ecs, selected_entity_);
-		command_history_.Execute(std::move(command));
-
-		// Deselect the cut entity
-		selected_entity_ = {};
-		selection_type_ = SelectionType::None;
-
-		std::cout << "EditorScene: Cut entity" << std::endl;
-	}
-}
-
-void EditorScene::PasteEntity() {
-	if (clipboard_json_.empty()) {
-		// Try to get from OS clipboard
-		const char* clipboard_text = ImGui::GetClipboardText();
-		if (clipboard_text && clipboard_text[0] != '\0') {
-			clipboard_json_ = clipboard_text;
-		}
-		else {
-			std::cout << "EditorScene: Clipboard is empty" << std::endl;
-			return;
-		}
-	}
-
-	auto& scene_manager = engine::scene::GetSceneManager();
-	if (auto* scene = scene_manager.TryGetScene(editor_scene_id_)) {
-		// Paste under the selected entity if it's a valid parent (or use scene root)
-		engine::ecs::Entity parent;
-		if (selected_entity_.is_valid() && selected_entity_.has<engine::components::Group>()) {
-			parent = selected_entity_;
-		}
-
-		auto command = std::make_unique<PasteEntityCommand>(scene, engine_->ecs, clipboard_json_, parent, true);
-		auto* cmd_ptr = command.get();
-		command_history_.Execute(std::move(command));
-
-		// Select the pasted entity
-		selected_entity_ = cmd_ptr->GetPastedEntity();
-
-		std::cout << "EditorScene: Pasted entity from clipboard" << std::endl;
-	}
-}
-
-void EditorScene::DuplicateEntity() {
-	if (!selected_entity_.is_valid()) {
-		std::cout << "EditorScene: No entity selected to duplicate" << std::endl;
-		return;
-	}
-
-	auto& scene_manager = engine::scene::GetSceneManager();
-	if (auto* scene = scene_manager.TryGetScene(editor_scene_id_)) {
-		auto command = std::make_unique<DuplicateEntityCommand>(scene, engine_->ecs, selected_entity_);
-		auto* cmd_ptr = command.get();
-		command_history_.Execute(std::move(command));
-
-		// Select the duplicated entity
-		selected_entity_ = cmd_ptr->GetDuplicatedEntity();
-
-		const std::string entity_name = selected_entity_.name().c_str();
-		std::cout << "EditorScene: Duplicated entity '" << entity_name << "'" << std::endl;
-	}
-}
 
 } // namespace editor

@@ -19,20 +19,27 @@ add_executable(
     src/animation_editor_panel.cpp
     src/asset_browser_panel.cpp
     src/asset_editor_registry.cpp
+    src/build_output_panel.cpp
     src/code_editor_panel.cpp
     src/command.cpp
     src/commands/clipboard_commands.cpp
     src/behavior_tree_editor_panel.cpp
     src/data_table_editor_panel.cpp
     src/editor_scene.cpp
+    src/editor_scene_clipboard.cpp
+    src/editor_scene_file_ops.cpp
+    src/editor_scene_menus.cpp
     src/graph_editor_panel.cpp
     src/hierarchy_panel.cpp
+    src/project_manager.cpp
     src/properties_panel.cpp
     src/shader_editor_panel.cpp
     src/sound_editor_panel.cpp
     src/sprite_editor_panel.cpp
     src/texture_editor_panel.cpp
     src/tileset_editor_panel.cpp
+    src/viewport_camera.cpp
+    src/viewport_gizmos.cpp
     src/viewport_panel.cpp)
 
 target_include_directories(citrus-scene-editor

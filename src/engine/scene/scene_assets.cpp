@@ -258,12 +258,34 @@ void TextureAssetInfo::ToJson(nlohmann::json& j) const {
 }
 
 void TextureAssetInfo::DoInitialize() {
-	// Stub: reserve texture slot if needed
+	// Reserve texture slot by name (will be populated in DoLoad)
 }
 
 bool TextureAssetInfo::DoLoad() {
-	// Stub: load via AssetManager::LoadImage() when available
+	if (file_path.empty()) {
+		return true; // No file to load (procedural textures etc.)
+	}
+	auto& tex_mgr = rendering::GetRenderer().GetTextureManager();
+	// Check if already loaded by name
+	if (id = tex_mgr.FindTexture(name); id != rendering::INVALID_TEXTURE) {
+		std::cout << "TextureAssetInfo: Reusing cached texture '" << name << "' (id=" << id << ")" << '\n';
+		return true;
+	}
+	id = tex_mgr.LoadTexture(platform::fs::Path(file_path));
+	if (id == rendering::INVALID_TEXTURE) {
+		std::cerr << "TextureAssetInfo: Failed to load texture '" << name << "' from " << file_path << '\n';
+		return false;
+	}
+	std::cout << "TextureAssetInfo: Loaded texture '" << name << "' (id=" << id << ")" << '\n';
 	return true;
+}
+
+void TextureAssetInfo::DoUnload() {
+	if (id != rendering::INVALID_TEXTURE) {
+		rendering::GetRenderer().GetTextureManager().DestroyTexture(id);
+		std::cout << "TextureAssetInfo: Unloaded texture '" << name << "' (id=" << id << ")" << '\n';
+		id = rendering::INVALID_TEXTURE;
+	}
 }
 
 void TextureAssetInfo::RegisterType() {
@@ -279,9 +301,8 @@ void TextureAssetInfo::RegisterType() {
 				asset->file_path = j.value("file_path", "");
 				return asset;
 			})
-			.CreateDefault([]() -> std::shared_ptr<AssetInfo> {
-				return std::make_shared<TextureAssetInfo>("NewTexture", "");
-			})
+			.CreateDefault(
+					[]() -> std::shared_ptr<AssetInfo> { return std::make_shared<TextureAssetInfo>("NewTexture", ""); })
 			.Build();
 }
 
@@ -337,7 +358,16 @@ bool MaterialAssetInfo::DoLoad() {
 		material.SetProperty(key, value);
 	}
 	// Texture properties — texture loading is deferred, names stored for future binding
-	// for (const auto& [uniform_name, texture_asset_name] : texture_properties) { }
+	for (const auto& [uniform_name, texture_asset_name] : texture_properties) {
+		if (texture_asset_name.empty()) {
+			continue;
+		}
+		// Attempt to resolve texture asset by name
+		if (const auto& texture_id = rendering::GetRenderer().GetTextureManager().LoadTexture(texture_asset_name);
+			texture_id != rendering::INVALID_TEXTURE) {
+			material.SetTexture(uniform_name, texture_id);
+		}
+	}
 
 	std::cout << "MaterialAssetInfo: Loaded material '" << name << "' (id=" << id << ")" << '\n';
 	return true;
@@ -355,7 +385,9 @@ void MaterialAssetInfo::RegisterType() {
 			.DisplayName("Material")
 			.Category("Rendering")
 			.Field("name", &MaterialAssetInfo::name, "Name")
-			.Field("shader_name", &MaterialAssetInfo::shader_name, "Shader", AssetFieldType::AssetRef)
+			.Field("shader_name", &MaterialAssetInfo::shader_name, "Shader")
+			.AssetRef(ShaderAssetInfo::TYPE_NAME)
+			.Field("textures", &MaterialAssetInfo::texture_properties, "Texture Properties", AssetFieldType::ListString)
 			.FromJson([](const nlohmann::json& j) -> std::unique_ptr<AssetInfo> {
 				auto asset = std::make_unique<MaterialAssetInfo>();
 				asset->name = j.value("name", "");
@@ -370,8 +402,7 @@ void MaterialAssetInfo::RegisterType() {
 					for (auto& [key, val] : j["vec4s"].items()) {
 						if (val.is_array() && val.size() >= 4) {
 							asset->vec4_properties[key] = rendering::Vec4(
-									val[0].get<float>(), val[1].get<float>(), val[2].get<float>(),
-									val[3].get<float>());
+									val[0].get<float>(), val[1].get<float>(), val[2].get<float>(), val[3].get<float>());
 						}
 					}
 				}
@@ -463,9 +494,8 @@ void SoundAssetInfo::RegisterType() {
 				asset->loop = j.value("loop", false);
 				return asset;
 			})
-			.CreateDefault([]() -> std::shared_ptr<AssetInfo> {
-				return std::make_shared<SoundAssetInfo>("NewSound", "");
-			})
+			.CreateDefault(
+					[]() -> std::shared_ptr<AssetInfo> { return std::make_shared<SoundAssetInfo>("NewSound", ""); })
 			.Build();
 }
 
@@ -538,9 +568,8 @@ void PrefabAssetInfo::RegisterType() {
 				asset->file_path = j.value("file_path", "");
 				return asset;
 			})
-			.CreateDefault([]() -> std::shared_ptr<AssetInfo> {
-				return std::make_shared<PrefabAssetInfo>("NewPrefab", "");
-			})
+			.CreateDefault(
+					[]() -> std::shared_ptr<AssetInfo> { return std::make_shared<PrefabAssetInfo>("NewPrefab", ""); })
 			.Build();
 }
 

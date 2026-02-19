@@ -133,6 +133,18 @@ public:
 		return *this;
 	}
 
+	/// Mark the last field as an asset reference with the given asset type key
+	AssetTypeRegistration& AssetRef(const std::string& asset_type_key) {
+		if (!info_.fields.empty()) {
+			info_.fields.back().type = AssetFieldType::AssetRef;
+			info_.fields.back().asset_type = asset_type_key;
+		}
+		return *this;
+	}
+	AssetTypeRegistration& AssetRef(const std::string_view asset_type_key) {
+		return AssetRef(std::string(asset_type_key));
+	}
+
 	/// Set the JSON deserialization factory
 	AssetTypeRegistration& FromJson(std::function<std::unique_ptr<AssetInfo>(const nlohmann::json&)> factory) {
 		info_.from_json_factory = std::move(factory);
@@ -347,6 +359,7 @@ struct TextureAssetInfo : AssetInfo {
 	static constexpr std::string_view TYPE_NAME = "texture";
 
 	std::string file_path;
+	rendering::TextureId id{rendering::INVALID_TEXTURE};
 
 	TextureAssetInfo() : AssetInfo("", AssetType::TEXTURE) {}
 	TextureAssetInfo(std::string asset_name, std::string path) :
@@ -359,6 +372,7 @@ struct TextureAssetInfo : AssetInfo {
 protected:
 	void DoInitialize() override;
 	bool DoLoad() override;
+	void DoUnload() override;
 };
 
 /// Material asset definition - references a shader and defines uniform properties

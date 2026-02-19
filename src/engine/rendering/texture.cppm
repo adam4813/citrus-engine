@@ -93,6 +93,11 @@ export namespace engine::rendering {
 
         bool IsValid(TextureId id) const;
 
+        // Name-based lookup
+        TextureId FindTexture(const std::string &name) const;
+
+        std::string GetTextureName(TextureId id) const;
+
         void Clear() const;
 
         // Get default textures

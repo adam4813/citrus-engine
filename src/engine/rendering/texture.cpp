@@ -265,6 +265,20 @@ void TextureManager::DestroyTexture(const TextureId id) const {
 
 bool TextureManager::IsValid(const TextureId id) const { return pimpl_->textures.contains(id); }
 
+TextureId TextureManager::FindTexture(const std::string& name) const {
+	const auto it = pimpl_->texture_cache.find(name);
+	return it != pimpl_->texture_cache.end() ? it->second : INVALID_TEXTURE;
+}
+
+std::string TextureManager::GetTextureName(const TextureId id) const {
+	for (const auto& [name, tex_id] : pimpl_->texture_cache) {
+		if (tex_id == id) {
+			return name;
+		}
+	}
+	return {};
+}
+
 void TextureManager::Clear() const {
 	pimpl_->textures.clear();
 	pimpl_->texture_cache.clear();

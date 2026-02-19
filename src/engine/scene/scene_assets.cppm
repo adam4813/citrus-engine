@@ -124,6 +124,14 @@ public:
 		return *this;
 	}
 
+	/// Set file extension filters on the last field (for FilePath/AssetRef browse dialogs)
+	AssetTypeRegistration& FileExtensions(std::vector<std::string> exts) {
+		if (!info_.fields.empty()) {
+			info_.fields.back().file_extensions = std::move(exts);
+		}
+		return *this;
+	}
+
 	/// Set the JSON deserialization factory
 	AssetTypeRegistration& FromJson(std::function<std::unique_ptr<AssetInfo>(const nlohmann::json&)> factory) {
 		info_.from_json_factory = std::move(factory);

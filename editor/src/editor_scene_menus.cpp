@@ -70,46 +70,6 @@ void EditorScene::RenderMenuBar() {
 			ImGui::EndMenu();
 		}
 
-		if (ImGui::BeginMenu("Project")) {
-			if (ImGui::MenuItem("New Project...")) {
-				new_project_name_buffer_[0] = '\0';
-				new_project_dir_buffer_[0] = '\0';
-				show_new_project_dialog_ = true;
-			}
-			if (ImGui::MenuItem("Open Project...")) {
-				open_project_dir_buffer_[0] = '\0';
-				show_open_project_dialog_ = true;
-			}
-
-			ImGui::Separator();
-
-			const bool has_project = project_manager_.HasProject();
-			const bool is_building = project_manager_.GetBuildStatus() == BuildStatus::Configuring
-									 || project_manager_.GetBuildStatus() == BuildStatus::Building;
-
-			if (ImGui::MenuItem("Build Project (Debug)", nullptr, false, has_project && !is_building)) {
-				project_manager_.BuildProject(BuildConfig::Debug, BuildTarget::Native);
-				build_output_panel_.SetVisible(true);
-			}
-			if (ImGui::MenuItem("Build Project (Release)", nullptr, false, has_project && !is_building)) {
-				project_manager_.BuildProject(BuildConfig::Release, BuildTarget::Native);
-				build_output_panel_.SetVisible(true);
-			}
-			if (ImGui::MenuItem("Build for Web...", nullptr, false, has_project && !is_building)) {
-				project_manager_.BuildProject(BuildConfig::Release, BuildTarget::Web);
-				build_output_panel_.SetVisible(true);
-			}
-
-			ImGui::Separator();
-
-			if (ImGui::MenuItem("Export...", nullptr, false, has_project)) {
-				export_dir_buffer_[0] = '\0';
-				show_export_dialog_ = true;
-			}
-
-			ImGui::EndMenu();
-		}
-
 		if (ImGui::BeginMenu("Scene")) {
 			if (ImGui::MenuItem("Add Entity")) {
 				// Add a new entity to the scene using command

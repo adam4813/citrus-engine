@@ -5,9 +5,11 @@
 #include "file_dialog.h"
 #include "file_utils.h"
 
+#include <cstdint>
 #include <filesystem>
 #include <memory>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 import engine;
@@ -62,7 +64,7 @@ struct AssetSelection {
 class AssetBrowserPanel : public EditorPanel {
 public:
 	AssetBrowserPanel();
-	~AssetBrowserPanel() override = default;
+	~AssetBrowserPanel() override;
 
 	[[nodiscard]] std::string_view GetPanelName() const override;
 
@@ -173,9 +175,25 @@ private:
 	static AssetFileType GetAssetFileType(const std::filesystem::path& path);
 
 	/**
+	 * @brief Get a color associated with an asset file type
+	 */
+	static ImVec4 GetAssetTypeColor(AssetFileType type);
+
+	/**
 	 * @brief Check if an item passes the current filter
 	 */
 	bool PassesFilter(const FileSystemItem& item) const;
+
+	/**
+	 * @brief Load or retrieve a cached thumbnail GL texture for an image file
+	 * @return OpenGL texture ID, or 0 if loading failed
+	 */
+	uint32_t GetOrLoadThumbnail(const std::filesystem::path& path);
+
+	/**
+	 * @brief Free all cached thumbnail GL textures
+	 */
+	void ClearThumbnailCache();
 
 	EditorCallbacks callbacks_;
 	bool prefabs_scanned_ = false;
@@ -202,6 +220,9 @@ private:
 
 	// Import asset dialog
 	std::unique_ptr<FileDialogPopup> import_dialog_;
+
+	// Thumbnail cache: file path -> GL texture ID
+	std::unordered_map<std::string, uint32_t> thumbnail_cache_;
 };
 
 } // namespace editor

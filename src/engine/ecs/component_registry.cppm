@@ -49,6 +49,9 @@ struct FieldInfo {
 	std::vector<std::string> enum_labels; // For Enum: display labels (index = integer value)
 	std::vector<std::string> enum_tooltips; // For Enum: tooltips for each option (index = integer value)
 	std::vector<std::string> options; // For Selection: valid string choices
+	std::vector<std::string> file_extensions; // For FilePath/AssetRef: file extension filters (e.g., ".json", ".png")
+	std::string visible_when_field; // If non-empty, this field is only visible when the named field has a matching value
+	std::vector<int> visible_when_values; // Enum values of the controlling field that make this field visible
 };
 
 /**
@@ -216,6 +219,28 @@ public:
 	ComponentRegistration& EnumTooltips(std::vector<std::string> tips) {
 		if (!info_.fields.empty()) {
 			info_.fields.back().enum_tooltips = std::move(tips);
+		}
+		return *this;
+	}
+
+	/**
+	 * @brief Set file extension filters on the last field (for FilePath/AssetRef browse dialogs)
+	 */
+	ComponentRegistration& FileExtensions(std::vector<std::string> exts) {
+		if (!info_.fields.empty()) {
+			info_.fields.back().file_extensions = std::move(exts);
+		}
+		return *this;
+	}
+
+	/**
+	 * @brief Make the last field conditionally visible based on another field's enum value
+	 * The field is only shown when the controlling field's integer value is in the given set.
+	 */
+	ComponentRegistration& VisibleWhen(const std::string& field_name, std::vector<int> values) {
+		if (!info_.fields.empty()) {
+			info_.fields.back().visible_when_field = field_name;
+			info_.fields.back().visible_when_values = std::move(values);
 		}
 		return *this;
 	}

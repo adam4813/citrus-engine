@@ -1,0 +1,43 @@
+{
+  "$schema": "https://citrus-engine.github.io/schemas/project.schema.json",
+  "name": "my-game",
+  "version": "0.1.0",
+  "author": "",
+  "description": "A game built with Citrus Engine",
+  "engine": {
+    "version": "0.2.x"
+  },
+  "window": {
+    "title": "My Game",
+    "width": 1280,
+    "height": 720,
+    "fullscreen": false,
+    "vsync": true
+  },
+  "startup_scene": "scenes/main.json",
+  "assets": {
+    "base_path": "assets",
+    "directories": [
+      "fonts",
+      "textures",
+      "scenes",
+      "shaders"
+    ]
+  },
+  "build": {
+    "targets": [
+      {
+        "platform": "native",
+        "configuration": "Release"
+      },
+      {
+        "platform": "wasm",
+        "configuration": "Release",
+        "emscripten": {
+          "initial_memory_mb": 64,
+          "max_memory_mb": 128
+        }
+      }
+    ]
+  }
+}

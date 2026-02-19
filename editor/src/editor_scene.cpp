@@ -28,17 +28,6 @@ void EditorScene::Initialize(engine::Engine& engine) {
 
 	state_.current_file_path = "";
 
-	// Set up project manager template path (relative to editor executable)
-	{
-		namespace fs = std::filesystem;
-		auto template_dir = fs::current_path() / ".." / "templates" / "game-project";
-		if (!fs::exists(template_dir)) {
-			// Try relative to source tree (common during development)
-			template_dir = fs::current_path() / "templates" / "game-project";
-		}
-		project_manager_.SetTemplatePath(fs::weakly_canonical(template_dir));
-	}
-
 	// Set up scene file dialogs
 	open_scene_dialog_.SetCallback([this](const std::string& path) { OpenScene(path); });
 	save_scene_dialog_.SetCallback([this](const std::string& path) { SaveSceneAs(path); });
@@ -121,7 +110,6 @@ void EditorScene::Initialize(engine::Engine& engine) {
 			&data_table_editor_panel_,
 			&code_editor_panel_,
 			&sound_editor_panel_,
-			&build_output_panel_,
 	};
 
 	// Set default visibility for panels that should be visible on startup
@@ -305,8 +293,6 @@ void EditorScene::RenderUI(engine::Engine& engine) {
 	data_table_editor_panel_.Render();
 	sound_editor_panel_.Render();
 	code_editor_panel_.Render();
-	build_output_panel_.Render(project_manager_);
-
 	// Handle dialogs
 	if (state_.show_new_scene_dialog) {
 		ImGui::OpenPopup("New Scene");
@@ -330,76 +316,6 @@ void EditorScene::RenderUI(engine::Engine& engine) {
 
 	open_scene_dialog_.Render();
 	save_scene_dialog_.Render();
-
-	// -- Project dialogs --
-	if (show_new_project_dialog_) {
-		ImGui::OpenPopup("New Project");
-		show_new_project_dialog_ = false;
-	}
-	if (ImGui::BeginPopupModal("New Project", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
-		ImGui::Text("Create a new game project from template");
-		ImGui::Separator();
-		ImGui::InputText("Project Name", new_project_name_buffer_, sizeof(new_project_name_buffer_));
-		ImGui::InputText("Parent Directory", new_project_dir_buffer_, sizeof(new_project_dir_buffer_));
-		ImGui::Spacing();
-		if (ImGui::Button("Create", ImVec2(120, 0))) {
-			if (new_project_name_buffer_[0] != '\0' && new_project_dir_buffer_[0] != '\0') {
-				project_manager_.CreateProject(new_project_name_buffer_, new_project_dir_buffer_);
-				build_output_panel_.SetVisible(true);
-			}
-			ImGui::CloseCurrentPopup();
-		}
-		ImGui::SameLine();
-		if (ImGui::Button("Cancel", ImVec2(120, 0))) {
-			ImGui::CloseCurrentPopup();
-		}
-		ImGui::EndPopup();
-	}
-
-	if (show_open_project_dialog_) {
-		ImGui::OpenPopup("Open Project");
-		show_open_project_dialog_ = false;
-	}
-	if (ImGui::BeginPopupModal("Open Project", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
-		ImGui::Text("Open an existing game project");
-		ImGui::Separator();
-		ImGui::InputText("Project Directory", open_project_dir_buffer_, sizeof(open_project_dir_buffer_));
-		ImGui::Spacing();
-		if (ImGui::Button("Open", ImVec2(120, 0))) {
-			if (open_project_dir_buffer_[0] != '\0') {
-				project_manager_.OpenProject(open_project_dir_buffer_);
-				build_output_panel_.SetVisible(true);
-			}
-			ImGui::CloseCurrentPopup();
-		}
-		ImGui::SameLine();
-		if (ImGui::Button("Cancel", ImVec2(120, 0))) {
-			ImGui::CloseCurrentPopup();
-		}
-		ImGui::EndPopup();
-	}
-
-	if (show_export_dialog_) {
-		ImGui::OpenPopup("Export Project");
-		show_export_dialog_ = false;
-	}
-	if (ImGui::BeginPopupModal("Export Project", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
-		ImGui::Text("Export built project to a directory");
-		ImGui::Separator();
-		ImGui::InputText("Export Directory", export_dir_buffer_, sizeof(export_dir_buffer_));
-		ImGui::Spacing();
-		if (ImGui::Button("Export", ImVec2(120, 0))) {
-			if (export_dir_buffer_[0] != '\0') {
-				project_manager_.ExportProject(export_dir_buffer_);
-			}
-			ImGui::CloseCurrentPopup();
-		}
-		ImGui::SameLine();
-		if (ImGui::Button("Cancel", ImVec2(120, 0))) {
-			ImGui::CloseCurrentPopup();
-		}
-		ImGui::EndPopup();
-	}
 
 	if (state_.show_rename_entity_dialog) {
 		ImGui::OpenPopup("RenameEntityPopup");

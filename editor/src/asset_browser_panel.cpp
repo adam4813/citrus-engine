@@ -10,6 +10,16 @@
 #include <iostream>
 #include <nlohmann/json.hpp>
 
+#ifndef __EMSCRIPTEN__
+#include <glad/glad.h>
+#else
+#include <GLES3/gl3.h>
+#endif
+
+#define STB_IMAGE_STATIC
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb_image.h>
+
 #ifdef _WIN32
 #include <windows.h>
 
@@ -44,6 +54,89 @@ AssetBrowserPanel::AssetBrowserPanel() {
 }
 
 std::string_view AssetBrowserPanel::GetPanelName() const { return "Assets"; }
+
+AssetBrowserPanel::~AssetBrowserPanel() { ClearThumbnailCache(); }
+
+void AssetBrowserPanel::ClearThumbnailCache() {
+	for (const auto& [path, tex_id] : thumbnail_cache_) {
+		if (tex_id != 0) {
+			glDeleteTextures(1, &tex_id);
+		}
+	}
+	thumbnail_cache_.clear();
+}
+
+uint32_t AssetBrowserPanel::GetOrLoadThumbnail(const std::filesystem::path& path) {
+	const std::string key = path.string();
+	if (const auto it = thumbnail_cache_.find(key); it != thumbnail_cache_.end()) {
+		return it->second;
+	}
+
+	// Load image with stb_image
+	int width = 0;
+	int height = 0;
+	int channels = 0;
+	unsigned char* pixels = stbi_load(path.string().c_str(), &width, &height, &channels, 4);
+	if (!pixels) {
+		thumbnail_cache_[key] = 0;
+		return 0;
+	}
+
+	// Downscale to thumbnail size if needed
+	constexpr int MAX_THUMB = 128;
+	int thumb_w = width;
+	int thumb_h = height;
+	std::vector<unsigned char> thumb_data;
+
+	if (width > MAX_THUMB || height > MAX_THUMB) {
+		const float scale = static_cast<float>(MAX_THUMB) / static_cast<float>(std::max(width, height));
+		thumb_w = std::max(1, static_cast<int>(static_cast<float>(width) * scale));
+		thumb_h = std::max(1, static_cast<int>(static_cast<float>(height) * scale));
+		thumb_data.resize(static_cast<size_t>(thumb_w) * thumb_h * 4);
+		for (int y = 0; y < thumb_h; ++y) {
+			for (int x = 0; x < thumb_w; ++x) {
+				const int src_x = x * width / thumb_w;
+				const int src_y = y * height / thumb_h;
+				const int src_idx = (src_y * width + src_x) * 4;
+				const int dst_idx = (y * thumb_w + x) * 4;
+				std::memcpy(&thumb_data[dst_idx], &pixels[src_idx], 4);
+			}
+		}
+	}
+
+	const unsigned char* tex_pixels = thumb_data.empty() ? pixels : thumb_data.data();
+
+	// Create GL texture
+	GLuint tex_id = 0;
+	glGenTextures(1, &tex_id);
+	glBindTexture(GL_TEXTURE_2D, tex_id);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, thumb_w, thumb_h, 0, GL_RGBA, GL_UNSIGNED_BYTE, tex_pixels);
+	glBindTexture(GL_TEXTURE_2D, 0);
+
+	stbi_image_free(pixels);
+
+	thumbnail_cache_[key] = tex_id;
+	return tex_id;
+}
+
+ImVec4 AssetBrowserPanel::GetAssetTypeColor(AssetFileType type) {
+	switch (type) {
+		case AssetFileType::Scene: return {0.3f, 0.85f, 0.4f, 1.0f};
+		case AssetFileType::Prefab: return {0.4f, 0.6f, 1.0f, 1.0f};
+		case AssetFileType::Texture: return {0.95f, 0.75f, 0.2f, 1.0f};
+		case AssetFileType::Sound: return {1.0f, 0.55f, 0.2f, 1.0f};
+		case AssetFileType::Mesh: return {0.7f, 0.4f, 0.9f, 1.0f};
+		case AssetFileType::Script: return {0.3f, 0.8f, 0.8f, 1.0f};
+		case AssetFileType::Shader: return {0.9f, 0.4f, 0.7f, 1.0f};
+		case AssetFileType::DataTable: return {0.65f, 0.65f, 0.65f, 1.0f};
+		case AssetFileType::Directory: return {0.95f, 0.85f, 0.3f, 1.0f};
+		default: return {0.55f, 0.55f, 0.55f, 1.0f};
+	}
+}
 
 void AssetBrowserPanel::SetCallbacks(const EditorCallbacks& callbacks) { callbacks_ = callbacks; }
 
@@ -113,6 +206,7 @@ bool AssetBrowserPanel::PassesFilter(const FileSystemItem& item) const {
 
 void AssetBrowserPanel::RefreshCurrentDirectory() {
 	current_items_.clear();
+	ClearThumbnailCache();
 
 	if (!std::filesystem::exists(current_directory_)) {
 		needs_refresh_ = false;
@@ -401,13 +495,15 @@ void AssetBrowserPanel::RenderAssetItemList(const FileSystemItem& item) {
 	}
 
 	ImGui::TableNextColumn();
-	ImGui::Text("%s", item.type_icon.c_str());
+	const ImVec4 tc = GetAssetTypeColor(GetAssetFileType(item.path));
+	ImGui::TextColored(tc, "%s", item.type_icon.c_str());
 }
 
 void AssetBrowserPanel::RenderAssetItemGrid(const FileSystemItem& item) {
 	const float cell_width = ImGui::GetContentRegionAvail().x;
 	const float icon_size = 64.0f;
 	const bool is_selected = (item.path == selected_item_path_);
+	const auto file_type = GetAssetFileType(item.path);
 
 	ImGui::BeginGroup();
 
@@ -415,11 +511,46 @@ void AssetBrowserPanel::RenderAssetItemGrid(const FileSystemItem& item) {
 	const float icon_offset = std::max(0.0f, (cell_width - icon_size) * 0.5f);
 	ImGui::SetCursorPosX(ImGui::GetCursorPosX() + icon_offset);
 
-	if (is_selected) {
-		ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetStyleColorVec4(ImGuiCol_ButtonActive));
+	bool clicked = false;
+
+	// For texture files, try to show an image thumbnail
+	if (file_type == AssetFileType::Texture) {
+		const uint32_t thumb_id = GetOrLoadThumbnail(item.path);
+		if (thumb_id != 0) {
+			if (is_selected) {
+				ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetStyleColorVec4(ImGuiCol_ButtonActive));
+			}
+			const auto imgui_tex = static_cast<ImTextureID>(static_cast<uintptr_t>(thumb_id));
+			clicked = ImGui::ImageButton("##thumb", imgui_tex, ImVec2(icon_size, icon_size));
+			if (is_selected) {
+				ImGui::PopStyleColor();
+			}
+		}
+		else {
+			// Fallback: colored text button
+			const ImVec4 tc = GetAssetTypeColor(file_type);
+			ImGui::PushStyleColor(
+					ImGuiCol_Button, is_selected ? ImGui::GetStyleColorVec4(ImGuiCol_ButtonActive)
+												 : ImVec4(tc.x * 0.25f, tc.y * 0.25f, tc.z * 0.25f, 1.0f));
+			ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(tc.x * 0.4f, tc.y * 0.4f, tc.z * 0.4f, 1.0f));
+			ImGui::PushStyleColor(ImGuiCol_Text, tc);
+			clicked = ImGui::Button(item.type_icon.c_str(), ImVec2(icon_size, icon_size));
+			ImGui::PopStyleColor(3);
+		}
+	}
+	else {
+		// Colored button for non-image asset types
+		const ImVec4 tc = GetAssetTypeColor(file_type);
+		ImGui::PushStyleColor(
+				ImGuiCol_Button, is_selected ? ImGui::GetStyleColorVec4(ImGuiCol_ButtonActive)
+											 : ImVec4(tc.x * 0.25f, tc.y * 0.25f, tc.z * 0.25f, 1.0f));
+		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(tc.x * 0.4f, tc.y * 0.4f, tc.z * 0.4f, 1.0f));
+		ImGui::PushStyleColor(ImGuiCol_Text, tc);
+		clicked = ImGui::Button(item.type_icon.c_str(), ImVec2(icon_size, icon_size));
+		ImGui::PopStyleColor(3);
 	}
 
-	if (ImGui::Button(item.type_icon.c_str(), ImVec2(icon_size, icon_size))) {
+	if (clicked) {
 		if (item.is_directory) {
 			current_directory_ = item.path;
 			needs_refresh_ = true;
@@ -430,10 +561,6 @@ void AssetBrowserPanel::RenderAssetItemGrid(const FileSystemItem& item) {
 				callbacks_.on_file_selected(item.path.string());
 			}
 		}
-	}
-
-	if (is_selected) {
-		ImGui::PopStyleColor();
 	}
 
 	// Double-click handling

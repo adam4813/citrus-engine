@@ -18,6 +18,8 @@ add_executable(
     src/main.cpp
     src/animation_editor_panel.cpp
     src/asset_browser_panel.cpp
+    src/asset_browser_dialogs.cpp
+    src/asset_browser_scanning.cpp
     src/asset_editor_registry.cpp
     src/code_editor_panel.cpp
     src/command.cpp
@@ -35,6 +37,8 @@ add_executable(
     src/sound_editor_panel.cpp
     src/sprite_editor_panel.cpp
     src/texture_editor_panel.cpp
+    src/texture_editor_eval.cpp
+    src/texture_editor_export.cpp
     src/tileset_editor_panel.cpp
     src/viewport_camera.cpp
     src/viewport_gizmos.cpp

@@ -8,6 +8,12 @@
 #include "editor_panel.h"
 #include "file_dialog.h"
 
+#ifndef __EMSCRIPTEN__
+#include <glad/glad.h>
+#else
+#include <GLES3/gl3.h>
+#endif
+
 import engine;
 import glm;
 
@@ -79,7 +85,13 @@ private:
 	// Texture Generation
 	// ========================================================================
 	void UpdatePreview();
-	glm::vec4 EvaluateOutputColor() const;
+	void GenerateTextureData();
+	void UploadPreviewTexture();
+	void ExportPng(const std::string& path);
+	glm::vec4 EvaluateNodeOutput(int node_id, int pin_index, glm::vec2 uv) const;
+	float GetInputFloat(const engine::graph::Node& node, int pin_index, glm::vec2 uv) const;
+	glm::vec4 GetInputColor(const engine::graph::Node& node, int pin_index, glm::vec2 uv) const;
+	glm::vec2 GetInputVec2(const engine::graph::Node& node, int pin_index, glm::vec2 uv) const;
 
 	// ========================================================================
 	// State
@@ -92,6 +104,9 @@ private:
 	// Preview settings
 	int preview_resolution_ = 256;
 	glm::vec4 preview_color_{1.0f, 1.0f, 1.0f, 1.0f};
+	std::vector<unsigned char> preview_pixels_;
+	GLuint preview_texture_id_ = 0;
+	bool preview_dirty_ = true;
 
 	// Image asset picker state
 	char image_path_buf_[256] = "";
@@ -131,6 +146,7 @@ private:
 	// File dialogs
 	FileDialogPopup open_dialog_{"Open Texture", FileDialogMode::Open, {".json"}};
 	FileDialogPopup save_dialog_{"Save Texture As", FileDialogMode::Save, {".json"}};
+	FileDialogPopup export_dialog_{"Export PNG", FileDialogMode::Save, {".png"}};
 };
 
 /**

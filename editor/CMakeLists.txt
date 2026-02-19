@@ -10,6 +10,7 @@ project(
 # Find the Citrus Engine via vcpkg (uses overlay port from ../ports)
 find_package(citrus-engine CONFIG REQUIRED)
 find_package(imgui CONFIG REQUIRED)
+find_package(Stb REQUIRED)
 
 # Scene Editor application
 add_executable(
@@ -35,7 +36,7 @@ add_executable(
     src/viewport_panel.cpp)
 
 target_include_directories(citrus-scene-editor
-    PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+    PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include ${Stb_INCLUDE_DIR})
 
 # Link to the engine (provides all dependencies transitively)
 target_link_libraries(citrus-scene-editor PRIVATE citrus-engine::engine-core imgui::imgui)

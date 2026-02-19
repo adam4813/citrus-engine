@@ -31,7 +31,9 @@ enum class FieldType {
 	ListString,
 	ReadOnly, // Display-only string
 	AssetRef, // Reference to a scene asset (dropdown)
-	Enum // Integer-backed enum displayed as combo box
+	Enum, // Integer-backed enum displayed as combo box
+	FilePath, // String displayed with file browser hint
+	Selection // String-backed dropdown with fixed options
 };
 
 /**
@@ -39,12 +41,14 @@ enum class FieldType {
  */
 struct FieldInfo {
 	std::string name;
+	std::string display_name; // Human-readable label (defaults to name if empty)
 	FieldType type{FieldType::ReadOnly};
 	size_t offset{}; // Byte offset into component struct
 	size_t size{}; // Size of the field in bytes
 	std::string asset_type; // For AssetRef: the asset type key (e.g., "shader", "mesh")
 	std::vector<std::string> enum_labels; // For Enum: display labels (index = integer value)
 	std::vector<std::string> enum_tooltips; // For Enum: tooltips for each option (index = integer value)
+	std::vector<std::string> options; // For Selection: valid string choices
 };
 
 /**

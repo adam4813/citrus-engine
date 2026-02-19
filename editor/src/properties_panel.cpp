@@ -12,6 +12,183 @@
 
 namespace editor {
 
+namespace {
+
+/// Get the display label for a field (prefer display_name, fall back to name)
+const char* GetFieldLabel(const engine::ecs::FieldInfo& field) {
+	return field.display_name.empty() ? field.name.c_str() : field.display_name.c_str();
+}
+
+/// Render a single field based on its FieldType. Returns true if modified.
+bool RenderSingleField(const engine::ecs::FieldInfo& field, void* field_ptr, engine::scene::Scene* scene) {
+	const char* label = GetFieldLabel(field);
+
+	switch (field.type) {
+	case engine::ecs::FieldType::Bool:
+		return ImGui::Checkbox(label, static_cast<bool*>(field_ptr));
+
+	case engine::ecs::FieldType::Int:
+		return ImGui::InputInt(label, static_cast<int*>(field_ptr));
+
+	case engine::ecs::FieldType::Float:
+		return ImGui::InputFloat(label, static_cast<float*>(field_ptr));
+
+	case engine::ecs::FieldType::String:
+	{
+		auto* str = static_cast<std::string*>(field_ptr);
+		char buffer[256];
+		std::strncpy(buffer, str->c_str(), sizeof(buffer) - 1);
+		buffer[sizeof(buffer) - 1] = '\0';
+		if (ImGui::InputText(label, buffer, sizeof(buffer))) {
+			*str = buffer;
+			return true;
+		}
+		return false;
+	}
+	case engine::ecs::FieldType::FilePath:
+	{
+		auto* str = static_cast<std::string*>(field_ptr);
+		char buffer[256];
+		std::strncpy(buffer, str->c_str(), sizeof(buffer) - 1);
+		buffer[sizeof(buffer) - 1] = '\0';
+		bool modified = false;
+		if (ImGui::InputText(label, buffer, sizeof(buffer))) {
+			*str = buffer;
+			modified = true;
+		}
+		ImGui::SameLine();
+		ImGui::TextDisabled("(?)");
+		if (ImGui::IsItemHovered()) {
+			ImGui::SetTooltip("Relative path to file");
+		}
+		return modified;
+	}
+	case engine::ecs::FieldType::Vec2:
+		return ImGui::InputFloat2(label, static_cast<float*>(field_ptr));
+
+	case engine::ecs::FieldType::Vec3:
+		return ImGui::InputFloat3(label, static_cast<float*>(field_ptr));
+
+	case engine::ecs::FieldType::Vec4:
+		return ImGui::InputFloat4(label, static_cast<float*>(field_ptr));
+
+	case engine::ecs::FieldType::Color:
+		return ImGui::ColorEdit4(label, static_cast<float*>(field_ptr));
+
+	case engine::ecs::FieldType::ReadOnly:
+		ImGui::Text("%s: (read-only)", label);
+		return false;
+
+	case engine::ecs::FieldType::Enum:
+	{
+		auto* value = static_cast<int*>(field_ptr);
+		if (const auto& labels = field.enum_labels;
+			!labels.empty() && *value >= 0 && *value < static_cast<int>(labels.size())) {
+			if (ImGui::BeginCombo(label, labels[*value].c_str())) {
+				for (int i = 0; i < static_cast<int>(labels.size()); ++i) {
+					const bool is_selected = (*value == i);
+					if (ImGui::Selectable(labels[i].c_str(), is_selected)) {
+						*value = i;
+						ImGui::EndCombo();
+						return true;
+					}
+					if (!field.enum_tooltips.empty() && i < static_cast<int>(field.enum_tooltips.size())) {
+						ImGui::SetItemTooltip("%s", field.enum_tooltips[i].c_str());
+					}
+					if (is_selected) {
+						ImGui::SetItemDefaultFocus();
+					}
+				}
+				ImGui::EndCombo();
+			}
+		}
+		else {
+			ImGui::Text("%s: %d", label, *value);
+		}
+		return false;
+	}
+	case engine::ecs::FieldType::Selection:
+	{
+		auto* str = static_cast<std::string*>(field_ptr);
+		int current_index = 0;
+		for (size_t i = 0; i < field.options.size(); ++i) {
+			if (field.options[i] == *str) {
+				current_index = static_cast<int>(i);
+				break;
+			}
+		}
+		if (ImGui::BeginCombo(label, str->c_str())) {
+			for (size_t i = 0; i < field.options.size(); ++i) {
+				const bool is_selected = (current_index == static_cast<int>(i));
+				if (ImGui::Selectable(field.options[i].c_str(), is_selected)) {
+					*str = field.options[i];
+					ImGui::EndCombo();
+					return true;
+				}
+				if (is_selected) {
+					ImGui::SetItemDefaultFocus();
+				}
+			}
+			ImGui::EndCombo();
+		}
+		return false;
+	}
+	case engine::ecs::FieldType::ListInt:
+	case engine::ecs::FieldType::ListFloat:
+	case engine::ecs::FieldType::ListString:
+		ImGui::TextDisabled("%s: (list editing not yet implemented)", label);
+		return false;
+
+	case engine::ecs::FieldType::AssetRef:
+	{
+		auto* str = static_cast<std::string*>(field_ptr);
+
+		// Get list of assets of this type from the scene
+		std::vector<std::string> asset_names;
+		asset_names.push_back(""); // Allow empty/none selection
+		if (scene) {
+			for (const auto& asset : scene->GetAssets().GetAll()) {
+				if (const auto* type_info = engine::scene::AssetRegistry::Instance().GetTypeInfo(asset->type);
+					type_info && type_info->type_name == field.asset_type) {
+					asset_names.push_back(asset->name);
+				}
+			}
+		}
+
+		// Find current selection index
+		int current_index = 0;
+		for (size_t i = 0; i < asset_names.size(); ++i) {
+			if (asset_names[i] == *str) {
+				current_index = static_cast<int>(i);
+				break;
+			}
+		}
+
+		// Render combo
+		const char* preview = str->empty() ? "(None)" : str->c_str();
+		if (ImGui::BeginCombo(label, preview)) {
+			for (size_t i = 0; i < asset_names.size(); ++i) {
+				const bool is_selected = (current_index == static_cast<int>(i));
+				const char* item_label = asset_names[i].empty() ? "(None)" : asset_names[i].c_str();
+				if (ImGui::Selectable(item_label, is_selected)) {
+					*str = asset_names[i];
+					ImGui::EndCombo();
+					return true;
+				}
+				if (is_selected) {
+					ImGui::SetItemDefaultFocus();
+				}
+			}
+			ImGui::EndCombo();
+		}
+		return false;
+	}
+	}
+	return false;
+}
+
+} // anonymous namespace
+
 std::string_view PropertiesPanel::GetPanelName() const { return "Properties"; }
 
 void PropertiesPanel::SetCallbacks(const EditorCallbacks& callbacks) { callbacks_ = callbacks; }
@@ -177,152 +354,8 @@ void PropertiesPanel::RenderComponentFields(
 
 	for (const auto& field : comp.fields) {
 		void* field_ptr = static_cast<char*>(comp_ptr) + field.offset;
-
-		switch (field.type) {
-		case engine::ecs::FieldType::Bool:
-		{
-			if (ImGui::Checkbox(field.name.c_str(), static_cast<bool*>(field_ptr))) {
-				modified = true;
-			}
-			break;
-		}
-		case engine::ecs::FieldType::Int:
-		{
-			if (ImGui::InputInt(field.name.c_str(), static_cast<int*>(field_ptr))) {
-				modified = true;
-			}
-			break;
-		}
-		case engine::ecs::FieldType::Float:
-		{
-			if (ImGui::InputFloat(field.name.c_str(), static_cast<float*>(field_ptr))) {
-				modified = true;
-			}
-			break;
-		}
-		case engine::ecs::FieldType::String:
-		{
-			auto* str = static_cast<std::string*>(field_ptr);
-			char buffer[256];
-			std::strncpy(buffer, str->c_str(), sizeof(buffer) - 1);
-			buffer[sizeof(buffer) - 1] = '\0';
-			if (ImGui::InputText(field.name.c_str(), buffer, sizeof(buffer))) {
-				*str = buffer;
-				modified = true;
-			}
-			break;
-		}
-		case engine::ecs::FieldType::Vec2:
-		{
-			if (ImGui::InputFloat2(field.name.c_str(), static_cast<float*>(field_ptr))) {
-				modified = true;
-			}
-			break;
-		}
-		case engine::ecs::FieldType::Vec3:
-		{
-			if (ImGui::InputFloat3(field.name.c_str(), static_cast<float*>(field_ptr))) {
-				modified = true;
-			}
-			break;
-		}
-		case engine::ecs::FieldType::Vec4:
-		{
-			if (ImGui::InputFloat4(field.name.c_str(), static_cast<float*>(field_ptr))) {
-				modified = true;
-			}
-			break;
-		}
-		case engine::ecs::FieldType::Color:
-		{
-			if (ImGui::ColorEdit4(field.name.c_str(), static_cast<float*>(field_ptr))) {
-				modified = true;
-			}
-			break;
-		}
-		case engine::ecs::FieldType::ReadOnly:
-		{
-			ImGui::Text("%s: (read-only)", field.name.c_str());
-			break;
-		}
-		case engine::ecs::FieldType::Enum:
-		{
-			auto* value = static_cast<int*>(field_ptr);
-			if (const auto& labels = field.enum_labels;
-				!labels.empty() && *value >= 0 && *value < static_cast<int>(labels.size())) {
-				if (ImGui::BeginCombo(field.name.c_str(), labels[*value].c_str())) {
-					for (int i = 0; i < static_cast<int>(labels.size()); ++i) {
-						const bool is_selected = (*value == i);
-						if (ImGui::Selectable(labels[i].c_str(), is_selected)) {
-							*value = i;
-							modified = true;
-						}
-						if (!field.enum_tooltips.empty() && i < static_cast<int>(field.enum_tooltips.size())) {
-							ImGui::SetItemTooltip("%s", field.enum_tooltips[i].c_str());
-						}
-						if (is_selected) {
-							ImGui::SetItemDefaultFocus();
-						}
-					}
-					ImGui::EndCombo();
-				}
-			}
-			else {
-				ImGui::Text("%s: %d", field.name.c_str(), *value);
-			}
-			break;
-		}
-		case engine::ecs::FieldType::ListInt:
-		case engine::ecs::FieldType::ListFloat:
-		case engine::ecs::FieldType::ListString:
-		{
-			ImGui::TextDisabled("%s: (list editing not yet implemented)", field.name.c_str());
-			break;
-		}
-		case engine::ecs::FieldType::AssetRef:
-		{
-			auto* str = static_cast<std::string*>(field_ptr);
-
-			// Get list of assets of this type from the scene
-			std::vector<std::string> asset_names;
-			asset_names.push_back(""); // Allow empty/none selection
-			if (scene) {
-				for (const auto& asset : scene->GetAssets().GetAll()) {
-					// Get type_key for this asset's type
-					if (const auto* type_info = engine::scene::AssetRegistry::Instance().GetTypeInfo(asset->type);
-						type_info && type_info->type_name == field.asset_type) {
-						asset_names.push_back(asset->name);
-					}
-				}
-			}
-
-			// Find current selection index
-			int current_index = 0;
-			for (size_t i = 0; i < asset_names.size(); ++i) {
-				if (asset_names[i] == *str) {
-					current_index = static_cast<int>(i);
-					break;
-				}
-			}
-
-			// Render combo
-			const char* preview = str->empty() ? "(None)" : str->c_str();
-			if (ImGui::BeginCombo(field.name.c_str(), preview)) {
-				for (size_t i = 0; i < asset_names.size(); ++i) {
-					const bool is_selected = (current_index == static_cast<int>(i));
-					const char* label = asset_names[i].empty() ? "(None)" : asset_names[i].c_str();
-					if (ImGui::Selectable(label, is_selected)) {
-						*str = asset_names[i];
-						modified = true;
-					}
-					if (is_selected) {
-						ImGui::SetItemDefaultFocus();
-					}
-				}
-				ImGui::EndCombo();
-			}
-			break;
-		}
+		if (RenderSingleField(field, field_ptr, scene)) {
+			modified = true;
 		}
 	}
 
@@ -598,85 +631,10 @@ void PropertiesPanel::RenderAssetProperties(engine::scene::Scene* scene, const A
 
 	bool modified = false;
 
-	// Render each field based on its type and offset
 	for (const auto& field : type_info->fields) {
 		void* field_ptr = reinterpret_cast<char*>(asset.get()) + field.offset;
-
-		switch (field.type) {
-		case engine::scene::AssetFieldType::String:
-		case engine::scene::AssetFieldType::FilePath:
-		{
-			auto* str = static_cast<std::string*>(field_ptr);
-			char buffer[256];
-			std::strncpy(buffer, str->c_str(), sizeof(buffer) - 1);
-			buffer[sizeof(buffer) - 1] = '\0';
-			if (ImGui::InputText(field.display_name.c_str(), buffer, sizeof(buffer))) {
-				*str = buffer;
-				modified = true;
-			}
-			// For file paths, add a hint
-			if (field.type == engine::scene::AssetFieldType::FilePath) {
-				ImGui::SameLine();
-				ImGui::TextDisabled("(?)");
-				if (ImGui::IsItemHovered()) {
-					ImGui::SetTooltip("Relative path to file");
-				}
-			}
-			break;
-		}
-		case engine::scene::AssetFieldType::Int:
-		{
-			if (ImGui::InputInt(field.display_name.c_str(), static_cast<int*>(field_ptr))) {
-				modified = true;
-			}
-			break;
-		}
-		case engine::scene::AssetFieldType::Float:
-		{
-			if (ImGui::InputFloat(field.display_name.c_str(), static_cast<float*>(field_ptr))) {
-				modified = true;
-			}
-			break;
-		}
-		case engine::scene::AssetFieldType::Bool:
-		{
-			if (ImGui::Checkbox(field.display_name.c_str(), static_cast<bool*>(field_ptr))) {
-				modified = true;
-			}
-			break;
-		}
-		case engine::scene::AssetFieldType::Selection:
-		{
-			auto* str = static_cast<std::string*>(field_ptr);
-			// Find current selection index
-			int current_index = 0;
-			for (size_t i = 0; i < field.options.size(); ++i) {
-				if (field.options[i] == *str) {
-					current_index = static_cast<int>(i);
-					break;
-				}
-			}
-			// Build combo items
-			if (ImGui::BeginCombo(field.display_name.c_str(), str->c_str())) {
-				for (size_t i = 0; i < field.options.size(); ++i) {
-					const bool is_selected = (current_index == static_cast<int>(i));
-					if (ImGui::Selectable(field.options[i].c_str(), is_selected)) {
-						*str = field.options[i];
-						modified = true;
-					}
-					if (is_selected) {
-						ImGui::SetItemDefaultFocus();
-					}
-				}
-				ImGui::EndCombo();
-			}
-			break;
-		}
-		case engine::scene::AssetFieldType::ReadOnly:
-		{
-			ImGui::Text("%s: (read-only)", field.display_name.c_str());
-			break;
-		}
+		if (RenderSingleField(field, field_ptr, scene)) {
+			modified = true;
 		}
 	}
 

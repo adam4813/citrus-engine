@@ -12,6 +12,7 @@ module;
 export module engine.scene.assets;
 
 import engine.rendering;
+import engine.ecs.component_registry;
 
 export namespace engine::scene {
 
@@ -28,30 +29,11 @@ enum class AssetType : uint8_t {
 
 // === ASSET FIELD REFLECTION SYSTEM ===
 
-/**
- * @brief Supported field types for asset editing (mirrors component FieldType)
- */
-enum class AssetFieldType {
-	String,
-	FilePath, // String displayed with file browser hint
-	Int,
-	Float,
-	Bool,
-	ReadOnly, // Display-only
-	Selection // Dropdown with fixed options
-};
+/// AssetFieldType is now an alias for the unified FieldType
+using AssetFieldType = engine::ecs::FieldType;
 
-/**
- * @brief Metadata about a single field within an asset
- */
-struct AssetFieldInfo {
-	std::string name;
-	std::string display_name; // Human-readable label
-	AssetFieldType type{AssetFieldType::ReadOnly};
-	size_t offset{}; // Byte offset into asset struct
-	size_t size{}; // Size of the field in bytes
-	std::vector<std::string> options; // For Selection type: valid choices
-};
+/// AssetFieldInfo is now an alias for the unified FieldInfo
+using AssetFieldInfo = engine::ecs::FieldInfo;
 
 // Forward declarations
 struct AssetInfo;

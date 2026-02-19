@@ -1,10 +1,10 @@
 {
   "entities": [
     {
-      "data": "{\"components\":{\"engine.components.Camera\":{\"aspect_ratio\":1.777777791,\"far_plane\":100,\"fov\":60,\"near_plane\":0.1000000015,\"projection_matrix\":{\"c0\":{\"w\":0,\"x\":0.9742786288,\"y\":0,\"z\":0},\"c1\":{\"w\":0,\"x\":0,\"y\":1.7320508957,\"z\":0},\"c2\":{\"w\":-1,\"x\":0,\"y\":0,\"z\":-1.0020020008},\"c3\":{\"w\":0,\"x\":0,\"y\":0,\"z\":-0.2002002001}},\"target\":{\"x\":0,\"y\":0,\"z\":0},\"up\":{\"x\":0,\"y\":1,\"z\":0},\"view_matrix\":{\"c0\":{\"w\":0,\"x\":0,\"y\":0,\"z\":1},\"c1\":{\"w\":0,\"x\":0,\"y\":1,\"z\":0},\"c2\":{\"w\":0,\"x\":-1,\"y\":0,\"z\":0},\"c3\":{\"w\":1,\"x\":0,\"y\":0,\"z\":-1}}},\"engine.components.Transform\":{\"position\":{\"x\":1,\"y\":0,\"z\":0},\"rotation\":{\"x\":0,\"y\":0,\"z\":0},\"scale\":{\"x\":1,\"y\":1,\"z\":1}},\"engine.components.WorldTransform\":null,\"engine.ecs.SceneEntity\":{\"name\":\"Camera\",\"scene_layer\":0,\"static_entity\":false,\"visible\":true}},\"name\":\"prefab_prefab_Camera\",\"tags\":[\"flecs.core.Prefab\"]}",
-      "name": "prefab_prefab_Camera"
+      "data": "{\"components\":{\"engine.components.Camera\":{\"aspect_ratio\":1.777777791,\"far_plane\":100,\"fov\":60,\"near_plane\":0.1000000015,\"projection_matrix\":{\"c0\":{\"w\":0,\"x\":0.9742786288,\"y\":0,\"z\":0},\"c1\":{\"w\":0,\"x\":0,\"y\":1.7320508957,\"z\":0},\"c2\":{\"w\":-1,\"x\":0,\"y\":0,\"z\":-1.0020020008},\"c3\":{\"w\":0,\"x\":0,\"y\":0,\"z\":-0.2002002001}},\"target\":{\"x\":0,\"y\":0,\"z\":0},\"up\":{\"x\":0,\"y\":1,\"z\":0},\"view_matrix\":{\"c0\":{\"w\":0,\"x\":0,\"y\":0,\"z\":1},\"c1\":{\"w\":0,\"x\":0,\"y\":1,\"z\":0},\"c2\":{\"w\":0,\"x\":-1,\"y\":0,\"z\":0},\"c3\":{\"w\":1,\"x\":0,\"y\":0,\"z\":-1}}},\"engine.components.Transform\":{\"position\":{\"x\":1,\"y\":0,\"z\":0},\"rotation\":{\"x\":0,\"y\":0,\"z\":0},\"scale\":{\"x\":1,\"y\":1,\"z\":1}},\"engine.components.WorldTransform\":null,\"engine.ecs.SceneEntity\":{\"name\":\"Camera\",\"scene_layer\":0,\"static_entity\":false,\"visible\":true}},\"name\":\"prefab_Camera\",\"tags\":[\"flecs.core.Prefab\"]}",
+      "name": "prefab_Camera"
     }
   ],
-  "name": "prefab_prefab_Camera",
+  "name": "prefab_Camera",
   "version": 1
 }

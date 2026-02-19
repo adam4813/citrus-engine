@@ -1,10 +1,10 @@
 {
   "entities": [
     {
-      "data": "{\"components\":{\"engine.audio.AudioSource\":{\"clip_id\":0,\"looping\":false,\"pitch\":1,\"play_handle\":0,\"position\":{\"x\":0,\"y\":0,\"z\":0},\"spatial\":false,\"state\":0,\"volume\":1},\"engine.components.PrefabInstance\":{\"prefab_path\":\"assets/Chime.prefab.json\"},\"engine.components.Transform\":{\"position\":{\"x\":1,\"y\":0,\"z\":0},\"rotation\":{\"x\":0,\"y\":0,\"z\":0},\"scale\":{\"x\":1,\"y\":1,\"z\":1}},\"engine.components.WorldTransform\":null,\"engine.ecs.SceneEntity\":{\"name\":\"Chime\",\"scene_layer\":0,\"static_entity\":false,\"visible\":true}},\"name\":\"prefab_prefab_Chime\",\"tags\":[\"flecs.core.Prefab\"]}",
-      "name": "prefab_prefab_Chime"
+      "data": "{\"components\":{\"engine.audio.AudioSource\":{\"clip_id\":0,\"looping\":false,\"pitch\":1,\"play_handle\":0,\"position\":{\"x\":0,\"y\":0,\"z\":0},\"spatial\":false,\"state\":0,\"volume\":1},\"engine.components.Transform\":{\"position\":{\"x\":1,\"y\":0,\"z\":0},\"rotation\":{\"x\":0,\"y\":0,\"z\":0},\"scale\":{\"x\":1,\"y\":1,\"z\":1}},\"engine.components.WorldTransform\":null,\"engine.ecs.SceneEntity\":{\"name\":\"Chime\",\"scene_layer\":0,\"static_entity\":false,\"visible\":true}},\"name\":\"prefab_Chime\",\"tags\":[\"flecs.core.Prefab\"]}",
+      "name": "prefab_Chime"
     }
   ],
-  "name": "prefab_prefab_Chime",
+  "name": "prefab_Chime",
   "version": 1
 }

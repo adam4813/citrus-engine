@@ -71,7 +71,12 @@ ECSWorld::ECSWorld() {
 			.Field("scale", &Transform::scale)
 			.Build();
 
-	registry.Register<WorldTransform>("WorldTransform", world_).Category("Core").Build();
+	registry.Register<WorldTransform>("WorldTransform", world_)
+			.Category("Core")
+			.Field("position", &WorldTransform::position)
+			.Field("rotation", &WorldTransform::rotation)
+			.Field("scale", &WorldTransform::scale)
+			.Build();
 
 	registry.Register<Velocity>("Velocity", world_)
 			.Category("Core")
@@ -646,23 +651,24 @@ void ECSWorld::SetupSpatialSystem() const {
 }
 
 void ECSWorld::SetupTransformSystem() const {
-	world_.observer<const Transform, WorldTransform, physics::RigidBody*>("TransformPropagation")
+	world_.observer<const Transform, WorldTransform&>("TransformPropagation")
 			.event(flecs::OnAdd)
 			.event(flecs::OnSet)
-			.each([](const flecs::entity entity,
-					 const Transform& transform,
-					 WorldTransform& world_transform,
-					 const physics::RigidBody* rigid_body) {
-				// Dynamic physics bodies operate in world space (like Unity).
-				// Physics writes WorldTransform directly — skip recomputing from local Transform.
-				if (rigid_body != nullptr && rigid_body->motion_type == physics::MotionType::Dynamic) {
-					// Cascade to children only — WorldTransform was set by physics
-					entity.children([](const flecs::entity child) {
-						if (child.has<Transform>()) {
-							child.modified<Transform>();
-						}
-					});
-					return;
+			.each([&sim_phase = simulation_phase_](
+						  const flecs::entity entity, const Transform& transform, WorldTransform& world_transform) {
+				// In play mode, dynamic physics bodies own WorldTransform — skip recomputing.
+				// In edit mode (simulation disabled), always recompute so the user can edit Transform.
+				if (sim_phase.enabled() && entity.has<physics::RigidBody>()) {
+					if (const auto rigid_body = entity.get<physics::RigidBody>();
+						rigid_body.motion_type == physics::MotionType::Dynamic) {
+						// Cascade to children only — WorldTransform was set by physics
+						entity.children([](const flecs::entity child) {
+							if (child.has<Transform>()) {
+								child.modified<Transform>();
+							}
+						});
+						return;
+					}
 				}
 
 				glm::mat4 world_matrix = component_helpers::ComputeTransformMatrix(transform);
@@ -694,6 +700,9 @@ void ECSWorld::SetupTransformSystem() const {
 				}
 
 				world_transform.matrix = world_matrix;
+
+				// Notify physics::RigidBody changed so physics SyncToBackend can update body position
+				entity.modified<physics::RigidBody>();
 
 				// Cascade to children: trigger their Transform observers
 				entity.children([](const flecs::entity child) {

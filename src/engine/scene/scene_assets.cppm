@@ -21,6 +21,7 @@ enum class AssetType : uint8_t {
 	SHADER,
 	MESH,
 	TEXTURE,
+	MATERIAL,
 	ANIMATION_CLIP,
 	SOUND,
 	DATA_TABLE,
@@ -358,6 +359,32 @@ struct TextureAssetInfo : AssetInfo {
 protected:
 	void DoInitialize() override;
 	bool DoLoad() override;
+};
+
+/// Material asset definition - references a shader and defines uniform properties
+struct MaterialAssetInfo : AssetInfo {
+	static constexpr std::string_view TYPE_NAME = "material";
+
+	std::string shader_name;
+	rendering::MaterialId id{rendering::INVALID_MATERIAL};
+
+	// Property maps serialized as JSON
+	std::unordered_map<std::string, float> float_properties;
+	std::unordered_map<std::string, rendering::Vec4> vec4_properties;
+	std::unordered_map<std::string, std::string> texture_properties; // uniform name → texture asset name
+
+	MaterialAssetInfo() : AssetInfo("", AssetType::MATERIAL) {}
+	MaterialAssetInfo(std::string asset_name, std::string shader) :
+			AssetInfo(std::move(asset_name), AssetType::MATERIAL), shader_name(std::move(shader)) {}
+
+	void ToJson(nlohmann::json& j) const override;
+
+	static void RegisterType();
+
+protected:
+	void DoInitialize() override;
+	bool DoLoad() override;
+	void DoUnload() override;
 };
 
 /// Animation clip asset definition

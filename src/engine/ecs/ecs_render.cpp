@@ -271,6 +271,58 @@ void ECSWorld::SetupMeshRefIntegration() {
 			});
 }
 
+// === MATERIAL REFERENCE INTEGRATION ===
+// Co-located material-related ECS setup: MaterialRef component, With trait, and bidirectional observers
+
+void ECSWorld::SetupMaterialRefIntegration() {
+	auto& registry = ComponentRegistry::Instance();
+
+	// Register MaterialRef component - stores material asset name for serialization
+	registry.Register<MaterialRef>("MaterialRef", world_)
+			.Category("Rendering")
+			.Field("name", &MaterialRef::name)
+			.AssetRef(scene::MaterialAssetInfo::TYPE_NAME)
+			.Build();
+
+	// Add (With, MaterialRef) trait to Renderable - auto-adds MaterialRef when Renderable is added
+	if (!world_.component<Renderable>().add(flecs::With, world_.component<MaterialRef>())) {
+		return;
+	}
+
+	// Observer: MaterialRef.name → Renderable.material (resolve name to ID)
+	world_.observer<MaterialRef, Renderable>("MaterialRefToRenderable")
+			.event(flecs::OnSet)
+			.each([](flecs::entity, const MaterialRef& ref, Renderable& renderable) {
+				if (ref.name.empty()) {
+					renderable.material = INVALID_MATERIAL;
+					return;
+				}
+
+				if (const MaterialId id = GetRenderer().GetMaterialManager().FindMaterial(ref.name);
+					id != INVALID_MATERIAL) {
+					renderable.material = id;
+				}
+			});
+
+	// Observer: Renderable.material → MaterialRef.name (sync ID back to name)
+	world_.observer<Renderable, MaterialRef>("RenderableToMaterialRef")
+			.event(flecs::OnSet)
+			.each([](flecs::entity, const Renderable& renderable, MaterialRef& ref) {
+				if (ref.name.empty()) {
+					return;
+				}
+
+				if (renderable.material == INVALID_MATERIAL) {
+					return;
+				}
+
+				if (const std::string name = GetRenderer().GetMaterialManager().GetMaterialName(renderable.material);
+					!name.empty() && ref.name != name) {
+					ref.name = name;
+				}
+			});
+}
+
 void ECSWorld::SetupSoundRefIntegration() {
 	auto& registry = ComponentRegistry::Instance();
 

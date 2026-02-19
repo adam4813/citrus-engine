@@ -502,6 +502,7 @@ void InitializeSceneSystem(ecs::ECSWorld& ecs_world) {
 	ShaderAssetInfo::RegisterType();
 	MeshAssetInfo::RegisterType();
 	TextureAssetInfo::RegisterType();
+	MaterialAssetInfo::RegisterType();
 	AnimationAssetInfo::RegisterType();
 	SoundAssetInfo::RegisterType();
 	DataTableAssetInfo::RegisterType();

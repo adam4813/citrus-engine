@@ -285,6 +285,112 @@ void TextureAssetInfo::RegisterType() {
 			.Build();
 }
 
+// === MaterialAssetInfo ===
+
+void MaterialAssetInfo::ToJson(nlohmann::json& j) const {
+	AssetInfo::ToJson(j);
+	j["type"] = "material";
+	j["shader"] = shader_name;
+
+	if (!float_properties.empty()) {
+		j["floats"] = float_properties;
+	}
+	if (!vec4_properties.empty()) {
+		nlohmann::json vec4s;
+		for (const auto& [key, v] : vec4_properties) {
+			vec4s[key] = {v.x, v.y, v.z, v.w};
+		}
+		j["vec4s"] = vec4s;
+	}
+	if (!texture_properties.empty()) {
+		j["textures"] = texture_properties;
+	}
+}
+
+void MaterialAssetInfo::DoInitialize() {
+	auto& mat_mgr = rendering::GetRenderer().GetMaterialManager();
+	// Resolve shader by name
+	rendering::ShaderId shader_id = rendering::INVALID_SHADER;
+	if (!shader_name.empty()) {
+		shader_id = rendering::GetRenderer().GetShaderManager().FindShader(shader_name);
+	}
+	id = mat_mgr.CreateMaterial(name, shader_id);
+	std::cout << "MaterialAssetInfo: Created material '" << name << "' (id=" << id << ", shader=" << shader_name << ")"
+			  << '\n';
+}
+
+bool MaterialAssetInfo::DoLoad() {
+	if (id == rendering::INVALID_MATERIAL) {
+		std::cerr << "MaterialAssetInfo: Cannot load - material not initialized" << '\n';
+		return false;
+	}
+
+	auto& mat_mgr = rendering::GetRenderer().GetMaterialManager();
+	auto& material = mat_mgr.GetMaterial(id);
+
+	// Apply float properties
+	for (const auto& [key, value] : float_properties) {
+		material.SetProperty(key, value);
+	}
+	// Apply vec4 properties (colors, etc.)
+	for (const auto& [key, value] : vec4_properties) {
+		material.SetProperty(key, value);
+	}
+	// Texture properties — texture loading is deferred, names stored for future binding
+	// for (const auto& [uniform_name, texture_asset_name] : texture_properties) { }
+
+	std::cout << "MaterialAssetInfo: Loaded material '" << name << "' (id=" << id << ")" << '\n';
+	return true;
+}
+
+void MaterialAssetInfo::DoUnload() {
+	auto& mat_mgr = rendering::GetRenderer().GetMaterialManager();
+	mat_mgr.DestroyMaterial(id);
+	std::cout << "MaterialAssetInfo: Unloaded material '" << name << "' (id=" << id << ")" << '\n';
+}
+
+void MaterialAssetInfo::RegisterType() {
+	AssetRegistry::Instance()
+			.RegisterType<MaterialAssetInfo>(MaterialAssetInfo::TYPE_NAME, AssetType::MATERIAL)
+			.DisplayName("Material")
+			.Category("Rendering")
+			.Field("name", &MaterialAssetInfo::name, "Name")
+			.Field("shader_name", &MaterialAssetInfo::shader_name, "Shader", AssetFieldType::AssetRef)
+			.FromJson([](const nlohmann::json& j) -> std::unique_ptr<AssetInfo> {
+				auto asset = std::make_unique<MaterialAssetInfo>();
+				asset->name = j.value("name", "");
+				asset->shader_name = j.value("shader", "");
+
+				if (j.contains("floats") && j["floats"].is_object()) {
+					for (auto& [key, val] : j["floats"].items()) {
+						asset->float_properties[key] = val.get<float>();
+					}
+				}
+				if (j.contains("vec4s") && j["vec4s"].is_object()) {
+					for (auto& [key, val] : j["vec4s"].items()) {
+						if (val.is_array() && val.size() >= 4) {
+							asset->vec4_properties[key] = rendering::Vec4(
+									val[0].get<float>(), val[1].get<float>(), val[2].get<float>(),
+									val[3].get<float>());
+						}
+					}
+				}
+				if (j.contains("textures") && j["textures"].is_object()) {
+					for (auto& [key, val] : j["textures"].items()) {
+						asset->texture_properties[key] = val.get<std::string>();
+					}
+				}
+				return asset;
+			})
+			.CreateDefault([]() -> std::shared_ptr<AssetInfo> {
+				auto mat = std::make_shared<MaterialAssetInfo>("NewMaterial", "");
+				mat->vec4_properties["u_Color"] = rendering::Vec4(1.0f, 1.0f, 1.0f, 1.0f);
+				mat->float_properties["u_Shininess"] = 32.0f;
+				return mat;
+			})
+			.Build();
+}
+
 // === AnimationAssetInfo ===
 
 void AnimationAssetInfo::ToJson(nlohmann::json& j) const {

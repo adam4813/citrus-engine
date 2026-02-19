@@ -217,6 +217,8 @@ private:
 
 	void SetupMeshRefIntegration();
 
+	void SetupMaterialRefIntegration();
+
 	void SetupSoundRefIntegration();
 };
 } // namespace engine::ecs

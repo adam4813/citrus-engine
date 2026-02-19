@@ -127,6 +127,12 @@ struct MeshRef {
 	std::string name;
 };
 
+// Asset reference component for material - stores material asset name for serialization
+// An observer resolves the name to MaterialId and updates Renderable::material
+struct MaterialRef {
+	std::string name;
+};
+
 // Light component for lighting calculations
 struct Light {
 	enum class Type : int { Directional = 0, Point = 1, Spot = 2 };

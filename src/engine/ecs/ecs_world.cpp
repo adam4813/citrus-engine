@@ -280,6 +280,9 @@ ECSWorld::ECSWorld() {
 	// Set up mesh reference integration (MeshRef component, With trait, observers)
 	SetupMeshRefIntegration();
 
+	// Set up material reference integration (MaterialRef component, With trait, observers)
+	SetupMaterialRefIntegration();
+
 	// Set up sound reference integration (SoundRef component, With trait, observers)
 	SetupSoundRefIntegration();
 

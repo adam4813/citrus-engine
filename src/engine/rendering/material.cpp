@@ -207,6 +207,15 @@ MaterialId MaterialManager::FindMaterial(const std::string& name) const {
 	return it != pimpl_->name_to_id.end() ? it->second : INVALID_MATERIAL;
 }
 
+std::string MaterialManager::GetMaterialName(const MaterialId id) const {
+	for (const auto& [name, mat_id] : pimpl_->name_to_id) {
+		if (mat_id == id) {
+			return name;
+		}
+	}
+	return {};
+}
+
 void MaterialManager::DestroyMaterial(const MaterialId id) { pimpl_->materials.erase(id); }
 
 bool MaterialManager::IsValid(const MaterialId id) const {

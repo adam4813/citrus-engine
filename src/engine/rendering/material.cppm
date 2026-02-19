@@ -79,6 +79,8 @@ public:
 
 	MaterialId FindMaterial(const std::string& name) const;
 
+	std::string GetMaterialName(MaterialId id) const;
+
 	// Resource management
 	void DestroyMaterial(MaterialId id);
 

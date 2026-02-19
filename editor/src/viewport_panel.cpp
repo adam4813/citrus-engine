@@ -1018,8 +1018,11 @@ void ViewportPanel::PickEntityAtMousePosition(
 			// Perform raycast
 			if (auto result = backend_ptr.backend->Raycast(ray)) {
 				if (result->HasHit()) {
-					picked_entity = scene_root.world().entity(result->entity);
-					used_physics = true;
+					auto hit_entity = scene_root.world().entity(result->entity);
+					if (hit_entity != scene_root) {
+						picked_entity = hit_entity;
+						used_physics = true;
+					}
 				}
 			}
 		}
@@ -1032,6 +1035,11 @@ void ViewportPanel::PickEntityAtMousePosition(
 
 		// Iterate all entities with WorldTransform and either Renderable or Sprite
 		scene_root.world().each([&](flecs::entity entity, const engine::components::WorldTransform& world_transform) {
+			// Never select the scene root
+			if (entity == scene_root) {
+				return;
+			}
+
 			// Skip if entity is not visible (check if it has Renderable and is not visible)
 			if (entity.has<engine::rendering::Renderable>()) {
 				const auto& renderable = entity.get<engine::rendering::Renderable>();

@@ -147,6 +147,9 @@ private:
 	FileDialogPopup export_dialog_{"Export PNG", FileDialogMode::Save, {".png"}};
 	FileDialogPopup node_path_dialog_{"Select Image", FileDialogMode::Open, {".png", ".jpg", ".jpeg", ".bmp", ".hdr"}};
 
+	// Per-editor node type registry (isolated from other editors)
+	engine::graph::NodeTypeRegistry registry_;
+
 	// Node path dialog state
 	int node_path_dialog_node_id_ = -1;
 	int node_path_dialog_pin_index_ = -1;
@@ -155,6 +158,6 @@ private:
 /**
  * @brief Register texture-specific node types
  */
-void RegisterTextureGraphNodes();
+void RegisterTextureGraphNodes(engine::graph::NodeTypeRegistry& registry);
 
 } // namespace editor

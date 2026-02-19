@@ -330,7 +330,7 @@ void ShaderEditorPanel::RenderGraphContextMenu() {
 
 		// Get registered shader node types
 		using namespace engine::graph;
-		auto& registry = NodeTypeRegistry::GetGlobal();
+		auto& registry = registry_;
 
 		for (const auto& category : registry.GetCategories()) {
 			if (ImGui::BeginMenu(category.c_str())) {
@@ -729,9 +729,8 @@ void main() {
 // Register shader-specific node types
 // ============================================================================
 
-void RegisterShaderGraphNodes() {
+void RegisterShaderGraphNodes(engine::graph::NodeTypeRegistry& registry) {
 	using namespace engine::graph;
-	auto& registry = NodeTypeRegistry::GetGlobal();
 
 	// Input nodes
 	{

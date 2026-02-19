@@ -43,6 +43,11 @@ public:
 	[[nodiscard]] const engine::graph::NodeGraph& GetGraph() const { return *graph_; }
 
 	/**
+	 * @brief Get the per-editor node type registry
+	 */
+	engine::graph::NodeTypeRegistry& GetRegistry() { return registry_; }
+
+	/**
 	 * @brief Create a new empty graph
 	 */
 	void NewGraph();
@@ -82,6 +87,9 @@ private:
 
 	std::unique_ptr<engine::graph::NodeGraph> graph_;
 
+	// Per-editor node type registry (isolated from other editors)
+	engine::graph::NodeTypeRegistry registry_;
+
 	// Editor state
 	ImVec2 canvas_offset_{0.0f, 0.0f};
 	float canvas_zoom_ = 1.0f;
@@ -108,7 +116,7 @@ private:
 
 	// Canvas constants
 	static constexpr float GRID_SIZE = 64.0f;
-	static constexpr float NODE_WIDTH = 150.0f;
+	static constexpr float NODE_WIDTH = 200.0f;
 	static constexpr float PIN_RADIUS = 6.0f;
 
 	// File state

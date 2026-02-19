@@ -50,6 +50,11 @@ public:
 	 */
 	bool CompileShader();
 
+	/**
+	 * @brief Get the per-editor node type registry
+	 */
+	engine::graph::NodeTypeRegistry& GetRegistry() { return registry_; }
+
 private:
 	// ========================================================================
 	// Rendering Methods
@@ -110,6 +115,9 @@ private:
 	// Graph editor state
 	std::unique_ptr<engine::graph::NodeGraph> shader_graph_;
 
+	// Per-editor node type registry (isolated from other editors)
+	engine::graph::NodeTypeRegistry registry_;
+
 	// Canvas state for node graph rendering
 	ImVec2 canvas_offset_{0.0f, 0.0f};
 	float canvas_zoom_ = 1.0f;
@@ -154,6 +162,6 @@ private:
 /**
  * @brief Register shader-specific node types
  */
-void RegisterShaderGraphNodes();
+void RegisterShaderGraphNodes(engine::graph::NodeTypeRegistry& registry);
 
 } // namespace editor

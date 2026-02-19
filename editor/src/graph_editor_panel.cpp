@@ -6,6 +6,8 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstring>
+#include <variant>
 
 namespace editor {
 
@@ -315,21 +317,69 @@ void GraphEditorPanel::RenderNode(const engine::graph::Node& node) {
 		// Pin label (right-aligned)
 		const char* label = node.outputs[i].name.c_str();
 		const ImVec2 label_size = ImGui::CalcTextSize(label);
-		const ImVec2 label_pos = ImVec2(pin_pos.x - label_size.x - 10.0f, pin_pos.y - 7.0f);
+		const ImVec2 label_pos = ImVec2(pin_pos.x + 8.0f, pin_pos.y - 7.0f);
 		draw_list->AddText(label_pos, IM_COL32(200, 200, 200, 255), label);
 	}
 
 	// Handle node interaction
+	ImGui::SetNextItemAllowOverlap();
 	ImGui::SetCursorScreenPos(node_rect_min);
 	ImGui::InvisibleButton(
 			("node_" + std::to_string(node.id)).c_str(),
 			ImVec2(node_rect_max.x - node_rect_min.x, node_rect_max.y - node_rect_min.y));
+	const bool node_active = ImGui::IsItemActive();
+	const bool node_clicked = ImGui::IsItemClicked(ImGuiMouseButton_Left);
 
-	if (ImGui::IsItemHovered()) {
+	// For constant (no-input) nodes: show output value editor centered in node
+	auto* mutable_node = graph_->GetNode(node.id);
+	if (mutable_node && mutable_node->inputs.empty() && canvas_zoom_ >= 0.7f) {
+		for (size_t i = 0; i < mutable_node->outputs.size(); ++i) {
+			auto& pin = mutable_node->outputs[i];
+			const float cy = node_rect_min.y + (node_height * canvas_zoom_) * 0.5f - 9.0f;
+			const float cx = node_rect_min.x + 15.0f * canvas_zoom_;
+			ImGui::SetCursorScreenPos(ImVec2(cx, cy));
+			const std::string eid = "##ov_" + std::to_string(node.id) + "_" + std::to_string(i);
+			bool changed = false;
+			using engine::graph::PinType;
+			switch (pin.type) {
+			case PinType::Float: {
+				const auto* p = std::get_if<float>(&pin.default_value);
+				float val = p ? *p : 0.0f;
+				ImGui::PushItemWidth((NODE_WIDTH - 25.0f) * canvas_zoom_);
+				if (ImGui::DragFloat(eid.c_str(), &val, 0.01f, 0.0f, 0.0f, "%.3f")) { pin.default_value = val; changed = true; }
+				ImGui::PopItemWidth();
+				break;
+			}
+			case PinType::Color:
+			case PinType::Vec4: {
+				const auto* p = std::get_if<glm::vec4>(&pin.default_value);
+				glm::vec4 col = p ? *p : glm::vec4(1.0f);
+				float arr[4] = {col.x, col.y, col.z, col.w};
+				if (ImGui::ColorEdit4(eid.c_str(), arr, ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoLabel)) {
+					pin.default_value = glm::vec4(arr[0], arr[1], arr[2], arr[3]); changed = true;
+				}
+				break;
+			}
+			case PinType::Vec2: {
+				const auto* p = std::get_if<glm::vec2>(&pin.default_value);
+				glm::vec2 val = p ? *p : glm::vec2(0.0f);
+				float arr[2] = {val.x, val.y};
+				ImGui::PushItemWidth((NODE_WIDTH - 25.0f) * canvas_zoom_);
+				if (ImGui::DragFloat2(eid.c_str(), arr, 0.01f)) { pin.default_value = glm::vec2(arr[0], arr[1]); changed = true; }
+				ImGui::PopItemWidth();
+				break;
+			}
+			default: break;
+			}
+			if (changed) SetDirty(true);
+		}
+	}
+
+	if (ImGui::IsMouseHoveringRect(node_rect_min, node_rect_max)) {
 		hovered_node_id_ = node.id;
 	}
 
-	if (ImGui::IsItemActive() && ImGui::IsMouseDragging(ImGuiMouseButton_Left)) {
+	if (node_active && ImGui::IsMouseDragging(ImGuiMouseButton_Left)) {
 		// Only start dragging if we're NOT on a pin
 		if (!is_creating_link_) {
 			is_dragging_node_ = true;
@@ -338,7 +388,7 @@ void GraphEditorPanel::RenderNode(const engine::graph::Node& node) {
 		}
 	}
 
-	if (ImGui::IsItemClicked(ImGuiMouseButton_Left) && !is_creating_link_) {
+	if (node_clicked && !is_creating_link_) {
 		selected_node_id_ = node.id;
 		selected_link_id_ = -1;
 	}
@@ -420,7 +470,7 @@ void GraphEditorPanel::RenderContextMenu() {
 
 void GraphEditorPanel::RenderAddNodeMenu() {
 	// Get all categories from the registry
-	auto& registry = engine::graph::NodeTypeRegistry::GetGlobal();
+	auto& registry = registry_;
 	auto categories = registry.GetCategories();
 
 	if (categories.empty()) {

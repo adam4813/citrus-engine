@@ -18,9 +18,8 @@ namespace editor {
 // Node Type Registration
 // ============================================================================
 
-void RegisterTextureGraphNodes() {
+void RegisterTextureGraphNodes(engine::graph::NodeTypeRegistry& registry) {
 	using namespace engine::graph;
-	auto& registry = NodeTypeRegistry::GetGlobal();
 
 	// Generator nodes
 	{
@@ -303,6 +302,7 @@ std::string_view TextureEditorPanel::GetPanelName() const { return "Texture Edit
 
 void TextureEditorPanel::OnInitialized() {
 	// Node types are registered and GL context is ready — safe to build the default graph.
+	RegisterTextureGraphNodes(registry_);
 	NewTexture();
 }
 
@@ -785,7 +785,7 @@ void TextureEditorPanel::RenderGraphNode(const engine::graph::Node& node) {
 					changed = true;
 				}
 				ImGui::PopItemWidth();
-				ImGui::SameLine(0, 2);
+				ImGui::SetCursorScreenPos(ImVec2(node_pos.x + (100.0f + 65.0f) * canvas_zoom_, pin_pos.y - 9.0f));
 				if (ImGui::Button(("...##br_" + std::to_string(node.id) + "_" + std::to_string(i)).c_str(),
 						ImVec2(22.0f * canvas_zoom_, 0))) {
 					node_path_dialog_node_id_ = node.id;
@@ -825,7 +825,7 @@ void TextureEditorPanel::RenderGraphNode(const engine::graph::Node& node) {
 		draw_list->AddCircleFilled(pin_pos, radius, pin_color);
 		const char* label = node.outputs[i].name.c_str();
 		const ImVec2 label_size = ImGui::CalcTextSize(label);
-		const auto label_pos = ImVec2(pin_pos.x - label_size.x - 10.0f, pin_pos.y - 7.0f);
+		const auto label_pos = ImVec2(pin_pos.x + 8.0f, pin_pos.y - 7.0f);
 		draw_list->AddText(label_pos, IM_COL32(200, 200, 200, 255), label);
 	}
 
@@ -927,7 +927,7 @@ void TextureEditorPanel::RenderGraphContextMenu() {
 }
 
 void TextureEditorPanel::RenderAddNodeMenu() {
-	auto& registry = engine::graph::NodeTypeRegistry::GetGlobal();
+	auto& registry = registry_;
 	auto categories = registry.GetCategories();
 
 	if (categories.empty()) {

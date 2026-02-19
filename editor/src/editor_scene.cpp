@@ -169,13 +169,15 @@ void EditorScene::Initialize(engine::Engine& engine) {
 	RegisterExampleGraphNodes();
 
 	// Register shader-specific node types for the shader editor
-	RegisterShaderGraphNodes();
-
-	// Register texture-specific node types for the texture editor
-	RegisterTextureGraphNodes();
+	RegisterShaderGraphNodes(shader_editor_panel_.GetRegistry());
 
 	// Create a demo graph so the panel isn't empty
 	CreateExampleGraph();
+
+	// Notify all panels that engine + GL context are fully ready
+	for (auto* panel : panels_) {
+		panel->OnInitialized();
+	}
 
 	std::cout << "EditorScene: Initialized with new scene" << std::endl;
 }
@@ -403,7 +405,7 @@ void EditorScene::OnAssetDeleted(const engine::scene::AssetType type, const std:
 
 void EditorScene::RegisterExampleGraphNodes() {
 	using namespace engine::graph;
-	auto& registry = NodeTypeRegistry::GetGlobal();
+	auto& registry = graph_editor_panel_.GetRegistry();
 
 	// Math nodes
 	{
@@ -470,7 +472,7 @@ void EditorScene::CreateExampleGraph() {
 	const int output = graph.AddNode("Output", glm::vec2(550.0f, 100.0f));
 
 	// Set up pins on nodes from registry definitions
-	auto& registry = engine::graph::NodeTypeRegistry::GetGlobal();
+	auto& registry = graph_editor_panel_.GetRegistry();
 	auto setup_pins = [&](int node_id, const std::string& type_name) {
 		if (auto* node = graph.GetNode(node_id)) {
 			if (const auto* def = registry.Get(type_name)) {

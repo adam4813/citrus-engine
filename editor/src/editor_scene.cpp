@@ -1,6 +1,7 @@
 #include "editor_scene.h"
 #include "commands/clipboard_commands.h"
 #include "commands/entity_commands.h"
+#include "commands/prefab_command.h"
 #include "commands/transform_command.h"
 #include "editor_utils.h"
 
@@ -56,7 +57,13 @@ void EditorScene::Initialize(engine::Engine& engine) {
 	EditorCallbacks callbacks;
 	callbacks.on_entity_selected = [this](const engine::ecs::Entity entity) { OnEntitySelected(entity); };
 	callbacks.on_entity_deleted = [this](const engine::ecs::Entity entity) { OnEntityDeleted(entity); };
-	callbacks.on_scene_modified = [this]() { OnSceneModified(); };
+	callbacks.on_scene_modified = [this]() {
+		if (selected_prefab_entity_.is_valid() && selected_prefab_entity_.has(flecs::Prefab)) {
+			engine::scene::PrefabUtility::SavePrefabTemplate(selected_prefab_entity_);
+		} else {
+			OnSceneModified();
+		}
+	};
 	callbacks.on_show_rename_dialog = [this](const engine::ecs::Entity entity) { OnShowRenameDialog(entity); };
 	callbacks.on_add_child_entity = [this](const engine::ecs::Entity parent) { OnAddChildEntity(parent); };
 	callbacks.on_add_component = [this](const engine::ecs::Entity entity, const std::string& component_name) {
@@ -70,7 +77,12 @@ void EditorScene::Initialize(engine::Engine& engine) {
 	};
 	callbacks.on_scene_camera_changed = [this](const engine::ecs::Entity camera) { scene_active_camera_ = camera; };
 	callbacks.on_execute_command = [this](std::unique_ptr<ICommand> command) {
-		command_history_.Execute(std::move(command));
+		if (selected_prefab_entity_.is_valid() && selected_prefab_entity_.has(flecs::Prefab)) {
+			auto wrapped = std::make_unique<PrefabUpdateCommand>(std::move(command), selected_prefab_entity_);
+			command_history_.Execute(std::move(wrapped));
+		} else {
+			command_history_.Execute(std::move(command));
+		}
 	};
 	callbacks.on_instantiate_prefab = [this](const std::string& prefab_path) {
 		auto& scene_manager = engine::scene::GetSceneManager();
@@ -464,44 +476,6 @@ void EditorScene::OnEntityDeleted(const engine::ecs::Entity entity) {
 
 void EditorScene::OnSceneModified() {
 	// Scene modification now tracked through command history
-	// No need to manually set dirty flag
-
-	// If we're editing a prefab template, persist changes to disk
-	if (selected_prefab_entity_.is_valid() && selected_prefab_entity_.has(flecs::Prefab)) {
-		const auto* prefab_info = selected_prefab_entity_.try_get<engine::components::PrefabInstance>();
-		if (prefab_info && !prefab_info->prefab_path.empty()) {
-			try {
-				json prefab_doc;
-				prefab_doc["version"] = 1;
-				prefab_doc["name"] = selected_prefab_entity_.name().c_str();
-
-				json entities_array = json::array();
-				json entity_entry;
-				entity_entry["name"] = selected_prefab_entity_.name().c_str();
-
-				json data = json::parse(selected_prefab_entity_.to_json().c_str());
-				if (data.contains("pairs")) {
-					auto& pairs = data["pairs"];
-					pairs.erase("flecs.core.ChildOf");
-					pairs.erase("flecs.core.IsA");
-					if (pairs.empty()) {
-						data.erase("pairs");
-					}
-				}
-				entity_entry["data"] = data.dump();
-				entities_array.push_back(entity_entry);
-				prefab_doc["entities"] = entities_array;
-
-				if (!engine::assets::AssetManager::SaveTextFile(
-							std::filesystem::path(prefab_info->prefab_path), prefab_doc.dump(2))) {
-					std::cerr << "EditorScene: Failed to save prefab to: " << prefab_info->prefab_path << std::endl;
-				}
-			}
-			catch (const std::exception& e) {
-				std::cerr << "EditorScene: Error saving prefab: " << e.what() << std::endl;
-			}
-		}
-	}
 }
 
 void EditorScene::OnShowRenameDialog(const engine::ecs::Entity entity) {
@@ -525,8 +499,10 @@ void EditorScene::OnAddChildEntity(const engine::ecs::Entity parent) {
 void EditorScene::OnAddComponent(const engine::ecs::Entity entity, const std::string& component_name) {
 	const auto& registry = engine::ecs::ComponentRegistry::Instance();
 	if (const auto* comp = registry.FindComponent(component_name)) {
-		// Create and execute an AddComponentCommand for undo/redo support
-		auto command = std::make_unique<AddComponentCommand>(entity, comp->id, component_name);
+		std::unique_ptr<ICommand> command = std::make_unique<AddComponentCommand>(entity, comp->id, component_name);
+		if (selected_prefab_entity_.is_valid() && selected_prefab_entity_.has(flecs::Prefab)) {
+			command = std::make_unique<PrefabUpdateCommand>(std::move(command), selected_prefab_entity_);
+		}
 		command_history_.Execute(std::move(command));
 		std::cout << "EditorScene: Added component '" << component_name << "' to entity" << std::endl;
 	}

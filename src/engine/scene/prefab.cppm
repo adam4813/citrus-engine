@@ -51,6 +51,17 @@ public:
 	/// @return true if apply succeeded
 	static bool ApplyToSource(const ecs::Entity& instance, ecs::ECSWorld& world);
 
+	/// Save a prefab template entity to its source file.
+	/// Uses the loaded_prefabs cache to resolve the file path.
+	/// @param prefab_entity The prefab template entity
+	/// @return true if save succeeded
+	static bool SavePrefabTemplate(const ecs::Entity& prefab_entity);
+
+	/// Get the file path for a loaded prefab entity (reverse cache lookup).
+	/// @param prefab_entity The prefab template entity
+	/// @return The file path, or empty string if not found
+	static std::string GetPrefabPath(const ecs::Entity& prefab_entity);
+
 private:
 	/// Serialize a prefab entity to a JSON file (internal helper).
 	static bool WritePrefabFile(const ecs::Entity& prefab_entity, const platform::fs::Path& file_path);

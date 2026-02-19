@@ -36,7 +36,7 @@ bool PrefabUtility::WritePrefabFile(const ecs::Entity& prefab_entity, const plat
 		json entity_entry;
 		entity_entry["name"] = prefab_entity.name().c_str();
 
-		// Serialize and strip relationships that are runtime-only
+		// Serialize and strip relationships/runtime components that shouldn't be persisted
 		json data = json::parse(prefab_entity.to_json().c_str());
 		if (data.contains("pairs")) {
 			auto& pairs = data["pairs"];
@@ -46,6 +46,8 @@ bool PrefabUtility::WritePrefabFile(const ecs::Entity& prefab_entity, const plat
 				data.erase("pairs");
 			}
 		}
+		// PrefabInstance is runtime metadata (tracks source path), not asset data
+		data.erase("engine.components.PrefabInstance");
 		entity_entry["data"] = data.dump();
 		entities_array.push_back(entity_entry);
 
@@ -76,7 +78,7 @@ PrefabUtility::SaveAsPrefab(const ecs::Entity& entity, ecs::ECSWorld& world, con
 		const flecs::world& flecs_world = world.GetWorld();
 		const std::string path_str = file_path.string();
 		const std::string entity_name = entity.name().c_str();
-		const std::string prefab_name = "prefab_" + entity_name;
+		const std::string prefab_name = entity_name.starts_with("prefab_") ? entity_name : "prefab_" + entity_name;
 
 		// 1. Create a new prefab entity and copy components from the source
 		auto prefab_entity = flecs_world.prefab(prefab_name.c_str());
@@ -94,11 +96,11 @@ PrefabUtility::SaveAsPrefab(const ecs::Entity& entity, ecs::ECSWorld& world, con
 		}
 		prefab_entity.from_json(data.dump().c_str());
 
-		// Store the source file path on the prefab
-		prefab_entity.set<PrefabInstance>({.prefab_path = path_str});
-
 		// 2. Convert the original entity into an instance of the prefab
 		entity.add(flecs::IsA, prefab_entity);
+
+		// Store the source file path on the prefab
+		entity.set<PrefabInstance>({.prefab_path = path_str});
 
 		// 3. Serialize the prefab to disk
 		if (!WritePrefabFile(prefab_entity, file_path)) {
@@ -151,13 +153,10 @@ ecs::Entity PrefabUtility::LoadPrefab(const platform::fs::Path& prefab_path, ecs
 		const flecs::world& flecs_world = world.GetWorld();
 
 		const auto& root_entry = prefab_doc["entities"][0];
-		const std::string prefab_name = "prefab_" + prefab_doc.value("name", "unnamed");
+		const std::string prefab_name = prefab_doc.value("name", "unnamed");
 
 		// Create the flecs prefab entity
 		auto prefab_entity = flecs_world.prefab(prefab_name.c_str());
-
-		// Store the source path so instances can reference it
-		prefab_entity.set<PrefabInstance>({.prefab_path = path_str});
 
 		// Apply component data from JSON
 		if (root_entry.contains("data")) {
@@ -191,6 +190,7 @@ ecs::Entity PrefabUtility::InstantiatePrefab(
 	// Create an instance using flecs is_a() — inherits all prefab components
 	const flecs::world& flecs_world = world.GetWorld();
 	const auto instance = flecs_world.entity().is_a(prefab_entity);
+	instance.set<PrefabInstance>({.prefab_path = prefab_path.string()});
 
 	const auto scene_root = scene->GetSceneRoot();
 	if (parent.is_valid()) {
@@ -221,8 +221,9 @@ bool PrefabUtility::ApplyToSource(const ecs::Entity& instance, ecs::ECSWorld& wo
 		return false;
 	}
 
-	if (!prefab.has<PrefabInstance>()) {
-		std::cerr << "PrefabUtility: Prefab has no source path" << std::endl;
+	const auto prefab_path = GetPrefabPath(prefab);
+	if (prefab_path.empty()) {
+		std::cerr << "PrefabUtility: Prefab not found in cache" << std::endl;
 		return false;
 	}
 
@@ -236,11 +237,36 @@ bool PrefabUtility::ApplyToSource(const ecs::Entity& instance, ecs::ECSWorld& wo
 			data.erase("pairs");
 		}
 	}
+	// Strip PrefabInstance from the data applied to the template
+	data.erase("engine.components.PrefabInstance");
 	prefab.from_json(data.dump().c_str());
-
-	const auto& [prefab_path] = prefab.get<PrefabInstance>();
+	prefab.remove<PrefabInstance>(); // Clear instance metadata from the template
 
 	return WritePrefabFile(prefab, prefab_path);
+}
+
+bool PrefabUtility::SavePrefabTemplate(const ecs::Entity& prefab_entity) {
+	if (!prefab_entity.is_valid() || !prefab_entity.has(flecs::Prefab)) {
+		std::cerr << "PrefabUtility: Entity is not a prefab template" << std::endl;
+		return false;
+	}
+
+	const auto path = GetPrefabPath(prefab_entity);
+	if (path.empty()) {
+		std::cerr << "PrefabUtility: Prefab not found in cache" << std::endl;
+		return false;
+	}
+
+	return WritePrefabFile(prefab_entity, path);
+}
+
+std::string PrefabUtility::GetPrefabPath(const ecs::Entity& prefab_entity) {
+	for (const auto& [path, entity] : loaded_prefabs) {
+		if (entity == prefab_entity) {
+			return path;
+		}
+	}
+	return {};
 }
 
 } // namespace engine::scene

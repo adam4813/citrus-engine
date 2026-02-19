@@ -3,6 +3,7 @@
 #include <imgui.h>
 #include <memory>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include "editor_panel.h"
@@ -153,6 +154,10 @@ private:
 	// Node path dialog state
 	int node_path_dialog_node_id_ = -1;
 	int node_path_dialog_pin_index_ = -1;
+
+	// Sampler cache for Texture Sample nodes (keyed by file path)
+	struct SamplerEntry { std::vector<uint8_t> pixels; int width = 0; int height = 0; };
+	mutable std::unordered_map<std::string, SamplerEntry> sampler_cache_;
 };
 
 /**

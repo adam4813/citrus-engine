@@ -259,12 +259,11 @@ void RegisterTextureGraphNodes(engine::graph::NodeTypeRegistry& registry) {
 		registry.Register(texture_sample);
 	}
 
-	// Output node
+	// Output node — terminus/sink, no outputs
 	{
 		engine::graph::NodeTypeDefinition output;
 		output.name = "Texture Output";
 		output.category = "Output";
-		output.default_outputs = {Pin(0, "Color", PinType::Color, PinDirection::Output, glm::vec4(1.0f))};
 		output.default_inputs = {Pin(0, "Color", PinType::Color, PinDirection::Input, glm::vec4(1.0f))};
 		registry.Register(output);
 	}
@@ -1058,22 +1057,21 @@ void TextureEditorPanel::NewTexture() {
 	is_creating_link_ = false;
 	canvas_offset_ = ImVec2(0.0f, 0.0f);
 	canvas_zoom_ = 1.0f;
+	sampler_cache_.clear();
 
 	// Create default graph: Solid Color -> Output
 	const int color_node_id = texture_graph_->AddNode("Solid Color", glm::vec2(100.0f, 100.0f));
 	const int output_node_id = texture_graph_->AddNode("Texture Output", glm::vec2(400.0f, 100.0f));
 
 	if (auto* color_node = texture_graph_->GetNode(color_node_id)) {
-		auto& registry = engine::graph::NodeTypeRegistry::GetGlobal();
-		if (const auto* type = registry.Get("Solid Color")) {
+		if (const auto* type = registry_.Get("Solid Color")) {
 			color_node->inputs = type->default_inputs;
 			color_node->outputs = type->default_outputs;
 		}
 	}
 
 	if (auto* output_node = texture_graph_->GetNode(output_node_id)) {
-		const auto& registry = engine::graph::NodeTypeRegistry::GetGlobal();
-		if (const auto* type = registry.Get("Texture Output")) {
+		if (const auto* type = registry_.Get("Texture Output")) {
 			output_node->inputs = type->default_inputs;
 			output_node->outputs = type->default_outputs;
 		}
@@ -1090,6 +1088,7 @@ bool TextureEditorPanel::OpenTexture(const std::string& path) {
 	if (engine::graph::NodeGraph new_graph; engine::graph::GraphSerializer::Load(path, new_graph)) {
 		*texture_graph_ = std::move(new_graph);
 		current_file_path_ = path;
+		sampler_cache_.clear();
 		selected_node_id_ = -1;
 		hovered_node_id_ = -1;
 		UpdatePreview();

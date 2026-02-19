@@ -4,6 +4,8 @@
 #include <cmath>
 #include <variant>
 
+#include <stb_image.h>
+
 namespace editor {
 
 // ============================================================================
@@ -318,8 +320,57 @@ glm::vec4 TextureEditorPanel::EvaluateNodeOutput(int node_id, int pin_index, glm
 	}
 
 	if (type == "Texture Sample") {
-		// Not implemented — would need actual image loading per pixel
-		return glm::vec4(0.5f, 0.5f, 0.5f, 1.0f);
+		glm::vec2 sample_uv = GetInputVec2(*node, 0, uv);
+		if (sample_uv == glm::vec2(0.0f) && !FindInputLink(*texture_graph_, node->id, 0)) {
+			sample_uv = uv;
+		}
+
+		// Get the Path pin value
+		std::string path;
+		for (const auto& pin : node->inputs) {
+			if (pin.name == "Path") {
+				if (const auto* p = std::get_if<std::string>(&pin.default_value)) {
+					path = *p;
+				}
+				break;
+			}
+		}
+		if (path.empty()) {
+			return glm::vec4(0.5f, 0.5f, 0.5f, 1.0f); // Grey = no path set
+		}
+
+		// Load into cache on first access
+		auto it = sampler_cache_.find(path);
+		if (it == sampler_cache_.end()) {
+			int w = 0, h = 0, ch = 0;
+			stbi_set_flip_vertically_on_load(false);
+			unsigned char* data = stbi_load(path.c_str(), &w, &h, &ch, 4);
+			SamplerEntry entry;
+			if (data) {
+				entry.width = w;
+				entry.height = h;
+				entry.pixels.assign(data, data + w * h * 4);
+				stbi_image_free(data);
+			}
+			it = sampler_cache_.emplace(path, std::move(entry)).first;
+		}
+
+		const auto& entry = it->second;
+		if (entry.width <= 0 || entry.height <= 0) {
+			return glm::vec4(1.0f, 0.0f, 1.0f, 1.0f); // Magenta = load failed
+		}
+
+		// Nearest-neighbour sample with wrapping
+		const float u_w = sample_uv.x - std::floor(sample_uv.x);
+		const float v_w = sample_uv.y - std::floor(sample_uv.y);
+		const int px = std::clamp(static_cast<int>(u_w * static_cast<float>(entry.width)), 0, entry.width - 1);
+		const int py = std::clamp(static_cast<int>(v_w * static_cast<float>(entry.height)), 0, entry.height - 1);
+		const int idx = (py * entry.width + px) * 4;
+		return glm::vec4(
+				entry.pixels[idx + 0] / 255.0f,
+				entry.pixels[idx + 1] / 255.0f,
+				entry.pixels[idx + 2] / 255.0f,
+				entry.pixels[idx + 3] / 255.0f);
 	}
 
 	// --- Math ---

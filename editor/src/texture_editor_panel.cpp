@@ -7,6 +7,8 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstring>
+#include <variant>
 
 using json = nlohmann::json;
 
@@ -274,11 +276,21 @@ void RegisterTextureGraphNodes() {
 // ============================================================================
 
 TextureEditorPanel::TextureEditorPanel() : texture_graph_(std::make_unique<engine::graph::NodeGraph>()) {
-	NewTexture();
+	// NOTE: NewTexture() is NOT called here — node types (registered in EditorScene::Initialize
+	// via RegisterTextureGraphNodes) aren't available yet, and OpenGL isn't initialized.
+	// OnInitialized() is called after everything is ready.
 
 	open_dialog_.SetCallback([this](const std::string& path) { OpenTexture(path); });
 	save_dialog_.SetCallback([this](const std::string& path) { SaveTexture(path); });
 	export_dialog_.SetCallback([this](const std::string& path) { ExportPng(path); });
+	node_path_dialog_.SetCallback([this](const std::string& path) {
+		if (!texture_graph_ || node_path_dialog_node_id_ < 0) return;
+		auto* node = texture_graph_->GetNode(node_path_dialog_node_id_);
+		if (!node || node_path_dialog_pin_index_ >= static_cast<int>(node->inputs.size())) return;
+		node->inputs[node_path_dialog_pin_index_].default_value = path;
+		SetDirty(true);
+		UpdatePreview();
+	});
 }
 
 TextureEditorPanel::~TextureEditorPanel() {
@@ -288,6 +300,11 @@ TextureEditorPanel::~TextureEditorPanel() {
 }
 
 std::string_view TextureEditorPanel::GetPanelName() const { return "Texture Editor"; }
+
+void TextureEditorPanel::OnInitialized() {
+	// Node types are registered and GL context is ready — safe to build the default graph.
+	NewTexture();
+}
 
 void TextureEditorPanel::RegisterAssetHandlers(AssetEditorRegistry& registry) {
 	registry.Register("procedural_texture", [this](const std::string& path) {
@@ -363,6 +380,7 @@ void TextureEditorPanel::RenderToolbar() {
 	open_dialog_.Render();
 	save_dialog_.Render();
 	export_dialog_.Render();
+	node_path_dialog_.Render();
 }
 
 void TextureEditorPanel::RenderGraphCanvas() {
@@ -665,7 +683,6 @@ void TextureEditorPanel::RenderGraphNode(const engine::graph::Node& node) {
 	ImDrawList* draw_list = ImGui::GetWindowDrawList();
 
 	const ImVec2 node_pos = GetNodeScreenPos(node);
-	const ImVec2 node_size(NODE_WIDTH * canvas_zoom_, 0);
 
 	// Calculate node height
 	const int pin_count = std::max(static_cast<int>(node.inputs.size()), static_cast<int>(node.outputs.size()));
@@ -684,7 +701,133 @@ void TextureEditorPanel::RenderGraphNode(const engine::graph::Node& node) {
 	const auto title_pos = ImVec2(node_pos.x + 5.0f, node_pos.y + 5.0f);
 	draw_list->AddText(title_pos, IM_COL32(255, 255, 255, 255), node.type_name.c_str());
 
-	// Draw input pins
+	// InvisibleButton submitted first so inline widgets get higher input priority
+	ImGui::SetCursorScreenPos(node_rect_min);
+	ImGui::InvisibleButton(
+			("node_" + std::to_string(node.id)).c_str(),
+			ImVec2(node_rect_max.x - node_rect_min.x, node_rect_max.y - node_rect_min.y));
+	const bool node_active = ImGui::IsItemActive();
+	const bool node_clicked = ImGui::IsItemClicked(ImGuiMouseButton_Left);
+
+	// Inline editors for unconnected input pins (submitted after InvisibleButton to win input)
+	auto* mutable_node = texture_graph_->GetNode(node.id);
+	if (mutable_node && canvas_zoom_ >= 0.7f) {
+		for (size_t i = 0; i < mutable_node->inputs.size(); ++i) {
+			bool has_link = false;
+			for (const auto& link : texture_graph_->GetLinks()) {
+				if (link.to_node_id == node.id && link.to_pin_index == static_cast<int>(i)) {
+					has_link = true;
+					break;
+				}
+			}
+			if (has_link) continue;
+
+			const ImVec2 pin_pos = GetPinScreenPos(node, static_cast<int>(i), false);
+			ImGui::SetCursorScreenPos(ImVec2(node_pos.x + 100.0f * canvas_zoom_, pin_pos.y - 9.0f));
+
+			auto& pin = mutable_node->inputs[i];
+			bool changed = false;
+			const std::string pin_id = "##pv_" + std::to_string(node.id) + "_" + std::to_string(i);
+
+			using engine::graph::PinType;
+			switch (pin.type) {
+			case PinType::Float: {
+				const auto* p = std::get_if<float>(&pin.default_value);
+				float val = p ? *p : 0.0f;
+				ImGui::PushItemWidth(90.0f * canvas_zoom_);
+				if (ImGui::DragFloat(pin_id.c_str(), &val, 0.01f, 0.0f, 0.0f, "%.2f")) {
+					pin.default_value = val;
+					changed = true;
+				}
+				ImGui::PopItemWidth();
+				break;
+			}
+			case PinType::Int: {
+				const auto* p = std::get_if<int>(&pin.default_value);
+				int val = p ? *p : 0;
+				ImGui::PushItemWidth(90.0f * canvas_zoom_);
+				if (ImGui::DragInt(pin_id.c_str(), &val)) {
+					pin.default_value = val;
+					changed = true;
+				}
+				ImGui::PopItemWidth();
+				break;
+			}
+			case PinType::Bool: {
+				const auto* p = std::get_if<bool>(&pin.default_value);
+				bool val = p ? *p : false;
+				if (ImGui::Checkbox(pin_id.c_str(), &val)) {
+					pin.default_value = val;
+					changed = true;
+				}
+				break;
+			}
+			case PinType::Color:
+			case PinType::Vec4: {
+				const auto* p = std::get_if<glm::vec4>(&pin.default_value);
+				glm::vec4 col = p ? *p : glm::vec4(1.0f);
+				float arr[4] = {col.x, col.y, col.z, col.w};
+				if (ImGui::ColorEdit4(pin_id.c_str(), arr, ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoLabel)) {
+					pin.default_value = glm::vec4(arr[0], arr[1], arr[2], arr[3]);
+					changed = true;
+				}
+				break;
+			}
+			case PinType::Vec2: {
+				const auto* p = std::get_if<glm::vec2>(&pin.default_value);
+				glm::vec2 val = p ? *p : glm::vec2(0.0f);
+				float arr[2] = {val.x, val.y};
+				ImGui::PushItemWidth(90.0f * canvas_zoom_);
+				if (ImGui::DragFloat2(pin_id.c_str(), arr, 0.01f)) {
+					pin.default_value = glm::vec2(arr[0], arr[1]);
+					changed = true;
+				}
+				ImGui::PopItemWidth();
+				break;
+			}
+			case PinType::Vec3: {
+				const auto* p = std::get_if<glm::vec3>(&pin.default_value);
+				glm::vec3 val = p ? *p : glm::vec3(0.0f);
+				float arr[3] = {val.x, val.y, val.z};
+				ImGui::PushItemWidth(90.0f * canvas_zoom_);
+				if (ImGui::DragFloat3(pin_id.c_str(), arr, 0.01f)) {
+					pin.default_value = glm::vec3(arr[0], arr[1], arr[2]);
+					changed = true;
+				}
+				ImGui::PopItemWidth();
+				break;
+			}
+			case PinType::String: {
+				const auto* p = std::get_if<std::string>(&pin.default_value);
+				char buf[256];
+				strncpy_s(buf, p ? p->c_str() : "", sizeof(buf) - 1);
+				buf[sizeof(buf) - 1] = '\0';
+				ImGui::PushItemWidth(64.0f * canvas_zoom_);
+				if (ImGui::InputText(pin_id.c_str(), buf, sizeof(buf))) {
+					pin.default_value = std::string(buf);
+					changed = true;
+				}
+				ImGui::PopItemWidth();
+				ImGui::SameLine(0, 2);
+				if (ImGui::Button(("...##br_" + std::to_string(node.id) + "_" + std::to_string(i)).c_str(),
+						ImVec2(22.0f * canvas_zoom_, 0))) {
+					node_path_dialog_node_id_ = node.id;
+					node_path_dialog_pin_index_ = static_cast<int>(i);
+					node_path_dialog_.Open();
+				}
+				break;
+			}
+			default: break;
+			}
+
+			if (changed) {
+				SetDirty(true);
+				UpdatePreview();
+			}
+		}
+	}
+
+	// Draw input pin circles and labels on top of inline editors
 	const ImVec2 mouse_pos = ImGui::GetMousePos();
 	for (size_t i = 0; i < node.inputs.size(); ++i) {
 		const ImVec2 pin_pos = GetPinScreenPos(node, static_cast<int>(i), false);
@@ -692,8 +835,6 @@ void TextureEditorPanel::RenderGraphNode(const engine::graph::Node& node) {
 		const ImU32 pin_color = pin_hovered ? IM_COL32(150, 255, 150, 255) : IM_COL32(100, 200, 100, 255);
 		const float radius = pin_hovered ? PIN_RADIUS * canvas_zoom_ * 1.3f : PIN_RADIUS * canvas_zoom_;
 		draw_list->AddCircleFilled(pin_pos, radius, pin_color);
-
-		// Pin label
 		const auto label_pos = ImVec2(pin_pos.x + 10.0f, pin_pos.y - 7.0f);
 		draw_list->AddText(label_pos, IM_COL32(200, 200, 200, 255), node.inputs[i].name.c_str());
 	}
@@ -705,25 +846,18 @@ void TextureEditorPanel::RenderGraphNode(const engine::graph::Node& node) {
 		const ImU32 pin_color = pin_hovered ? IM_COL32(255, 150, 150, 255) : IM_COL32(200, 100, 100, 255);
 		const float radius = pin_hovered ? PIN_RADIUS * canvas_zoom_ * 1.3f : PIN_RADIUS * canvas_zoom_;
 		draw_list->AddCircleFilled(pin_pos, radius, pin_color);
-
-		// Pin label (right-aligned)
 		const char* label = node.outputs[i].name.c_str();
 		const ImVec2 label_size = ImGui::CalcTextSize(label);
 		const auto label_pos = ImVec2(pin_pos.x - label_size.x - 10.0f, pin_pos.y - 7.0f);
 		draw_list->AddText(label_pos, IM_COL32(200, 200, 200, 255), label);
 	}
 
-	// Handle node interaction
-	ImGui::SetCursorScreenPos(node_rect_min);
-	ImGui::InvisibleButton(
-			("node_" + std::to_string(node.id)).c_str(),
-			ImVec2(node_rect_max.x - node_rect_min.x, node_rect_max.y - node_rect_min.y));
-
-	if (ImGui::IsItemHovered()) {
+	// Hover detection via rect (reliable when node contains multiple widgets)
+	if (ImGui::IsMouseHoveringRect(node_rect_min, node_rect_max)) {
 		hovered_node_id_ = node.id;
 	}
 
-	if (ImGui::IsItemActive() && ImGui::IsMouseDragging(ImGuiMouseButton_Left)) {
+	if (node_active && ImGui::IsMouseDragging(ImGuiMouseButton_Left)) {
 		if (!is_creating_link_) {
 			is_dragging_node_ = true;
 			selected_node_id_ = node.id;
@@ -731,7 +865,7 @@ void TextureEditorPanel::RenderGraphNode(const engine::graph::Node& node) {
 		}
 	}
 
-	if (ImGui::IsItemClicked(ImGuiMouseButton_Left) && !is_creating_link_) {
+	if (node_clicked && !is_creating_link_) {
 		selected_node_id_ = node.id;
 		selected_link_id_ = -1;
 	}
@@ -739,9 +873,9 @@ void TextureEditorPanel::RenderGraphNode(const engine::graph::Node& node) {
 	// Node dragging
 	if (is_dragging_node_ && selected_node_id_ == node.id && ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
 		const ImVec2 delta = ImGui::GetIO().MouseDelta;
-		if (auto* mutable_node = texture_graph_->GetNode(node.id)) {
-			mutable_node->position.x += delta.x / canvas_zoom_;
-			mutable_node->position.y += delta.y / canvas_zoom_;
+		if (auto* mn = texture_graph_->GetNode(node.id)) {
+			mn->position.x += delta.x / canvas_zoom_;
+			mn->position.y += delta.y / canvas_zoom_;
 			SetDirty(true);
 		}
 	}
@@ -971,7 +1105,7 @@ void TextureEditorPanel::NewTexture() {
 	// Connect Solid Color output to Output input
 	texture_graph_->AddLink(color_node_id, 0, output_node_id, 0);
 
-	UpdatePreview();
+	//UpdatePreview();  -- called by OnInitialized() after GL is ready; OpenTexture() calls it directly
 	SetDirty(false);
 }
 

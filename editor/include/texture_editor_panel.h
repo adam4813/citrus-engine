@@ -39,6 +39,7 @@ public:
 
 	[[nodiscard]] std::string_view GetPanelName() const override;
 	void RegisterAssetHandlers(AssetEditorRegistry& registry) override;
+	void OnInitialized() override;
 
 	/**
 	 * @brief Render the texture editor panel
@@ -140,13 +141,18 @@ private:
 
 	// Canvas constants
 	static constexpr float GRID_SIZE = 64.0f;
-	static constexpr float NODE_WIDTH = 150.0f;
+	static constexpr float NODE_WIDTH = 200.0f;
 	static constexpr float PIN_RADIUS = 6.0f;
 
 	// File dialogs
 	FileDialogPopup open_dialog_{"Open Texture", FileDialogMode::Open, {".json"}};
 	FileDialogPopup save_dialog_{"Save Texture As", FileDialogMode::Save, {".json"}};
 	FileDialogPopup export_dialog_{"Export PNG", FileDialogMode::Save, {".png"}};
+	FileDialogPopup node_path_dialog_{"Select Image", FileDialogMode::Open, {".png", ".jpg", ".jpeg", ".bmp", ".hdr"}};
+
+	// Node path dialog state
+	int node_path_dialog_node_id_ = -1;
+	int node_path_dialog_pin_index_ = -1;
 };
 
 /**

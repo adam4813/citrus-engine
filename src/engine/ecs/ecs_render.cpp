@@ -1,6 +1,7 @@
 module;
 
 #include <flecs.h>
+#include <functional>
 #include <string>
 #include <vector>
 
@@ -13,6 +14,69 @@ using namespace engine::components;
 using namespace engine::rendering;
 
 namespace engine::ecs {
+
+// === GENERIC ASSET REFERENCE BINDING ===
+// Template that wires up: component registration, With trait, and bidirectional observers.
+// RefComp must have a `std::string name` member.
+// TargetComp is the component that holds the runtime ID (e.g., Renderable, AudioSource).
+// find_fn: resolves name → ID. name_fn: resolves ID → name (nullptr disables backward sync).
+template <typename RefComp, typename TargetComp, typename IdType, typename FindFn, typename NameFn>
+void SetupAssetRefBinding(flecs::world& world,
+						  const std::string& ref_name,
+						  const std::string& category,
+						  std::string_view asset_type_name,
+						  IdType TargetComp::*id_member,
+						  IdType invalid_value,
+						  FindFn find_fn,
+						  NameFn name_fn) {
+	auto& registry = ComponentRegistry::Instance();
+
+	registry.Register<RefComp>(ref_name, world)
+			.Category(category)
+			.Field("name", &RefComp::name)
+			.AssetRef(asset_type_name)
+			.Build();
+
+	if (!world.component<TargetComp>().add(flecs::With, world.component<RefComp>())) {
+		return;
+	}
+
+	// Forward observer: RefComp.name → TargetComp.id_member
+	const auto forward_name = ref_name + "Resolve";
+	world.observer<RefComp, TargetComp>(forward_name.c_str())
+			.event(flecs::OnSet)
+			.each([id_member, invalid_value, find_fn](flecs::entity, const RefComp& ref, TargetComp& target) {
+				if (ref.name.empty()) {
+					target.*id_member = invalid_value;
+					return;
+				}
+				if (const IdType id = find_fn(ref.name); id != invalid_value) {
+					target.*id_member = id;
+				}
+			});
+
+	// Backward observer: TargetComp.id_member → RefComp.name (skip if name_fn is nullptr)
+	if constexpr (requires { name_fn(std::declval<IdType>()); }) {
+		if (name_fn) {
+			const auto backward_name = ref_name + "Sync";
+			world.observer<TargetComp, RefComp>(backward_name.c_str())
+					.event(flecs::OnSet)
+					.each([id_member, invalid_value, name_fn](
+								  flecs::entity, const TargetComp& target, RefComp& ref) {
+						if (ref.name.empty()) {
+							return;
+						}
+						if (target.*id_member == invalid_value) {
+							return;
+						}
+						if (const std::string name = name_fn(target.*id_member);
+							!name.empty() && ref.name != name) {
+							ref.name = name;
+						}
+					});
+		}
+	}
+}
 
 // Submit render commands for all renderable entities
 void ECSWorld::SubmitRenderCommands(const rendering::Renderer& renderer) {
@@ -160,218 +224,58 @@ void ECSWorld::SubmitRenderCommands(const rendering::Renderer& renderer) {
 	}
 }
 
-// === SHADER REFERENCE INTEGRATION ===
-// Co-located shader-related ECS setup: ShaderRef component, With trait, and bidirectional observers
+// === ASSET REFERENCE INTEGRATIONS ===
 
 void ECSWorld::SetupShaderRefIntegration() {
-	auto& registry = ComponentRegistry::Instance();
-
-	// Register ShaderRef component - stores shader asset name for serialization
-	registry.Register<ShaderRef>("ShaderRef", world_)
-			.Category("Rendering")
-			.Field("name", &ShaderRef::name)
-			.AssetRef(scene::ShaderAssetInfo::TYPE_NAME)
-			.Build();
-
-	// Add (With, ShaderRef) trait to Renderable - auto-adds ShaderRef when Renderable is added
-	if (!world_.component<Renderable>().add(flecs::With, world_.component<ShaderRef>())) {
-		return;
-	}
-
-	// Observer: ShaderRef.name → Renderable.shader (resolve name to ID)
-	// Updates Renderable shader ID: valid name → lookup ID, empty name → INVALID_SHADER
-	world_.observer<ShaderRef, Renderable>("ShaderRefToRenderable")
-			.event(flecs::OnSet)
-			.each([](flecs::entity, const ShaderRef& ref, Renderable& renderable) {
-				if (ref.name.empty()) {
-					renderable.shader = INVALID_SHADER;
-					return;
-				}
-
-				if (const ShaderId id = GetRenderer().GetShaderManager().FindShader(ref.name); id != INVALID_SHADER) {
-					renderable.shader = id;
-				}
-			});
-
-	// Observer: Renderable.shader → ShaderRef.name (sync ID back to name)
-	// Respects empty ref.name as intentional (user chose "(None)")
-	world_.observer<Renderable, ShaderRef>("RenderableToShaderRef")
-			.event(flecs::OnSet)
-			.each([](flecs::entity, const Renderable& renderable, ShaderRef& ref) {
-				// If user cleared the name, respect that choice - don't overwrite
-				if (ref.name.empty()) {
-					return;
-				}
-
-				if (renderable.shader == INVALID_SHADER) {
-					return;
-				}
-
-				if (const std::string name = GetRenderer().GetShaderManager().GetShaderName(renderable.shader);
-					!name.empty() && ref.name != name) {
-					ref.name = name;
-				}
-			});
+	SetupAssetRefBinding<ShaderRef, Renderable>(
+			world_, "ShaderRef", "Rendering", scene::ShaderAssetInfo::TYPE_NAME, &Renderable::shader, INVALID_SHADER,
+			[](const std::string& name) { return GetRenderer().GetShaderManager().FindShader(name); },
+			[](ShaderId id) { return GetRenderer().GetShaderManager().GetShaderName(id); });
 }
-
-// === MESH REFERENCE INTEGRATION ===
-// Co-located mesh-related ECS setup: MeshRef component, With trait, and observers
 
 void ECSWorld::SetupMeshRefIntegration() {
-	auto& registry = ComponentRegistry::Instance();
-
-	// Register MeshRef component - stores mesh asset name for serialization
-	registry.Register<MeshRef>("MeshRef", world_)
-			.Category("Rendering")
-			.Field("name", &MeshRef::name)
-			.AssetRef(scene::MeshAssetInfo::TYPE_NAME)
-			.Build();
-
-	// Add (With, MeshRef) trait to Renderable - auto-adds MeshRef when Renderable is added
-	if (!world_.component<Renderable>().add(flecs::With, world_.component<MeshRef>())) {
-		return;
-	}
-
-	// Observer: MeshRef.name → Renderable.mesh (resolve name to mesh ID)
-	// Updates Renderable mesh ID: valid name → lookup ID, empty name → INVALID_MESH
-	world_.observer<MeshRef, Renderable>("MeshRefToRenderable")
-			.event(flecs::OnSet)
-			.each([](flecs::entity, const MeshRef& ref, Renderable& renderable) {
-				if (ref.name.empty()) {
-					renderable.mesh = INVALID_MESH;
-					return;
-				}
-
-				// Look up mesh by name in MeshManager (global, not scene-specific)
-				if (const MeshId id = GetRenderer().GetMeshManager().FindMesh(ref.name); id != INVALID_MESH) {
-					renderable.mesh = id;
-				}
-			});
-
-	// Observer: Renderable.mesh → MeshRef.name (sync ID back to name)
-	// Uses MeshManager's global name registry
-	// Respects empty ref.name as intentional (user chose "(None)")
-	world_.observer<Renderable, MeshRef>("RenderableToMeshRef")
-			.event(flecs::OnSet)
-			.each([](flecs::entity, const Renderable& renderable, MeshRef& ref) {
-				// If user cleared the name, respect that choice - don't overwrite
-				if (ref.name.empty()) {
-					return;
-				}
-
-				if (renderable.mesh == INVALID_MESH) {
-					return;
-				}
-
-				// Look up mesh name by ID in MeshManager
-				if (const std::string name = GetRenderer().GetMeshManager().GetMeshName(renderable.mesh);
-					!name.empty() && ref.name != name) {
-					ref.name = name;
-				}
-			});
+	SetupAssetRefBinding<MeshRef, Renderable>(
+			world_, "MeshRef", "Rendering", scene::MeshAssetInfo::TYPE_NAME, &Renderable::mesh, INVALID_MESH,
+			[](const std::string& name) { return GetRenderer().GetMeshManager().FindMesh(name); },
+			[](MeshId id) { return GetRenderer().GetMeshManager().GetMeshName(id); });
 }
 
-// === MATERIAL REFERENCE INTEGRATION ===
-// Co-located material-related ECS setup: MaterialRef component, With trait, and bidirectional observers
-
 void ECSWorld::SetupMaterialRefIntegration() {
-	auto& registry = ComponentRegistry::Instance();
-
-	// Register MaterialRef component - stores material asset name for serialization
-	registry.Register<MaterialRef>("MaterialRef", world_)
-			.Category("Rendering")
-			.Field("name", &MaterialRef::name)
-			.AssetRef(scene::MaterialAssetInfo::TYPE_NAME)
-			.Build();
-
-	// Add (With, MaterialRef) trait to Renderable - auto-adds MaterialRef when Renderable is added
-	if (!world_.component<Renderable>().add(flecs::With, world_.component<MaterialRef>())) {
-		return;
-	}
-
-	// Observer: MaterialRef.name → Renderable.material (resolve name to ID)
-	world_.observer<MaterialRef, Renderable>("MaterialRefToRenderable")
-			.event(flecs::OnSet)
-			.each([](flecs::entity, const MaterialRef& ref, Renderable& renderable) {
-				if (ref.name.empty()) {
-					renderable.material = INVALID_MATERIAL;
-					return;
-				}
-
-				if (const MaterialId id = GetRenderer().GetMaterialManager().FindMaterial(ref.name);
-					id != INVALID_MATERIAL) {
-					renderable.material = id;
-				}
-			});
-
-	// Observer: Renderable.material → MaterialRef.name (sync ID back to name)
-	world_.observer<Renderable, MaterialRef>("RenderableToMaterialRef")
-			.event(flecs::OnSet)
-			.each([](flecs::entity, const Renderable& renderable, MaterialRef& ref) {
-				if (ref.name.empty()) {
-					return;
-				}
-
-				if (renderable.material == INVALID_MATERIAL) {
-					return;
-				}
-
-				if (const std::string name = GetRenderer().GetMaterialManager().GetMaterialName(renderable.material);
-					!name.empty() && ref.name != name) {
-					ref.name = name;
-				}
-			});
+	SetupAssetRefBinding<MaterialRef, Renderable>(
+			world_, "MaterialRef", "Rendering", scene::MaterialAssetInfo::TYPE_NAME, &Renderable::material,
+			INVALID_MATERIAL,
+			[](const std::string& name) { return GetRenderer().GetMaterialManager().FindMaterial(name); },
+			[](MaterialId id) { return GetRenderer().GetMaterialManager().GetMaterialName(id); });
 }
 
 void ECSWorld::SetupSoundRefIntegration() {
-	auto& registry = ComponentRegistry::Instance();
-
-	// Register SoundRef component - stores sound asset name for serialization
-	registry.Register<audio::SoundRef>("SoundRef", world_)
-			.Category("Audio")
-			.Field("name", &audio::SoundRef::name)
-			.AssetRef(scene::SoundAssetInfo::TYPE_NAME)
-			.Build();
-
-	// Add (With, SoundRef) trait to AudioSource - auto-adds SoundRef when AudioSource is added
-	if (!world_.component<audio::AudioSource>().add(flecs::With, world_.component<audio::SoundRef>())) {
-		return;
-	}
-
-	// Observer: SoundRef.name → AudioSource.clip_id (resolve name to clip ID)
-	// Lazily loads the clip from the scene's SoundAssetInfo if not yet cached
-	world_.observer<audio::SoundRef, audio::AudioSource>("SoundRefToAudioSource")
-			.event(flecs::OnSet)
-			.each([](flecs::entity, const audio::SoundRef& ref, audio::AudioSource& source) {
-				if (ref.name.empty()) {
-					source.clip_id = 0;
-					return;
-				}
-
+	SetupAssetRefBinding<audio::SoundRef, audio::AudioSource>(
+			world_, "SoundRef", "Audio", scene::SoundAssetInfo::TYPE_NAME, &audio::AudioSource::clip_id,
+			static_cast<uint32_t>(0),
+			[](const std::string& name) -> uint32_t {
 				auto& audio_sys = audio::AudioSystem::Get();
 				if (!audio_sys.IsInitialized()) {
-					return;
+					return 0;
 				}
-
 				// Check if already loaded by name
-				if (uint32_t id = audio_sys.FindClipByName(ref.name); id != 0) {
-					source.clip_id = id;
-					return;
+				if (uint32_t id = audio_sys.FindClipByName(name); id != 0) {
+					return id;
 				}
-
-				// Lazy load: look up SoundAssetInfo from the active scene
+				// Lazy load from active scene
 				auto& scene_mgr = scene::GetSceneManager();
 				const auto active_id = scene_mgr.GetActiveScene();
 				if (active_id == scene::INVALID_SCENE) {
-					return;
+					return 0;
 				}
 				const auto& scene = scene_mgr.GetScene(active_id);
-				if (auto sound_asset = scene.GetAssets().FindTyped<scene::SoundAssetInfo>(ref.name)) {
+				if (auto sound_asset = scene.GetAssets().FindTyped<scene::SoundAssetInfo>(name)) {
 					if (!sound_asset->file_path.empty()) {
-						source.clip_id = audio_sys.LoadClipNamed(ref.name, sound_asset->file_path);
+						return audio_sys.LoadClipNamed(name, sound_asset->file_path);
 					}
 				}
-			});
+				return 0;
+			},
+			std::function<std::string(uint32_t)>(nullptr)); // No backward sync for audio
 }
 
 } // namespace engine::ecs

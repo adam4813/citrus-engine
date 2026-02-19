@@ -37,6 +37,7 @@ struct CollisionShape {
 	float cylinder_height{1.0F};
 	glm::vec3 offset{0.0F};
 	glm::quat rotation{1.0F, 0.0F, 0.0F, 0.0F};
+	std::vector<ChildShape> compound_children{};
 };
 
 // Velocity tracked by physics (separate from engine::components::Velocity to avoid collision)

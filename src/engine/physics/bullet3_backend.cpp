@@ -74,6 +74,20 @@ private:
 		config.cylinder_height = shape.cylinder_height * max_scale; // Use max scale for cylinder height
 		config.offset = shape.offset;
 		config.rotation = shape.rotation;
+		// Convert compound children from CollisionShape to ShapeConfig format
+		for (const auto& child : shape.compound_children) {
+			ShapeConfig child_config;
+			child_config.type = child.type;
+			child_config.box_half_extents = child.box_half_extents * scale;
+			child_config.sphere_radius = child.sphere_radius * max_scale;
+			child_config.capsule_radius = child.capsule_radius * max_scale;
+			child_config.capsule_height = child.capsule_height * max_scale;
+			child_config.cylinder_radius = child.cylinder_radius * max_scale;
+			child_config.cylinder_height = child.cylinder_height * max_scale;
+			config.children.push_back(child_config);
+			config.child_positions.push_back(child.position);
+			config.child_rotations.push_back(child.rotation);
+		}
 		return config;
 	}
 

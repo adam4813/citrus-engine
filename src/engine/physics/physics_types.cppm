@@ -58,6 +58,19 @@ struct PhysicsConfig {
 	float sleep_threshold{0.05F};
 };
 
+// Child shape for compound colliders (editor-facing, stored on CollisionShape component)
+struct ChildShape {
+	ShapeType type{ShapeType::Box};
+	glm::vec3 box_half_extents{0.5F, 0.5F, 0.5F};
+	float sphere_radius{0.5F};
+	float capsule_radius{0.5F};
+	float capsule_height{1.0F};
+	float cylinder_radius{0.5F};
+	float cylinder_height{1.0F};
+	glm::vec3 position{0.0F};
+	glm::quat rotation{1.0F, 0.0F, 0.0F, 0.0F};
+};
+
 // Shape definition for colliders
 struct ShapeConfig {
 	ShapeType type{ShapeType::Box};

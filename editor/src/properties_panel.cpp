@@ -5,18 +5,60 @@
 #include <imgui.h>
 #include <imgui_internal.h>
 #include <iostream>
+#include <optional>
 #include <string>
 #include <vector>
 
 #include "commands/transform_command.h"
+#include "file_dialog.h"
 
 namespace editor {
 
 namespace {
 
+/// Static file dialog for field browse buttons (only one can be active at a time)
+std::optional<FileDialogPopup> s_field_file_dialog;
+bool s_field_file_dialog_modified = false;
+
+/// Open a file browse dialog targeting a string field
+void OpenFieldBrowseDialog(
+		const char* title,
+		const std::vector<std::string>& extensions,
+		std::string* target) {
+	s_field_file_dialog.emplace(title, FileDialogMode::Open, extensions);
+	s_field_file_dialog->SetCallback([target](const std::string& path) {
+		*target = path;
+		s_field_file_dialog_modified = true;
+	});
+	s_field_file_dialog->Open();
+}
+
 /// Get the display label for a field (prefer display_name, fall back to name)
 const char* GetFieldLabel(const engine::ecs::FieldInfo& field) {
 	return field.display_name.empty() ? field.name.c_str() : field.display_name.c_str();
+}
+
+/// Check if a field should be visible given the current component/asset data.
+/// Returns false if a visibility predicate is set and the controlling field's value doesn't match.
+bool IsFieldVisible(
+		const engine::ecs::FieldInfo& field,
+		const std::vector<engine::ecs::FieldInfo>& all_fields,
+		const void* base_ptr) {
+	if (field.visible_when_field.empty()) {
+		return true;
+	}
+	for (const auto& other : all_fields) {
+		if (other.name == field.visible_when_field) {
+			const int value = *reinterpret_cast<const int*>(static_cast<const char*>(base_ptr) + other.offset);
+			for (const int v : field.visible_when_values) {
+				if (value == v) {
+					return true;
+				}
+			}
+			return false;
+		}
+	}
+	return true; // Controlling field not found — show by default
 }
 
 /// Render a single field based on its FieldType. Returns true if modified.
@@ -52,14 +94,18 @@ bool RenderSingleField(const engine::ecs::FieldInfo& field, void* field_ptr, eng
 		std::strncpy(buffer, str->c_str(), sizeof(buffer) - 1);
 		buffer[sizeof(buffer) - 1] = '\0';
 		bool modified = false;
+
+		// Use reduced width to make room for browse button
+		ImGui::SetNextItemWidth(ImGui::CalcItemWidth() - 30.0f);
 		if (ImGui::InputText(label, buffer, sizeof(buffer))) {
 			*str = buffer;
 			modified = true;
 		}
 		ImGui::SameLine();
-		ImGui::TextDisabled("(?)");
-		if (ImGui::IsItemHovered()) {
-			ImGui::SetTooltip("Relative path to file");
+		std::string browse_id = std::string("...##filepath_browse_") + field.name;
+		if (ImGui::Button(browse_id.c_str())) {
+			auto exts = field.file_extensions; // use field-specified extensions if any
+			OpenFieldBrowseDialog("Browse File", exts, str);
 		}
 		return modified;
 	}
@@ -165,6 +211,7 @@ bool RenderSingleField(const engine::ecs::FieldInfo& field, void* field_ptr, eng
 		}
 
 		// Render combo
+		bool modified = false;
 		const char* preview = str->empty() ? "(None)" : str->c_str();
 		if (ImGui::BeginCombo(label, preview)) {
 			for (size_t i = 0; i < asset_names.size(); ++i) {
@@ -172,8 +219,7 @@ bool RenderSingleField(const engine::ecs::FieldInfo& field, void* field_ptr, eng
 				const char* item_label = asset_names[i].empty() ? "(None)" : asset_names[i].c_str();
 				if (ImGui::Selectable(item_label, is_selected)) {
 					*str = asset_names[i];
-					ImGui::EndCombo();
-					return true;
+					modified = true;
 				}
 				if (is_selected) {
 					ImGui::SetItemDefaultFocus();
@@ -181,10 +227,183 @@ bool RenderSingleField(const engine::ecs::FieldInfo& field, void* field_ptr, eng
 			}
 			ImGui::EndCombo();
 		}
-		return false;
+
+		// Browse button for file-based asset selection
+		ImGui::SameLine();
+		{
+			std::string browse_id = std::string("...##assetref_browse_") + field.name;
+			if (ImGui::Button(browse_id.c_str())) {
+				auto exts = field.file_extensions.empty()
+					? std::vector<std::string>{".json"}
+					: field.file_extensions;
+				OpenFieldBrowseDialog("Browse Asset", exts, str);
+			}
+		}
+
+		// Audio preview button for sound asset references
+		if (field.asset_type == "sound" && !str->empty() && scene) {
+			static bool s_audio_playing = false;
+			static uint32_t s_clip_id = 0;
+			static uint32_t s_play_handle = 0;
+			static std::string s_playing_asset;
+
+			// Check if current playback finished
+			if (s_audio_playing && s_play_handle != 0) {
+				auto& audio = engine::audio::AudioSystem::Get();
+				if (!audio.IsSoundPlaying(s_play_handle)) {
+					audio.UnloadClip(s_clip_id);
+					s_audio_playing = false;
+					s_clip_id = 0;
+					s_play_handle = 0;
+					s_playing_asset.clear();
+				}
+			}
+
+			const bool is_this_playing = s_audio_playing && s_playing_asset == *str;
+			ImGui::SameLine();
+			const char* btn_label = is_this_playing ? "Stop##snd_preview" : "Play##snd_preview";
+			if (ImGui::SmallButton(btn_label)) {
+				auto& audio = engine::audio::AudioSystem::Get();
+				if (is_this_playing) {
+					// Stop current playback
+					audio.StopSound(s_play_handle);
+					audio.UnloadClip(s_clip_id);
+					s_audio_playing = false;
+					s_clip_id = 0;
+					s_play_handle = 0;
+					s_playing_asset.clear();
+				} else {
+					// Stop any existing preview first
+					if (s_audio_playing) {
+						audio.StopSound(s_play_handle);
+						audio.UnloadClip(s_clip_id);
+						s_clip_id = 0;
+						s_play_handle = 0;
+						s_playing_asset.clear();
+						s_audio_playing = false;
+					}
+					// Load and play the referenced sound asset
+					auto sound_asset = scene->GetAssets().FindTyped<engine::scene::SoundAssetInfo>(*str);
+					if (sound_asset && !sound_asset->file_path.empty()) {
+						if (!audio.IsInitialized()) {
+							audio.Initialize();
+						}
+						s_clip_id = audio.LoadClip(sound_asset->file_path);
+						if (s_clip_id != 0) {
+							s_play_handle = audio.PlaySoundClip(s_clip_id, sound_asset->volume, false);
+							s_audio_playing = s_play_handle != 0;
+							s_playing_asset = s_audio_playing ? *str : "";
+						}
+					}
+				}
+			}
+		}
+
+		return modified;
 	}
 	}
 	return false;
+}
+
+/// Shape type labels for compound child shape combo
+static constexpr const char* kChildShapeTypeLabels[] = {"Box", "Sphere", "Capsule", "Cylinder"};
+static constexpr int kChildShapeTypeCount = 4;
+
+/// Render the compound shape children editor. Returns true if any child was modified.
+bool RenderCompoundChildren(engine::physics::CollisionShape& shape) {
+	bool modified = false;
+	auto& children = shape.compound_children;
+
+	ImGui::Separator();
+	ImGui::Text("Compound Children (%d)", static_cast<int>(children.size()));
+
+	int remove_index = -1;
+
+	for (size_t i = 0; i < children.size(); ++i) {
+		auto& child = children[i];
+		ImGui::PushID(static_cast<int>(i));
+
+		// Collapsible header per child with remove button
+		int type_idx = static_cast<int>(child.type);
+		const char* type_label = (type_idx >= 0 && type_idx < kChildShapeTypeCount) ? kChildShapeTypeLabels[type_idx] : "Unknown";
+		std::string header = "Child " + std::to_string(i) + " (" + type_label + ")";
+		bool child_open = ImGui::CollapsingHeader(
+				header.c_str(), ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_AllowOverlap);
+		ImGui::SameLine(ImGui::GetContentRegionAvail().x + ImGui::GetCursorPosX() - 20.0f);
+		if (ImGui::SmallButton("X")) {
+			remove_index = static_cast<int>(i);
+		}
+		if (ImGui::IsItemHovered()) {
+			ImGui::SetTooltip("Remove child shape");
+		}
+
+		if (child_open) {
+			// Shape type combo (only basic shape types for children)
+			int type_val = static_cast<int>(child.type);
+			if (ImGui::Combo("Shape Type", &type_val, kChildShapeTypeLabels, kChildShapeTypeCount)) {
+				child.type = static_cast<engine::physics::ShapeType>(type_val);
+				modified = true;
+			}
+
+			// Shape-specific parameters
+			switch (child.type) {
+			case engine::physics::ShapeType::Box:
+				if (ImGui::InputFloat3("Half Extents", &child.box_half_extents[0])) {
+					modified = true;
+				}
+				break;
+			case engine::physics::ShapeType::Sphere:
+				if (ImGui::InputFloat("Radius", &child.sphere_radius)) {
+					modified = true;
+				}
+				break;
+			case engine::physics::ShapeType::Capsule:
+				if (ImGui::InputFloat("Radius##cap", &child.capsule_radius)) {
+					modified = true;
+				}
+				if (ImGui::InputFloat("Height##cap", &child.capsule_height)) {
+					modified = true;
+				}
+				break;
+			case engine::physics::ShapeType::Cylinder:
+				if (ImGui::InputFloat("Radius##cyl", &child.cylinder_radius)) {
+					modified = true;
+				}
+				if (ImGui::InputFloat("Height##cyl", &child.cylinder_height)) {
+					modified = true;
+				}
+				break;
+			default: break;
+			}
+
+			// Position and rotation (shared by all child types)
+			if (ImGui::InputFloat3("Position", &child.position[0])) {
+				modified = true;
+			}
+			// Display rotation as euler angles for usability
+			glm::vec3 euler = glm::degrees(glm::eulerAngles(child.rotation));
+			if (ImGui::InputFloat3("Rotation", &euler[0])) {
+				child.rotation = glm::quat(glm::radians(euler));
+				modified = true;
+			}
+		}
+
+		ImGui::PopID();
+	}
+
+	// Remove pending child
+	if (remove_index >= 0) {
+		children.erase(children.begin() + remove_index);
+		modified = true;
+	}
+
+	// Add child button
+	if (ImGui::Button("+ Add Child Shape")) {
+		children.emplace_back();
+		modified = true;
+	}
+
+	return modified;
 }
 
 } // anonymous namespace
@@ -243,6 +462,17 @@ void PropertiesPanel::Render(
 	}
 	else {
 		RenderSceneProperties(world, scene_active_camera);
+	}
+
+	// Render any active field file picker dialog
+	if (s_field_file_dialog) {
+		s_field_file_dialog->Render();
+	}
+	if (s_field_file_dialog_modified) {
+		s_field_file_dialog_modified = false;
+		if (callbacks_.on_scene_modified) {
+			callbacks_.on_scene_modified();
+		}
 	}
 
 	ImGui::End();
@@ -353,9 +583,22 @@ void PropertiesPanel::RenderComponentFields(
 	bool modified = false;
 
 	for (const auto& field : comp.fields) {
+		if (!IsFieldVisible(field, comp.fields, comp_ptr)) {
+			continue;
+		}
 		void* field_ptr = static_cast<char*>(comp_ptr) + field.offset;
 		if (RenderSingleField(field, field_ptr, scene)) {
 			modified = true;
+		}
+	}
+
+	// Custom rendering for CollisionShape compound children
+	if (comp.name == "CollisionShape") {
+		auto& shape = *static_cast<engine::physics::CollisionShape*>(comp_ptr);
+		if (shape.type == engine::physics::ShapeType::Compound) {
+			if (RenderCompoundChildren(shape)) {
+				modified = true;
+			}
 		}
 	}
 
@@ -632,6 +875,9 @@ void PropertiesPanel::RenderAssetProperties(engine::scene::Scene* scene, const A
 	bool modified = false;
 
 	for (const auto& field : type_info->fields) {
+		if (!IsFieldVisible(field, type_info->fields, asset.get())) {
+			continue;
+		}
 		void* field_ptr = reinterpret_cast<char*>(asset.get()) + field.offset;
 		if (RenderSingleField(field, field_ptr, scene)) {
 			modified = true;

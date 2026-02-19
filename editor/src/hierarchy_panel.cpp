@@ -190,6 +190,24 @@ void HierarchyPanel::RenderEntityNode(
 			}
 		}
 
+		// Unparent: move entity to scene root (only if parented to a non-root entity)
+		const auto parent = entity.parent();
+		const auto scene_root = scene->GetSceneRoot();
+		if (parent.is_valid() && parent != scene_root && ImGui::MenuItem("Unparent") && callbacks_.on_execute_command) {
+			const auto parent_parent = parent.parent();
+			callbacks_.on_execute_command(
+					std::make_unique<ReparentEntityCommand>(
+							scene, entity, parent_parent.is_valid() ? parent_parent : scene_root));
+		}
+
+		// Add Empty Parent: wrap entity in a new parent entity
+		if (ImGui::MenuItem("Add Empty Parent")) {
+			if (callbacks_.on_execute_command) {
+				callbacks_.on_execute_command(
+						std::make_unique<WrapEntityCommand>(scene, entity, parent.is_valid() ? parent : scene_root));
+			}
+		}
+
 		ImGui::Separator();
 
 		// Copy/Paste/Duplicate operations

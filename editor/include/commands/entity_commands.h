@@ -185,4 +185,47 @@ private:
 	engine::ecs::Entity new_parent_;
 };
 
+/**
+ * @brief Command for wrapping an entity in a new empty parent
+ *
+ * Creates a new entity at the target's current parent, then reparents the target under it.
+ */
+class WrapEntityCommand : public ICommand {
+public:
+	WrapEntityCommand(engine::scene::Scene* scene, engine::ecs::Entity entity, engine::ecs::Entity current_parent) :
+			scene_(scene), entity_(entity), current_parent_(current_parent) {}
+
+	void Execute() override {
+		if (!scene_ || !entity_.is_valid()) {
+			return;
+		}
+		const std::string name = std::string(entity_.name().c_str()) + "_Parent";
+		wrapper_ = scene_->CreateEntity(name, current_parent_);
+		scene_->SetParent(entity_, wrapper_);
+	}
+
+	void Undo() override {
+		if (!scene_ || !entity_.is_valid()) {
+			return;
+		}
+		scene_->SetParent(entity_, current_parent_);
+		if (wrapper_.is_valid()) {
+			scene_->DestroyEntity(wrapper_);
+			wrapper_ = engine::ecs::Entity();
+		}
+	}
+
+	void Redo() override { Execute(); }
+
+	std::string GetDescription() const override {
+		return "Add Empty Parent for: " + std::string(entity_.name().c_str());
+	}
+
+private:
+	engine::scene::Scene* scene_;
+	engine::ecs::Entity entity_;
+	engine::ecs::Entity current_parent_;
+	engine::ecs::Entity wrapper_;
+};
+
 } // namespace editor

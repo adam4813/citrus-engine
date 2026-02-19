@@ -8,6 +8,8 @@
 #include <string>
 #include <vector>
 
+#include "commands/transform_command.h"
+
 namespace editor {
 
 std::string_view PropertiesPanel::GetPanelName() const { return "Properties"; }
@@ -70,13 +72,36 @@ void PropertiesPanel::Render(
 }
 
 void PropertiesPanel::RenderComponentSections(const engine::ecs::Entity entity, engine::scene::Scene* scene) const {
+	flecs::id_t pending_remove_id = 0;
+	std::string pending_remove_name;
+
 	for (const auto& registry = engine::ecs::ComponentRegistry::Instance();
 		 const auto& comp : registry.GetComponents()) {
 		if (!entity.has(comp.id)) {
 			continue;
 		}
 
-		if (ImGui::CollapsingHeader(comp.name.c_str(), ImGuiTreeNodeFlags_DefaultOpen)) {
+		ImGui::PushID(static_cast<int>(comp.id));
+
+		// Right-aligned remove button on the header line
+		bool header_open = true;
+		const bool removable = comp.name != "Transform" && comp.name != "WorldTransform";
+
+		if (removable) {
+			header_open = ImGui::CollapsingHeader(comp.name.c_str(), ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_AllowOverlap);
+			ImGui::SameLine(ImGui::GetContentRegionAvail().x + ImGui::GetCursorPosX() - 20.0f);
+			if (ImGui::SmallButton("X")) {
+				pending_remove_id = comp.id;
+				pending_remove_name = comp.name;
+			}
+			if (ImGui::IsItemHovered()) {
+				ImGui::SetTooltip("Remove %s", comp.name.c_str());
+			}
+		} else {
+			header_open = ImGui::CollapsingHeader(comp.name.c_str(), ImGuiTreeNodeFlags_DefaultOpen);
+		}
+
+		if (header_open) {
 			// Special handling for Tags component
 			if (comp.name == "Tags") {
 				auto* tags_comp = entity.try_get_mut<engine::components::Tags>();
@@ -123,6 +148,13 @@ void PropertiesPanel::RenderComponentSections(const engine::ecs::Entity entity, 
 				RenderComponentFields(entity, comp, scene);
 			}
 		}
+
+		ImGui::PopID();
+	}
+
+	// Execute pending remove outside the iteration loop
+	if (pending_remove_id != 0 && callbacks_.on_execute_command) {
+		callbacks_.on_execute_command(std::make_unique<RemoveComponentCommand>(entity, pending_remove_id, pending_remove_name));
 	}
 }
 

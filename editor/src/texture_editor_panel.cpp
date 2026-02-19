@@ -248,15 +248,30 @@ void RegisterTextureGraphNodes(engine::graph::NodeTypeRegistry& registry) {
 
 	// Texture input node
 	{
-		engine::graph::NodeTypeDefinition texture_sample;
-		texture_sample.name = "Texture Sample";
-		texture_sample.category = "Generators";
-		texture_sample.default_outputs = {Pin(0, "Color", PinType::Color, PinDirection::Output, glm::vec4(1.0f))};
-		texture_sample.default_inputs = {
+		engine::graph::NodeTypeDefinition input_image;
+		input_image.name = "Input Image";
+		input_image.category = "Generators";
+		input_image.default_outputs = {Pin(0, "Color", PinType::Color, PinDirection::Output, glm::vec4(1.0f))};
+		input_image.default_inputs = {
 				Pin(0, "UV", PinType::Vec2, PinDirection::Input, glm::vec2(0.0f)),
 				Pin(0, "Path", PinType::String, PinDirection::Input, std::string("")),
 		};
-		registry.Register(texture_sample);
+		registry.Register(input_image);
+	}
+
+	// Rect crop node — extracts a UV sub-region from an image
+	{
+		engine::graph::NodeTypeDefinition rect;
+		rect.name = "Rect";
+		rect.category = "Filters";
+		rect.default_outputs = {Pin(0, "Color", PinType::Color, PinDirection::Output, glm::vec4(1.0f))};
+		rect.default_inputs = {
+				Pin(0, "Image", PinType::Color, PinDirection::Input, glm::vec4(1.0f)),
+				Pin(0, "X", PinType::Float, PinDirection::Input, 0.0f),
+				Pin(0, "Y", PinType::Float, PinDirection::Input, 0.0f),
+				Pin(0, "Width", PinType::Float, PinDirection::Input, 1.0f),
+				Pin(0, "Height", PinType::Float, PinDirection::Input, 1.0f)};
+		registry.Register(rect);
 	}
 
 	// Output node — terminus/sink, no outputs
@@ -292,6 +307,7 @@ TextureEditorPanel::TextureEditorPanel() : texture_graph_(std::make_unique<engin
 }
 
 TextureEditorPanel::~TextureEditorPanel() {
+	CleanupNodeBuffers();
 	if (preview_texture_id_ != 0) {
 		glDeleteTextures(1, &preview_texture_id_);
 	}
@@ -658,9 +674,11 @@ void TextureEditorPanel::RenderGraphNode(const engine::graph::Node& node) {
 
 	const ImVec2 node_pos = GetNodeScreenPos(node);
 
-	// Calculate node height
+	// Calculate node height (extra space for thumbnail)
 	const int pin_count = std::max(static_cast<int>(node.inputs.size()), static_cast<int>(node.outputs.size()));
-	const float node_height = 40.0f + pin_count * 20.0f;
+	const float pin_area_height = 40.0f + pin_count * 20.0f;
+	const bool has_thumbnail = node_buffers_.count(node.id) && node_buffers_.at(node.id).thumbnail_tex != 0;
+	const float node_height = pin_area_height + (has_thumbnail ? THUMBNAIL_SIZE + 5.0f : 0.0f);
 
 	const ImVec2 node_rect_min = node_pos;
 	const auto node_rect_max = ImVec2(node_pos.x + NODE_WIDTH * canvas_zoom_, node_pos.y + node_height * canvas_zoom_);
@@ -826,6 +844,18 @@ void TextureEditorPanel::RenderGraphNode(const engine::graph::Node& node) {
 		const ImVec2 label_size = ImGui::CalcTextSize(label);
 		const auto label_pos = ImVec2(pin_pos.x + 8.0f, pin_pos.y - 7.0f);
 		draw_list->AddText(label_pos, IM_COL32(200, 200, 200, 255), label);
+	}
+
+	// Draw node thumbnail (buffer preview)
+	if (has_thumbnail) {
+		const auto& buf = node_buffers_.at(node.id);
+		const float thumb_s = THUMBNAIL_SIZE * canvas_zoom_;
+		const float thumb_x = node_pos.x + (NODE_WIDTH * canvas_zoom_ - thumb_s) * 0.5f;
+		const float thumb_y = node_pos.y + pin_area_height * canvas_zoom_ + 2.0f * canvas_zoom_;
+		draw_list->AddImage(
+				(ImTextureID)(uintptr_t)buf.thumbnail_tex,
+				ImVec2(thumb_x, thumb_y),
+				ImVec2(thumb_x + thumb_s, thumb_y + thumb_s));
 	}
 
 	// Hover detection via rect (reliable when node contains multiple widgets)
@@ -1058,8 +1088,7 @@ void TextureEditorPanel::NewTexture() {
 	canvas_offset_ = ImVec2(0.0f, 0.0f);
 	canvas_zoom_ = 1.0f;
 	sampler_cache_.clear();
-
-	// Create default graph: Solid Color -> Output
+	CleanupNodeBuffers();
 	const int color_node_id = texture_graph_->AddNode("Solid Color", glm::vec2(100.0f, 100.0f));
 	const int output_node_id = texture_graph_->AddNode("Texture Output", glm::vec2(400.0f, 100.0f));
 
@@ -1089,6 +1118,7 @@ bool TextureEditorPanel::OpenTexture(const std::string& path) {
 		*texture_graph_ = std::move(new_graph);
 		current_file_path_ = path;
 		sampler_cache_.clear();
+		CleanupNodeBuffers();
 		selected_node_id_ = -1;
 		hovered_node_id_ = -1;
 		UpdatePreview();
@@ -1114,8 +1144,10 @@ bool TextureEditorPanel::SaveTexture(const std::string& path) {
 
 void TextureEditorPanel::UpdatePreview() {
 	preview_dirty_ = true;
+	EvaluateGraphToBuffers();
 	GenerateTextureData();
 	UploadPreviewTexture();
+	UploadNodeThumbnails();
 	preview_dirty_ = false;
 }
 

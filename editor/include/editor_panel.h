@@ -38,6 +38,18 @@ public:
 	 */
 	virtual void RegisterAssetHandlers(AssetEditorRegistry& /*registry*/) {}
 
+	/**
+	 * @brief Called after the engine and OpenGL context are fully initialized
+	 *
+	 * Override in panels that need to perform GL-dependent initialization
+	 * (e.g., create textures, set up framebuffers). The engine and rendering
+	 * context are guaranteed to be ready when this is called.
+	 *
+	 * Called once from EditorScene::Initialize(), after node types are
+	 * registered and the engine is fully set up.
+	 */
+	virtual void OnInitialized() {}
+
 	// -- Visibility --
 
 	[[nodiscard]] bool IsVisible() const { return is_visible_; }

@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <queue>
 #include <variant>
 
 #include <stb_image.h>
@@ -214,401 +215,510 @@ static const engine::graph::Link* FindInputLink(
 	return nullptr;
 }
 
-float TextureEditorPanel::GetInputFloat(const engine::graph::Node& node, int pin_index, glm::vec2 uv) const {
-	if (const auto* link = FindInputLink(*texture_graph_, node.id, pin_index)) {
-		const glm::vec4 result = EvaluateNodeOutput(link->from_node_id, link->from_pin_index, uv);
-		return result.r;
-	}
-	if (pin_index < static_cast<int>(node.inputs.size())) {
-		return PinValueToFloat(node.inputs[pin_index].default_value);
-	}
-	return 0.0f;
+static bool IsConnected(const engine::graph::NodeGraph& graph, int node_id, int pin_index) {
+return FindInputLink(graph, node_id, pin_index) != nullptr;
 }
 
-glm::vec4 TextureEditorPanel::GetInputColor(const engine::graph::Node& node, int pin_index, glm::vec2 uv) const {
-	if (const auto* link = FindInputLink(*texture_graph_, node.id, pin_index)) {
-		return EvaluateNodeOutput(link->from_node_id, link->from_pin_index, uv);
-	}
-	if (pin_index < static_cast<int>(node.inputs.size())) {
-		return PinValueToColor(node.inputs[pin_index].default_value);
-	}
-	return glm::vec4(1.0f);
+// ============================================================================
+// Topological sort -- evaluates upstream nodes before downstream
+// ============================================================================
+
+std::vector<int> TextureEditorPanel::TopologicalSort() const {
+std::unordered_map<int, int> in_degree;
+std::unordered_map<int, std::vector<int>> dependents;
+
+for (const auto& node : texture_graph_->GetNodes()) {
+in_degree[node.id]; // ensure entry
 }
 
-glm::vec2 TextureEditorPanel::GetInputVec2(const engine::graph::Node& node, int pin_index, glm::vec2 uv) const {
-	if (const auto* link = FindInputLink(*texture_graph_, node.id, pin_index)) {
-		const glm::vec4 result = EvaluateNodeOutput(link->from_node_id, link->from_pin_index, uv);
-		return glm::vec2(result.x, result.y);
-	}
-	if (pin_index < static_cast<int>(node.inputs.size())) {
-		return PinValueToVec2(node.inputs[pin_index].default_value);
-	}
-	return uv; // Default UV passthrough
+for (const auto& link : texture_graph_->GetLinks()) {
+dependents[link.from_node_id].push_back(link.to_node_id);
+in_degree[link.to_node_id]++;
 }
 
-glm::vec4 TextureEditorPanel::EvaluateNodeOutput(int node_id, int pin_index, glm::vec2 uv) const {
-	const auto* node = texture_graph_->GetNode(node_id);
-	if (!node) {
-		return glm::vec4(1.0f, 0.0f, 1.0f, 1.0f); // Magenta = error
-	}
-
-	const auto& type = node->type_name;
-
-	// --- Generators ---
-	if (type == "Perlin Noise") {
-		glm::vec2 sample_uv = GetInputVec2(*node, 0, uv);
-		// Default UV if nothing connected and default is zero
-		if (sample_uv == glm::vec2(0.0f) && !FindInputLink(*texture_graph_, node->id, 0)) {
-			sample_uv = uv;
-		}
-		float scale = GetInputFloat(*node, 1, uv);
-		if (scale <= 0.0f) {
-			scale = 4.0f;
-		}
-		float octaves_f = GetInputFloat(*node, 2, uv);
-		int octaves = octaves_f > 0.0f ? static_cast<int>(octaves_f) : 4;
-		octaves = std::clamp(octaves, 1, 8);
-		const float val = FractionalBrownianMotion(sample_uv.x * scale, sample_uv.y * scale, octaves);
-		return glm::vec4(val, val, val, 1.0f);
-	}
-
-	if (type == "Checkerboard") {
-		glm::vec2 sample_uv = GetInputVec2(*node, 0, uv);
-		if (sample_uv == glm::vec2(0.0f) && !FindInputLink(*texture_graph_, node->id, 0)) {
-			sample_uv = uv;
-		}
-		float scale = GetInputFloat(*node, 1, uv);
-		if (scale <= 0.0f) {
-			scale = 8.0f;
-		}
-		const int cx = static_cast<int>(std::floor(sample_uv.x * scale));
-		const int cy = static_cast<int>(std::floor(sample_uv.y * scale));
-		const float val = ((cx + cy) % 2 == 0) ? 1.0f : 0.0f;
-		return glm::vec4(val, val, val, 1.0f);
-	}
-
-	if (type == "Gradient") {
-		glm::vec2 sample_uv = GetInputVec2(*node, 0, uv);
-		if (sample_uv == glm::vec2(0.0f) && !FindInputLink(*texture_graph_, node->id, 0)) {
-			sample_uv = uv;
-		}
-		const glm::vec4 color_a = GetInputColor(*node, 1, uv);
-		const glm::vec4 color_b = GetInputColor(*node, 2, uv);
-		const float t = std::clamp(sample_uv.x, 0.0f, 1.0f);
-		return glm::mix(color_a, color_b, t);
-	}
-
-	if (type == "Solid Color") {
-		return GetInputColor(*node, 0, uv);
-	}
-
-	if (type == "Voronoi") {
-		glm::vec2 sample_uv = GetInputVec2(*node, 0, uv);
-		if (sample_uv == glm::vec2(0.0f) && !FindInputLink(*texture_graph_, node->id, 0)) {
-			sample_uv = uv;
-		}
-		float scale = GetInputFloat(*node, 1, uv);
-		if (scale <= 0.0f) {
-			scale = 4.0f;
-		}
-		float randomness = GetInputFloat(*node, 2, uv);
-		if (randomness <= 0.0f) {
-			randomness = 1.0f;
-		}
-		const float val = VoronoiNoise(sample_uv.x * scale, sample_uv.y * scale, randomness);
-		return glm::vec4(val, val, val, 1.0f);
-	}
-
-	if (type == "Texture Sample") {
-		glm::vec2 sample_uv = GetInputVec2(*node, 0, uv);
-		if (sample_uv == glm::vec2(0.0f) && !FindInputLink(*texture_graph_, node->id, 0)) {
-			sample_uv = uv;
-		}
-
-		// Get the Path pin value
-		std::string path;
-		for (const auto& pin : node->inputs) {
-			if (pin.name == "Path") {
-				if (const auto* p = std::get_if<std::string>(&pin.default_value)) {
-					path = *p;
-				}
-				break;
-			}
-		}
-		if (path.empty()) {
-			return glm::vec4(0.5f, 0.5f, 0.5f, 1.0f); // Grey = no path set
-		}
-
-		// Load into cache on first access
-		auto it = sampler_cache_.find(path);
-		if (it == sampler_cache_.end()) {
-			int w = 0, h = 0, ch = 0;
-			stbi_set_flip_vertically_on_load(false);
-			unsigned char* data = stbi_load(path.c_str(), &w, &h, &ch, 4);
-			SamplerEntry entry;
-			if (data) {
-				entry.width = w;
-				entry.height = h;
-				entry.pixels.assign(data, data + w * h * 4);
-				stbi_image_free(data);
-			}
-			it = sampler_cache_.emplace(path, std::move(entry)).first;
-		}
-
-		const auto& entry = it->second;
-		if (entry.width <= 0 || entry.height <= 0) {
-			return glm::vec4(1.0f, 0.0f, 1.0f, 1.0f); // Magenta = load failed
-		}
-
-		// Nearest-neighbour sample with wrapping
-		const float u_w = sample_uv.x - std::floor(sample_uv.x);
-		const float v_w = sample_uv.y - std::floor(sample_uv.y);
-		const int px = std::clamp(static_cast<int>(u_w * static_cast<float>(entry.width)), 0, entry.width - 1);
-		const int py = std::clamp(static_cast<int>(v_w * static_cast<float>(entry.height)), 0, entry.height - 1);
-		const int idx = (py * entry.width + px) * 4;
-		return glm::vec4(
-				entry.pixels[idx + 0] / 255.0f,
-				entry.pixels[idx + 1] / 255.0f,
-				entry.pixels[idx + 2] / 255.0f,
-				entry.pixels[idx + 3] / 255.0f);
-	}
-
-	// --- Math ---
-	if (type == "Add") {
-		const float a = GetInputFloat(*node, 0, uv);
-		const float b = GetInputFloat(*node, 1, uv);
-		const float r = a + b;
-		return glm::vec4(r, r, r, 1.0f);
-	}
-
-	if (type == "Multiply") {
-		const float a = GetInputFloat(*node, 0, uv);
-		const float b = GetInputFloat(*node, 1, uv);
-		const float r = a * b;
-		return glm::vec4(r, r, r, 1.0f);
-	}
-
-	if (type == "Lerp") {
-		const float a = GetInputFloat(*node, 0, uv);
-		const float b = GetInputFloat(*node, 1, uv);
-		const float t = std::clamp(GetInputFloat(*node, 2, uv), 0.0f, 1.0f);
-		const float r = std::lerp(a, b, t);
-		return glm::vec4(r, r, r, 1.0f);
-	}
-
-	if (type == "Clamp") {
-		const float val = GetInputFloat(*node, 0, uv);
-		const float lo = GetInputFloat(*node, 1, uv);
-		float hi = GetInputFloat(*node, 2, uv);
-		if (hi <= lo) {
-			hi = 1.0f;
-		}
-		const float r = std::clamp(val, lo, hi);
-		return glm::vec4(r, r, r, 1.0f);
-	}
-
-	if (type == "Remap") {
-		const float val = GetInputFloat(*node, 0, uv);
-		const float in_min = GetInputFloat(*node, 1, uv);
-		float in_max = GetInputFloat(*node, 2, uv);
-		const float out_min = GetInputFloat(*node, 3, uv);
-		const float out_max = GetInputFloat(*node, 4, uv);
-		if (std::abs(in_max - in_min) < 0.0001f) {
-			in_max = in_min + 1.0f;
-		}
-		const float t = (val - in_min) / (in_max - in_min);
-		const float r = out_min + t * (out_max - out_min);
-		return glm::vec4(r, r, r, 1.0f);
-	}
-
-	if (type == "Power") {
-		const float base = std::max(0.0f, GetInputFloat(*node, 0, uv));
-		float exponent = GetInputFloat(*node, 1, uv);
-		if (exponent == 0.0f) {
-			exponent = 1.0f;
-		}
-		const float r = std::pow(base, exponent);
-		return glm::vec4(r, r, r, 1.0f);
-	}
-
-	// --- Filters ---
-	if (type == "Invert") {
-		const glm::vec4 input = GetInputColor(*node, 0, uv);
-		return glm::vec4(1.0f - input.r, 1.0f - input.g, 1.0f - input.b, input.a);
-	}
-
-	if (type == "Levels") {
-		const glm::vec4 input = GetInputColor(*node, 0, uv);
-		float lo = GetInputFloat(*node, 1, uv);
-		float hi = GetInputFloat(*node, 2, uv);
-		float gamma = GetInputFloat(*node, 3, uv);
-		if (hi <= lo) {
-			lo = 0.0f;
-			hi = 1.0f;
-		}
-		if (gamma <= 0.0f) {
-			gamma = 1.0f;
-		}
-		auto apply = [&](float v) {
-			v = std::clamp((v - lo) / (hi - lo), 0.0f, 1.0f);
-			return std::pow(v, 1.0f / gamma);
-		};
-		return glm::vec4(apply(input.r), apply(input.g), apply(input.b), input.a);
-	}
-
-	if (type == "Blur") {
-		// Approximate blur by sampling neighbors
-		const glm::vec4 input = GetInputColor(*node, 0, uv);
-		float radius = GetInputFloat(*node, 1, uv);
-		if (radius <= 0.0f) {
-			return input;
-		}
-		const float step = radius / static_cast<float>(preview_resolution_);
-		glm::vec4 accum(0.0f);
-		int count = 0;
-		for (int dy = -1; dy <= 1; ++dy) {
-			for (int dx = -1; dx <= 1; ++dx) {
-				const glm::vec2 offset_uv = uv + glm::vec2(static_cast<float>(dx), static_cast<float>(dy)) * step;
-				accum += GetInputColor(*node, 0, offset_uv);
-				++count;
-			}
-		}
-		return accum / static_cast<float>(count);
-	}
-
-	// --- Color ---
-	if (type == "HSV Adjust") {
-		const glm::vec4 input = GetInputColor(*node, 0, uv);
-		const float h_offset = GetInputFloat(*node, 1, uv);
-		const float s_offset = GetInputFloat(*node, 2, uv);
-		const float v_offset = GetInputFloat(*node, 3, uv);
-		glm::vec3 hsv = RgbToHsv(glm::vec3(input));
-		hsv.x = std::fmod(hsv.x + h_offset, 1.0f);
-		if (hsv.x < 0.0f) {
-			hsv.x += 1.0f;
-		}
-		hsv.y = std::clamp(hsv.y + s_offset, 0.0f, 1.0f);
-		hsv.z = std::clamp(hsv.z + v_offset, 0.0f, 1.0f);
-		const glm::vec3 rgb = HsvToRgb(hsv);
-		return glm::vec4(rgb, input.a);
-	}
-
-	if (type == "Channel Split") {
-		const glm::vec4 input = GetInputColor(*node, 0, uv);
-		// Return the requested channel based on pin_index
-		if (pin_index == 0) {
-			return glm::vec4(input.r, input.r, input.r, 1.0f);
-		}
-		if (pin_index == 1) {
-			return glm::vec4(input.g, input.g, input.g, 1.0f);
-		}
-		if (pin_index == 2) {
-			return glm::vec4(input.b, input.b, input.b, 1.0f);
-		}
-		return glm::vec4(input.a, input.a, input.a, 1.0f);
-	}
-
-	if (type == "Channel Merge") {
-		const float r = GetInputFloat(*node, 0, uv);
-		const float g = GetInputFloat(*node, 1, uv);
-		const float b = GetInputFloat(*node, 2, uv);
-		const float a = GetInputFloat(*node, 3, uv);
-		return glm::vec4(r, g, b, a > 0.0f ? a : 1.0f);
-	}
-
-	if (type == "Colorize") {
-		const float val = std::clamp(GetInputFloat(*node, 0, uv), 0.0f, 1.0f);
-		const glm::vec4 color = GetInputColor(*node, 1, uv);
-		return color * val;
-	}
-
-	// --- Blend ---
-	if (type == "Blend Multiply") {
-		const glm::vec4 a = GetInputColor(*node, 0, uv);
-		const glm::vec4 b = GetInputColor(*node, 1, uv);
-		return glm::vec4(a.r * b.r, a.g * b.g, a.b * b.b, a.a * b.a);
-	}
-
-	if (type == "Blend Screen") {
-		const glm::vec4 a = GetInputColor(*node, 0, uv);
-		const glm::vec4 b = GetInputColor(*node, 1, uv);
-		return glm::vec4(
-				1.0f - (1.0f - a.r) * (1.0f - b.r),
-				1.0f - (1.0f - a.g) * (1.0f - b.g),
-				1.0f - (1.0f - a.b) * (1.0f - b.b),
-				a.a);
-	}
-
-	if (type == "Blend Overlay") {
-		const glm::vec4 a = GetInputColor(*node, 0, uv);
-		const glm::vec4 b = GetInputColor(*node, 1, uv);
-		return glm::vec4(
-				OverlayBlendChannel(a.r, b.r),
-				OverlayBlendChannel(a.g, b.g),
-				OverlayBlendChannel(a.b, b.b),
-				a.a);
-	}
-
-	if (type == "Blend Add") {
-		const glm::vec4 a = GetInputColor(*node, 0, uv);
-		const glm::vec4 b = GetInputColor(*node, 1, uv);
-		return glm::clamp(a + b, glm::vec4(0.0f), glm::vec4(1.0f));
-	}
-
-	// --- Output ---
-	if (type == "Texture Output") {
-		return GetInputColor(*node, 0, uv);
-	}
-
-	// Unknown node type
-	return glm::vec4(1.0f, 0.0f, 1.0f, 1.0f);
+std::queue<int> q;
+for (auto& [id, deg] : in_degree) {
+if (deg == 0) q.push(id);
 }
+
+std::vector<int> order;
+while (!q.empty()) {
+const int id = q.front();
+q.pop();
+order.push_back(id);
+for (const int dep : dependents[id]) {
+if (--in_degree[dep] == 0) q.push(dep);
+}
+}
+return order;
+}
+
+// ============================================================================
+// Buffer sampling -- read from a pre-computed node buffer
+// ============================================================================
+
+glm::vec4 TextureEditorPanel::SampleBuffer(int node_id, int output_pin, glm::vec2 uv) const {
+auto it = node_buffers_.find(node_id);
+if (it == node_buffers_.end() || it->second.pixels.empty()) {
+return glm::vec4(1.0f, 0.0f, 1.0f, 1.0f);
+}
+const auto& buf = it->second;
+const float u = uv.x - std::floor(uv.x);
+const float v = uv.y - std::floor(uv.y);
+const int px = std::clamp(static_cast<int>(u * static_cast<float>(buf.width)), 0, buf.width - 1);
+const int py = std::clamp(static_cast<int>(v * static_cast<float>(buf.height)), 0, buf.height - 1);
+glm::vec4 sample = buf.pixels[py * buf.width + px];
+
+// Channel Split: each output pin extracts one channel
+if (const auto* node = texture_graph_->GetNode(node_id);
+node && node->type_name == "Channel Split") {
+const float ch = output_pin == 0 ? sample.r : output_pin == 1 ? sample.g :
+ output_pin == 2 ? sample.b : sample.a;
+return glm::vec4(ch, ch, ch, 1.0f);
+}
+return sample;
+}
+
+float TextureEditorPanel::SampleInputFloat(const engine::graph::Node& node, int pin_index, glm::vec2 uv) const {
+if (const auto* link = FindInputLink(*texture_graph_, node.id, pin_index)) {
+return SampleBuffer(link->from_node_id, link->from_pin_index, uv).r;
+}
+if (pin_index < static_cast<int>(node.inputs.size())) {
+return PinValueToFloat(node.inputs[pin_index].default_value);
+}
+return 0.0f;
+}
+
+glm::vec4 TextureEditorPanel::SampleInputColor(const engine::graph::Node& node, int pin_index, glm::vec2 uv) const {
+if (const auto* link = FindInputLink(*texture_graph_, node.id, pin_index)) {
+return SampleBuffer(link->from_node_id, link->from_pin_index, uv);
+}
+if (pin_index < static_cast<int>(node.inputs.size())) {
+return PinValueToColor(node.inputs[pin_index].default_value);
+}
+return glm::vec4(1.0f);
+}
+
+glm::vec2 TextureEditorPanel::SampleInputVec2(const engine::graph::Node& node, int pin_index, glm::vec2 uv) const {
+if (const auto* link = FindInputLink(*texture_graph_, node.id, pin_index)) {
+const glm::vec4 val = SampleBuffer(link->from_node_id, link->from_pin_index, uv);
+return glm::vec2(val.x, val.y);
+}
+if (pin_index < static_cast<int>(node.inputs.size())) {
+return PinValueToVec2(node.inputs[pin_index].default_value);
+}
+return uv;
+}
+
+// ============================================================================
+// Per-pixel node evaluation (reads from upstream buffers, no recursion)
+// ============================================================================
+
+glm::vec4 TextureEditorPanel::EvaluateNodePixel(const engine::graph::Node& node, glm::vec2 uv) const {
+const auto& type = node.type_name;
+
+// --- Generators ---
+if (type == "Perlin Noise") {
+glm::vec2 sample_uv = SampleInputVec2(node, 0, uv);
+if (sample_uv == glm::vec2(0.0f) && !IsConnected(*texture_graph_, node.id, 0)) sample_uv = uv;
+float scale = SampleInputFloat(node, 1, uv);
+if (scale <= 0.0f) scale = 4.0f;
+float octaves_f = SampleInputFloat(node, 2, uv);
+int octaves = octaves_f > 0.0f ? static_cast<int>(octaves_f) : 4;
+octaves = std::clamp(octaves, 1, 8);
+const float val = FractionalBrownianMotion(sample_uv.x * scale, sample_uv.y * scale, octaves);
+return glm::vec4(val, val, val, 1.0f);
+}
+
+if (type == "Checkerboard") {
+glm::vec2 sample_uv = SampleInputVec2(node, 0, uv);
+if (sample_uv == glm::vec2(0.0f) && !IsConnected(*texture_graph_, node.id, 0)) sample_uv = uv;
+float scale = SampleInputFloat(node, 1, uv);
+if (scale <= 0.0f) scale = 8.0f;
+const int cx = static_cast<int>(std::floor(sample_uv.x * scale));
+const int cy = static_cast<int>(std::floor(sample_uv.y * scale));
+const float val = ((cx + cy) % 2 == 0) ? 1.0f : 0.0f;
+return glm::vec4(val, val, val, 1.0f);
+}
+
+if (type == "Gradient") {
+glm::vec2 sample_uv = SampleInputVec2(node, 0, uv);
+if (sample_uv == glm::vec2(0.0f) && !IsConnected(*texture_graph_, node.id, 0)) sample_uv = uv;
+glm::vec4 color_a = SampleInputColor(node, 1, uv);
+glm::vec4 color_b = SampleInputColor(node, 2, uv);
+const float t = std::clamp(sample_uv.x, 0.0f, 1.0f);
+return glm::mix(color_a, color_b, t);
+}
+
+if (type == "Solid Color") {
+return SampleInputColor(node, 0, uv);
+}
+
+if (type == "Voronoi") {
+glm::vec2 sample_uv = SampleInputVec2(node, 0, uv);
+if (sample_uv == glm::vec2(0.0f) && !IsConnected(*texture_graph_, node.id, 0)) sample_uv = uv;
+float scale = SampleInputFloat(node, 1, uv);
+if (scale <= 0.0f) scale = 4.0f;
+float randomness = SampleInputFloat(node, 2, uv);
+if (randomness <= 0.0f) randomness = 1.0f;
+const float val = VoronoiNoise(sample_uv.x * scale, sample_uv.y * scale, randomness);
+return glm::vec4(val, val, val, 1.0f);
+}
+
+// --- Math ---
+if (type == "Add") {
+const float a = SampleInputFloat(node, 0, uv);
+const float b = SampleInputFloat(node, 1, uv);
+return glm::vec4(a + b, a + b, a + b, 1.0f);
+}
+
+if (type == "Multiply") {
+const float a = SampleInputFloat(node, 0, uv);
+const float b = SampleInputFloat(node, 1, uv);
+return glm::vec4(a * b, a * b, a * b, 1.0f);
+}
+
+if (type == "Lerp") {
+const float a = SampleInputFloat(node, 0, uv);
+const float b = SampleInputFloat(node, 1, uv);
+const float t = std::clamp(SampleInputFloat(node, 2, uv), 0.0f, 1.0f);
+const float r = std::lerp(a, b, t);
+return glm::vec4(r, r, r, 1.0f);
+}
+
+if (type == "Clamp") {
+const float val = SampleInputFloat(node, 0, uv);
+const float lo = SampleInputFloat(node, 1, uv);
+float hi = SampleInputFloat(node, 2, uv);
+if (hi <= lo) hi = 1.0f;
+return glm::vec4(std::clamp(val, lo, hi), std::clamp(val, lo, hi), std::clamp(val, lo, hi), 1.0f);
+}
+
+if (type == "Remap") {
+const float val = SampleInputFloat(node, 0, uv);
+const float in_min = SampleInputFloat(node, 1, uv);
+float in_max = SampleInputFloat(node, 2, uv);
+const float out_min = SampleInputFloat(node, 3, uv);
+const float out_max = SampleInputFloat(node, 4, uv);
+if (std::abs(in_max - in_min) < 0.0001f) in_max = in_min + 1.0f;
+const float t = (val - in_min) / (in_max - in_min);
+const float r = out_min + t * (out_max - out_min);
+return glm::vec4(r, r, r, 1.0f);
+}
+
+if (type == "Power") {
+const float base = std::max(0.0f, SampleInputFloat(node, 0, uv));
+float exponent = SampleInputFloat(node, 1, uv);
+if (exponent == 0.0f) exponent = 1.0f;
+const float r = std::pow(base, exponent);
+return glm::vec4(r, r, r, 1.0f);
+}
+
+// --- Filters ---
+if (type == "Invert") {
+const glm::vec4 input = SampleInputColor(node, 0, uv);
+return glm::vec4(1.0f - input.r, 1.0f - input.g, 1.0f - input.b, input.a);
+}
+
+if (type == "Levels") {
+const glm::vec4 input = SampleInputColor(node, 0, uv);
+float lo = SampleInputFloat(node, 1, uv);
+float hi = SampleInputFloat(node, 2, uv);
+float gamma = SampleInputFloat(node, 3, uv);
+if (hi <= lo) { lo = 0.0f; hi = 1.0f; }
+if (gamma <= 0.0f) gamma = 1.0f;
+auto apply = [&](float v) {
+v = std::clamp((v - lo) / (hi - lo), 0.0f, 1.0f);
+return std::pow(v, 1.0f / gamma);
+};
+return glm::vec4(apply(input.r), apply(input.g), apply(input.b), input.a);
+}
+
+if (type == "Blur") {
+float radius = SampleInputFloat(node, 1, uv);
+if (radius <= 0.0f) return SampleInputColor(node, 0, uv);
+const float step = radius / static_cast<float>(preview_resolution_);
+glm::vec4 accum(0.0f);
+int count = 0;
+for (int dy = -1; dy <= 1; ++dy) {
+for (int dx = -1; dx <= 1; ++dx) {
+accum += SampleInputColor(node, 0, uv + glm::vec2(float(dx), float(dy)) * step);
+++count;
+}
+}
+return accum / static_cast<float>(count);
+}
+
+if (type == "Rect") {
+const float rx = SampleInputFloat(node, 1, uv);
+const float ry = SampleInputFloat(node, 2, uv);
+float rw = SampleInputFloat(node, 3, uv);
+float rh = SampleInputFloat(node, 4, uv);
+if (rw <= 0.0f) rw = 1.0f;
+if (rh <= 0.0f) rh = 1.0f;
+return SampleInputColor(node, 0, glm::vec2(rx + uv.x * rw, ry + uv.y * rh));
+}
+
+// --- Color ---
+if (type == "HSV Adjust") {
+const glm::vec4 input = SampleInputColor(node, 0, uv);
+const float h_offset = SampleInputFloat(node, 1, uv);
+const float s_offset = SampleInputFloat(node, 2, uv);
+const float v_offset = SampleInputFloat(node, 3, uv);
+glm::vec3 hsv = RgbToHsv(glm::vec3(input));
+hsv.x = std::fmod(hsv.x + h_offset, 1.0f);
+if (hsv.x < 0.0f) hsv.x += 1.0f;
+hsv.y = std::clamp(hsv.y + s_offset, 0.0f, 1.0f);
+hsv.z = std::clamp(hsv.z + v_offset, 0.0f, 1.0f);
+const glm::vec3 rgb = HsvToRgb(hsv);
+return glm::vec4(rgb, input.a);
+}
+
+if (type == "Channel Split") {
+return SampleInputColor(node, 0, uv);
+}
+
+if (type == "Channel Merge") {
+const float r = SampleInputFloat(node, 0, uv);
+const float g = SampleInputFloat(node, 1, uv);
+const float b = SampleInputFloat(node, 2, uv);
+const float a = SampleInputFloat(node, 3, uv);
+return glm::vec4(r, g, b, a > 0.0f ? a : 1.0f);
+}
+
+if (type == "Colorize") {
+const float val = std::clamp(SampleInputFloat(node, 0, uv), 0.0f, 1.0f);
+const glm::vec4 color = SampleInputColor(node, 1, uv);
+return color * val;
+}
+
+// --- Blend ---
+if (type == "Blend Multiply") {
+const glm::vec4 a = SampleInputColor(node, 0, uv);
+const glm::vec4 b = SampleInputColor(node, 1, uv);
+return glm::vec4(a.r * b.r, a.g * b.g, a.b * b.b, a.a * b.a);
+}
+
+if (type == "Blend Screen") {
+const glm::vec4 a = SampleInputColor(node, 0, uv);
+const glm::vec4 b = SampleInputColor(node, 1, uv);
+return glm::vec4(
+1.0f - (1.0f - a.r) * (1.0f - b.r),
+1.0f - (1.0f - a.g) * (1.0f - b.g),
+1.0f - (1.0f - a.b) * (1.0f - b.b),
+a.a);
+}
+
+if (type == "Blend Overlay") {
+const glm::vec4 a = SampleInputColor(node, 0, uv);
+const glm::vec4 b = SampleInputColor(node, 1, uv);
+return glm::vec4(
+OverlayBlendChannel(a.r, b.r),
+OverlayBlendChannel(a.g, b.g),
+OverlayBlendChannel(a.b, b.b),
+a.a);
+}
+
+if (type == "Blend Add") {
+const glm::vec4 a = SampleInputColor(node, 0, uv);
+const glm::vec4 b = SampleInputColor(node, 1, uv);
+return glm::clamp(a + b, glm::vec4(0.0f), glm::vec4(1.0f));
+}
+
+// --- Output ---
+if (type == "Texture Output") {
+return SampleInputColor(node, 0, uv);
+}
+
+return glm::vec4(1.0f, 0.0f, 1.0f, 1.0f);
+}
+
+// ============================================================================
+// Per-node buffer evaluation
+// ============================================================================
+
+void TextureEditorPanel::EvaluateNodeToBuffer(int node_id) {
+auto* node = texture_graph_->GetNode(node_id);
+if (!node) return;
+
+const int res = preview_resolution_;
+NodeBuffer& buf = node_buffers_[node_id];
+buf.width = res;
+buf.height = res;
+buf.pixels.resize(static_cast<size_t>(res) * res);
+
+const auto& type = node->type_name;
+
+// Input Image: load from file, resample to preview resolution
+if (type == "Input Image") {
+std::string path;
+for (const auto& pin : node->inputs) {
+if (pin.name == "Path") {
+if (const auto* p = std::get_if<std::string>(&pin.default_value)) path = *p;
+break;
+}
+}
+
+if (path.empty()) {
+std::fill(buf.pixels.begin(), buf.pixels.end(), glm::vec4(0.5f, 0.5f, 0.5f, 1.0f));
+return;
+}
+
+auto cache_it = sampler_cache_.find(path);
+if (cache_it == sampler_cache_.end()) {
+int w = 0, h = 0, ch = 0;
+stbi_set_flip_vertically_on_load(false);
+unsigned char* data = stbi_load(path.c_str(), &w, &h, &ch, 4);
+SamplerEntry entry;
+if (data) {
+entry.width = w;
+entry.height = h;
+entry.pixels.assign(data, data + w * h * 4);
+stbi_image_free(data);
+}
+cache_it = sampler_cache_.emplace(path, std::move(entry)).first;
+}
+
+const auto& img = cache_it->second;
+if (img.width <= 0 || img.height <= 0) {
+std::fill(buf.pixels.begin(), buf.pixels.end(), glm::vec4(1.0f, 0.0f, 1.0f, 1.0f));
+return;
+}
+
+for (int y = 0; y < res; ++y) {
+for (int x = 0; x < res; ++x) {
+const glm::vec2 uv(static_cast<float>(x) / static_cast<float>(res - 1),
+static_cast<float>(y) / static_cast<float>(res - 1));
+glm::vec2 sample_uv = IsConnected(*texture_graph_, node_id, 0)
+? SampleInputVec2(*node, 0, uv) : uv;
+const float u = sample_uv.x - std::floor(sample_uv.x);
+const float v = sample_uv.y - std::floor(sample_uv.y);
+const int sx = std::clamp(static_cast<int>(u * static_cast<float>(img.width)), 0, img.width - 1);
+const int sy = std::clamp(static_cast<int>(v * static_cast<float>(img.height)), 0, img.height - 1);
+const int idx = (sy * img.width + sx) * 4;
+buf.pixels[y * res + x] = glm::vec4(
+img.pixels[idx + 0] / 255.0f, img.pixels[idx + 1] / 255.0f,
+img.pixels[idx + 2] / 255.0f, img.pixels[idx + 3] / 255.0f);
+}
+}
+return;
+}
+
+// All other nodes: per-pixel evaluation reading from upstream buffers
+for (int y = 0; y < res; ++y) {
+for (int x = 0; x < res; ++x) {
+const glm::vec2 uv(static_cast<float>(x) / static_cast<float>(res - 1),
+static_cast<float>(y) / static_cast<float>(res - 1));
+buf.pixels[y * res + x] = EvaluateNodePixel(*node, uv);
+}
+}
+}
+
+// ============================================================================
+// Full graph evaluation -- topological order, buffer per node
+// ============================================================================
+
+void TextureEditorPanel::EvaluateGraphToBuffers() {
+const auto order = TopologicalSort();
+for (const int node_id : order) {
+EvaluateNodeToBuffer(node_id);
+}
+}
+
+// ============================================================================
+// Generate preview pixels from the output node's buffer
+// ============================================================================
 
 void TextureEditorPanel::GenerateTextureData() {
-	const int res = preview_resolution_;
-	preview_pixels_.resize(res * res * 4);
+const int res = preview_resolution_;
+preview_pixels_.resize(res * res * 4);
 
-	// Find the output node
-	int output_node_id = -1;
-	for (const auto& node : texture_graph_->GetNodes()) {
-		if (node.type_name == "Texture Output") {
-			output_node_id = node.id;
-			break;
-		}
-	}
-
-	for (int y = 0; y < res; ++y) {
-		for (int x = 0; x < res; ++x) {
-			const glm::vec2 uv(
-					static_cast<float>(x) / static_cast<float>(res - 1),
-					static_cast<float>(y) / static_cast<float>(res - 1));
-
-			glm::vec4 color;
-			if (output_node_id >= 0) {
-				color = EvaluateNodeOutput(output_node_id, 0, uv);
-			}
-			else {
-				color = glm::vec4(1.0f, 0.0f, 1.0f, 1.0f);
-			}
-
-			color = glm::clamp(color, glm::vec4(0.0f), glm::vec4(1.0f));
-			const int idx = (y * res + x) * 4;
-			preview_pixels_[idx + 0] = static_cast<unsigned char>(color.r * 255.0f);
-			preview_pixels_[idx + 1] = static_cast<unsigned char>(color.g * 255.0f);
-			preview_pixels_[idx + 2] = static_cast<unsigned char>(color.b * 255.0f);
-			preview_pixels_[idx + 3] = static_cast<unsigned char>(color.a * 255.0f);
-		}
-	}
-
-	// Set preview_color_ to the center pixel for the status display
-	const glm::vec2 center_uv(0.5f, 0.5f);
-	if (output_node_id >= 0) {
-		preview_color_ = EvaluateNodeOutput(output_node_id, 0, center_uv);
-	}
-	else {
-		preview_color_ = glm::vec4(1.0f, 0.0f, 1.0f, 1.0f);
-	}
+int output_node_id = -1;
+for (const auto& node : texture_graph_->GetNodes()) {
+if (node.type_name == "Texture Output") {
+output_node_id = node.id;
+break;
 }
+}
+
+auto buf_it = (output_node_id >= 0) ? node_buffers_.find(output_node_id) : node_buffers_.end();
+const bool has_buf = buf_it != node_buffers_.end() && !buf_it->second.pixels.empty();
+
+for (int y = 0; y < res; ++y) {
+for (int x = 0; x < res; ++x) {
+glm::vec4 color;
+if (has_buf) {
+color = glm::clamp(buf_it->second.pixels[y * res + x], glm::vec4(0.0f), glm::vec4(1.0f));
+} else {
+color = glm::vec4(1.0f, 0.0f, 1.0f, 1.0f);
+}
+const int idx = (y * res + x) * 4;
+preview_pixels_[idx + 0] = static_cast<unsigned char>(color.r * 255.0f);
+preview_pixels_[idx + 1] = static_cast<unsigned char>(color.g * 255.0f);
+preview_pixels_[idx + 2] = static_cast<unsigned char>(color.b * 255.0f);
+preview_pixels_[idx + 3] = static_cast<unsigned char>(color.a * 255.0f);
+}
+}
+
+if (has_buf) {
+const int cx = res / 2, cy = res / 2;
+preview_color_ = buf_it->second.pixels[cy * res + cx];
+} else {
+preview_color_ = glm::vec4(1.0f, 0.0f, 1.0f, 1.0f);
+}
+}
+
+// ============================================================================
+// Upload node buffers as GL thumbnail textures
+// ============================================================================
+
+void TextureEditorPanel::UploadNodeThumbnails() {
+constexpr int thumb_res = 64;
+
+for (auto& [id, buf] : node_buffers_) {
+if (buf.pixels.empty()) continue;
+
+std::vector<unsigned char> thumb_data(thumb_res * thumb_res * 4);
+for (int y = 0; y < thumb_res; ++y) {
+for (int x = 0; x < thumb_res; ++x) {
+const float u = static_cast<float>(x) / static_cast<float>(thumb_res - 1);
+const float v = static_cast<float>(y) / static_cast<float>(thumb_res - 1);
+const int sx = std::clamp(static_cast<int>(u * static_cast<float>(buf.width)), 0, buf.width - 1);
+const int sy = std::clamp(static_cast<int>(v * static_cast<float>(buf.height)), 0, buf.height - 1);
+const auto c = glm::clamp(buf.pixels[sy * buf.width + sx], glm::vec4(0.0f), glm::vec4(1.0f));
+const int tidx = (y * thumb_res + x) * 4;
+thumb_data[tidx + 0] = static_cast<unsigned char>(c.r * 255.0f);
+thumb_data[tidx + 1] = static_cast<unsigned char>(c.g * 255.0f);
+thumb_data[tidx + 2] = static_cast<unsigned char>(c.b * 255.0f);
+thumb_data[tidx + 3] = static_cast<unsigned char>(c.a * 255.0f);
+}
+}
+
+if (buf.thumbnail_tex == 0) {
+glGenTextures(1, &buf.thumbnail_tex);
+}
+glBindTexture(GL_TEXTURE_2D, buf.thumbnail_tex);
+glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, thumb_res, thumb_res, 0, GL_RGBA, GL_UNSIGNED_BYTE,
+thumb_data.data());
+}
+glBindTexture(GL_TEXTURE_2D, 0);
+}
+
+// ============================================================================
+// Cleanup GL resources
+// ============================================================================
+
+void TextureEditorPanel::CleanupNodeBuffers() {
+for (auto& [id, buf] : node_buffers_) {
+if (buf.thumbnail_tex != 0) {
+glDeleteTextures(1, &buf.thumbnail_tex);
+}
+}
+node_buffers_.clear();
+}
+
 
 void TextureEditorPanel::UploadPreviewTexture() {
 	if (preview_pixels_.empty()) {

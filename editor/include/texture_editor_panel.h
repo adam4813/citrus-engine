@@ -84,16 +84,30 @@ private:
 	int FindLinkUnderMouse(const ImVec2& mouse_pos) const;
 
 	// ========================================================================
-	// Texture Generation
+	// Texture Generation — buffer-per-node pipeline
 	// ========================================================================
 	void UpdatePreview();
 	void GenerateTextureData();
 	void UploadPreviewTexture();
 	void ExportPng(const std::string& path);
-	glm::vec4 EvaluateNodeOutput(int node_id, int pin_index, glm::vec2 uv) const;
-	float GetInputFloat(const engine::graph::Node& node, int pin_index, glm::vec2 uv) const;
-	glm::vec4 GetInputColor(const engine::graph::Node& node, int pin_index, glm::vec2 uv) const;
-	glm::vec2 GetInputVec2(const engine::graph::Node& node, int pin_index, glm::vec2 uv) const;
+
+	struct NodeBuffer {
+		std::vector<glm::vec4> pixels;
+		int width = 0;
+		int height = 0;
+		GLuint thumbnail_tex = 0;
+	};
+
+	std::vector<int> TopologicalSort() const;
+	void EvaluateGraphToBuffers();
+	void EvaluateNodeToBuffer(int node_id);
+	glm::vec4 EvaluateNodePixel(const engine::graph::Node& node, glm::vec2 uv) const;
+	glm::vec4 SampleBuffer(int node_id, int output_pin, glm::vec2 uv) const;
+	float SampleInputFloat(const engine::graph::Node& node, int pin_index, glm::vec2 uv) const;
+	glm::vec4 SampleInputColor(const engine::graph::Node& node, int pin_index, glm::vec2 uv) const;
+	glm::vec2 SampleInputVec2(const engine::graph::Node& node, int pin_index, glm::vec2 uv) const;
+	void UploadNodeThumbnails();
+	void CleanupNodeBuffers();
 
 	// ========================================================================
 	// State
@@ -141,6 +155,7 @@ private:
 	static constexpr float GRID_SIZE = 64.0f;
 	static constexpr float NODE_WIDTH = 200.0f;
 	static constexpr float PIN_RADIUS = 6.0f;
+	static constexpr float THUMBNAIL_SIZE = 64.0f;
 
 	// File dialogs
 	FileDialogPopup open_dialog_{"Open Texture", FileDialogMode::Open, {".json"}};
@@ -155,9 +170,12 @@ private:
 	int node_path_dialog_node_id_ = -1;
 	int node_path_dialog_pin_index_ = -1;
 
-	// Sampler cache for Texture Sample nodes (keyed by file path)
+	// Sampler cache for Input Image nodes (keyed by file path)
 	struct SamplerEntry { std::vector<uint8_t> pixels; int width = 0; int height = 0; };
 	mutable std::unordered_map<std::string, SamplerEntry> sampler_cache_;
+
+	// Per-node evaluation buffers (keyed by node_id)
+	mutable std::unordered_map<int, NodeBuffer> node_buffers_;
 };
 
 /**

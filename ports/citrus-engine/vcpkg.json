@@ -16,7 +16,12 @@
     },
     "glfw3",
     "glm",
-    "joltphysics",
+    {
+      "name": "joltphysics",
+      "features": [
+        "debugrenderer"
+      ]
+    },
     "lua",
     "miniaudio",
     "nlohmann-json",

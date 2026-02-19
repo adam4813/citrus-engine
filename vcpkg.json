@@ -13,7 +13,12 @@
     "glfw3",
     "glm",
     "gtest",
-    "joltphysics",
+    {
+      "name": "joltphysics",
+      "features": [
+        "debugrenderer"
+      ]
+    },
     "lua",
     "miniaudio",
     "nlohmann-json",

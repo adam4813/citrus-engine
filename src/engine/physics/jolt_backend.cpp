@@ -34,6 +34,10 @@ module;
 #include <Jolt/Physics/Character/Character.h>
 #include <Jolt/Physics/Collision/RayCast.h>
 #include <Jolt/Physics/Collision/CastResult.h>
+#ifdef JPH_DEBUG_RENDERER
+#include <Jolt/Core/Color.h>
+#include <Jolt/Renderer/DebugRendererSimple.h>
+#endif
 // clang-format on
 
 module engine.physics;
@@ -645,6 +649,54 @@ public:
 	}
 
 	[[nodiscard]] std::string GetEngineName() const override { return "JoltPhysics"; }
+
+#ifdef JPH_DEBUG_RENDERER
+	void DebugDraw(IPhysicsDebugRenderer& renderer) override {
+		if (!initialized_ || !physics_system_) return;
+
+		// Inline adapter: bridges Jolt's DebugRendererSimple to our IPhysicsDebugRenderer
+		class Adapter : public JPH::DebugRendererSimple {
+		public:
+			explicit Adapter(IPhysicsDebugRenderer& r) : target_(r) { Initialize(); }
+
+			void DrawLine(JPH::RVec3Arg from, JPH::RVec3Arg to, JPH::ColorArg c) override {
+				target_.DrawLine(
+						{float(from.GetX()), float(from.GetY()), float(from.GetZ())},
+						{float(to.GetX()), float(to.GetY()), float(to.GetZ())},
+						{c.r / 255.0F, c.g / 255.0F, c.b / 255.0F});
+			}
+
+			void DrawTriangle(
+					JPH::RVec3Arg v1, JPH::RVec3Arg v2, JPH::RVec3Arg v3,
+					JPH::ColorArg c, ECastShadow) override {
+				const glm::vec3 color{c.r / 255.0F, c.g / 255.0F, c.b / 255.0F};
+				target_.DrawTriangle(
+						{float(v1.GetX()), float(v1.GetY()), float(v1.GetZ())},
+						{float(v2.GetX()), float(v2.GetY()), float(v2.GetZ())},
+						{float(v3.GetX()), float(v3.GetY()), float(v3.GetZ())},
+						color, c.a / 255.0F);
+			}
+
+			void DrawText3D(JPH::RVec3Arg pos, const std::string_view& text,
+					JPH::ColorArg, float) override {
+				target_.DrawText({float(pos.GetX()), float(pos.GetY()), float(pos.GetZ())}, std::string(text));
+			}
+
+		private:
+			IPhysicsDebugRenderer& target_;
+		};
+
+		Adapter adapter(renderer);
+
+		JPH::BodyManager::DrawSettings settings;
+		settings.mDrawShape = true;
+		settings.mDrawShapeWireframe = true;
+		settings.mDrawBoundingBox = false;
+		settings.mDrawShapeColor = JPH::BodyManager::EShapeColor::MotionTypeColor;
+
+		physics_system_->DrawBodies(settings, &adapter);
+	}
+#endif
 
 	~JoltPhysicsBackend() override { Shutdown(); }
 };

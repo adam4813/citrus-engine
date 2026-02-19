@@ -543,6 +543,49 @@ public:
 
 	[[nodiscard]] std::string GetEngineName() const override { return "Bullet3"; }
 
+	void DebugDraw(IPhysicsDebugRenderer& renderer) override {
+		if (!initialized_ || !dynamics_world_) return;
+
+		// Inline adapter: bridges btIDebugDraw to our IPhysicsDebugRenderer
+		class Adapter : public btIDebugDraw {
+		public:
+			explicit Adapter(IPhysicsDebugRenderer& r) : target_(r) {}
+
+			void drawLine(const btVector3& from, const btVector3& to, const btVector3& color) override {
+				target_.DrawLine(
+						{from.getX(), from.getY(), from.getZ()},
+						{to.getX(), to.getY(), to.getZ()},
+						{color.getX(), color.getY(), color.getZ()});
+			}
+
+			void drawContactPoint(const btVector3& point, const btVector3& normal,
+					btScalar distance, int, const btVector3& color) override {
+				const btVector3 to = point + normal * distance;
+				drawLine(point, to, color);
+			}
+
+			void reportErrorWarning(const char* warning) override {
+				spdlog::warn("[Bullet3 Debug] {}", warning);
+			}
+
+			void draw3dText(const btVector3& loc, const char* text) override {
+				target_.DrawText({loc.getX(), loc.getY(), loc.getZ()}, std::string(text));
+			}
+
+			void setDebugMode(int mode) override { mode_ = mode; }
+			[[nodiscard]] int getDebugMode() const override { return mode_; }
+
+		private:
+			IPhysicsDebugRenderer& target_;
+			int mode_{DBG_DrawWireframe | DBG_DrawConstraints | DBG_DrawContactPoints};
+		};
+
+		Adapter adapter(renderer);
+		dynamics_world_->setDebugDrawer(&adapter);
+		dynamics_world_->debugDrawWorld();
+		dynamics_world_->setDebugDrawer(nullptr);
+	}
+
 	~Bullet3Backend() override { Shutdown(); }
 };
 

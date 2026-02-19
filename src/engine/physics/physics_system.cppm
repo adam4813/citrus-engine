@@ -6,6 +6,7 @@ export module engine.physics;
 
 export import :backend;
 export import :components;
+export import :debug_renderer;
 export import :types;
 
 export namespace engine::physics {

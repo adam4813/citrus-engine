@@ -11,6 +11,7 @@ export module engine.physics:backend;
 
 export import :types;
 export import :components;
+export import :debug_renderer;
 
 import glm;
 
@@ -64,6 +65,11 @@ public:
 
 	// === Info ===
 	[[nodiscard]] virtual std::string GetEngineName() const = 0;
+
+	// === Debug Rendering ===
+	// Draw all physics bodies/shapes through the provided debug renderer.
+	// Default no-op for backends that don't support debug drawing.
+	virtual void DebugDraw(IPhysicsDebugRenderer& /*renderer*/) {}
 };
 
 // Factory function for pluggable backend creation (Factory Pattern)

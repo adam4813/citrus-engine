@@ -102,6 +102,7 @@ target_sources(engine-core
     physics/physics_types.cppm
     physics/physics_components.cppm
     physics/physics_backend.cppm
+    physics/physics_debug_renderer.cppm
     physics/physics_system.cppm
     ui/ui.cppm
     ui/types.cppm
@@ -210,8 +211,10 @@ target_sources(engine-core PRIVATE
     # Physics module implementation
     physics/physics_factory.cpp
     physics/jolt_backend.cpp
+    physics/jolt_debug_renderer.cpp
     physics/jolt_module.cpp
     physics/bullet3_backend.cpp
+    physics/bullet3_debug_renderer.cpp
     physics/bullet3_module.cpp
     physics/physx_backend.cpp
 

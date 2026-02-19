@@ -65,10 +65,6 @@ void EditorScene::Initialize(engine::Engine& engine) {
 		}
 	};
 	callbacks.on_show_rename_dialog = [this](const engine::ecs::Entity entity) { OnShowRenameDialog(entity); };
-	callbacks.on_add_child_entity = [this](const engine::ecs::Entity parent) { OnAddChildEntity(parent); };
-	callbacks.on_add_component = [this](const engine::ecs::Entity entity, const std::string& component_name) {
-		OnAddComponent(entity, component_name);
-	};
 	callbacks.on_asset_selected = [this](const engine::scene::AssetType type, const std::string& name) {
 		OnAssetSelected(type, name);
 	};
@@ -418,8 +414,7 @@ void EditorScene::RenderMenuBar() {
 				// Add a new entity to the scene using command
 				auto& scene_manager = engine::scene::GetSceneManager();
 				if (auto* scene = scene_manager.TryGetScene(editor_scene_id_)) {
-					const std::string entity_name = MakeUniqueEntityName("NewEntity", scene);
-					auto command = std::make_unique<CreateEntityCommand>(scene, entity_name, engine::ecs::Entity());
+					auto command = std::make_unique<CreateEntityCommand>(scene, engine::ecs::Entity());
 					command_history_.Execute(std::move(command));
 				}
 			}
@@ -481,34 +476,6 @@ void EditorScene::OnSceneModified() {
 void EditorScene::OnShowRenameDialog(const engine::ecs::Entity entity) {
 	selected_entity_ = entity;
 	state_.show_rename_entity_dialog = true;
-}
-
-void EditorScene::OnAddChildEntity(const engine::ecs::Entity parent) {
-	auto& scene_manager = engine::scene::GetSceneManager();
-	if (auto* scene = scene_manager.TryGetScene(editor_scene_id_)) {
-		const std::string entity_name = MakeUniqueEntityName("NewEntity", scene);
-		auto command = std::make_unique<CreateEntityCommand>(scene, entity_name, parent);
-		// Store the command pointer to get the created entity
-		auto* cmd_ptr = command.get();
-		command_history_.Execute(std::move(command));
-		// Select the newly created entity
-		selected_entity_ = cmd_ptr->GetCreatedEntity();
-	}
-}
-
-void EditorScene::OnAddComponent(const engine::ecs::Entity entity, const std::string& component_name) {
-	const auto& registry = engine::ecs::ComponentRegistry::Instance();
-	if (const auto* comp = registry.FindComponent(component_name)) {
-		std::unique_ptr<ICommand> command = std::make_unique<AddComponentCommand>(entity, comp->id, component_name);
-		if (selected_prefab_entity_.is_valid() && selected_prefab_entity_.has(flecs::Prefab)) {
-			command = std::make_unique<PrefabUpdateCommand>(std::move(command), selected_prefab_entity_);
-		}
-		command_history_.Execute(std::move(command));
-		std::cout << "EditorScene: Added component '" << component_name << "' to entity" << std::endl;
-	}
-	else {
-		std::cerr << "EditorScene: Component '" << component_name << "' not found in registry" << std::endl;
-	}
 }
 
 void EditorScene::OnAssetSelected(const engine::scene::AssetType type, const std::string& name) {

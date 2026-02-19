@@ -88,7 +88,8 @@ void PropertiesPanel::RenderComponentSections(const engine::ecs::Entity entity, 
 		const bool removable = comp.name != "Transform" && comp.name != "WorldTransform";
 
 		if (removable) {
-			header_open = ImGui::CollapsingHeader(comp.name.c_str(), ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_AllowOverlap);
+			header_open = ImGui::CollapsingHeader(
+					comp.name.c_str(), ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_AllowOverlap);
 			ImGui::SameLine(ImGui::GetContentRegionAvail().x + ImGui::GetCursorPosX() - 20.0f);
 			if (ImGui::SmallButton("X")) {
 				pending_remove_id = comp.id;
@@ -97,7 +98,8 @@ void PropertiesPanel::RenderComponentSections(const engine::ecs::Entity entity, 
 			if (ImGui::IsItemHovered()) {
 				ImGui::SetTooltip("Remove %s", comp.name.c_str());
 			}
-		} else {
+		}
+		else {
 			header_open = ImGui::CollapsingHeader(comp.name.c_str(), ImGuiTreeNodeFlags_DefaultOpen);
 		}
 
@@ -154,7 +156,8 @@ void PropertiesPanel::RenderComponentSections(const engine::ecs::Entity entity, 
 
 	// Execute pending remove outside the iteration loop
 	if (pending_remove_id != 0 && callbacks_.on_execute_command) {
-		callbacks_.on_execute_command(std::make_unique<RemoveComponentCommand>(entity, pending_remove_id, pending_remove_name));
+		callbacks_.on_execute_command(
+				std::make_unique<RemoveComponentCommand>(entity, pending_remove_id, pending_remove_name));
 	}
 }
 
@@ -351,10 +354,9 @@ void PropertiesPanel::RenderAddComponentButton(const engine::ecs::Entity entity)
 					if (entity.has(comp->id)) {
 						ImGui::TextDisabled("%s (already added)", comp->name.c_str());
 					}
-					else if (ImGui::MenuItem(comp->name.c_str())) {
-						if (callbacks_.on_add_component) {
-							callbacks_.on_add_component(entity, comp->name);
-						}
+					else if (ImGui::MenuItem(comp->name.c_str()) && callbacks_.on_execute_command) {
+						callbacks_.on_execute_command(
+								std::make_unique<AddComponentCommand>(entity, comp->id, comp->name));
 					}
 				}
 				ImGui::EndMenu();

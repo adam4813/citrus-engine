@@ -23,15 +23,19 @@ public:
 	 * @brief Create an entity creation command
 	 *
 	 * @param scene The scene to create the entity in
-	 * @param name Name for the new entity
 	 * @param parent Parent entity (can be invalid for root entity)
+	 * @param name Name for the new entity (auto-generated if empty)
 	 */
-	CreateEntityCommand(engine::scene::Scene* scene, std::string name, engine::ecs::Entity parent) :
+	CreateEntityCommand(engine::scene::Scene* scene, engine::ecs::Entity parent, std::string name = "") :
 			scene_(scene), name_(std::move(name)), parent_(parent), created_entity_() {}
 
 	void Execute() override {
 		if (!scene_) {
 			return;
+		}
+
+		if (name_.empty()) {
+			name_ = MakeUniqueEntityName("NewEntity", scene_);
 		}
 
 		// Create the entity

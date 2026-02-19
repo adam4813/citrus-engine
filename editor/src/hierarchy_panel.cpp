@@ -1,6 +1,7 @@
 #include "hierarchy_panel.h"
 
 #include "commands/entity_commands.h"
+#include "commands/transform_command.h"
 
 #include <algorithm>
 #include <imgui.h>
@@ -54,12 +55,11 @@ void HierarchyPanel::Render(const engine::scene::SceneId scene_id, const engine:
 	if (ImGui::BeginPopupContextItem("SceneContextMenu")) {
 		if (ImGui::MenuItem("New Group")) {
 			auto& scene_manager = engine::scene::GetSceneManager();
-			if (auto* scene = scene_manager.TryGetScene(scene_id)) {
-				auto group = scene->CreateEntity("New Group");
-				group.add<engine::components::Group>();
-				if (callbacks_.on_scene_modified) {
-					callbacks_.on_scene_modified();
-				}
+			if (auto* scene = scene_manager.TryGetScene(scene_id); scene && callbacks_.on_execute_command) {
+				auto command = std::make_unique<CreateEntityCommand>(scene, engine::ecs::Entity(), "New Group");
+				const auto* cmd_ptr = command.get();
+				callbacks_.on_execute_command(std::move(command));
+				cmd_ptr->GetCreatedEntity().add<engine::components::Group>();
 			}
 		}
 		ImGui::EndPopup();
@@ -177,17 +177,21 @@ void HierarchyPanel::RenderEntityNode(
 	// Right-click context menu
 	if (ImGui::BeginPopupContextItem()) {
 		if (ImGui::MenuItem("Add Child Entity")) {
-			if (callbacks_.on_add_child_entity) {
-				callbacks_.on_add_child_entity(entity);
+			if (callbacks_.on_execute_command) {
+				auto command = std::make_unique<CreateEntityCommand>(scene, entity);
+				const auto* cmd_ptr = command.get();
+				callbacks_.on_execute_command(std::move(command));
+				if (callbacks_.on_entity_selected) {
+					callbacks_.on_entity_selected(cmd_ptr->GetCreatedEntity());
+				}
 			}
 		}
 
-		if (ImGui::MenuItem("New Group")) {
-			auto group = scene->CreateEntity("New Group", entity);
-			group.add<engine::components::Group>();
-			if (callbacks_.on_scene_modified) {
-				callbacks_.on_scene_modified();
-			}
+		if (ImGui::MenuItem("New Group") && callbacks_.on_execute_command) {
+			auto command = std::make_unique<CreateEntityCommand>(scene, entity, "New Group");
+			const auto* cmd_ptr = command.get();
+			callbacks_.on_execute_command(std::move(command));
+			cmd_ptr->GetCreatedEntity().add<engine::components::Group>();
 		}
 
 		// Unparent: move entity to scene root (only if parented to a non-root entity)
@@ -251,10 +255,9 @@ void HierarchyPanel::RenderEntityNode(
 						if (has_component) {
 							ImGui::TextDisabled("%s (already added)", comp->name.c_str());
 						}
-						else if (ImGui::MenuItem(comp->name.c_str())) {
-							if (callbacks_.on_add_component) {
-								callbacks_.on_add_component(entity, comp->name);
-							}
+						else if (ImGui::MenuItem(comp->name.c_str()) && callbacks_.on_execute_command) {
+							callbacks_.on_execute_command(
+									std::make_unique<AddComponentCommand>(entity, comp->id, comp->name));
 						}
 					}
 					ImGui::EndMenu();
@@ -296,13 +299,13 @@ void HierarchyPanel::RenderEntityNode(
 			}
 		}
 		if (ImGui::MenuItem("Delete")) {
-			// Use delete command instead of direct deletion
 			if (callbacks_.on_execute_command && world_) {
+				// Notify before executing so selection can be cleared
+				if (callbacks_.on_entity_deleted) {
+					callbacks_.on_entity_deleted(entity);
+				}
 				auto command = std::make_unique<DeleteEntityCommand>(scene, entity, *world_);
 				callbacks_.on_execute_command(std::move(command));
-			}
-			if (callbacks_.on_entity_deleted) {
-				callbacks_.on_entity_deleted(entity);
 			}
 		}
 		ImGui::Separator();
@@ -327,7 +330,7 @@ void HierarchyPanel::RenderEntityNode(
 void HierarchyPanel::ClearNodeState() { node_states_.clear(); }
 
 HierarchyNodeState* HierarchyPanel::GetNodeState(const uint64_t entity_id) {
-	auto it = node_states_.find(entity_id);
+	const auto it = node_states_.find(entity_id);
 	return it != node_states_.end() ? &it->second : nullptr;
 }
 

@@ -60,7 +60,8 @@ void EditorScene::Initialize(engine::Engine& engine) {
 	callbacks.on_scene_modified = [this]() {
 		if (selected_prefab_entity_.is_valid() && selected_prefab_entity_.has(flecs::Prefab)) {
 			engine::scene::PrefabUtility::SavePrefabTemplate(selected_prefab_entity_);
-		} else {
+		}
+		else {
 			OnSceneModified();
 		}
 	};
@@ -76,18 +77,20 @@ void EditorScene::Initialize(engine::Engine& engine) {
 		if (selected_prefab_entity_.is_valid() && selected_prefab_entity_.has(flecs::Prefab)) {
 			auto wrapped = std::make_unique<PrefabUpdateCommand>(std::move(command), selected_prefab_entity_);
 			command_history_.Execute(std::move(wrapped));
-		} else {
+		}
+		else {
 			command_history_.Execute(std::move(command));
 		}
 	};
 	callbacks.on_instantiate_prefab = [this](const std::string& prefab_path) {
 		auto& scene_manager = engine::scene::GetSceneManager();
 		if (auto* scene = scene_manager.TryGetScene(editor_scene_id_)) {
-			if (const auto entity = engine::scene::PrefabUtility::InstantiatePrefab(
-						prefab_path, scene, engine_->ecs, selected_entity_);
-				entity.is_valid()) {
-				OnEntitySelected(entity);
-				OnSceneModified();
+			auto command =
+					std::make_unique<InstantiatePrefabCommand>(prefab_path, scene, engine_->ecs, selected_entity_);
+			const auto* cmd_ptr = command.get();
+			command_history_.Execute(std::move(command));
+			if (cmd_ptr->GetInstance().is_valid()) {
+				OnEntitySelected(cmd_ptr->GetInstance());
 			}
 		}
 	};
@@ -127,12 +130,12 @@ void EditorScene::Initialize(engine::Engine& engine) {
 	// Register prefab handler (needs EditorScene state, not panel-owned)
 	asset_editor_registry_.Register("prefab", [this](const std::string& path) {
 		auto& scene_manager = engine::scene::GetSceneManager();
-		if (const auto* scene = scene_manager.TryGetScene(editor_scene_id_)) {
-			if (const auto entity =
-						engine::scene::PrefabUtility::InstantiatePrefab(path, scene, engine_->ecs, selected_entity_);
-				entity.is_valid()) {
-				OnEntitySelected(entity);
-				OnSceneModified();
+		if (auto* scene = scene_manager.TryGetScene(editor_scene_id_)) {
+			auto command = std::make_unique<InstantiatePrefabCommand>(path, scene, engine_->ecs, selected_entity_);
+			const auto* cmd_ptr = command.get();
+			command_history_.Execute(std::move(command));
+			if (cmd_ptr->GetInstance().is_valid()) {
+				OnEntitySelected(cmd_ptr->GetInstance());
 			}
 		}
 	});
@@ -147,8 +150,8 @@ void EditorScene::Initialize(engine::Engine& engine) {
 	callbacks.on_file_selected = [this](const std::string& path) {
 		// When a prefab file is selected, load it and display its properties
 		if (path.ends_with(".prefab.json")) {
-			auto prefab_entity = engine::scene::PrefabUtility::LoadPrefab(path, engine_->ecs);
-			if (prefab_entity.is_valid()) {
+			if (const auto prefab_entity = engine::scene::PrefabUtility::LoadPrefab(path, engine_->ecs);
+				prefab_entity.is_valid()) {
 				selected_entity_ = prefab_entity;
 				selected_asset_.Clear();
 				selection_type_ = SelectionType::Entity;

@@ -26,7 +26,7 @@ public:
 	 * @param parent Parent entity (can be invalid for root entity)
 	 * @param name Name for the new entity (auto-generated if empty)
 	 */
-	CreateEntityCommand(engine::scene::Scene* scene, engine::ecs::Entity parent, std::string name = "") :
+	CreateEntityCommand(engine::scene::Scene* scene, const engine::ecs::Entity parent, std::string name = "") :
 			scene_(scene), name_(std::move(name)), parent_(parent), created_entity_() {}
 
 	void Execute() override {
@@ -81,7 +81,7 @@ public:
 	 * @param entity The entity to delete
 	 * @param world The ECS world (for serialization)
 	 */
-	DeleteEntityCommand(engine::scene::Scene* scene, engine::ecs::Entity entity, engine::ecs::ECSWorld& world) :
+	DeleteEntityCommand(engine::scene::Scene* scene, const engine::ecs::Entity entity, engine::ecs::ECSWorld& world) :
 			scene_(scene), entity_(entity), world_(world), entity_name_(entity.name().c_str()),
 			parent_(scene->GetParent(entity)) {
 		SerializeEntity();
@@ -151,7 +151,8 @@ public:
 	 * @param entity The entity to reparent
 	 * @param new_parent The new parent entity
 	 */
-	ReparentEntityCommand(engine::scene::Scene* scene, engine::ecs::Entity entity, engine::ecs::Entity new_parent) :
+	ReparentEntityCommand(
+			engine::scene::Scene* scene, const engine::ecs::Entity entity, const engine::ecs::Entity new_parent) :
 			scene_(scene), entity_(entity), old_parent_(scene->GetParent(entity)), new_parent_(new_parent) {}
 
 	void Execute() override {
@@ -196,7 +197,8 @@ private:
  */
 class WrapEntityCommand : public ICommand {
 public:
-	WrapEntityCommand(engine::scene::Scene* scene, engine::ecs::Entity entity, engine::ecs::Entity current_parent) :
+	WrapEntityCommand(
+			engine::scene::Scene* scene, const engine::ecs::Entity entity, const engine::ecs::Entity current_parent) :
 			scene_(scene), entity_(entity), current_parent_(current_parent) {}
 
 	void Execute() override {
@@ -230,6 +232,49 @@ private:
 	engine::ecs::Entity entity_;
 	engine::ecs::Entity current_parent_;
 	engine::ecs::Entity wrapper_;
+};
+
+/**
+ * @brief Command for instantiating a prefab
+ *
+ * Creates a prefab instance under a parent entity. Supports undo by
+ * destroying the instantiated entity tree.
+ */
+class InstantiatePrefabCommand : public ICommand {
+public:
+	InstantiatePrefabCommand(
+			std::string prefab_path,
+			engine::scene::Scene* scene,
+			engine::ecs::ECSWorld& world,
+			const engine::ecs::Entity parent) :
+			prefab_path_(std::move(prefab_path)), scene_(scene), world_(world), parent_(parent) {}
+
+	void Execute() override {
+		if (!scene_) {
+			return;
+		}
+		instance_ = engine::scene::PrefabUtility::InstantiatePrefab(prefab_path_, scene_, world_, parent_);
+	}
+
+	void Undo() override {
+		if (instance_.is_valid()) {
+			scene_->DestroyEntity(instance_);
+			instance_ = engine::ecs::Entity();
+		}
+	}
+
+	void Redo() override { Execute(); }
+
+	std::string GetDescription() const override { return "Instantiate Prefab: " + prefab_path_; }
+
+	engine::ecs::Entity GetInstance() const { return instance_; }
+
+private:
+	std::string prefab_path_;
+	engine::scene::Scene* scene_;
+	engine::ecs::ECSWorld& world_;
+	engine::ecs::Entity parent_;
+	engine::ecs::Entity instance_;
 };
 
 } // namespace editor

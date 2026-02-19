@@ -599,31 +599,6 @@ void TextureEditorPanel::RenderPreviewPanel() {
 	ImGui::Separator();
 	ImGui::Spacing();
 
-	// Image asset picker
-	ImGui::Text("Image Asset:");
-	ImGui::SetNextItemWidth(-1);
-	if (ImGui::InputText(
-				"##ImagePath", image_path_buf_, sizeof(image_path_buf_), ImGuiInputTextFlags_EnterReturnsTrue)) {
-		// Update any Texture Sample nodes with this path
-		for (const auto& node : texture_graph_->GetNodes()) {
-			if (node.type_name == "Texture Sample") {
-				if (auto* mutable_node = texture_graph_->GetNode(node.id)) {
-					for (auto& input : mutable_node->inputs) {
-						if (input.name == "Path") {
-							input.default_value = std::string(image_path_buf_);
-						}
-					}
-				}
-			}
-		}
-		UpdatePreview();
-	}
-	ImGui::TextDisabled("Enter path and press Enter");
-
-	ImGui::Spacing();
-	ImGui::Separator();
-	ImGui::Spacing();
-
 	// Draw preview with actual generated texture
 	constexpr ImVec2 preview_size(256, 256);
 	const ImVec2 preview_pos = ImGui::GetCursorScreenPos();
@@ -701,7 +676,9 @@ void TextureEditorPanel::RenderGraphNode(const engine::graph::Node& node) {
 	const auto title_pos = ImVec2(node_pos.x + 5.0f, node_pos.y + 5.0f);
 	draw_list->AddText(title_pos, IM_COL32(255, 255, 255, 255), node.type_name.c_str());
 
-	// InvisibleButton submitted first so inline widgets get higher input priority
+	// InvisibleButton submitted first — SetNextItemAllowOverlap lets widgets submitted
+	// after it claim hover/active state over the button
+	ImGui::SetNextItemAllowOverlap();
 	ImGui::SetCursorScreenPos(node_rect_min);
 	ImGui::InvisibleButton(
 			("node_" + std::to_string(node.id)).c_str(),

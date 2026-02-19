@@ -109,9 +109,6 @@ private:
 	GLuint preview_texture_id_ = 0;
 	bool preview_dirty_ = true;
 
-	// Image asset picker state
-	char image_path_buf_[256] = "";
-
 	// Graph state
 	std::unique_ptr<engine::graph::NodeGraph> texture_graph_;
 

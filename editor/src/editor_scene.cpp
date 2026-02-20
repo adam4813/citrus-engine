@@ -110,6 +110,7 @@ void EditorScene::Initialize(engine::Engine& engine) {
 			&data_table_editor_panel_,
 			&code_editor_panel_,
 			&sound_editor_panel_,
+			&material_editor_panel_,
 	};
 
 	// Set default visibility for panels that should be visible on startup
@@ -295,6 +296,7 @@ void EditorScene::RenderUI(engine::Engine& engine) {
 	data_table_editor_panel_.Render();
 	sound_editor_panel_.Render();
 	code_editor_panel_.Render();
+	material_editor_panel_.Render();
 	// Handle dialogs
 	if (state_.show_new_scene_dialog) {
 		ImGui::OpenPopup("New Scene");

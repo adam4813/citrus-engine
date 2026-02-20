@@ -15,6 +15,7 @@
 #include "file_dialog.h"
 #include "graph_editor_panel.h"
 #include "hierarchy_panel.h"
+#include "material_editor_panel.h"
 #include "properties_panel.h"
 #include "shader_editor_panel.h"
 #include "sound_editor_panel.h"
@@ -181,6 +182,7 @@ private:
 	SpriteEditorPanel sprite_editor_panel_;
 	TilesetEditorPanel tileset_editor_panel_;
 	BehaviorTreeEditorPanel behavior_tree_editor_panel_;
+	MaterialEditorPanel material_editor_panel_;
 
 	// All panels for iteration (View menu, asset handler registration)
 	std::vector<EditorPanel*> panels_;

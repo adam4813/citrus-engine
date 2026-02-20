@@ -114,6 +114,10 @@ void AssetBrowserPanel::ShowEmptySpaceContextMenu() {
 			CreateNewPrefabFile();
 		}
 
+		if (ImGui::MenuItem("New Material")) {
+			CreateNewMaterialFile();
+		}
+
 		ImGui::Separator();
 
 		if (ImGui::MenuItem("Import Asset...")) {
@@ -306,6 +310,51 @@ void AssetBrowserPanel::CreateNewPrefabFile() {
 	}
 	catch (const std::exception& e) {
 		std::cerr << "Error creating prefab: " << e.what() << std::endl;
+	}
+}
+
+void AssetBrowserPanel::CreateNewMaterialFile() {
+	using json = nlohmann::json;
+
+	try {
+		auto new_mat = current_directory_ / "NewMaterial.material.json";
+		int counter = 1;
+		while (std::filesystem::exists(new_mat)) {
+			new_mat = current_directory_ / ("NewMaterial" + std::to_string(counter++) + ".material.json");
+		}
+
+		// Strip compound extension (.material.json -> base name)
+		std::string base_name = new_mat.stem().string(); // "NewMaterial.material"
+		if (base_name.ends_with(".material")) {
+			base_name = base_name.substr(0, base_name.size() - 9);
+		}
+
+		json mat_doc;
+		mat_doc["type"] = "material";
+		mat_doc["name"] = base_name;
+		mat_doc["shader"] = "";
+		mat_doc["base_color"] = {1.0f, 1.0f, 1.0f, 1.0f};
+		mat_doc["emissive_color"] = {0.0f, 0.0f, 0.0f, 1.0f};
+		mat_doc["metallic_factor"] = 0.0f;
+		mat_doc["roughness_factor"] = 0.5f;
+		mat_doc["ao_strength"] = 1.0f;
+		mat_doc["emissive_intensity"] = 0.0f;
+		mat_doc["normal_strength"] = 1.0f;
+		mat_doc["alpha_cutoff"] = 0.5f;
+
+		const std::string json_str = mat_doc.dump(2);
+
+		if (engine::assets::AssetManager::SaveTextFile(new_mat, json_str)) {
+			needs_refresh_ = true;
+			selected_item_path_ = new_mat;
+			std::cout << "Created new material: " << new_mat << std::endl;
+		}
+		else {
+			std::cerr << "Failed to create material file: " << new_mat << std::endl;
+		}
+	}
+	catch (const std::exception& e) {
+		std::cerr << "Error creating material: " << e.what() << std::endl;
 	}
 }
 

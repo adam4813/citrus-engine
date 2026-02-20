@@ -32,6 +32,7 @@ add_executable(
     src/editor_scene_menus.cpp
     src/graph_editor_panel.cpp
     src/hierarchy_panel.cpp
+    src/material_editor_panel.cpp
     src/properties_panel.cpp
     src/shader_editor_panel.cpp
     src/sound_editor_panel.cpp

@@ -72,6 +72,13 @@ bool AssetEditorRegistry::TryOpen(const std::string& path) const {
 				return true;
 			}
 		}
+		if (filename.ends_with(".material.json")) {
+			auto it = handlers_.find("material");
+			if (it != handlers_.end()) {
+				it->second(path);
+				return true;
+			}
+		}
 
 		return false;
 	}

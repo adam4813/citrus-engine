@@ -70,6 +70,9 @@ AssetFileType AssetBrowserPanel::GetAssetFileType(const std::filesystem::path& p
 	if (filename.ends_with(".data.json")) {
 		return AssetFileType::DataTable;
 	}
+	if (filename.ends_with(".material.json")) {
+		return AssetFileType::Material;
+	}
 	if (ext == ".png" || ext == ".jpg" || ext == ".jpeg" || ext == ".tga" || ext == ".bmp") {
 		return AssetFileType::Texture;
 	}

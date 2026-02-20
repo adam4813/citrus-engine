@@ -39,7 +39,7 @@ enum class AssetViewMode { List, Grid };
 /**
  * @brief Asset type for filtering
  */
-enum class AssetFileType { All, Scene, Prefab, Texture, Sound, Mesh, Script, Shader, DataTable, Directory };
+enum class AssetFileType { All, Scene, Prefab, Texture, Sound, Mesh, Script, Shader, DataTable, Material, Directory };
 
 /**
  * @brief Info about the currently selected asset
@@ -163,6 +163,11 @@ private:
 	 * @brief Create a new prefab file with default content
 	 */
 	void CreateNewPrefabFile();
+
+	/**
+	 * @brief Create a new material file with default PBR content
+	 */
+	void CreateNewMaterialFile();
 
 	/**
 	 * @brief Show import asset file dialog

@@ -133,11 +133,16 @@ public:
 		return *this;
 	}
 
-	/// Mark the last field as an asset reference with the given asset type key
+	/// Mark the last field as an asset reference with the given asset type key.
+	/// For list types, only sets asset_type hint (elements rendered as asset pickers).
 	AssetTypeRegistration& AssetRef(const std::string& asset_type_key) {
 		if (!info_.fields.empty()) {
-			info_.fields.back().type = AssetFieldType::AssetRef;
-			info_.fields.back().asset_type = asset_type_key;
+			auto& f = info_.fields.back();
+			if (f.type != AssetFieldType::ListInt && f.type != AssetFieldType::ListFloat
+				&& f.type != AssetFieldType::ListString) {
+				f.type = AssetFieldType::AssetRef;
+			}
+			f.asset_type = asset_type_key;
 		}
 		return *this;
 	}

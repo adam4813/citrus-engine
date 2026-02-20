@@ -1,5 +1,6 @@
 #include "properties_panel.h"
 
+#include <algorithm>
 #include <cstring>
 #include <flecs.h>
 #include <imgui.h>
@@ -180,10 +181,172 @@ bool RenderSingleField(const engine::ecs::FieldInfo& field, void* field_ptr, eng
 		return false;
 	}
 	case engine::ecs::FieldType::ListInt:
+	{
+		auto* vec = static_cast<std::vector<int>*>(field_ptr);
+		bool modified = false;
+		std::string header = std::string(label) + " (" + std::to_string(vec->size()) + ")";
+		if (ImGui::TreeNode(header.c_str())) {
+			int remove_idx = -1;
+			int swap_idx = -1; // index to swap with index+1
+			for (size_t i = 0; i < vec->size(); ++i) {
+				ImGui::PushID(static_cast<int>(i));
+				ImGui::SetNextItemWidth(ImGui::CalcItemWidth() - 70.0f);
+				if (ImGui::InputInt("##v", &(*vec)[i])) {
+					modified = true;
+				}
+				ImGui::SameLine();
+				if (i > 0) {
+					if (ImGui::SmallButton("^")) { swap_idx = static_cast<int>(i) - 1; }
+				} else {
+					ImGui::Dummy(ImVec2(ImGui::CalcTextSize("^").x + ImGui::GetStyle().FramePadding.x * 2, 0));
+				}
+				ImGui::SameLine();
+				if (i + 1 < vec->size()) {
+					if (ImGui::SmallButton("v")) { swap_idx = static_cast<int>(i); }
+				} else {
+					ImGui::Dummy(ImVec2(ImGui::CalcTextSize("v").x + ImGui::GetStyle().FramePadding.x * 2, 0));
+				}
+				ImGui::SameLine();
+				if (ImGui::SmallButton("X")) { remove_idx = static_cast<int>(i); }
+				ImGui::PopID();
+			}
+			if (remove_idx >= 0) { vec->erase(vec->begin() + remove_idx); modified = true; }
+			if (swap_idx >= 0) { std::swap((*vec)[swap_idx], (*vec)[swap_idx + 1]); modified = true; }
+			if (ImGui::Button("+ Add")) { vec->emplace_back(0); modified = true; }
+			ImGui::TreePop();
+		}
+		return modified;
+	}
 	case engine::ecs::FieldType::ListFloat:
+	{
+		auto* vec = static_cast<std::vector<float>*>(field_ptr);
+		bool modified = false;
+		std::string header = std::string(label) + " (" + std::to_string(vec->size()) + ")";
+		if (ImGui::TreeNode(header.c_str())) {
+			int remove_idx = -1;
+			int swap_idx = -1;
+			for (size_t i = 0; i < vec->size(); ++i) {
+				ImGui::PushID(static_cast<int>(i));
+				ImGui::SetNextItemWidth(ImGui::CalcItemWidth() - 70.0f);
+				if (ImGui::InputFloat("##v", &(*vec)[i])) {
+					modified = true;
+				}
+				ImGui::SameLine();
+				if (i > 0) {
+					if (ImGui::SmallButton("^")) { swap_idx = static_cast<int>(i) - 1; }
+				} else {
+					ImGui::Dummy(ImVec2(ImGui::CalcTextSize("^").x + ImGui::GetStyle().FramePadding.x * 2, 0));
+				}
+				ImGui::SameLine();
+				if (i + 1 < vec->size()) {
+					if (ImGui::SmallButton("v")) { swap_idx = static_cast<int>(i); }
+				} else {
+					ImGui::Dummy(ImVec2(ImGui::CalcTextSize("v").x + ImGui::GetStyle().FramePadding.x * 2, 0));
+				}
+				ImGui::SameLine();
+				if (ImGui::SmallButton("X")) { remove_idx = static_cast<int>(i); }
+				ImGui::PopID();
+			}
+			if (remove_idx >= 0) { vec->erase(vec->begin() + remove_idx); modified = true; }
+			if (swap_idx >= 0) { std::swap((*vec)[swap_idx], (*vec)[swap_idx + 1]); modified = true; }
+			if (ImGui::Button("+ Add")) { vec->emplace_back(0.0f); modified = true; }
+			ImGui::TreePop();
+		}
+		return modified;
+	}
 	case engine::ecs::FieldType::ListString:
-		ImGui::TextDisabled("%s: (list editing not yet implemented)", label);
-		return false;
+	{
+		auto* vec = static_cast<std::vector<std::string>*>(field_ptr);
+		bool modified = false;
+		std::string header = std::string(label) + " (" + std::to_string(vec->size()) + ")";
+		if (ImGui::TreeNode(header.c_str())) {
+			const bool is_asset_ref = !field.asset_type.empty();
+			const bool is_file_path = !is_asset_ref && !field.file_extensions.empty();
+
+			// Build asset name list once if needed
+			std::vector<std::string> asset_names;
+			if (is_asset_ref && scene) {
+				asset_names.push_back("");
+				for (const auto& asset : scene->GetAssets().GetAll()) {
+					if (const auto* type_info =
+								engine::scene::AssetRegistry::Instance().GetTypeInfo(asset->type);
+						type_info && type_info->type_name == field.asset_type) {
+						asset_names.push_back(asset->name);
+					}
+				}
+			}
+
+			int remove_idx = -1;
+			int swap_idx = -1;
+			for (size_t i = 0; i < vec->size(); ++i) {
+				ImGui::PushID(static_cast<int>(i));
+				auto& elem = (*vec)[i];
+
+				if (is_asset_ref) {
+					// Render as asset ref combo
+					const char* preview = elem.empty() ? "(None)" : elem.c_str();
+					ImGui::SetNextItemWidth(ImGui::CalcItemWidth() - 100.0f);
+					if (ImGui::BeginCombo("##v", preview)) {
+						for (const auto& name : asset_names) {
+							const bool selected = (name == elem);
+							const char* item_label = name.empty() ? "(None)" : name.c_str();
+							if (ImGui::Selectable(item_label, selected)) {
+								elem = name;
+								modified = true;
+							}
+							if (selected) { ImGui::SetItemDefaultFocus(); }
+						}
+						ImGui::EndCombo();
+					}
+				} else if (is_file_path) {
+					// Render as file path with browse button
+					char buffer[256];
+					std::strncpy(buffer, elem.c_str(), sizeof(buffer) - 1);
+					buffer[sizeof(buffer) - 1] = '\0';
+					ImGui::SetNextItemWidth(ImGui::CalcItemWidth() - 130.0f);
+					if (ImGui::InputText("##v", buffer, sizeof(buffer))) {
+						elem = buffer;
+						modified = true;
+					}
+					ImGui::SameLine();
+					if (ImGui::SmallButton("...")) {
+						OpenFieldBrowseDialog("Browse File", field.file_extensions, &elem);
+					}
+				} else {
+					// Plain string input
+					char buffer[256];
+					std::strncpy(buffer, elem.c_str(), sizeof(buffer) - 1);
+					buffer[sizeof(buffer) - 1] = '\0';
+					ImGui::SetNextItemWidth(ImGui::CalcItemWidth() - 70.0f);
+					if (ImGui::InputText("##v", buffer, sizeof(buffer))) {
+						elem = buffer;
+						modified = true;
+					}
+				}
+
+				ImGui::SameLine();
+				if (i > 0) {
+					if (ImGui::SmallButton("^")) { swap_idx = static_cast<int>(i) - 1; }
+				} else {
+					ImGui::Dummy(ImVec2(ImGui::CalcTextSize("^").x + ImGui::GetStyle().FramePadding.x * 2, 0));
+				}
+				ImGui::SameLine();
+				if (i + 1 < vec->size()) {
+					if (ImGui::SmallButton("v")) { swap_idx = static_cast<int>(i); }
+				} else {
+					ImGui::Dummy(ImVec2(ImGui::CalcTextSize("v").x + ImGui::GetStyle().FramePadding.x * 2, 0));
+				}
+				ImGui::SameLine();
+				if (ImGui::SmallButton("X")) { remove_idx = static_cast<int>(i); }
+				ImGui::PopID();
+			}
+			if (remove_idx >= 0) { vec->erase(vec->begin() + remove_idx); modified = true; }
+			if (swap_idx >= 0) { std::swap((*vec)[swap_idx], (*vec)[swap_idx + 1]); modified = true; }
+			if (ImGui::Button("+ Add")) { vec->emplace_back(); modified = true; }
+			ImGui::TreePop();
+		}
+		return modified;
+	}
 
 	case engine::ecs::FieldType::AssetRef:
 	{

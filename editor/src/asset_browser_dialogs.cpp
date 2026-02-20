@@ -314,8 +314,6 @@ void AssetBrowserPanel::CreateNewPrefabFile() {
 }
 
 void AssetBrowserPanel::CreateNewMaterialFile() {
-	using json = nlohmann::json;
-
 	try {
 		auto new_mat = current_directory_ / "NewMaterial.material.json";
 		int counter = 1;
@@ -323,26 +321,23 @@ void AssetBrowserPanel::CreateNewMaterialFile() {
 			new_mat = current_directory_ / ("NewMaterial" + std::to_string(counter++) + ".material.json");
 		}
 
-		// Strip compound extension (.material.json -> base name)
-		std::string base_name = new_mat.stem().string(); // "NewMaterial.material"
+		// Use the asset registry to create a default material and serialize it
+		auto default_asset = engine::scene::AssetRegistry::Instance().CreateDefault(engine::scene::AssetType::MATERIAL);
+		if (!default_asset) {
+			std::cerr << "Failed to create default material from registry" << std::endl;
+			return;
+		}
+
+		// Set name from filename
+		std::string base_name = new_mat.stem().string();
 		if (base_name.ends_with(".material")) {
 			base_name = base_name.substr(0, base_name.size() - 9);
 		}
+		default_asset->name = base_name;
 
-		json mat_doc;
-		mat_doc["type"] = "material";
-		mat_doc["name"] = base_name;
-		mat_doc["shader"] = "";
-		mat_doc["base_color"] = {1.0f, 1.0f, 1.0f, 1.0f};
-		mat_doc["emissive_color"] = {0.0f, 0.0f, 0.0f, 1.0f};
-		mat_doc["metallic_factor"] = 0.0f;
-		mat_doc["roughness_factor"] = 0.5f;
-		mat_doc["ao_strength"] = 1.0f;
-		mat_doc["emissive_intensity"] = 0.0f;
-		mat_doc["normal_strength"] = 1.0f;
-		mat_doc["alpha_cutoff"] = 0.5f;
-
-		const std::string json_str = mat_doc.dump(2);
+		nlohmann::json j;
+		default_asset->ToJson(j);
+		const std::string json_str = j.dump(2);
 
 		if (engine::assets::AssetManager::SaveTextFile(new_mat, json_str)) {
 			needs_refresh_ = true;

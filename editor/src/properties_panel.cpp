@@ -19,30 +19,7 @@ namespace editor {
 namespace {
 
 /// Scan assets/ directory for files matching given extensions, returning filename stems
-std::vector<std::string> ScanAssetFiles(const std::vector<std::string>& extensions) {
-	std::vector<std::string> results;
-	const std::filesystem::path assets_root{"assets"};
-	if (!std::filesystem::exists(assets_root)) {
-		return results;
-	}
-	for (const auto& entry : std::filesystem::recursive_directory_iterator(assets_root)) {
-		if (!entry.is_regular_file()) {
-			continue;
-		}
-		const auto ext = entry.path().extension().string();
-		for (const auto& match_ext : extensions) {
-			if (ext == match_ext) {
-				// Return path relative to assets/ root
-				auto rel = std::filesystem::relative(entry.path(), assets_root).string();
-				std::ranges::replace(rel, '\\', '/');
-				results.push_back(rel);
-				break;
-			}
-		}
-	}
-	std::ranges::sort(results);
-	return results;
-}
+#include "file_utils.h"
 
 /// Static file dialog for field browse buttons (only one can be active at a time)
 std::optional<FileDialogPopup> s_field_file_dialog;

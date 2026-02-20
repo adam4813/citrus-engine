@@ -1,6 +1,7 @@
 #include "material_editor_panel.h"
 
 #include "asset_editor_registry.h"
+#include "file_utils.h"
 
 #include <filesystem>
 #include <imgui.h>
@@ -26,7 +27,6 @@ void MaterialEditorPanel::OpenMaterial(const std::string& path) {
 		}
 		json j = json::parse(*text);
 
-		// Use the asset registry's FromJson factory
 		const auto* type_info = engine::scene::AssetRegistry::Instance().GetTypeInfo(engine::scene::AssetType::MATERIAL);
 		if (!type_info || !type_info->from_json_factory) {
 			std::cerr << "MaterialEditor: Material type not registered" << std::endl;
@@ -86,7 +86,6 @@ void MaterialEditorPanel::Render() {
 		ImGui::TextDisabled("No material loaded. Open a .material.json file from the asset browser.");
 	}
 
-	// Render save dialog if active
 	if (save_dialog_) {
 		save_dialog_->Render();
 	}
@@ -113,15 +112,78 @@ void MaterialEditorPanel::RenderToolbar() {
 		ImGui::EndMenuBar();
 	}
 
-	// Keyboard shortcut
 	if (material_ && IsDirty() && ImGui::IsKeyDown(ImGuiMod_Ctrl) && ImGui::IsKeyPressed(ImGuiKey_S)) {
 		SaveMaterial();
 	}
 }
 
+namespace {
+
+/// Render an AssetRef combo for a string field. Returns true if value changed.
+bool RenderAssetRefCombo(
+		const char* label,
+		std::string& value,
+		const std::string& asset_type,
+		const std::vector<std::string>& file_extensions = {}) {
+	// Build combined list: scene assets + file system matches
+	std::vector<std::string> names;
+	names.emplace_back(""); // (None) option
+
+	// Scene assets of matching type
+	for (const auto& type_info : engine::scene::AssetRegistry::Instance().GetAssetTypes()) {
+		if (type_info.type_name == asset_type && type_info.create_default_factory) {
+			// The asset type is registered — scene assets would come from a loaded scene
+			// For file-based editors, file scan is the primary source
+			break;
+		}
+	}
+
+	// Scan file system for matching files
+	if (!file_extensions.empty()) {
+		for (auto& file_path : ScanAssetFiles(file_extensions)) {
+			if (std::ranges::find(names, file_path) == names.end()) {
+				names.push_back(std::move(file_path));
+			}
+		}
+	}
+
+	// Ensure current value is in the list
+	if (!value.empty() && std::ranges::find(names, value) == names.end()) {
+		names.push_back(value);
+	}
+
+	int current_index = 0;
+	for (size_t i = 0; i < names.size(); ++i) {
+		if (names[i] == value) {
+			current_index = static_cast<int>(i);
+			break;
+		}
+	}
+
+	bool modified = false;
+	const char* preview = value.empty() ? "(None)" : value.c_str();
+	if (ImGui::BeginCombo(label, preview)) {
+		for (size_t i = 0; i < names.size(); ++i) {
+			const bool is_selected = (current_index == static_cast<int>(i));
+			const char* item_label = names[i].empty() ? "(None)" : names[i].c_str();
+			if (ImGui::Selectable(item_label, is_selected)) {
+				value = names[i];
+				modified = true;
+			}
+			if (is_selected) {
+				ImGui::SetItemDefaultFocus();
+			}
+		}
+		ImGui::EndCombo();
+	}
+	return modified;
+}
+
+} // namespace
+
 void MaterialEditorPanel::RenderMaterialProperties() {
 	ImGui::Text("Material: %s", material_->name.c_str());
-	ImGui::Text("File: %s", current_file_path_.c_str());
+	ImGui::TextDisabled("%s", current_file_path_.c_str());
 	ImGui::Separator();
 
 	bool modified = false;
@@ -137,15 +199,9 @@ void MaterialEditorPanel::RenderMaterialProperties() {
 		}
 	}
 
-	// Shader
-	{
-		char buffer[256];
-		std::strncpy(buffer, material_->shader_name.c_str(), sizeof(buffer) - 1);
-		buffer[sizeof(buffer) - 1] = '\0';
-		if (ImGui::InputText("Shader", buffer, sizeof(buffer))) {
-			material_->shader_name = buffer;
-			modified = true;
-		}
+	// Shader (AssetRef combo)
+	if (RenderAssetRefCombo("Shader", material_->shader_name, "shader", {".glsl", ".vert", ".frag", ".shader"})) {
+		modified = true;
 	}
 
 	ImGui::Separator();
@@ -183,36 +239,29 @@ void MaterialEditorPanel::RenderMaterialProperties() {
 	ImGui::Separator();
 	ImGui::Text("Texture Maps");
 
-	auto RenderTextureSlot = [&](const char* label, std::string& texture_name) {
-		char buf[256];
-		std::strncpy(buf, texture_name.c_str(), sizeof(buf) - 1);
-		buf[sizeof(buf) - 1] = '\0';
-		ImGui::SetNextItemWidth(ImGui::CalcItemWidth() - 30.0f);
-		if (ImGui::InputText(label, buf, sizeof(buf))) {
-			texture_name = buf;
-			modified = true;
-		}
-		ImGui::SameLine();
-		std::string btn_id = std::string("...##") + label;
-		if (ImGui::Button(btn_id.c_str())) {
-			// Scan for texture files
-			auto* target = &texture_name;
-			FileDialogPopup dialog("Browse Texture", FileDialogMode::Open, {".png", ".jpg", ".jpeg", ".tga", ".bmp"});
-			dialog.SetCallback([target, &modified](const std::string& path) {
-				*target = path;
-				modified = true;
-			});
-			dialog.Open();
-		}
-	};
+	static const std::vector<std::string> tex_exts = {".png", ".jpg", ".jpeg", ".tga", ".bmp"};
 
-	RenderTextureSlot("Albedo", material_->albedo_texture);
-	RenderTextureSlot("Normal", material_->normal_texture);
-	RenderTextureSlot("Metallic", material_->metallic_texture);
-	RenderTextureSlot("Roughness", material_->roughness_texture);
-	RenderTextureSlot("AO", material_->ao_texture);
-	RenderTextureSlot("Emissive", material_->emissive_texture);
-	RenderTextureSlot("Height", material_->height_texture);
+	if (RenderAssetRefCombo("Albedo Map", material_->albedo_map, "texture", tex_exts)) {
+		modified = true;
+	}
+	if (RenderAssetRefCombo("Normal Map", material_->normal_map, "texture", tex_exts)) {
+		modified = true;
+	}
+	if (RenderAssetRefCombo("Metallic Map", material_->metallic_map, "texture", tex_exts)) {
+		modified = true;
+	}
+	if (RenderAssetRefCombo("Roughness Map", material_->roughness_map, "texture", tex_exts)) {
+		modified = true;
+	}
+	if (RenderAssetRefCombo("AO Map", material_->ao_map, "texture", tex_exts)) {
+		modified = true;
+	}
+	if (RenderAssetRefCombo("Emissive Map", material_->emissive_map, "texture", tex_exts)) {
+		modified = true;
+	}
+	if (RenderAssetRefCombo("Height Map", material_->height_map, "texture", tex_exts)) {
+		modified = true;
+	}
 
 	if (modified) {
 		SetDirty(true);

@@ -387,14 +387,14 @@ struct MaterialAssetInfo : AssetInfo {
 	std::string shader_name; // Custom shader override (empty = default PBR)
 	rendering::MaterialId id{rendering::INVALID_MATERIAL};
 
-	// PBR texture slots (asset names resolved at load time)
-	std::string albedo_texture;
-	std::string normal_texture;
-	std::string metallic_texture;
-	std::string roughness_texture;
-	std::string ao_texture;
-	std::string emissive_texture;
-	std::string height_texture;
+	// PBR texture map slots (asset names resolved at load time)
+	std::string albedo_map;
+	std::string normal_map;
+	std::string metallic_map;
+	std::string roughness_map;
+	std::string ao_map;
+	std::string emissive_map;
+	std::string height_map;
 
 	// PBR scalar properties
 	float metallic_factor{0.0f};

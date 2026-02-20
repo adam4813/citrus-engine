@@ -171,4 +171,34 @@ inline bool RenderDirectoryTree(
 	return changed;
 }
 
+/// Recursively scan the assets/ directory for files matching the given extensions.
+/// Returns paths relative to assets/ root with forward slashes.
+inline std::vector<std::string> ScanAssetFiles(const std::vector<std::string>& extensions) {
+	std::vector<std::string> results;
+	const std::filesystem::path assets_root{"assets"};
+	if (!std::filesystem::exists(assets_root)) {
+		return results;
+	}
+	try {
+		for (const auto& entry : std::filesystem::recursive_directory_iterator(assets_root)) {
+			if (!entry.is_regular_file()) {
+				continue;
+			}
+			const auto ext = entry.path().extension().string();
+			for (const auto& match_ext : extensions) {
+				if (ext == match_ext) {
+					auto rel = std::filesystem::relative(entry.path(), assets_root).string();
+					std::ranges::replace(rel, '\\', '/');
+					results.push_back(rel);
+					break;
+				}
+			}
+		}
+	}
+	catch (...) {
+	}
+	std::ranges::sort(results);
+	return results;
+}
+
 } // namespace editor

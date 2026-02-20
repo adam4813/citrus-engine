@@ -313,14 +313,14 @@ void MaterialAssetInfo::ToJson(nlohmann::json& j) const {
 	j["type"] = "material";
 	j["shader"] = shader_name;
 
-	// PBR textures
-	if (!albedo_texture.empty()) { j["albedo_texture"] = albedo_texture; }
-	if (!normal_texture.empty()) { j["normal_texture"] = normal_texture; }
-	if (!metallic_texture.empty()) { j["metallic_texture"] = metallic_texture; }
-	if (!roughness_texture.empty()) { j["roughness_texture"] = roughness_texture; }
-	if (!ao_texture.empty()) { j["ao_texture"] = ao_texture; }
-	if (!emissive_texture.empty()) { j["emissive_texture"] = emissive_texture; }
-	if (!height_texture.empty()) { j["height_texture"] = height_texture; }
+	// PBR texture maps
+	if (!albedo_map.empty()) { j["albedo_map"] = albedo_map; }
+	if (!normal_map.empty()) { j["normal_map"] = normal_map; }
+	if (!metallic_map.empty()) { j["metallic_map"] = metallic_map; }
+	if (!roughness_map.empty()) { j["roughness_map"] = roughness_map; }
+	if (!ao_map.empty()) { j["ao_map"] = ao_map; }
+	if (!emissive_map.empty()) { j["emissive_map"] = emissive_map; }
+	if (!height_map.empty()) { j["height_map"] = height_map; }
 
 	// PBR scalars
 	j["metallic_factor"] = metallic_factor;
@@ -388,13 +388,13 @@ bool MaterialAssetInfo::DoLoad() {
 	material.SetProperty("u_AlphaCutoff", alpha_cutoff);
 
 	// Bind texture slots
-	BindTextureSlot(material, albedo_texture, "u_AlbedoMap");
-	BindTextureSlot(material, normal_texture, "u_NormalMap");
-	BindTextureSlot(material, metallic_texture, "u_MetallicMap");
-	BindTextureSlot(material, roughness_texture, "u_RoughnessMap");
-	BindTextureSlot(material, ao_texture, "u_AOMap");
-	BindTextureSlot(material, emissive_texture, "u_EmissiveMap");
-	BindTextureSlot(material, height_texture, "u_HeightMap");
+	BindTextureSlot(material, albedo_map, "u_AlbedoMap");
+	BindTextureSlot(material, normal_map, "u_NormalMap");
+	BindTextureSlot(material, metallic_map, "u_MetallicMap");
+	BindTextureSlot(material, roughness_map, "u_RoughnessMap");
+	BindTextureSlot(material, ao_map, "u_AOMap");
+	BindTextureSlot(material, emissive_map, "u_EmissiveMap");
+	BindTextureSlot(material, height_map, "u_HeightMap");
 
 	std::cout << "MaterialAssetInfo: Loaded material '" << name << "' (id=" << id << ")" << '\n';
 	return true;
@@ -418,25 +418,25 @@ void MaterialAssetInfo::RegisterType() {
 			.Field("base_color", &MaterialAssetInfo::base_color, "Base Color", AssetFieldType::Color)
 			.Field("emissive_color", &MaterialAssetInfo::emissive_color, "Emissive Color", AssetFieldType::Color)
 			// PBR textures
-			.Field("albedo_texture", &MaterialAssetInfo::albedo_texture, "Albedo Texture")
+			.Field("albedo_map", &MaterialAssetInfo::albedo_map, "Albedo Map")
 			.AssetRef(TextureAssetInfo::TYPE_NAME)
 			.FileExtensions({".png", ".jpg", ".jpeg", ".tga", ".bmp"})
-			.Field("normal_texture", &MaterialAssetInfo::normal_texture, "Normal Map")
+			.Field("normal_map", &MaterialAssetInfo::normal_map, "Normal Map")
 			.AssetRef(TextureAssetInfo::TYPE_NAME)
 			.FileExtensions({".png", ".jpg", ".jpeg", ".tga", ".bmp"})
-			.Field("metallic_texture", &MaterialAssetInfo::metallic_texture, "Metallic Map")
+			.Field("metallic_map", &MaterialAssetInfo::metallic_map, "Metallic Map")
 			.AssetRef(TextureAssetInfo::TYPE_NAME)
 			.FileExtensions({".png", ".jpg", ".jpeg", ".tga", ".bmp"})
-			.Field("roughness_texture", &MaterialAssetInfo::roughness_texture, "Roughness Map")
+			.Field("roughness_map", &MaterialAssetInfo::roughness_map, "Roughness Map")
 			.AssetRef(TextureAssetInfo::TYPE_NAME)
 			.FileExtensions({".png", ".jpg", ".jpeg", ".tga", ".bmp"})
-			.Field("ao_texture", &MaterialAssetInfo::ao_texture, "AO Map")
+			.Field("ao_map", &MaterialAssetInfo::ao_map, "AO Map")
 			.AssetRef(TextureAssetInfo::TYPE_NAME)
 			.FileExtensions({".png", ".jpg", ".jpeg", ".tga", ".bmp"})
-			.Field("emissive_texture", &MaterialAssetInfo::emissive_texture, "Emissive Map")
+			.Field("emissive_map", &MaterialAssetInfo::emissive_map, "Emissive Map")
 			.AssetRef(TextureAssetInfo::TYPE_NAME)
 			.FileExtensions({".png", ".jpg", ".jpeg", ".tga", ".bmp"})
-			.Field("height_texture", &MaterialAssetInfo::height_texture, "Height Map")
+			.Field("height_map", &MaterialAssetInfo::height_map, "Height Map")
 			.AssetRef(TextureAssetInfo::TYPE_NAME)
 			.FileExtensions({".png", ".jpg", ".jpeg", ".tga", ".bmp"})
 			// PBR scalars
@@ -450,14 +450,14 @@ void MaterialAssetInfo::RegisterType() {
 				auto a = std::make_unique<MaterialAssetInfo>();
 				a->name = j.value("name", "");
 				a->shader_name = j.value("shader", "");
-				// PBR textures
-				a->albedo_texture = j.value("albedo_texture", "");
-				a->normal_texture = j.value("normal_texture", "");
-				a->metallic_texture = j.value("metallic_texture", "");
-				a->roughness_texture = j.value("roughness_texture", "");
-				a->ao_texture = j.value("ao_texture", "");
-				a->emissive_texture = j.value("emissive_texture", "");
-				a->height_texture = j.value("height_texture", "");
+				// PBR texture maps
+				a->albedo_map = j.value("albedo_map", j.value("albedo_texture", ""));
+				a->normal_map = j.value("normal_map", j.value("normal_texture", ""));
+				a->metallic_map = j.value("metallic_map", j.value("metallic_texture", ""));
+				a->roughness_map = j.value("roughness_map", j.value("roughness_texture", ""));
+				a->ao_map = j.value("ao_map", j.value("ao_texture", ""));
+				a->emissive_map = j.value("emissive_map", j.value("emissive_texture", ""));
+				a->height_map = j.value("height_map", j.value("height_texture", ""));
 				// PBR scalars
 				a->metallic_factor = j.value("metallic_factor", 0.0f);
 				a->roughness_factor = j.value("roughness_factor", 0.5f);

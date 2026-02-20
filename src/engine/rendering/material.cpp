@@ -121,6 +121,8 @@ void MaterialManager::Initialize(const ShaderManager& shader_manager) {
 		// Set default material properties
 		auto& default_mat = GetMaterial(pimpl_->default_material_id);
 		default_mat.SetProperty("u_Color", Vec4(1.0f, 1.0f, 1.0f, 1.0f));
+		default_mat.SetProperty("u_BaseColor", Vec4(1.0f, 1.0f, 1.0f, 1.0f));
+		default_mat.SetProperty("u_HasAlbedoMap", 0);
 		default_mat.SetProperty("u_Shininess", 32.0f);
 	}
 	else {

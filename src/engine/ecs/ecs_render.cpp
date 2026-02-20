@@ -28,14 +28,18 @@ void SetupAssetRefBinding(flecs::world& world,
 						  IdType TargetComp::*id_member,
 						  IdType invalid_value,
 						  FindFn find_fn,
-						  NameFn name_fn) {
+						  NameFn name_fn,
+						  std::vector<std::string> file_extensions = {}) {
 	auto& registry = ComponentRegistry::Instance();
 
-	registry.Register<RefComp>(ref_name, world)
+	auto builder = registry.Register<RefComp>(ref_name, world)
 			.Category(category)
 			.Field("name", &RefComp::name)
-			.AssetRef(asset_type_name)
-			.Build();
+			.AssetRef(asset_type_name);
+	if (!file_extensions.empty()) {
+		builder.FileExtensions(std::move(file_extensions));
+	}
+	builder.Build();
 
 	if (!world.component<TargetComp>().add(flecs::With, world.component<RefComp>())) {
 		return;
@@ -245,7 +249,8 @@ void ECSWorld::SetupMaterialRefIntegration() {
 			world_, "MaterialRef", "Rendering", scene::MaterialAssetInfo::TYPE_NAME, &Renderable::material,
 			INVALID_MATERIAL,
 			[](const std::string& name) { return GetRenderer().GetMaterialManager().FindMaterial(name); },
-			[](MaterialId id) { return GetRenderer().GetMaterialManager().GetMaterialName(id); });
+			[](MaterialId id) { return GetRenderer().GetMaterialManager().GetMaterialName(id); },
+			{".material.json"});
 }
 
 void ECSWorld::SetupSoundRefIntegration() {

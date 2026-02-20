@@ -396,6 +396,9 @@ bool MaterialAssetInfo::DoLoad() {
 	BindTextureSlot(material, emissive_map, "u_EmissiveMap");
 	BindTextureSlot(material, height_map, "u_HeightMap");
 
+	// Set texture presence flags for shaders
+	material.SetProperty("u_HasAlbedoMap", albedo_map.empty() ? 0 : 1);
+
 	std::cout << "MaterialAssetInfo: Loaded material '" << name << "' (id=" << id << ")" << '\n';
 	return true;
 }

@@ -199,8 +199,8 @@ void MaterialEditorPanel::RenderMaterialProperties() {
 		}
 	}
 
-	// Shader (AssetRef combo)
-	if (RenderAssetRefCombo("Shader", material_->shader_name, "shader", {".glsl", ".vert", ".frag", ".shader"})) {
+	// Shader (AssetRef combo — shaders are scene assets, not file assets)
+	if (RenderAssetRefCombo("Shader", material_->shader_name, "shader")) {
 		modified = true;
 	}
 

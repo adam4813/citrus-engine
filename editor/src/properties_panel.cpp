@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cstring>
+#include <filesystem>
 #include <flecs.h>
 #include <imgui.h>
 #include <imgui_internal.h>
@@ -16,6 +17,32 @@
 namespace editor {
 
 namespace {
+
+/// Scan assets/ directory for files matching given extensions, returning filename stems
+std::vector<std::string> ScanAssetFiles(const std::vector<std::string>& extensions) {
+	std::vector<std::string> results;
+	const std::filesystem::path assets_root{"assets"};
+	if (!std::filesystem::exists(assets_root)) {
+		return results;
+	}
+	for (const auto& entry : std::filesystem::recursive_directory_iterator(assets_root)) {
+		if (!entry.is_regular_file()) {
+			continue;
+		}
+		const auto ext = entry.path().extension().string();
+		for (const auto& match_ext : extensions) {
+			if (ext == match_ext) {
+				// Return path relative to assets/ root
+				auto rel = std::filesystem::relative(entry.path(), assets_root).string();
+				std::ranges::replace(rel, '\\', '/');
+				results.push_back(rel);
+				break;
+			}
+		}
+	}
+	std::ranges::sort(results);
+	return results;
+}
 
 /// Static file dialog for field browse buttons (only one can be active at a time)
 std::optional<FileDialogPopup> s_field_file_dialog;
@@ -352,14 +379,26 @@ bool RenderSingleField(const engine::ecs::FieldInfo& field, void* field_ptr, eng
 	{
 		auto* str = static_cast<std::string*>(field_ptr);
 
-		// Get list of assets of this type from the scene
+		// Build list of available names: scene assets + file system scan
 		std::vector<std::string> asset_names;
 		asset_names.push_back(""); // Allow empty/none selection
+
+		// Scan scene assets of matching type
 		if (scene) {
 			for (const auto& asset : scene->GetAssets().GetAll()) {
 				if (const auto* type_info = engine::scene::AssetRegistry::Instance().GetTypeInfo(asset->type);
 					type_info && type_info->type_name == field.asset_type) {
 					asset_names.push_back(asset->name);
+				}
+			}
+		}
+
+		// Also scan assets/ directory for files matching the field's extensions
+		if (!field.file_extensions.empty()) {
+			for (auto& file_path : ScanAssetFiles(field.file_extensions)) {
+				// Avoid duplicates with scene assets
+				if (std::ranges::find(asset_names, file_path) == asset_names.end()) {
+					asset_names.push_back(std::move(file_path));
 				}
 			}
 		}

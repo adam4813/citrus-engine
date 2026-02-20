@@ -380,17 +380,33 @@ protected:
 	void DoUnload() override;
 };
 
-/// Material asset definition - references a shader and defines uniform properties
+/// Material asset definition - PBR material with static texture slots and properties
 struct MaterialAssetInfo : AssetInfo {
 	static constexpr std::string_view TYPE_NAME = "material";
 
-	std::string shader_name;
+	std::string shader_name; // Custom shader override (empty = default PBR)
 	rendering::MaterialId id{rendering::INVALID_MATERIAL};
 
-	// Property maps serialized as JSON
-	std::unordered_map<std::string, float> float_properties;
-	std::unordered_map<std::string, rendering::Vec4> vec4_properties;
-	std::unordered_map<std::string, std::string> texture_properties; // uniform name → texture asset name
+	// PBR texture slots (asset names resolved at load time)
+	std::string albedo_texture;
+	std::string normal_texture;
+	std::string metallic_texture;
+	std::string roughness_texture;
+	std::string ao_texture;
+	std::string emissive_texture;
+	std::string height_texture;
+
+	// PBR scalar properties
+	float metallic_factor{0.0f};
+	float roughness_factor{0.5f};
+	float ao_strength{1.0f};
+	float emissive_intensity{0.0f};
+	float normal_strength{1.0f};
+	float alpha_cutoff{0.5f};
+
+	// PBR color properties
+	rendering::Vec4 base_color{1.0f, 1.0f, 1.0f, 1.0f};
+	rendering::Vec4 emissive_color{0.0f, 0.0f, 0.0f, 1.0f};
 
 	MaterialAssetInfo() : AssetInfo("", AssetType::MATERIAL) {}
 	MaterialAssetInfo(std::string asset_name, std::string shader) :

@@ -313,19 +313,26 @@ void MaterialAssetInfo::ToJson(nlohmann::json& j) const {
 	j["type"] = "material";
 	j["shader"] = shader_name;
 
-	if (!float_properties.empty()) {
-		j["floats"] = float_properties;
-	}
-	if (!vec4_properties.empty()) {
-		nlohmann::json vec4s;
-		for (const auto& [key, v] : vec4_properties) {
-			vec4s[key] = {v.x, v.y, v.z, v.w};
-		}
-		j["vec4s"] = vec4s;
-	}
-	if (!texture_properties.empty()) {
-		j["textures"] = texture_properties;
-	}
+	// PBR textures
+	if (!albedo_texture.empty()) { j["albedo_texture"] = albedo_texture; }
+	if (!normal_texture.empty()) { j["normal_texture"] = normal_texture; }
+	if (!metallic_texture.empty()) { j["metallic_texture"] = metallic_texture; }
+	if (!roughness_texture.empty()) { j["roughness_texture"] = roughness_texture; }
+	if (!ao_texture.empty()) { j["ao_texture"] = ao_texture; }
+	if (!emissive_texture.empty()) { j["emissive_texture"] = emissive_texture; }
+	if (!height_texture.empty()) { j["height_texture"] = height_texture; }
+
+	// PBR scalars
+	j["metallic_factor"] = metallic_factor;
+	j["roughness_factor"] = roughness_factor;
+	j["ao_strength"] = ao_strength;
+	j["emissive_intensity"] = emissive_intensity;
+	j["normal_strength"] = normal_strength;
+	j["alpha_cutoff"] = alpha_cutoff;
+
+	// PBR colors
+	j["base_color"] = {base_color.x, base_color.y, base_color.z, base_color.w};
+	j["emissive_color"] = {emissive_color.x, emissive_color.y, emissive_color.z, emissive_color.w};
 }
 
 void MaterialAssetInfo::DoInitialize() {
@@ -340,6 +347,25 @@ void MaterialAssetInfo::DoInitialize() {
 			  << '\n';
 }
 
+namespace {
+void BindTextureSlot(
+		rendering::Material& material,
+		const std::string& texture_name,
+		const char* uniform_name) {
+	if (texture_name.empty()) {
+		return;
+	}
+	auto& tex_mgr = rendering::GetRenderer().GetTextureManager();
+	auto texture_id = tex_mgr.FindTexture(texture_name);
+	if (texture_id == rendering::INVALID_TEXTURE) {
+		texture_id = tex_mgr.LoadTexture(texture_name);
+	}
+	if (texture_id != rendering::INVALID_TEXTURE) {
+		material.SetTexture(uniform_name, texture_id);
+	}
+}
+} // namespace
+
 bool MaterialAssetInfo::DoLoad() {
 	if (id == rendering::INVALID_MATERIAL) {
 		std::cerr << "MaterialAssetInfo: Cannot load - material not initialized" << '\n';
@@ -349,25 +375,26 @@ bool MaterialAssetInfo::DoLoad() {
 	auto& mat_mgr = rendering::GetRenderer().GetMaterialManager();
 	auto& material = mat_mgr.GetMaterial(id);
 
-	// Apply float properties
-	for (const auto& [key, value] : float_properties) {
-		material.SetProperty(key, value);
-	}
-	// Apply vec4 properties (colors, etc.)
-	for (const auto& [key, value] : vec4_properties) {
-		material.SetProperty(key, value);
-	}
-	// Texture properties — texture loading is deferred, names stored for future binding
-	for (const auto& [uniform_name, texture_asset_name] : texture_properties) {
-		if (texture_asset_name.empty()) {
-			continue;
-		}
-		// Attempt to resolve texture asset by name
-		if (const auto& texture_id = rendering::GetRenderer().GetTextureManager().LoadTexture(texture_asset_name);
-			texture_id != rendering::INVALID_TEXTURE) {
-			material.SetTexture(uniform_name, texture_id);
-		}
-	}
+	// Apply PBR colors
+	material.SetProperty("u_BaseColor", base_color);
+	material.SetProperty("u_EmissiveColor", emissive_color);
+
+	// Apply PBR scalars
+	material.SetProperty("u_MetallicFactor", metallic_factor);
+	material.SetProperty("u_RoughnessFactor", roughness_factor);
+	material.SetProperty("u_AOStrength", ao_strength);
+	material.SetProperty("u_EmissiveIntensity", emissive_intensity);
+	material.SetProperty("u_NormalStrength", normal_strength);
+	material.SetProperty("u_AlphaCutoff", alpha_cutoff);
+
+	// Bind texture slots
+	BindTextureSlot(material, albedo_texture, "u_AlbedoMap");
+	BindTextureSlot(material, normal_texture, "u_NormalMap");
+	BindTextureSlot(material, metallic_texture, "u_MetallicMap");
+	BindTextureSlot(material, roughness_texture, "u_RoughnessMap");
+	BindTextureSlot(material, ao_texture, "u_AOMap");
+	BindTextureSlot(material, emissive_texture, "u_EmissiveMap");
+	BindTextureSlot(material, height_texture, "u_HeightMap");
 
 	std::cout << "MaterialAssetInfo: Loaded material '" << name << "' (id=" << id << ")" << '\n';
 	return true;
@@ -387,37 +414,70 @@ void MaterialAssetInfo::RegisterType() {
 			.Field("name", &MaterialAssetInfo::name, "Name")
 			.Field("shader_name", &MaterialAssetInfo::shader_name, "Shader")
 			.AssetRef(ShaderAssetInfo::TYPE_NAME)
-			.Field("textures", &MaterialAssetInfo::texture_properties, "Texture Properties", AssetFieldType::ListString)
+			// PBR colors
+			.Field("base_color", &MaterialAssetInfo::base_color, "Base Color", AssetFieldType::Color)
+			.Field("emissive_color", &MaterialAssetInfo::emissive_color, "Emissive Color", AssetFieldType::Color)
+			// PBR textures
+			.Field("albedo_texture", &MaterialAssetInfo::albedo_texture, "Albedo Texture")
+			.AssetRef(TextureAssetInfo::TYPE_NAME)
+			.FileExtensions({".png", ".jpg", ".jpeg", ".tga", ".bmp"})
+			.Field("normal_texture", &MaterialAssetInfo::normal_texture, "Normal Map")
+			.AssetRef(TextureAssetInfo::TYPE_NAME)
+			.FileExtensions({".png", ".jpg", ".jpeg", ".tga", ".bmp"})
+			.Field("metallic_texture", &MaterialAssetInfo::metallic_texture, "Metallic Map")
+			.AssetRef(TextureAssetInfo::TYPE_NAME)
+			.FileExtensions({".png", ".jpg", ".jpeg", ".tga", ".bmp"})
+			.Field("roughness_texture", &MaterialAssetInfo::roughness_texture, "Roughness Map")
+			.AssetRef(TextureAssetInfo::TYPE_NAME)
+			.FileExtensions({".png", ".jpg", ".jpeg", ".tga", ".bmp"})
+			.Field("ao_texture", &MaterialAssetInfo::ao_texture, "AO Map")
+			.AssetRef(TextureAssetInfo::TYPE_NAME)
+			.FileExtensions({".png", ".jpg", ".jpeg", ".tga", ".bmp"})
+			.Field("emissive_texture", &MaterialAssetInfo::emissive_texture, "Emissive Map")
+			.AssetRef(TextureAssetInfo::TYPE_NAME)
+			.FileExtensions({".png", ".jpg", ".jpeg", ".tga", ".bmp"})
+			.Field("height_texture", &MaterialAssetInfo::height_texture, "Height Map")
+			.AssetRef(TextureAssetInfo::TYPE_NAME)
+			.FileExtensions({".png", ".jpg", ".jpeg", ".tga", ".bmp"})
+			// PBR scalars
+			.Field("metallic_factor", &MaterialAssetInfo::metallic_factor, "Metallic")
+			.Field("roughness_factor", &MaterialAssetInfo::roughness_factor, "Roughness")
+			.Field("ao_strength", &MaterialAssetInfo::ao_strength, "AO Strength")
+			.Field("emissive_intensity", &MaterialAssetInfo::emissive_intensity, "Emissive Intensity")
+			.Field("normal_strength", &MaterialAssetInfo::normal_strength, "Normal Strength")
+			.Field("alpha_cutoff", &MaterialAssetInfo::alpha_cutoff, "Alpha Cutoff")
 			.FromJson([](const nlohmann::json& j) -> std::unique_ptr<AssetInfo> {
-				auto asset = std::make_unique<MaterialAssetInfo>();
-				asset->name = j.value("name", "");
-				asset->shader_name = j.value("shader", "");
-
-				if (j.contains("floats") && j["floats"].is_object()) {
-					for (auto& [key, val] : j["floats"].items()) {
-						asset->float_properties[key] = val.get<float>();
-					}
+				auto a = std::make_unique<MaterialAssetInfo>();
+				a->name = j.value("name", "");
+				a->shader_name = j.value("shader", "");
+				// PBR textures
+				a->albedo_texture = j.value("albedo_texture", "");
+				a->normal_texture = j.value("normal_texture", "");
+				a->metallic_texture = j.value("metallic_texture", "");
+				a->roughness_texture = j.value("roughness_texture", "");
+				a->ao_texture = j.value("ao_texture", "");
+				a->emissive_texture = j.value("emissive_texture", "");
+				a->height_texture = j.value("height_texture", "");
+				// PBR scalars
+				a->metallic_factor = j.value("metallic_factor", 0.0f);
+				a->roughness_factor = j.value("roughness_factor", 0.5f);
+				a->ao_strength = j.value("ao_strength", 1.0f);
+				a->emissive_intensity = j.value("emissive_intensity", 0.0f);
+				a->normal_strength = j.value("normal_strength", 1.0f);
+				a->alpha_cutoff = j.value("alpha_cutoff", 0.5f);
+				// PBR colors
+				if (j.contains("base_color") && j["base_color"].is_array() && j["base_color"].size() >= 4) {
+					const auto& c = j["base_color"];
+					a->base_color = rendering::Vec4(c[0].get<float>(), c[1].get<float>(), c[2].get<float>(), c[3].get<float>());
 				}
-				if (j.contains("vec4s") && j["vec4s"].is_object()) {
-					for (auto& [key, val] : j["vec4s"].items()) {
-						if (val.is_array() && val.size() >= 4) {
-							asset->vec4_properties[key] = rendering::Vec4(
-									val[0].get<float>(), val[1].get<float>(), val[2].get<float>(), val[3].get<float>());
-						}
-					}
+				if (j.contains("emissive_color") && j["emissive_color"].is_array() && j["emissive_color"].size() >= 4) {
+					const auto& c = j["emissive_color"];
+					a->emissive_color = rendering::Vec4(c[0].get<float>(), c[1].get<float>(), c[2].get<float>(), c[3].get<float>());
 				}
-				if (j.contains("textures") && j["textures"].is_object()) {
-					for (auto& [key, val] : j["textures"].items()) {
-						asset->texture_properties[key] = val.get<std::string>();
-					}
-				}
-				return asset;
+				return a;
 			})
 			.CreateDefault([]() -> std::shared_ptr<AssetInfo> {
-				auto mat = std::make_shared<MaterialAssetInfo>("NewMaterial", "");
-				mat->vec4_properties["u_Color"] = rendering::Vec4(1.0f, 1.0f, 1.0f, 1.0f);
-				mat->float_properties["u_Shininess"] = 32.0f;
-				return mat;
+				return std::make_shared<MaterialAssetInfo>("NewMaterial", "");
 			})
 			.Build();
 }

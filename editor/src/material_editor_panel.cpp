@@ -20,22 +20,19 @@ void MaterialEditorPanel::RegisterAssetHandlers(AssetEditorRegistry& registry) {
 
 void MaterialEditorPanel::OpenMaterial(const std::string& path) {
 	try {
-		auto text = engine::assets::AssetManager::LoadTextFile(std::filesystem::path(path));
+		const auto text = engine::assets::AssetManager::LoadTextFile(std::filesystem::path(path));
 		if (!text) {
 			std::cerr << "MaterialEditor: Failed to read " << path << std::endl;
 			return;
 		}
 		json j = json::parse(*text);
 
-		const auto* type_info = engine::scene::AssetRegistry::Instance().GetTypeInfo(engine::scene::AssetType::MATERIAL);
-		if (!type_info || !type_info->from_json_factory) {
-			std::cerr << "MaterialEditor: Material type not registered" << std::endl;
+		if (material_ = std::dynamic_pointer_cast<engine::assets::MaterialAssetInfo>(
+					engine::assets::AssetRegistry::Instance().FromJson(j));
+			!material_) {
+			std::cerr << "MaterialEditor: JSON does not represent a MaterialAssetInfo: " << path << std::endl;
 			return;
 		}
-
-		auto asset = type_info->from_json_factory(j);
-		material_ = std::shared_ptr<engine::scene::MaterialAssetInfo>(
-				static_cast<engine::scene::MaterialAssetInfo*>(asset.release()));
 
 		current_file_path_ = path;
 		SetDirty(false);
@@ -128,15 +125,6 @@ bool RenderAssetRefCombo(
 	// Build combined list: scene assets + file system matches
 	std::vector<std::string> names;
 	names.emplace_back(""); // (None) option
-
-	// Scene assets of matching type
-	for (const auto& type_info : engine::scene::AssetRegistry::Instance().GetAssetTypes()) {
-		if (type_info.type_name == asset_type && type_info.create_default_factory) {
-			// The asset type is registered — scene assets would come from a loaded scene
-			// For file-based editors, file scan is the primary source
-			break;
-		}
-	}
 
 	// Scan file system for matching files
 	if (!file_extensions.empty()) {

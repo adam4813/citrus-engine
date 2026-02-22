@@ -45,7 +45,7 @@ enum class AssetFileType { All, Scene, Prefab, Texture, Sound, Mesh, Script, Sha
  * @brief Info about the currently selected asset
  */
 struct AssetSelection {
-	engine::scene::AssetType type{};
+	engine::assets::AssetType type{};
 	std::string name;
 
 	void Clear() { name.clear(); }
@@ -81,14 +81,6 @@ public:
 	void Render(engine::scene::Scene* scene, const AssetSelection& selected_asset);
 
 private:
-	/**
-	 * @brief Render assets for a specific asset type
-	 */
-	void RenderAssetCategory(
-			engine::scene::Scene* scene,
-			const engine::scene::AssetTypeInfo& type_info,
-			const AssetSelection& selected_asset) const;
-
 	/**
 	 * @brief Render the Prefabs section listing .prefab.json files
 	 */

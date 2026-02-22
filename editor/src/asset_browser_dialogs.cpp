@@ -322,7 +322,8 @@ void AssetBrowserPanel::CreateNewMaterialFile() {
 		}
 
 		// Use the asset registry to create a default material and serialize it
-		auto default_asset = engine::scene::AssetRegistry::Instance().CreateDefault(engine::scene::AssetType::MATERIAL);
+		auto default_asset =
+				engine::assets::AssetRegistry::Instance().CreateDefault(engine::assets::AssetType::MATERIAL);
 		if (!default_asset) {
 			std::cerr << "Failed to create default material from registry" << std::endl;
 			return;

@@ -4,17 +4,18 @@ module;
 #include <functional>
 #include <memory>
 #include <nlohmann/json_fwd.hpp>
+#include <ranges>
 #include <string>
 #include <unordered_map>
 #include <variant>
 #include <vector>
 
-export module engine.scene.assets;
+export module engine.asset_registry;
 
 import engine.rendering;
 import engine.ecs.component_registry;
 
-export namespace engine::scene {
+export namespace engine::assets {
 
 /// Type of asset in the scene
 enum class AssetType : uint8_t {
@@ -30,12 +31,6 @@ enum class AssetType : uint8_t {
 
 // === ASSET FIELD REFLECTION SYSTEM ===
 
-/// AssetFieldType is now an alias for the unified FieldType
-using AssetFieldType = engine::ecs::FieldType;
-
-/// AssetFieldInfo is now an alias for the unified FieldInfo
-using AssetFieldInfo = engine::ecs::FieldInfo;
-
 // Forward declarations
 struct AssetInfo;
 class AssetRegistry;
@@ -48,9 +43,8 @@ struct AssetTypeInfo {
 	std::string display_name; // UI display name (e.g., "Shader")
 	std::string category; // Grouping category (e.g., "Rendering")
 	AssetType asset_type{}; // Enum value
-	std::function<std::unique_ptr<AssetInfo>(const nlohmann::json&)> from_json_factory;
 	std::function<std::shared_ptr<AssetInfo>()> create_default_factory;
-	std::vector<AssetFieldInfo> fields;
+	std::vector<ecs::FieldInfo> fields;
 };
 
 /**
@@ -61,8 +55,11 @@ struct AssetTypeInfo {
  *       .DisplayName("Shader")
  *       .Category("Rendering")
  *       .Field("name", &ShaderAssetInfo::name, "Name")
- *       .Field("vertex_path", &ShaderAssetInfo::vertex_path, "Vertex Shader", AssetFieldType::FilePath)
+ *       .Field("vertex_path", &ShaderAssetInfo::vertex_path, "Vertex Shader", ecs::FieldType::FilePath)
  *       .FromJson([](const json& j) { ... })
+ *       .ToJson([](json& j, shared_ptr<AssetInfo> asset) {
+ *           if (auto shader_asset = dynamic_pointer_cast<ShaderAssetInfo>(asset)) { ... }
+ *        })
  *       .CreateDefault([]() { return std::make_shared<ShaderAssetInfo>(); })
  *       .Build();
  */
@@ -80,34 +77,16 @@ public:
 		return *this;
 	}
 
-	/// Register a field with automatic type deduction
-	template <typename FieldT, typename ClassT>
-	AssetTypeRegistration&
-	Field(const std::string& field_name, FieldT ClassT::* member_ptr, const std::string& display_name) {
-		static_assert(
-				std::is_base_of_v<ClassT, T> || std::is_same_v<ClassT, T>,
-				"Member pointer must be from T or a base class of T");
-		AssetFieldInfo field;
-		field.name = field_name;
-		field.display_name = display_name;
-		field.type = DeduceFieldType<FieldT>();
-		field.offset = reinterpret_cast<size_t>(&(static_cast<T*>(nullptr)->*member_ptr));
-		field.size = sizeof(FieldT);
-		info_.fields.push_back(std::move(field));
-		return *this;
-	}
-
-	/// Register a field with explicit type override
 	template <typename FieldT, typename ClassT>
 	AssetTypeRegistration&
 	Field(const std::string& field_name,
 		  FieldT ClassT::* member_ptr,
 		  const std::string& display_name,
-		  AssetFieldType type_override) {
+		  const ecs::FieldType type_override = DeduceFieldType<FieldT>()) {
 		static_assert(
 				std::is_base_of_v<ClassT, T> || std::is_same_v<ClassT, T>,
 				"Member pointer must be from T or a base class of T");
-		AssetFieldInfo field;
+		ecs::FieldInfo field;
 		field.name = field_name;
 		field.display_name = display_name;
 		field.type = type_override;
@@ -126,9 +105,9 @@ public:
 	}
 
 	/// Set file extension filters on the last field (for FilePath/AssetRef browse dialogs)
-	AssetTypeRegistration& FileExtensions(std::vector<std::string> exts) {
+	AssetTypeRegistration& FileExtensions(std::vector<std::string> extensions) {
 		if (!info_.fields.empty()) {
-			info_.fields.back().file_extensions = std::move(exts);
+			info_.fields.back().file_extensions = std::move(extensions);
 		}
 		return *this;
 	}
@@ -137,12 +116,12 @@ public:
 	/// For list types, only sets asset_type hint (elements rendered as asset pickers).
 	AssetTypeRegistration& AssetRef(const std::string& asset_type_key) {
 		if (!info_.fields.empty()) {
-			auto& f = info_.fields.back();
-			if (f.type != AssetFieldType::ListInt && f.type != AssetFieldType::ListFloat
-				&& f.type != AssetFieldType::ListString) {
-				f.type = AssetFieldType::AssetRef;
+			auto& field_info = info_.fields.back();
+			if (field_info.type != ecs::FieldType::ListInt && field_info.type != ecs::FieldType::ListFloat
+				&& field_info.type != ecs::FieldType::ListString) {
+				field_info.type = ecs::FieldType::AssetRef;
 			}
-			f.asset_type = asset_type_key;
+			field_info.asset_type = asset_type_key;
 		}
 		return *this;
 	}
@@ -150,36 +129,24 @@ public:
 		return AssetRef(std::string(asset_type_key));
 	}
 
-	/// Set the JSON deserialization factory
-	AssetTypeRegistration& FromJson(std::function<std::unique_ptr<AssetInfo>(const nlohmann::json&)> factory) {
-		info_.from_json_factory = std::move(factory);
-		return *this;
-	}
-
-	/// Set the default creation factory (for "New Asset" in editor)
-	AssetTypeRegistration& CreateDefault(std::function<std::shared_ptr<AssetInfo>()> factory) {
-		info_.create_default_factory = std::move(factory);
-		return *this;
-	}
-
 	void Build();
 
 private:
-	template <typename FieldT> static constexpr AssetFieldType DeduceFieldType() {
+	template <typename FieldT> static constexpr ecs::FieldType DeduceFieldType() {
 		if constexpr (std::is_same_v<FieldT, std::string>) {
-			return AssetFieldType::String;
+			return ecs::FieldType::String;
 		}
 		else if constexpr (std::is_same_v<FieldT, int> || std::is_same_v<FieldT, uint32_t>) {
-			return AssetFieldType::Int;
+			return ecs::FieldType::Int;
 		}
 		else if constexpr (std::is_same_v<FieldT, float>) {
-			return AssetFieldType::Float;
+			return ecs::FieldType::Float;
 		}
 		else if constexpr (std::is_same_v<FieldT, bool>) {
-			return AssetFieldType::Bool;
+			return ecs::FieldType::Bool;
 		}
 		else {
-			return AssetFieldType::ReadOnly;
+			return ecs::FieldType::ReadOnly;
 		}
 	}
 
@@ -191,8 +158,6 @@ private:
 /// Asset types self-register their deserialization factories and field info
 class AssetRegistry {
 public:
-	using FactoryFn = std::function<std::unique_ptr<AssetInfo>(const nlohmann::json&)>;
-
 	/// Get singleton instance
 	static AssetRegistry& Instance();
 
@@ -206,21 +171,15 @@ public:
 		return RegisterType<T>(std::string(type_name), asset_type);
 	}
 
-	/// Legacy: Register an asset type factory only (for backward compat)
-	/// @param type_name The "type" string in JSON (e.g., "shader")
-	/// @param factory Function that creates the asset from JSON
-	void Register(const std::string& type_name, FactoryFn factory);
-
-	/// Create an asset from JSON using registered factory
+	/// Create an asset from JSON
 	/// @return nullptr if type is unknown
-	[[nodiscard]] std::unique_ptr<AssetInfo> Create(const nlohmann::json& j) const;
+	[[nodiscard]] std::shared_ptr<AssetInfo> FromJson(const nlohmann::json& j) const;
+
+	void ToJson(nlohmann::json& j, const std::shared_ptr<AssetInfo>& asset) const;
 
 	/// Create a new default asset of the specified type
 	/// @return nullptr if type has no default factory
 	[[nodiscard]] std::shared_ptr<AssetInfo> CreateDefault(AssetType type) const;
-
-	/// Check if a type is registered
-	[[nodiscard]] bool IsRegistered(const std::string& type_name) const;
 
 	/// Get all registered asset types
 	[[nodiscard]] const std::vector<AssetTypeInfo>& GetAssetTypes() const { return types_; }
@@ -236,27 +195,21 @@ public:
 
 private:
 	AssetRegistry() = default;
-	std::unordered_map<std::string, FactoryFn> factories_; // Legacy
 	std::vector<AssetTypeInfo> types_;
 };
 
 // Template implementation
 template <typename T>
 AssetTypeRegistration<T>::AssetTypeRegistration(
-		AssetRegistry& registry, const std::string& type_name, AssetType asset_type) : registry_(registry) {
+		AssetRegistry& registry, const std::string& type_name, const AssetType asset_type) : registry_(registry) {
 	info_.type_name = type_name;
 	info_.display_name = type_name; // Default, override with DisplayName()
 	info_.category = "Other";
 	info_.asset_type = asset_type;
+	info_.create_default_factory = [type_name] { return std::make_shared<T>("New " + type_name); };
 }
 
-template <typename T> void AssetTypeRegistration<T>::Build() {
-	// Also register legacy factory if from_json_factory is set
-	if (info_.from_json_factory) {
-		registry_.Register(info_.type_name, info_.from_json_factory);
-	}
-	registry_.AddTypeInfo(std::move(info_));
-}
+template <typename T> void AssetTypeRegistration<T>::Build() { registry_.AddTypeInfo(std::move(info_)); }
 
 /// Base asset definition - common fields for all asset types
 struct AssetInfo {
@@ -282,14 +235,11 @@ struct AssetInfo {
 	/// Unload/release this asset
 	void Unload();
 
+	virtual void FromJson(const nlohmann::json& j);
+	virtual void ToJson(nlohmann::json& j);
+
 	/// Check if this asset has been loaded
 	[[nodiscard]] bool IsLoaded() const { return loaded_; }
-
-	/// Serialize this asset to JSON
-	virtual void ToJson(nlohmann::json& j) const;
-
-	/// Create an asset from JSON (delegates to AssetRegistry)
-	static std::unique_ptr<AssetInfo> FromJson(const nlohmann::json& j);
 
 protected:
 	/// Override to allocate resources before Load (e.g., reserve shader ID)
@@ -299,6 +249,8 @@ protected:
 	virtual bool DoLoad() { return true; }
 
 	virtual void DoUnload() {}
+
+	[[nodiscard]] virtual std::string_view GetTypeName() const = 0;
 };
 
 /// Shader asset definition
@@ -310,19 +262,21 @@ struct ShaderAssetInfo : AssetInfo {
 	rendering::ShaderId id{rendering::INVALID_SHADER}; // Populated in DoInitialize, compiled in DoLoad
 
 	ShaderAssetInfo() : AssetInfo("", AssetType::SHADER) {}
-	ShaderAssetInfo(std::string asset_name, std::string vert, std::string frag) :
+	ShaderAssetInfo(std::string asset_name, std::string vert = "", std::string frag = "") :
 			AssetInfo(std::move(asset_name), AssetType::SHADER), vertex_path(std::move(vert)),
 			fragment_path(std::move(frag)) {}
 
-	void ToJson(nlohmann::json& j) const override;
-
 	/// Register this asset type with the AssetRegistry
 	static void RegisterType();
+
+	void FromJson(const nlohmann::json& j) override;
+	void ToJson(nlohmann::json& j) override;
 
 protected:
 	void DoInitialize() override;
 	bool DoLoad() override;
 	void DoUnload() override;
+	[[nodiscard]] std::string_view GetTypeName() const override { return TYPE_NAME; }
 };
 
 /// Built-in mesh type names (used as mesh_type field value)
@@ -339,24 +293,26 @@ constexpr const char* FILE = "file";
 struct MeshAssetInfo : AssetInfo {
 	static constexpr std::string_view TYPE_NAME = "mesh";
 
-	std::string mesh_type; // "quad", "cube", "sphere", "capsule", "file"
-	float params[3]{1.0f, 1.0f, 1.0f}; // Interpreted based on mesh_type
+	std::string mesh_type = mesh_types::QUAD; // "quad", "cube", "sphere", "capsule", "file"
+	float params[3]{1.0F, 1.0F, 1.0F}; // Interpreted based on mesh_type
 	std::string file_path; // Only used when mesh_type == "file"
 	rendering::MeshId id{rendering::INVALID_MESH}; // Populated in DoInitialize, geometry in DoLoad
 
 	MeshAssetInfo() : AssetInfo("", AssetType::MESH), mesh_type(mesh_types::QUAD) {}
-	MeshAssetInfo(std::string asset_name, std::string type) :
+	MeshAssetInfo(std::string asset_name, std::string type = "") :
 			AssetInfo(std::move(asset_name), AssetType::MESH), mesh_type(std::move(type)) {}
-
-	void ToJson(nlohmann::json& j) const override;
 
 	/// Register this asset type with the AssetRegistry
 	static void RegisterType();
+
+	void FromJson(const nlohmann::json& j) override;
+	void ToJson(nlohmann::json& j) override;
 
 protected:
 	void DoInitialize() override;
 	bool DoLoad() override;
 	void DoUnload() override;
+	[[nodiscard]] std::string_view GetTypeName() const override { return TYPE_NAME; }
 };
 
 /// Texture asset definition
@@ -367,17 +323,19 @@ struct TextureAssetInfo : AssetInfo {
 	rendering::TextureId id{rendering::INVALID_TEXTURE};
 
 	TextureAssetInfo() : AssetInfo("", AssetType::TEXTURE) {}
-	TextureAssetInfo(std::string asset_name, std::string path) :
+	TextureAssetInfo(std::string asset_name, std::string path = "") :
 			AssetInfo(std::move(asset_name), AssetType::TEXTURE), file_path(std::move(path)) {}
 
-	void ToJson(nlohmann::json& j) const override;
-
 	static void RegisterType();
+
+	void FromJson(const nlohmann::json& j) override;
+	void ToJson(nlohmann::json& j) override;
 
 protected:
 	void DoInitialize() override;
 	bool DoLoad() override;
 	void DoUnload() override;
+	[[nodiscard]] std::string_view GetTypeName() const override { return TYPE_NAME; }
 };
 
 /// Material asset definition - PBR material with static texture slots and properties
@@ -397,29 +355,30 @@ struct MaterialAssetInfo : AssetInfo {
 	std::string height_map;
 
 	// PBR scalar properties
-	float metallic_factor{0.0f};
-	float roughness_factor{0.5f};
-	float ao_strength{1.0f};
-	float emissive_intensity{0.0f};
-	float normal_strength{1.0f};
-	float alpha_cutoff{0.5f};
+	float metallic_factor{0.0F};
+	float roughness_factor{0.5F};
+	float ao_strength{1.0F};
+	float emissive_intensity{0.0F};
+	float normal_strength{1.0F};
+	float alpha_cutoff{0.5F};
 
 	// PBR color properties
-	rendering::Vec4 base_color{1.0f, 1.0f, 1.0f, 1.0f};
-	rendering::Vec4 emissive_color{0.0f, 0.0f, 0.0f, 1.0f};
+	rendering::Vec4 base_color{1.0F, 1.0F, 1.0F, 1.0F};
+	rendering::Vec4 emissive_color{0.0F, 0.0F, 0.0F, 1.0F};
 
 	MaterialAssetInfo() : AssetInfo("", AssetType::MATERIAL) {}
-	MaterialAssetInfo(std::string asset_name, std::string shader) :
+	MaterialAssetInfo(std::string asset_name, std::string shader = "") :
 			AssetInfo(std::move(asset_name), AssetType::MATERIAL), shader_name(std::move(shader)) {}
 
-	void ToJson(nlohmann::json& j) const override;
-
 	static void RegisterType();
+	void FromJson(const nlohmann::json& j) override;
+	void ToJson(nlohmann::json& j) override;
 
 protected:
 	void DoInitialize() override;
 	bool DoLoad() override;
 	void DoUnload() override;
+	[[nodiscard]] std::string_view GetTypeName() const override { return TYPE_NAME; }
 };
 
 /// Animation clip asset definition
@@ -429,16 +388,18 @@ struct AnimationAssetInfo : AssetInfo {
 	std::string clip_path;
 
 	AnimationAssetInfo() : AssetInfo("", AssetType::ANIMATION_CLIP) {}
-	AnimationAssetInfo(std::string asset_name, std::string path) :
+	AnimationAssetInfo(std::string asset_name, std::string path = "") :
 			AssetInfo(std::move(asset_name), AssetType::ANIMATION_CLIP), clip_path(std::move(path)) {}
 
-	void ToJson(nlohmann::json& j) const override;
-
 	static void RegisterType();
+
+	void FromJson(const nlohmann::json& j) override;
+	void ToJson(nlohmann::json& j) override;
 
 protected:
 	void DoInitialize() override;
 	bool DoLoad() override;
+	[[nodiscard]] std::string_view GetTypeName() const override { return TYPE_NAME; }
 };
 
 /// Sound asset definition
@@ -446,20 +407,22 @@ struct SoundAssetInfo : AssetInfo {
 	static constexpr std::string_view TYPE_NAME = "sound";
 
 	std::string file_path;
-	float volume{1.0f};
+	float volume{1.0F};
 	bool loop{false};
 
 	SoundAssetInfo() : AssetInfo("", AssetType::SOUND) {}
-	SoundAssetInfo(std::string asset_name, std::string path) :
+	SoundAssetInfo(std::string asset_name, std::string path = "") :
 			AssetInfo(std::move(asset_name), AssetType::SOUND), file_path(std::move(path)) {}
 
-	void ToJson(nlohmann::json& j) const override;
-
 	static void RegisterType();
+
+	void FromJson(const nlohmann::json& j) override;
+	void ToJson(nlohmann::json& j) override;
 
 protected:
 	void DoInitialize() override;
 	bool DoLoad() override;
+	[[nodiscard]] std::string_view GetTypeName() const override { return TYPE_NAME; }
 };
 
 /// Data table asset definition
@@ -470,16 +433,18 @@ struct DataTableAssetInfo : AssetInfo {
 	std::string schema_name;
 
 	DataTableAssetInfo() : AssetInfo("", AssetType::DATA_TABLE) {}
-	DataTableAssetInfo(std::string asset_name, std::string path) :
+	DataTableAssetInfo(std::string asset_name, std::string path = "") :
 			AssetInfo(std::move(asset_name), AssetType::DATA_TABLE), file_path(std::move(path)) {}
 
-	void ToJson(nlohmann::json& j) const override;
-
 	static void RegisterType();
+
+	void FromJson(const nlohmann::json& j) override;
+	void ToJson(nlohmann::json& j) override;
 
 protected:
 	void DoInitialize() override;
 	bool DoLoad() override;
+	[[nodiscard]] std::string_view GetTypeName() const override { return TYPE_NAME; }
 };
 
 /// Prefab asset definition
@@ -489,63 +454,44 @@ struct PrefabAssetInfo : AssetInfo {
 	std::string file_path;
 
 	PrefabAssetInfo() : AssetInfo("", AssetType::PREFAB) {}
-	PrefabAssetInfo(std::string asset_name, std::string path) :
+	PrefabAssetInfo(std::string asset_name, std::string path = "") :
 			AssetInfo(std::move(asset_name), AssetType::PREFAB), file_path(std::move(path)) {}
 
-	void ToJson(nlohmann::json& j) const override;
-
 	static void RegisterType();
+
+	void FromJson(const nlohmann::json& j) override;
+	void ToJson(nlohmann::json& j) override;
 
 protected:
 	void DoInitialize() override;
 	bool DoLoad() override;
+	[[nodiscard]] std::string_view GetTypeName() const override { return TYPE_NAME; }
 };
 
 /// Polymorphic asset storage using shared_ptr (allows editor to hold references)
 using AssetPtr = std::shared_ptr<AssetInfo>;
 
-/// Asset list owned by a scene
-class SceneAssets {
+/// Global asset cache — project-level storage replacing per-scene SceneAssets.
+/// Assets are cached by (name, type) key for O(1) lookup.
+class AssetCache {
 public:
-	/// Add an asset (shares ownership)
+	static AssetCache& Instance();
+
+	/// Add an asset to the cache (shares ownership). Overwrites existing if same name+type.
 	void Add(AssetPtr asset);
 
-	/// Remove an asset by name and type
+	/// Remove a cached asset by name and type.
 	bool Remove(const std::string& name, AssetType type);
 
-	/// Find asset by name and type (returns shared_ptr for safe reference holding)
+	/// Find asset by name and type.
 	AssetPtr Find(const std::string& name, AssetType type);
 	[[nodiscard]] std::shared_ptr<const AssetInfo> Find(const std::string& name, AssetType type) const;
 
-	/// Get all assets
-	[[nodiscard]] const std::vector<AssetPtr>& GetAll() const { return assets_; }
-	std::vector<AssetPtr>& GetAll() { return assets_; }
-
-	/// Get all assets of a specific type (returns shared_ptrs for safe reference holding)
-	template <typename T> std::vector<std::shared_ptr<T>> GetAllOfType() {
-		std::vector<std::shared_ptr<T>> result;
-		for (auto& asset : assets_) {
-			if (auto typed = std::dynamic_pointer_cast<T>(asset)) {
-				result.push_back(typed);
-			}
-		}
-		return result;
-	}
-
-	template <typename T> std::vector<std::shared_ptr<const T>> GetAllOfType() const {
-		std::vector<std::shared_ptr<const T>> result;
-		for (const auto& asset : assets_) {
-			if (auto typed = std::dynamic_pointer_cast<const T>(asset)) {
-				result.push_back(typed);
-			}
-		}
-		return result;
-	}
-
-	/// Find typed asset by name (returns shared_ptr for safe reference holding)
+	/// Find typed asset by name.
 	template <typename T> std::shared_ptr<T> FindTyped(const std::string& name) {
-		for (auto& asset : assets_) {
-			if (auto typed = std::dynamic_pointer_cast<T>(asset); typed && typed->name == name) {
+		auto it = cache_.find(name);
+		if (it != cache_.end()) {
+			if (auto typed = std::dynamic_pointer_cast<T>(it->second)) {
 				return typed;
 			}
 		}
@@ -553,44 +499,44 @@ public:
 	}
 
 	template <typename T> std::shared_ptr<const T> FindTyped(const std::string& name) const {
-		for (const auto& asset : assets_) {
-			if (auto typed = std::dynamic_pointer_cast<const T>(asset); typed && typed->name == name) {
+		if (const auto it = cache_.find(name); it != cache_.end()) {
+			if (auto typed = std::dynamic_pointer_cast<const T>(it->second)) {
 				return typed;
 			}
 		}
 		return nullptr;
 	}
 
-	/// Find typed asset matching a predicate (returns shared_ptr for safe reference holding)
-	template <typename T, typename Predicate> std::shared_ptr<T> FindTypedIf(Predicate pred) {
-		for (auto& asset : assets_) {
-			if (auto typed = std::dynamic_pointer_cast<T>(asset); typed && pred(*typed)) {
-				return typed;
+	/// Get all cached assets.
+	[[nodiscard]] std::vector<AssetPtr> GetAll() const;
+
+	/// Get all cached assets of a specific type.
+	[[nodiscard]] std::vector<AssetPtr> GetByType(AssetType type) const;
+
+	template <typename T> std::vector<std::shared_ptr<T>> GetAllOfType() {
+		std::vector<std::shared_ptr<T>> result;
+		for (auto& asset : cache_ | std::views::values) {
+			if (auto typed = std::dynamic_pointer_cast<T>(asset)) {
+				result.push_back(typed);
 			}
 		}
-		return nullptr;
+		return result;
 	}
 
-	template <typename T, typename Predicate> std::shared_ptr<const T> FindTypedIf(Predicate pred) const {
-		for (const auto& asset : assets_) {
-			if (auto typed = std::dynamic_pointer_cast<const T>(asset); typed && pred(*typed)) {
-				return typed;
-			}
-		}
-		return nullptr;
-	}
+	/// Load an asset from a JSON file on disk.
+	/// Uses AssetRegistry::from_json_factory to create the correct type, calls Load(), and caches.
+	/// Returns the loaded asset, or nullptr on failure.
+	AssetPtr LoadFromFile(const std::string& path);
 
-	/// Clear all assets
-	void Clear() { assets_.clear(); }
+	/// Clear all cached assets.
+	void Clear();
 
-	/// Check if empty
-	[[nodiscard]] bool Empty() const { return assets_.empty(); }
-
-	/// Get count
-	[[nodiscard]] size_t Size() const { return assets_.size(); }
+	/// Get count.
+	[[nodiscard]] size_t Size() const { return cache_.size(); }
 
 private:
-	std::vector<AssetPtr> assets_;
+	AssetCache() = default;
+	std::unordered_map<std::string, AssetPtr> cache_;
 };
 
-} // namespace engine::scene
+} // namespace engine::assets

@@ -34,7 +34,7 @@ private:
 	void RenderMaterialProperties();
 
 	// Current material data loaded from file
-	std::shared_ptr<engine::scene::MaterialAssetInfo> material_;
+	std::shared_ptr<engine::assets::MaterialAssetInfo> material_;
 	std::string current_file_path_;
 
 	// File dialogs

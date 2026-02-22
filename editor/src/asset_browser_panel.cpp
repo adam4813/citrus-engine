@@ -38,16 +38,16 @@ AssetBrowserPanel::~AssetBrowserPanel() { ClearThumbnailCache(); }
 
 ImVec4 AssetBrowserPanel::GetAssetTypeColor(AssetFileType type) {
 	switch (type) {
-		case AssetFileType::Scene: return {0.3f, 0.85f, 0.4f, 1.0f};
-		case AssetFileType::Prefab: return {0.4f, 0.6f, 1.0f, 1.0f};
-		case AssetFileType::Texture: return {0.95f, 0.75f, 0.2f, 1.0f};
-		case AssetFileType::Sound: return {1.0f, 0.55f, 0.2f, 1.0f};
-		case AssetFileType::Mesh: return {0.7f, 0.4f, 0.9f, 1.0f};
-		case AssetFileType::Script: return {0.3f, 0.8f, 0.8f, 1.0f};
-		case AssetFileType::Shader: return {0.9f, 0.4f, 0.7f, 1.0f};
-		case AssetFileType::DataTable: return {0.65f, 0.65f, 0.65f, 1.0f};
-		case AssetFileType::Directory: return {0.95f, 0.85f, 0.3f, 1.0f};
-		default: return {0.55f, 0.55f, 0.55f, 1.0f};
+	case AssetFileType::Scene: return {0.3f, 0.85f, 0.4f, 1.0f};
+	case AssetFileType::Prefab: return {0.4f, 0.6f, 1.0f, 1.0f};
+	case AssetFileType::Texture: return {0.95f, 0.75f, 0.2f, 1.0f};
+	case AssetFileType::Sound: return {1.0f, 0.55f, 0.2f, 1.0f};
+	case AssetFileType::Mesh: return {0.7f, 0.4f, 0.9f, 1.0f};
+	case AssetFileType::Script: return {0.3f, 0.8f, 0.8f, 1.0f};
+	case AssetFileType::Shader: return {0.9f, 0.4f, 0.7f, 1.0f};
+	case AssetFileType::DataTable: return {0.65f, 0.65f, 0.65f, 1.0f};
+	case AssetFileType::Directory: return {0.95f, 0.85f, 0.3f, 1.0f};
+	default: return {0.55f, 0.55f, 0.55f, 1.0f};
 	}
 }
 
@@ -165,17 +165,6 @@ void AssetBrowserPanel::Render(engine::scene::Scene* scene, const AssetSelection
 	// Right panel: Content view + Scene assets
 	ImGui::BeginChild("ContentView", ImVec2(0, 0), true);
 	RenderContentView();
-
-	// Scene-embedded assets section
-	if (scene && !scene->GetAssets().GetAll().empty()) {
-		ImGui::Separator();
-		if (ImGui::CollapsingHeader("Scene Assets", ImGuiTreeNodeFlags_DefaultOpen)) {
-			auto& registry = engine::scene::AssetRegistry::Instance();
-			for (const auto& type_info : registry.GetAssetTypes()) {
-				RenderAssetCategory(scene, type_info, selected_asset);
-			}
-		}
-	}
 
 	// Handle right-click on empty space
 	if (ImGui::IsWindowHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
@@ -415,8 +404,9 @@ void AssetBrowserPanel::RenderAssetItemGrid(const FileSystemItem& item) {
 			// Fallback: colored text button
 			const ImVec4 tc = GetAssetTypeColor(file_type);
 			ImGui::PushStyleColor(
-					ImGuiCol_Button, is_selected ? ImGui::GetStyleColorVec4(ImGuiCol_ButtonActive)
-												 : ImVec4(tc.x * 0.25f, tc.y * 0.25f, tc.z * 0.25f, 1.0f));
+					ImGuiCol_Button,
+					is_selected ? ImGui::GetStyleColorVec4(ImGuiCol_ButtonActive)
+								: ImVec4(tc.x * 0.25f, tc.y * 0.25f, tc.z * 0.25f, 1.0f));
 			ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(tc.x * 0.4f, tc.y * 0.4f, tc.z * 0.4f, 1.0f));
 			ImGui::PushStyleColor(ImGuiCol_Text, tc);
 			clicked = ImGui::Button(item.type_icon.c_str(), ImVec2(icon_size, icon_size));
@@ -427,8 +417,9 @@ void AssetBrowserPanel::RenderAssetItemGrid(const FileSystemItem& item) {
 		// Colored button for non-image asset types
 		const ImVec4 tc = GetAssetTypeColor(file_type);
 		ImGui::PushStyleColor(
-				ImGuiCol_Button, is_selected ? ImGui::GetStyleColorVec4(ImGuiCol_ButtonActive)
-											 : ImVec4(tc.x * 0.25f, tc.y * 0.25f, tc.z * 0.25f, 1.0f));
+				ImGuiCol_Button,
+				is_selected ? ImGui::GetStyleColorVec4(ImGuiCol_ButtonActive)
+							: ImVec4(tc.x * 0.25f, tc.y * 0.25f, tc.z * 0.25f, 1.0f));
 		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(tc.x * 0.4f, tc.y * 0.4f, tc.z * 0.4f, 1.0f));
 		ImGui::PushStyleColor(ImGuiCol_Text, tc);
 		clicked = ImGui::Button(item.type_icon.c_str(), ImVec2(icon_size, icon_size));
@@ -490,136 +481,6 @@ void AssetBrowserPanel::RenderAssetItemGrid(const FileSystemItem& item) {
 	if (ImGui::IsItemHovered()) {
 		ImGui::SetTooltip("%s", item.path.string().c_str());
 	}
-}
-
-void AssetBrowserPanel::RenderAssetCategory(
-		engine::scene::Scene* scene,
-		const engine::scene::AssetTypeInfo& type_info,
-		const AssetSelection& selected_asset) const {
-
-	auto& assets = scene->GetAssets();
-
-	// Count assets of this type
-	size_t count = 0;
-	for (const auto& asset : assets.GetAll()) {
-		if (asset && asset->type == type_info.asset_type) {
-			count++;
-		}
-	}
-
-	// Build header label with count
-	const std::string header_label = type_info.display_name + " (" + std::to_string(count) + ")";
-
-	// Header with add button - use AllowItemOverlap to prevent button from triggering collapse
-	const bool is_open = ImGui::CollapsingHeader(
-			header_label.c_str(), ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_AllowItemOverlap);
-
-	// Add button (same line as header)
-	ImGui::SameLine(ImGui::GetWindowWidth() - 30);
-	ImGui::PushID(type_info.type_name.c_str());
-	if (ImGui::SmallButton("+")) {
-		ImGui::OpenPopup("AddAssetPopup");
-	}
-	if (ImGui::IsItemHovered()) {
-		ImGui::SetTooltip("Add new %s", type_info.display_name.c_str());
-	}
-
-	// Add asset popup (inside same PushID scope)
-	if (ImGui::BeginPopup("AddAssetPopup")) {
-		static char new_asset_name[64] = "";
-		if (new_asset_name[0] == '\0') {
-			std::strncpy(new_asset_name, ("New" + type_info.display_name).c_str(), sizeof(new_asset_name) - 1);
-		}
-
-		ImGui::Text("Create New %s", type_info.display_name.c_str());
-		ImGui::Separator();
-		ImGui::InputText("Name", new_asset_name, sizeof(new_asset_name));
-
-		if (ImGui::Button("Create", ImVec2(100, 0)) && type_info.create_default_factory) {
-			if (const auto new_asset = type_info.create_default_factory()) {
-				new_asset->name = new_asset_name;
-				assets.Add(new_asset);
-
-				if (callbacks_.on_scene_modified) {
-					callbacks_.on_scene_modified();
-				}
-				if (callbacks_.on_asset_selected) {
-					callbacks_.on_asset_selected(type_info.asset_type, new_asset_name);
-				}
-			}
-			new_asset_name[0] = '\0'; // Reset for next use
-			ImGui::CloseCurrentPopup();
-		}
-		ImGui::SameLine();
-		if (ImGui::Button("Cancel", ImVec2(100, 0))) {
-			new_asset_name[0] = '\0';
-			ImGui::CloseCurrentPopup();
-		}
-		ImGui::EndPopup();
-	}
-	ImGui::PopID();
-
-	if (!is_open)
-		return;
-
-	// List assets of this type
-	ImGui::Indent();
-	bool any_rendered = false;
-
-	for (const auto& asset : assets.GetAll()) {
-		if (!asset || asset->type != type_info.asset_type) {
-			continue;
-		}
-		any_rendered = true;
-
-		// Highlight if selected
-		const bool is_selected = selected_asset.IsValid() && selected_asset.type == type_info.asset_type
-								 && selected_asset.name == asset->name;
-
-		ImGuiTreeNodeFlags node_flags =
-				ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen | ImGuiTreeNodeFlags_SpanAvailWidth;
-		if (is_selected) {
-			node_flags |= ImGuiTreeNodeFlags_Selected;
-		}
-
-		ImGui::PushID(asset->name.c_str());
-		ImGui::TreeNodeEx("##node", node_flags, "%s", asset->name.c_str());
-
-		// Click to select
-		if (ImGui::IsItemClicked()) {
-			if (callbacks_.on_asset_selected) {
-				callbacks_.on_asset_selected(type_info.asset_type, asset->name);
-			}
-		}
-
-		// Context menu for individual asset
-		if (ImGui::BeginPopupContextItem("AssetContextMenu")) {
-			if (ImGui::MenuItem("Delete")) {
-				const std::string name_copy = asset->name;
-				if (assets.Remove(asset->name, type_info.asset_type)) {
-					if (callbacks_.on_asset_deleted) {
-						callbacks_.on_asset_deleted(type_info.asset_type, name_copy);
-					}
-					if (callbacks_.on_scene_modified) {
-						callbacks_.on_scene_modified();
-					}
-				}
-				ImGui::EndPopup();
-				ImGui::PopID();
-				ImGui::Unindent();
-				return; // Exit early as we modified the collection
-			}
-			ImGui::EndPopup();
-		}
-
-		ImGui::PopID();
-	}
-
-	if (!any_rendered) {
-		ImGui::TextDisabled("No %s assets", type_info.display_name.c_str());
-	}
-
-	ImGui::Unindent();
 }
 
 void AssetBrowserPanel::RenderPrefabSection() {

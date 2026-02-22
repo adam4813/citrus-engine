@@ -8,8 +8,6 @@
 
 export module engine.scene;
 
-export import engine.scene.assets;
-
 import glm;
 import engine.ecs;
 import engine.platform;
@@ -119,14 +117,6 @@ public:
 	void SetFilePath(const platform::fs::Path& path) const;
 
 	platform::fs::Path GetFilePath() const;
-
-	bool LoadAssets() const;
-
-	void UnloadAssets() const;
-
-	SceneAssets& GetAssets();
-
-	const SceneAssets& GetAssets() const;
 
 	// Update scene (called each frame)
 	void Update(float delta_time);

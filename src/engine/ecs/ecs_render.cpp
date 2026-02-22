@@ -2,6 +2,7 @@ module;
 
 #include <flecs.h>
 #include <functional>
+#include <iostream>
 #include <string>
 #include <vector>
 
@@ -12,6 +13,7 @@ import glm;
 
 using namespace engine::components;
 using namespace engine::rendering;
+using namespace engine::assets;
 
 namespace engine::ecs {
 
@@ -21,21 +23,22 @@ namespace engine::ecs {
 // TargetComp is the component that holds the runtime ID (e.g., Renderable, AudioSource).
 // find_fn: resolves name → ID. name_fn: resolves ID → name (nullptr disables backward sync).
 template <typename RefComp, typename TargetComp, typename IdType, typename FindFn, typename NameFn>
-void SetupAssetRefBinding(flecs::world& world,
-						  const std::string& ref_name,
-						  const std::string& category,
-						  std::string_view asset_type_name,
-						  IdType TargetComp::*id_member,
-						  IdType invalid_value,
-						  FindFn find_fn,
-						  NameFn name_fn,
-						  std::vector<std::string> file_extensions = {}) {
+void SetupAssetRefBinding(
+		flecs::world& world,
+		const std::string& ref_name,
+		const std::string& category,
+		std::string_view asset_type_name,
+		IdType TargetComp::* id_member,
+		IdType invalid_value,
+		FindFn find_fn,
+		NameFn name_fn,
+		std::vector<std::string> file_extensions = {}) {
 	auto& registry = ComponentRegistry::Instance();
 
 	auto builder = registry.Register<RefComp>(ref_name, world)
-			.Category(category)
-			.Field("name", &RefComp::name)
-			.AssetRef(asset_type_name);
+						   .Category(category)
+						   .Field("name", &RefComp::name)
+						   .AssetRef(asset_type_name);
 	if (!file_extensions.empty()) {
 		builder.FileExtensions(std::move(file_extensions));
 	}
@@ -65,16 +68,14 @@ void SetupAssetRefBinding(flecs::world& world,
 			const auto backward_name = ref_name + "Sync";
 			world.observer<TargetComp, RefComp>(backward_name.c_str())
 					.event(flecs::OnSet)
-					.each([id_member, invalid_value, name_fn](
-								  flecs::entity, const TargetComp& target, RefComp& ref) {
+					.each([id_member, invalid_value, name_fn](flecs::entity, const TargetComp& target, RefComp& ref) {
 						if (ref.name.empty()) {
 							return;
 						}
 						if (target.*id_member == invalid_value) {
 							return;
 						}
-						if (const std::string name = name_fn(target.*id_member);
-							!name.empty() && ref.name != name) {
+						if (const std::string name = name_fn(target.*id_member); !name.empty() && ref.name != name) {
 							ref.name = name;
 						}
 					});
@@ -83,7 +84,7 @@ void SetupAssetRefBinding(flecs::world& world,
 }
 
 // Submit render commands for all renderable entities
-void ECSWorld::SubmitRenderCommands(const rendering::Renderer& renderer) {
+void ECSWorld::SubmitRenderCommands(const Renderer& renderer) {
 	// Static default camera to avoid recreation every frame
 	static const Camera default_camera = []() {
 		Camera cam;
@@ -135,92 +136,89 @@ void ECSWorld::SubmitRenderCommands(const rendering::Renderer& renderer) {
 	auto& shader_mgr = renderer.GetShaderManager();
 
 	// Single query loop for all renderables
-	const auto renderable_query = world_.query<const WorldTransform, const rendering::Renderable>();
-	renderable_query.each(
-			[&](flecs::iter, size_t, const WorldTransform& transform, const rendering::Renderable& renderable) {
-				if (!renderable.visible) {
-					return;
+	const auto renderable_query = world_.query<const WorldTransform, const Renderable>();
+	renderable_query.each([&](flecs::iter, size_t, const WorldTransform& transform, const Renderable& renderable) {
+		if (!renderable.visible) {
+			return;
+		}
+		RenderCommand cmd{
+				.mesh = renderable.mesh,
+				.shader = renderable.shader,
+				.material = renderable.material,
+				.render_state_stack = renderable.render_state_stack,
+				.camera_view = active_camera->view_matrix};
+
+		cmd.transform = transform.matrix;
+
+		// Set lighting uniforms for lit shaders
+		if (const auto& shader = shader_mgr.GetShader(renderable.shader); shader.IsValid()) {
+			shader.Use();
+			// TEMP: Use the first light, backward compatability
+			shader.SetUniform("u_LightDir", light_dir);
+
+			// Set camera position
+			shader.SetUniform("u_CameraPos", camera_position);
+
+			// Set ambient lighting
+			shader.SetUniform("u_AmbientColor", glm::vec3(1.0f, 1.0f, 1.0f));
+			shader.SetUniform("u_AmbientIntensity", 0.5f);
+
+			// Set material properties from the entity's material (if valid)
+			if (mat_mgr.IsValid(renderable.material)) {
+				const auto& material = mat_mgr.GetMaterial(renderable.material);
+				material.Apply(shader);
+			}
+			else {
+				shader.SetUniform("u_Color", glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
+				shader.SetUniform("u_Shininess", 32.0f);
+			}
+
+			// Calculate normal matrix (inverse transpose of model matrix)
+			glm::mat4 normal_matrix = glm::transpose(glm::inverse(cmd.transform));
+			shader.SetUniform("u_NormalMatrix", normal_matrix);
+
+			// Set number of lights
+			shader.SetUniform("u_NumLights", static_cast<int>(scene_lights.size()));
+
+			// Set light properties
+			for (size_t i = 0; i < scene_lights.size() && i < MAX_LIGHTS; ++i) {
+				const Light& light = scene_lights[i];
+				const std::string idx = "[" + std::to_string(i) + "]";
+
+				// Light type
+				shader.SetUniform("u_LightTypes" + idx, static_cast<int>(light.type));
+
+				// Position/Direction (for directional lights, this is the direction)
+				if (light.type == Light::Type::Directional) {
+					shader.SetUniform("u_LightPositions" + idx, glm::normalize(light.direction));
 				}
-				rendering::RenderCommand cmd{
-						.mesh = renderable.mesh,
-						.shader = renderable.shader,
-						.material = renderable.material,
-						.render_state_stack = renderable.render_state_stack,
-						.camera_view = active_camera->view_matrix};
-
-				cmd.transform = transform.matrix;
-
-				// Set lighting uniforms for lit shaders
-				const auto& shader = shader_mgr.GetShader(renderable.shader);
-				if (shader.IsValid()) {
-					shader.Use();
-					// TEMP: Use the first light, backward compatability
-					shader.SetUniform("u_LightDir", light_dir);
-
-					// Set camera position
-					shader.SetUniform("u_CameraPos", camera_position);
-
-					// Set ambient lighting
-					shader.SetUniform("u_AmbientColor", glm::vec3(1.0f, 1.0f, 1.0f));
-					shader.SetUniform("u_AmbientIntensity", 0.5f);
-
-					// Set material properties from the entity's material (if valid)
-					if (mat_mgr.IsValid(renderable.material)) {
-						const auto& material = mat_mgr.GetMaterial(renderable.material);
-						material.Apply(shader);
-					}
-					else {
-						shader.SetUniform("u_Color", glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
-						shader.SetUniform("u_Shininess", 32.0f);
-					}
-
-					// Calculate normal matrix (inverse transpose of model matrix)
-					glm::mat4 normal_matrix = glm::transpose(glm::inverse(cmd.transform));
-					shader.SetUniform("u_NormalMatrix", normal_matrix);
-
-					// Set number of lights
-					shader.SetUniform("u_NumLights", static_cast<int>(scene_lights.size()));
-
-					// Set light properties
-					for (size_t i = 0; i < scene_lights.size() && i < MAX_LIGHTS; ++i) {
-						const Light& light = scene_lights[i];
-						const std::string idx = "[" + std::to_string(i) + "]";
-
-						// Light type
-						shader.SetUniform("u_LightTypes" + idx, static_cast<int>(light.type));
-
-						// Position/Direction (for directional lights, this is the direction)
-						if (light.type == Light::Type::Directional) {
-							shader.SetUniform("u_LightPositions" + idx, glm::normalize(light.direction));
-						}
-						else {
-							shader.SetUniform("u_LightPositions" + idx, light_positions[i]);
-						}
-
-						// Color and intensity
-						glm::vec3 light_color(light.color.r, light.color.g, light.color.b);
-						shader.SetUniform("u_LightColors" + idx, light_color);
-						shader.SetUniform("u_LightIntensities" + idx, light.intensity);
-
-						// Range and attenuation (for point/spot lights)
-						shader.SetUniform("u_LightRanges" + idx, light.range);
-						shader.SetUniform("u_LightAttenuations" + idx, light.attenuation);
-					}
+				else {
+					shader.SetUniform("u_LightPositions" + idx, light_positions[i]);
 				}
 
-				renderer.SubmitRenderCommand(cmd);
-			});
+				// Color and intensity
+				glm::vec3 light_color(light.color.r, light.color.g, light.color.b);
+				shader.SetUniform("u_LightColors" + idx, light_color);
+				shader.SetUniform("u_LightIntensities" + idx, light.intensity);
+
+				// Range and attenuation (for point/spot lights)
+				shader.SetUniform("u_LightRanges" + idx, light.range);
+				shader.SetUniform("u_LightAttenuations" + idx, light.attenuation);
+			}
+		}
+
+		renderer.SubmitRenderCommand(cmd);
+	});
 
 	// Physics debug drawing — delegate to the active physics backend
 	if (world_.has<physics::PhysicsWorldConfig>()) {
-		const auto& physics_config = world_.get<physics::PhysicsWorldConfig>();
-		if (physics_config.show_debug_physics && world_.has<physics::PhysicsBackendPtr>()) {
+		if (const auto& physics_config = world_.get<physics::PhysicsWorldConfig>();
+			physics_config.show_debug_physics && world_.has<physics::PhysicsBackendPtr>()) {
 			renderer.SetDebugCamera(active_camera->view_matrix, active_camera->projection_matrix);
 
-			const auto& backend_ptr = world_.get<physics::PhysicsBackendPtr>();
-			if (backend_ptr.backend) {
+			if (const auto& [backend] = world_.get<physics::PhysicsBackendPtr>(); backend) {
 				physics::RendererDebugAdapter adapter(renderer);
-				backend_ptr.backend->DebugDraw(adapter);
+				backend->DebugDraw(adapter);
 			}
 
 			renderer.FlushDebugLines();
@@ -232,30 +230,62 @@ void ECSWorld::SubmitRenderCommands(const rendering::Renderer& renderer) {
 
 void ECSWorld::SetupShaderRefIntegration() {
 	SetupAssetRefBinding<ShaderRef, Renderable>(
-			world_, "ShaderRef", "Rendering", scene::ShaderAssetInfo::TYPE_NAME, &Renderable::shader, INVALID_SHADER,
+			world_,
+			"ShaderRef",
+			"Rendering",
+			ShaderAssetInfo::TYPE_NAME,
+			&Renderable::shader,
+			INVALID_SHADER,
 			[](const std::string& name) { return GetRenderer().GetShaderManager().FindShader(name); },
-			[](ShaderId id) { return GetRenderer().GetShaderManager().GetShaderName(id); });
+			[](const ShaderId id) { return GetRenderer().GetShaderManager().GetShaderName(id); });
 }
 
 void ECSWorld::SetupMeshRefIntegration() {
 	SetupAssetRefBinding<MeshRef, Renderable>(
-			world_, "MeshRef", "Rendering", scene::MeshAssetInfo::TYPE_NAME, &Renderable::mesh, INVALID_MESH,
+			world_,
+			"MeshRef",
+			"Rendering",
+			MeshAssetInfo::TYPE_NAME,
+			&Renderable::mesh,
+			INVALID_MESH,
 			[](const std::string& name) { return GetRenderer().GetMeshManager().FindMesh(name); },
-			[](MeshId id) { return GetRenderer().GetMeshManager().GetMeshName(id); });
+			[](const MeshId id) { return GetRenderer().GetMeshManager().GetMeshName(id); });
 }
 
 void ECSWorld::SetupMaterialRefIntegration() {
 	SetupAssetRefBinding<MaterialRef, Renderable>(
-			world_, "MaterialRef", "Rendering", scene::MaterialAssetInfo::TYPE_NAME, &Renderable::material,
+			world_,
+			"MaterialRef",
+			"Rendering",
+			MaterialAssetInfo::TYPE_NAME,
+			&Renderable::material,
 			INVALID_MATERIAL,
-			[](const std::string& name) { return GetRenderer().GetMaterialManager().FindMaterial(name); },
-			[](MaterialId id) { return GetRenderer().GetMaterialManager().GetMaterialName(id); },
+			[](const std::string& name) -> MaterialId {
+				// Check if already loaded
+				const auto& mat_mgr = GetRenderer().GetMaterialManager();
+				if (const auto id = mat_mgr.FindMaterial(name); id != INVALID_MATERIAL) {
+					return id;
+				}
+				// Try loading from .material.json file via generic AssetCache
+				if (const auto asset = AssetCache::Instance().LoadFromFile(name)) {
+					if (const auto mat = std::dynamic_pointer_cast<MaterialAssetInfo>(asset)) {
+						mat->Load();
+						return mat_mgr.FindMaterial(name);
+					}
+				}
+				return INVALID_MATERIAL;
+			},
+			[](const MaterialId id) { return GetRenderer().GetMaterialManager().GetMaterialName(id); },
 			{".material.json"});
 }
 
 void ECSWorld::SetupSoundRefIntegration() {
 	SetupAssetRefBinding<audio::SoundRef, audio::AudioSource>(
-			world_, "SoundRef", "Audio", scene::SoundAssetInfo::TYPE_NAME, &audio::AudioSource::clip_id,
+			world_,
+			"SoundRef",
+			"Audio",
+			SoundAssetInfo::TYPE_NAME,
+			&audio::AudioSource::clip_id,
 			static_cast<uint32_t>(0),
 			[](const std::string& name) -> uint32_t {
 				auto& audio_sys = audio::AudioSystem::Get();
@@ -263,17 +293,11 @@ void ECSWorld::SetupSoundRefIntegration() {
 					return 0;
 				}
 				// Check if already loaded by name
-				if (uint32_t id = audio_sys.FindClipByName(name); id != 0) {
+				if (const uint32_t id = audio_sys.FindClipByName(name); id != 0) {
 					return id;
 				}
-				// Lazy load from active scene
-				auto& scene_mgr = scene::GetSceneManager();
-				const auto active_id = scene_mgr.GetActiveScene();
-				if (active_id == scene::INVALID_SCENE) {
-					return 0;
-				}
-				const auto& scene = scene_mgr.GetScene(active_id);
-				if (auto sound_asset = scene.GetAssets().FindTyped<scene::SoundAssetInfo>(name)) {
+				// Check global asset cache first
+				if (const auto sound_asset = AssetCache::Instance().FindTyped<SoundAssetInfo>(name)) {
 					if (!sound_asset->file_path.empty()) {
 						return audio_sys.LoadClipNamed(name, sound_asset->file_path);
 					}

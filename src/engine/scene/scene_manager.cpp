@@ -39,9 +39,6 @@ struct Scene::Impl {
 	std::string author;
 	std::string description;
 
-	// Asset management
-	SceneAssets scene_assets; // Shader, texture, and other asset definitions
-
 	// Lifecycle callbacks
 	InitializeCallback initialize_callback;
 	ShutdownCallback shutdown_callback;
@@ -217,28 +214,6 @@ void Scene::Render() {
 		pimpl_->render_callback();
 	}
 }
-
-// === ASSET MANAGEMENT ===
-
-bool Scene::LoadAssets() const {
-	bool all_succeeded = true;
-	for (const auto& asset : pimpl_->scene_assets.GetAll()) {
-		if (!asset->Load()) {
-			std::cerr << "Scene: Failed to load asset '" << asset->name << "'" << std::endl;
-			all_succeeded = false;
-		}
-	}
-	return all_succeeded;
-}
-
-void Scene::UnloadAssets() const {
-	for (const auto& asset : pimpl_->scene_assets.GetAll() | std::views::reverse) {
-		asset->Unload();
-	}
-}
-
-SceneAssets& Scene::GetAssets() { return pimpl_->scene_assets; }
-const SceneAssets& Scene::GetAssets() const { return pimpl_->scene_assets; }
 
 // SceneManager implementation
 struct SceneManager::Impl {
@@ -421,17 +396,14 @@ SceneId SceneManager::LoadSceneFromFile(const platform::fs::Path& file_path) {
 
 bool SceneManager::LoadScene(const SceneId scene_id) const {
 	if (const auto it = pimpl_->scenes.find(scene_id); it != pimpl_->scenes.end()) {
-		if (it->second->LoadAssets()) {
-			it->second->SetLoaded(true);
-			return true;
-		}
+		it->second->SetLoaded(true);
+		return true;
 	}
 	return false;
 }
 
 void SceneManager::UnloadScene(const SceneId scene_id) const {
 	if (const auto it = pimpl_->scenes.find(scene_id); it != pimpl_->scenes.end()) {
-		it->second->UnloadAssets();
 		it->second->SetLoaded(false);
 	}
 }
@@ -497,19 +469,7 @@ SceneManager& GetSceneManager() {
 	return *g_scene_manager;
 }
 
-void InitializeSceneSystem(ecs::ECSWorld& ecs_world) {
-	// Register built-in asset types
-	ShaderAssetInfo::RegisterType();
-	MeshAssetInfo::RegisterType();
-	TextureAssetInfo::RegisterType();
-	MaterialAssetInfo::RegisterType();
-	AnimationAssetInfo::RegisterType();
-	SoundAssetInfo::RegisterType();
-	DataTableAssetInfo::RegisterType();
-	PrefabAssetInfo::RegisterType();
-
-	g_scene_manager = std::make_unique<SceneManager>(ecs_world);
-}
+void InitializeSceneSystem(ecs::ECSWorld& ecs_world) { g_scene_manager = std::make_unique<SceneManager>(ecs_world); }
 
 void ShutdownSceneSystem() { g_scene_manager.reset(); }
 } // namespace engine::scene

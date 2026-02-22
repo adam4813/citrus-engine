@@ -9,38 +9,70 @@ module;
 #include <unordered_map>
 #include <vector>
 
-module engine.scene.assets;
+module engine.asset_registry;
 
 import engine.rendering;
 import engine.platform;
+import engine.assets;
 
-namespace engine::scene {
+namespace engine::assets {
 
 AssetRegistry& AssetRegistry::Instance() {
 	static AssetRegistry instance;
+
+	static bool initialized = false;
+	if (!initialized) {
+		initialized = true;
+		ShaderAssetInfo::RegisterType();
+		MeshAssetInfo::RegisterType();
+		TextureAssetInfo::RegisterType();
+		MaterialAssetInfo::RegisterType();
+		AnimationAssetInfo::RegisterType();
+		SoundAssetInfo::RegisterType();
+		DataTableAssetInfo::RegisterType();
+		PrefabAssetInfo::RegisterType();
+	}
+
 	return instance;
 }
 
-void AssetRegistry::Register(const std::string& type_name, FactoryFn factory) {
-	factories_[type_name] = std::move(factory);
-}
-
-std::unique_ptr<AssetInfo> AssetRegistry::Create(const nlohmann::json& j) const {
+std::shared_ptr<AssetInfo> AssetRegistry::FromJson(const nlohmann::json& j) const {
 	const std::string type_str = j.value("type", "");
 	if (type_str.empty()) {
+		std::cerr << "AssetRegistry: Missing asset type \n";
 		return nullptr;
 	}
-
-	const auto it = factories_.find(type_str);
-	if (it == factories_.end()) {
+	const auto* type_info = GetTypeInfo(type_str);
+	if (!type_info || !type_info->create_default_factory) {
 		std::cerr << "AssetRegistry: Unknown asset type '" << type_str << "'" << '\n';
 		return nullptr;
 	}
 
-	return it->second(j);
+	auto asset = type_info->create_default_factory();
+	if (!asset) {
+		std::cerr << "AssetRegistry: Failed to create asset of type '" << type_str << "'" << '\n';
+	}
+
+	asset->FromJson(j); // Populate common fields like name and type
+	return asset;
 }
 
-bool AssetRegistry::IsRegistered(const std::string& type_name) const { return factories_.contains(type_name); }
+void AssetRegistry::ToJson(nlohmann::json& j, const std::shared_ptr<AssetInfo>& asset) const {
+	if (!asset) {
+		return;
+	}
+
+	if (const auto* type_info = GetTypeInfo(asset->type)) {
+		j["type"] = type_info->type_name; // Ensure type is included in JSON
+	}
+	else {
+		std::cerr << "AssetRegistry: Nothing registered for asset named '" << asset->name << "' serializing what we can"
+				  << '\n';
+	}
+
+	asset->ToJson(j);
+	j["name"] = asset->name; // Include common name field
+}
 
 std::shared_ptr<AssetInfo> AssetRegistry::CreateDefault(const AssetType type) const {
 	for (const auto& info : types_) {
@@ -71,8 +103,6 @@ const AssetTypeInfo* AssetRegistry::GetTypeInfo(const std::string& type_name) co
 
 void AssetRegistry::AddTypeInfo(AssetTypeInfo info) { types_.push_back(std::move(info)); }
 
-void AssetInfo::ToJson(nlohmann::json& j) const { j["name"] = name; }
-
 void AssetInfo::Initialize() {
 	if (initialized_) {
 		return; // Already initialized
@@ -102,14 +132,18 @@ void AssetInfo::Unload() {
 	DoUnload();
 	loaded_ = false;
 }
+void AssetInfo::FromJson(const nlohmann::json& j) {
+	name = j.value("name", name);
+	if (const auto type_str = j.value("type", ""); !type_str.empty()) {
+		if (const auto* type_info = AssetRegistry::Instance().GetTypeInfo(type_str); type_info != nullptr) {
+			type = type_info->asset_type;
+		}
+	}
+}
 
-std::unique_ptr<AssetInfo> AssetInfo::FromJson(const nlohmann::json& j) { return AssetRegistry::Instance().Create(j); }
-
-void ShaderAssetInfo::ToJson(nlohmann::json& j) const {
-	AssetInfo::ToJson(j);
-	j["type"] = "shader";
-	j["vertex_path"] = vertex_path;
-	j["fragment_path"] = fragment_path;
+void AssetInfo::ToJson(nlohmann::json& j) {
+	j["name"] = name;
+	j["type"] = GetTypeName();
 }
 
 void ShaderAssetInfo::DoInitialize() {
@@ -139,33 +173,27 @@ void ShaderAssetInfo::DoUnload() {
 	std::cout << "ShaderAssetInfo: Unloaded shader '" << name << "' (id=" << id << ")" << '\n';
 }
 
+void ShaderAssetInfo::FromJson(const nlohmann::json& j) {
+	vertex_path = j.value("vertex_path", "");
+	fragment_path = j.value("fragment_path", "");
+	AssetInfo::FromJson(j);
+}
+
+void ShaderAssetInfo::ToJson(nlohmann::json& j) {
+	j["vertex_path"] = vertex_path;
+	j["fragment_path"] = fragment_path;
+	AssetInfo::ToJson(j);
+}
+
 void ShaderAssetInfo::RegisterType() {
 	AssetRegistry::Instance()
 			.RegisterType<ShaderAssetInfo>(ShaderAssetInfo::TYPE_NAME, AssetType::SHADER)
 			.DisplayName("Shader")
 			.Category("Rendering")
 			.Field("name", &ShaderAssetInfo::name, "Name")
-			.Field("vertex_path", &ShaderAssetInfo::vertex_path, "Vertex Shader", AssetFieldType::FilePath)
-			.Field("fragment_path", &ShaderAssetInfo::fragment_path, "Fragment Shader", AssetFieldType::FilePath)
-			.FromJson([](const nlohmann::json& j) -> std::unique_ptr<AssetInfo> {
-				auto asset = std::make_unique<ShaderAssetInfo>();
-				asset->name = j.value("name", "");
-				asset->vertex_path = j.value("vertex_path", "");
-				asset->fragment_path = j.value("fragment_path", "");
-				return asset;
-			})
-			.CreateDefault([]() -> std::shared_ptr<AssetInfo> {
-				return std::make_shared<ShaderAssetInfo>("NewShader", "", "");
-			})
+			.Field("vertex_path", &ShaderAssetInfo::vertex_path, "Vertex Shader", ecs::FieldType::FilePath)
+			.Field("fragment_path", &ShaderAssetInfo::fragment_path, "Fragment Shader", ecs::FieldType::FilePath)
 			.Build();
-}
-
-void MeshAssetInfo::ToJson(nlohmann::json& j) const {
-	AssetInfo::ToJson(j);
-	j["type"] = "mesh";
-	j["mesh_type"] = mesh_type;
-	j["params"] = {params[0], params[1], params[2]};
-	j["file_path"] = file_path;
 }
 
 void MeshAssetInfo::DoInitialize() {
@@ -215,47 +243,44 @@ void MeshAssetInfo::DoUnload() {
 	std::cout << "MeshAssetInfo: Unloaded mesh '" << name << "' (id=" << id << ")" << '\n';
 }
 
+void MeshAssetInfo::FromJson(const nlohmann::json& j) {
+	mesh_type = j.value("mesh_type", mesh_types::QUAD);
+	if (j.contains("params") && j["params"].is_array()) {
+		const auto& arr = j["params"];
+		if (!arr.empty()) {
+			params[0] = arr[0].get<float>();
+		}
+		if (arr.size() >= 2) {
+			params[1] = arr[1].get<float>();
+		}
+		if (arr.size() >= 3) {
+			params[2] = arr[2].get<float>();
+		}
+	}
+	file_path = j.value("file_path", "");
+	AssetInfo::FromJson(j);
+}
+
+void MeshAssetInfo::ToJson(nlohmann::json& j) {
+	j["mesh_type"] = mesh_type;
+	j["params"] = {params[0], params[1], params[2]};
+	j["file_path"] = file_path;
+	AssetInfo::ToJson(j);
+}
+
 void MeshAssetInfo::RegisterType() {
 	AssetRegistry::Instance()
 			.RegisterType<MeshAssetInfo>(MeshAssetInfo::TYPE_NAME, AssetType::MESH)
 			.DisplayName("Mesh")
 			.Category("Rendering")
 			.Field("name", &MeshAssetInfo::name, "Name")
-			.Field("mesh_type", &MeshAssetInfo::mesh_type, "Mesh Type", AssetFieldType::Selection)
+			.Field("mesh_type", &MeshAssetInfo::mesh_type, "Mesh Type", ecs::FieldType::Selection)
 			.Options({mesh_types::QUAD, mesh_types::CUBE, mesh_types::SPHERE, mesh_types::CAPSULE, mesh_types::FILE})
-			.Field("file_path", &MeshAssetInfo::file_path, "File Path", AssetFieldType::FilePath)
-			.FromJson([](const nlohmann::json& j) -> std::unique_ptr<AssetInfo> {
-				auto asset = std::make_unique<MeshAssetInfo>();
-				asset->name = j.value("name", "");
-				asset->mesh_type = j.value("mesh_type", mesh_types::QUAD);
-				if (j.contains("params") && j["params"].is_array()) {
-					const auto& arr = j["params"];
-					if (!arr.empty()) {
-						asset->params[0] = arr[0].get<float>();
-					}
-					if (arr.size() >= 2) {
-						asset->params[1] = arr[1].get<float>();
-					}
-					if (arr.size() >= 3) {
-						asset->params[2] = arr[2].get<float>();
-					}
-				}
-				asset->file_path = j.value("file_path", "");
-				return asset;
-			})
-			.CreateDefault([]() -> std::shared_ptr<AssetInfo> {
-				return std::make_shared<MeshAssetInfo>("NewMesh", mesh_types::QUAD);
-			})
+			.Field("file_path", &MeshAssetInfo::file_path, "File Path", ecs::FieldType::FilePath)
 			.Build();
 }
 
 // === TextureAssetInfo ===
-
-void TextureAssetInfo::ToJson(nlohmann::json& j) const {
-	AssetInfo::ToJson(j);
-	j["type"] = "texture";
-	j["file_path"] = file_path;
-}
 
 void TextureAssetInfo::DoInitialize() {
 	// Reserve texture slot by name (will be populated in DoLoad)
@@ -288,53 +313,27 @@ void TextureAssetInfo::DoUnload() {
 	}
 }
 
+void TextureAssetInfo::FromJson(const nlohmann::json& j) {
+	file_path = j.value("file_path", "");
+	AssetInfo::FromJson(j);
+}
+
+void TextureAssetInfo::ToJson(nlohmann::json& j) {
+	j["file_path"] = file_path;
+	AssetInfo::ToJson(j);
+}
+
 void TextureAssetInfo::RegisterType() {
 	AssetRegistry::Instance()
 			.RegisterType<TextureAssetInfo>(TextureAssetInfo::TYPE_NAME, AssetType::TEXTURE)
 			.DisplayName("Texture")
 			.Category("Rendering")
 			.Field("name", &TextureAssetInfo::name, "Name")
-			.Field("file_path", &TextureAssetInfo::file_path, "File Path", AssetFieldType::FilePath)
-			.FromJson([](const nlohmann::json& j) -> std::unique_ptr<AssetInfo> {
-				auto asset = std::make_unique<TextureAssetInfo>();
-				asset->name = j.value("name", "");
-				asset->file_path = j.value("file_path", "");
-				return asset;
-			})
-			.CreateDefault(
-					[]() -> std::shared_ptr<AssetInfo> { return std::make_shared<TextureAssetInfo>("NewTexture", ""); })
+			.Field("file_path", &TextureAssetInfo::file_path, "File Path", ecs::FieldType::FilePath)
 			.Build();
 }
 
 // === MaterialAssetInfo ===
-
-void MaterialAssetInfo::ToJson(nlohmann::json& j) const {
-	AssetInfo::ToJson(j);
-	j["type"] = "material";
-	j["shader"] = shader_name;
-
-	// PBR texture maps
-	if (!albedo_map.empty()) { j["albedo_map"] = albedo_map; }
-	if (!normal_map.empty()) { j["normal_map"] = normal_map; }
-	if (!metallic_map.empty()) { j["metallic_map"] = metallic_map; }
-	if (!roughness_map.empty()) { j["roughness_map"] = roughness_map; }
-	if (!ao_map.empty()) { j["ao_map"] = ao_map; }
-	if (!emissive_map.empty()) { j["emissive_map"] = emissive_map; }
-	if (!height_map.empty()) { j["height_map"] = height_map; }
-
-	// PBR scalars
-	j["metallic_factor"] = metallic_factor;
-	j["roughness_factor"] = roughness_factor;
-	j["ao_strength"] = ao_strength;
-	j["emissive_intensity"] = emissive_intensity;
-	j["normal_strength"] = normal_strength;
-	j["alpha_cutoff"] = alpha_cutoff;
-
-	// PBR colors
-	j["base_color"] = {base_color.x, base_color.y, base_color.z, base_color.w};
-	j["emissive_color"] = {emissive_color.x, emissive_color.y, emissive_color.z, emissive_color.w};
-}
-
 void MaterialAssetInfo::DoInitialize() {
 	auto& mat_mgr = rendering::GetRenderer().GetMaterialManager();
 	// Resolve shader by name
@@ -348,10 +347,7 @@ void MaterialAssetInfo::DoInitialize() {
 }
 
 namespace {
-void BindTextureSlot(
-		rendering::Material& material,
-		const std::string& texture_name,
-		const char* uniform_name) {
+void BindTextureSlot(rendering::Material& material, const std::string& texture_name, const char* uniform_name) {
 	if (texture_name.empty()) {
 		return;
 	}
@@ -409,6 +405,58 @@ void MaterialAssetInfo::DoUnload() {
 	std::cout << "MaterialAssetInfo: Unloaded material '" << name << "' (id=" << id << ")" << '\n';
 }
 
+void MaterialAssetInfo::FromJson(const nlohmann::json& j) {
+	shader_name = j.value("shader", "");
+	// PBR texture maps
+	albedo_map = j.value("albedo_map", j.value("albedo_texture", ""));
+	normal_map = j.value("normal_map", j.value("normal_texture", ""));
+	metallic_map = j.value("metallic_map", j.value("metallic_texture", ""));
+	roughness_map = j.value("roughness_map", j.value("roughness_texture", ""));
+	ao_map = j.value("ao_map", j.value("ao_texture", ""));
+	emissive_map = j.value("emissive_map", j.value("emissive_texture", ""));
+	height_map = j.value("height_map", j.value("height_texture", ""));
+	// PBR scalars
+	metallic_factor = j.value("metallic_factor", 0.0f);
+	roughness_factor = j.value("roughness_factor", 0.5f);
+	ao_strength = j.value("ao_strength", 1.0f);
+	emissive_intensity = j.value("emissive_intensity", 0.0f);
+	normal_strength = j.value("normal_strength", 1.0f);
+	alpha_cutoff = j.value("alpha_cutoff", 0.5f);
+	// PBR colors
+	if (j.contains("base_color") && j["base_color"].is_array() && j["base_color"].size() >= 4) {
+		const auto& c = j["base_color"];
+		base_color = rendering::Vec4(c[0].get<float>(), c[1].get<float>(), c[2].get<float>(), c[3].get<float>());
+	}
+	if (j.contains("emissive_color") && j["emissive_color"].is_array() && j["emissive_color"].size() >= 4) {
+		const auto& c = j["emissive_color"];
+		emissive_color = rendering::Vec4(c[0].get<float>(), c[1].get<float>(), c[2].get<float>(), c[3].get<float>());
+	}
+	AssetInfo::FromJson(j);
+}
+
+void MaterialAssetInfo::ToJson(nlohmann::json& j) {
+	j["shader"] = shader_name;
+	// PBR texture maps
+	j["albedo_map"] = albedo_map;
+	j["normal_map"] = normal_map;
+	j["metallic_map"] = metallic_map;
+	j["roughness_map"] = roughness_map;
+	j["ao_map"] = ao_map;
+	j["emissive_map"] = emissive_map;
+	j["height_map"] = height_map;
+	// PBR scalars
+	j["metallic_factor"] = metallic_factor;
+	j["roughness_factor"] = roughness_factor;
+	j["ao_strength"] = ao_strength;
+	j["emissive_intensity"] = emissive_intensity;
+	j["normal_strength"] = normal_strength;
+	j["alpha_cutoff"] = alpha_cutoff;
+	// PBR colors
+	j["base_color"] = {base_color.x, base_color.y, base_color.z, base_color.w};
+	j["emissive_color"] = {emissive_color.x, emissive_color.y, emissive_color.z, emissive_color.w};
+	AssetInfo::ToJson(j);
+}
+
 void MaterialAssetInfo::RegisterType() {
 	AssetRegistry::Instance()
 			.RegisterType<MaterialAssetInfo>(MaterialAssetInfo::TYPE_NAME, AssetType::MATERIAL)
@@ -418,8 +466,8 @@ void MaterialAssetInfo::RegisterType() {
 			.Field("shader_name", &MaterialAssetInfo::shader_name, "Shader")
 			.AssetRef(ShaderAssetInfo::TYPE_NAME)
 			// PBR colors
-			.Field("base_color", &MaterialAssetInfo::base_color, "Base Color", AssetFieldType::Color)
-			.Field("emissive_color", &MaterialAssetInfo::emissive_color, "Emissive Color", AssetFieldType::Color)
+			.Field("base_color", &MaterialAssetInfo::base_color, "Base Color", ecs::FieldType::Color)
+			.Field("emissive_color", &MaterialAssetInfo::emissive_color, "Emissive Color", ecs::FieldType::Color)
 			// PBR textures
 			.Field("albedo_map", &MaterialAssetInfo::albedo_map, "Albedo Map")
 			.AssetRef(TextureAssetInfo::TYPE_NAME)
@@ -449,50 +497,10 @@ void MaterialAssetInfo::RegisterType() {
 			.Field("emissive_intensity", &MaterialAssetInfo::emissive_intensity, "Emissive Intensity")
 			.Field("normal_strength", &MaterialAssetInfo::normal_strength, "Normal Strength")
 			.Field("alpha_cutoff", &MaterialAssetInfo::alpha_cutoff, "Alpha Cutoff")
-			.FromJson([](const nlohmann::json& j) -> std::unique_ptr<AssetInfo> {
-				auto a = std::make_unique<MaterialAssetInfo>();
-				a->name = j.value("name", "");
-				a->shader_name = j.value("shader", "");
-				// PBR texture maps
-				a->albedo_map = j.value("albedo_map", j.value("albedo_texture", ""));
-				a->normal_map = j.value("normal_map", j.value("normal_texture", ""));
-				a->metallic_map = j.value("metallic_map", j.value("metallic_texture", ""));
-				a->roughness_map = j.value("roughness_map", j.value("roughness_texture", ""));
-				a->ao_map = j.value("ao_map", j.value("ao_texture", ""));
-				a->emissive_map = j.value("emissive_map", j.value("emissive_texture", ""));
-				a->height_map = j.value("height_map", j.value("height_texture", ""));
-				// PBR scalars
-				a->metallic_factor = j.value("metallic_factor", 0.0f);
-				a->roughness_factor = j.value("roughness_factor", 0.5f);
-				a->ao_strength = j.value("ao_strength", 1.0f);
-				a->emissive_intensity = j.value("emissive_intensity", 0.0f);
-				a->normal_strength = j.value("normal_strength", 1.0f);
-				a->alpha_cutoff = j.value("alpha_cutoff", 0.5f);
-				// PBR colors
-				if (j.contains("base_color") && j["base_color"].is_array() && j["base_color"].size() >= 4) {
-					const auto& c = j["base_color"];
-					a->base_color = rendering::Vec4(c[0].get<float>(), c[1].get<float>(), c[2].get<float>(), c[3].get<float>());
-				}
-				if (j.contains("emissive_color") && j["emissive_color"].is_array() && j["emissive_color"].size() >= 4) {
-					const auto& c = j["emissive_color"];
-					a->emissive_color = rendering::Vec4(c[0].get<float>(), c[1].get<float>(), c[2].get<float>(), c[3].get<float>());
-				}
-				return a;
-			})
-			.CreateDefault([]() -> std::shared_ptr<AssetInfo> {
-				return std::make_shared<MaterialAssetInfo>("NewMaterial", "");
-			})
 			.Build();
 }
 
 // === AnimationAssetInfo ===
-
-void AnimationAssetInfo::ToJson(nlohmann::json& j) const {
-	AssetInfo::ToJson(j);
-	j["type"] = "animation_clip";
-	j["clip_path"] = clip_path;
-}
-
 void AnimationAssetInfo::DoInitialize() {
 	// Stub: no initialization needed yet
 }
@@ -502,35 +510,27 @@ bool AnimationAssetInfo::DoLoad() {
 	return true;
 }
 
+void AnimationAssetInfo::FromJson(const nlohmann::json& j) {
+	clip_path = j.value("clip_path", "");
+	AssetInfo::FromJson(j);
+}
+
+void AnimationAssetInfo::ToJson(nlohmann::json& j) {
+	j["clip_path"] = clip_path;
+	AssetInfo::ToJson(j);
+}
+
 void AnimationAssetInfo::RegisterType() {
 	AssetRegistry::Instance()
 			.RegisterType<AnimationAssetInfo>(AnimationAssetInfo::TYPE_NAME, AssetType::ANIMATION_CLIP)
 			.DisplayName("Animation Clip")
 			.Category("Animation")
 			.Field("name", &AnimationAssetInfo::name, "Name")
-			.Field("clip_path", &AnimationAssetInfo::clip_path, "Clip Path", AssetFieldType::FilePath)
-			.FromJson([](const nlohmann::json& j) -> std::unique_ptr<AssetInfo> {
-				auto asset = std::make_unique<AnimationAssetInfo>();
-				asset->name = j.value("name", "");
-				asset->clip_path = j.value("clip_path", "");
-				return asset;
-			})
-			.CreateDefault([]() -> std::shared_ptr<AssetInfo> {
-				return std::make_shared<AnimationAssetInfo>("NewAnimation", "");
-			})
+			.Field("clip_path", &AnimationAssetInfo::clip_path, "Clip Path", ecs::FieldType::FilePath)
 			.Build();
 }
 
 // === SoundAssetInfo ===
-
-void SoundAssetInfo::ToJson(nlohmann::json& j) const {
-	AssetInfo::ToJson(j);
-	j["type"] = "sound";
-	j["file_path"] = file_path;
-	j["volume"] = volume;
-	j["loop"] = loop;
-}
-
 void SoundAssetInfo::DoInitialize() {
 	// Audio clips are loaded on-demand by the SoundRef observer in the ECS system
 }
@@ -540,37 +540,33 @@ bool SoundAssetInfo::DoLoad() {
 	return true;
 }
 
+void SoundAssetInfo::FromJson(const nlohmann::json& j) {
+	file_path = j.value("file_path", "");
+	volume = j.value("volume", 1.0f);
+	loop = j.value("loop", false);
+	AssetInfo::FromJson(j);
+}
+
+void SoundAssetInfo::ToJson(nlohmann::json& j) {
+	j["file_path"] = file_path;
+	j["volume"] = volume;
+	j["loop"] = loop;
+	AssetInfo::ToJson(j);
+}
+
 void SoundAssetInfo::RegisterType() {
 	AssetRegistry::Instance()
 			.RegisterType<SoundAssetInfo>(SoundAssetInfo::TYPE_NAME, AssetType::SOUND)
 			.DisplayName("Sound")
 			.Category("Audio")
 			.Field("name", &SoundAssetInfo::name, "Name")
-			.Field("file_path", &SoundAssetInfo::file_path, "File Path", AssetFieldType::FilePath)
+			.Field("file_path", &SoundAssetInfo::file_path, "File Path", ecs::FieldType::FilePath)
 			.Field("volume", &SoundAssetInfo::volume, "Volume")
 			.Field("loop", &SoundAssetInfo::loop, "Loop")
-			.FromJson([](const nlohmann::json& j) -> std::unique_ptr<AssetInfo> {
-				auto asset = std::make_unique<SoundAssetInfo>();
-				asset->name = j.value("name", "");
-				asset->file_path = j.value("file_path", "");
-				asset->volume = j.value("volume", 1.0f);
-				asset->loop = j.value("loop", false);
-				return asset;
-			})
-			.CreateDefault(
-					[]() -> std::shared_ptr<AssetInfo> { return std::make_shared<SoundAssetInfo>("NewSound", ""); })
 			.Build();
 }
 
 // === DataTableAssetInfo ===
-
-void DataTableAssetInfo::ToJson(nlohmann::json& j) const {
-	AssetInfo::ToJson(j);
-	j["type"] = "data_table";
-	j["file_path"] = file_path;
-	j["schema_name"] = schema_name;
-}
-
 void DataTableAssetInfo::DoInitialize() {
 	// Stub: no data table system yet
 }
@@ -580,35 +576,30 @@ bool DataTableAssetInfo::DoLoad() {
 	return true;
 }
 
+void DataTableAssetInfo::FromJson(const nlohmann::json& j) {
+	file_path = j.value("file_path", "");
+	schema_name = j.value("schema_name", "");
+	AssetInfo::FromJson(j);
+}
+
+void DataTableAssetInfo::ToJson(nlohmann::json& j) {
+	j["file_path"] = file_path;
+	j["schema_name"] = schema_name;
+	AssetInfo::ToJson(j);
+}
+
 void DataTableAssetInfo::RegisterType() {
 	AssetRegistry::Instance()
 			.RegisterType<DataTableAssetInfo>(DataTableAssetInfo::TYPE_NAME, AssetType::DATA_TABLE)
 			.DisplayName("Data Table")
 			.Category("Data")
 			.Field("name", &DataTableAssetInfo::name, "Name")
-			.Field("file_path", &DataTableAssetInfo::file_path, "File Path", AssetFieldType::FilePath)
+			.Field("file_path", &DataTableAssetInfo::file_path, "File Path", ecs::FieldType::FilePath)
 			.Field("schema_name", &DataTableAssetInfo::schema_name, "Schema Name")
-			.FromJson([](const nlohmann::json& j) -> std::unique_ptr<AssetInfo> {
-				auto asset = std::make_unique<DataTableAssetInfo>();
-				asset->name = j.value("name", "");
-				asset->file_path = j.value("file_path", "");
-				asset->schema_name = j.value("schema_name", "");
-				return asset;
-			})
-			.CreateDefault([]() -> std::shared_ptr<AssetInfo> {
-				return std::make_shared<DataTableAssetInfo>("NewDataTable", "");
-			})
 			.Build();
 }
 
 // === PrefabAssetInfo ===
-
-void PrefabAssetInfo::ToJson(nlohmann::json& j) const {
-	AssetInfo::ToJson(j);
-	j["type"] = "prefab";
-	j["file_path"] = file_path;
-}
-
 void PrefabAssetInfo::DoInitialize() {
 	// Stub: prefab initialization handled by PrefabUtility
 }
@@ -618,58 +609,120 @@ bool PrefabAssetInfo::DoLoad() {
 	return true;
 }
 
+void PrefabAssetInfo::FromJson(const nlohmann::json& j) {
+	file_path = j.value("file_path", "");
+	AssetInfo::FromJson(j);
+}
+
+void PrefabAssetInfo::ToJson(nlohmann::json& j) {
+	j["file_path"] = file_path;
+	AssetInfo::ToJson(j);
+}
+
 void PrefabAssetInfo::RegisterType() {
 	AssetRegistry::Instance()
 			.RegisterType<PrefabAssetInfo>(PrefabAssetInfo::TYPE_NAME, AssetType::PREFAB)
 			.DisplayName("Prefab")
 			.Category("Scene")
 			.Field("name", &PrefabAssetInfo::name, "Name")
-			.Field("file_path", &PrefabAssetInfo::file_path, "File Path", AssetFieldType::FilePath)
-			.FromJson([](const nlohmann::json& j) -> std::unique_ptr<AssetInfo> {
-				auto asset = std::make_unique<PrefabAssetInfo>();
-				asset->name = j.value("name", "");
-				asset->file_path = j.value("file_path", "");
-				return asset;
-			})
-			.CreateDefault(
-					[]() -> std::shared_ptr<AssetInfo> { return std::make_shared<PrefabAssetInfo>("NewPrefab", ""); })
+			.Field("file_path", &PrefabAssetInfo::file_path, "File Path", ecs::FieldType::FilePath)
 			.Build();
 }
 
-void SceneAssets::Add(AssetPtr asset) {
-	if (asset) {
-		asset->Initialize(); // Allocate resources (e.g., reserve shader ID)
-		assets_.push_back(std::move(asset));
-	}
+// --- AssetCache ---
+
+AssetCache& AssetCache::Instance() {
+	static AssetCache instance;
+	return instance;
 }
 
-bool SceneAssets::Remove(const std::string& name, const AssetType type) {
-	const auto it = std::ranges::remove_if(assets_, [&](const AssetPtr& asset) {
-						return asset && asset->name == name && asset->type == type;
-					}).begin();
-	if (it != assets_.end()) {
-		assets_.erase(it, assets_.end());
+void AssetCache::Add(AssetPtr asset) {
+	if (!asset)
+		return;
+	asset->Initialize();
+	cache_[asset->name] = std::move(asset);
+}
+
+bool AssetCache::Remove(const std::string& name, const AssetType type) {
+	auto it = cache_.find(name);
+	if (it != cache_.end() && it->second && it->second->type == type) {
+		cache_.erase(it);
 		return true;
 	}
 	return false;
 }
 
-AssetPtr SceneAssets::Find(const std::string& name, const AssetType type) {
-	for (auto& asset : assets_) {
-		if (asset && asset->name == name && asset->type == type) {
-			return asset;
-		}
+AssetPtr AssetCache::Find(const std::string& name, const AssetType type) {
+	auto it = cache_.find(name);
+	if (it != cache_.end() && it->second && it->second->type == type) {
+		return it->second;
 	}
 	return nullptr;
 }
 
-std::shared_ptr<const AssetInfo> SceneAssets::Find(const std::string& name, const AssetType type) const {
-	for (const auto& asset : assets_) {
-		if (asset && asset->name == name && asset->type == type) {
-			return asset;
-		}
+std::shared_ptr<const AssetInfo> AssetCache::Find(const std::string& name, const AssetType type) const {
+	auto it = cache_.find(name);
+	if (it != cache_.end() && it->second && it->second->type == type) {
+		return it->second;
 	}
 	return nullptr;
 }
 
-} // namespace engine::scene
+std::vector<AssetPtr> AssetCache::GetAll() const {
+	std::vector<AssetPtr> result;
+	result.reserve(cache_.size());
+	for (const auto& asset : cache_ | std::views::values) {
+		result.push_back(asset);
+	}
+	return result;
+}
+
+std::vector<AssetPtr> AssetCache::GetByType(const AssetType type) const {
+	std::vector<AssetPtr> result;
+	for (const auto& asset : cache_ | std::views::values) {
+		if (asset && asset->type == type) {
+			result.push_back(asset);
+		}
+	}
+	return result;
+}
+
+AssetPtr AssetCache::LoadFromFile(const std::string& path) {
+	// Check if already cached
+	if (const auto existing = cache_.find(path); existing != cache_.end()) {
+		return existing->second;
+	}
+
+	// Read JSON from disk
+	const auto text = AssetManager::LoadTextFile(platform::fs::Path(path));
+	if (!text) {
+		std::cerr << "AssetCache::LoadFromFile: file not found: " << path << '\n';
+		return nullptr;
+	}
+
+	try {
+		const auto j = nlohmann::json::parse(*text, nullptr, false);
+		if (j.is_discarded()) {
+			std::cerr << "AssetCache::LoadFromFile: invalid JSON in " << path << '\n';
+			return nullptr;
+		}
+
+		auto asset = AssetRegistry::Instance().FromJson(j);
+		if (!asset) {
+			return nullptr;
+		}
+
+		asset->Load();
+
+		cache_[path] = asset;
+		return asset;
+	}
+	catch (const std::exception& e) {
+		std::cerr << "AssetCache::LoadFromFile: error: " << e.what() << '\n';
+		return nullptr;
+	}
+}
+
+void AssetCache::Clear() { cache_.clear(); }
+
+} // namespace engine::assets

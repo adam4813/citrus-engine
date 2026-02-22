@@ -62,10 +62,10 @@ void EditorScene::Initialize(engine::Engine& engine) {
 		}
 	};
 	callbacks.on_show_rename_dialog = [this](const engine::ecs::Entity entity) { OnShowRenameDialog(entity); };
-	callbacks.on_asset_selected = [this](const engine::scene::AssetType type, const std::string& name) {
+	callbacks.on_asset_selected = [this](const engine::assets::AssetType type, const std::string& name) {
 		OnAssetSelected(type, name);
 	};
-	callbacks.on_asset_deleted = [this](const engine::scene::AssetType type, const std::string& name) {
+	callbacks.on_asset_deleted = [this](const engine::assets::AssetType type, const std::string& name) {
 		OnAssetDeleted(type, name);
 	};
 	callbacks.on_scene_camera_changed = [this](const engine::ecs::Entity camera) { scene_active_camera_ = camera; };
@@ -374,26 +374,15 @@ void EditorScene::OnShowRenameDialog(const engine::ecs::Entity entity) {
 	state_.show_rename_entity_dialog = true;
 }
 
-void EditorScene::OnAssetSelected(const engine::scene::AssetType type, const std::string& name) {
+void EditorScene::OnAssetSelected(const engine::assets::AssetType type, const std::string& name) {
 	// Clear entity selection when asset is selected
 	selected_entity_ = {};
 	selection_type_ = SelectionType::Asset;
 	selected_asset_.type = type;
 	selected_asset_.name = name;
-
-	// Open shader assets in the shader editor
-	if (type == engine::scene::AssetType::SHADER && engine_) {
-		auto& scene_manager = engine::scene::GetSceneManager();
-		if (auto* scene = scene_manager.TryGetScene(editor_scene_id_)) {
-			auto asset = scene->GetAssets().Find(name, engine::scene::AssetType::SHADER);
-			if (asset) {
-				shader_editor_panel_.OpenAsset(static_cast<engine::scene::ShaderAssetInfo*>(asset.get()));
-			}
-		}
-	}
 }
 
-void EditorScene::OnAssetDeleted(const engine::scene::AssetType type, const std::string& name) {
+void EditorScene::OnAssetDeleted(const engine::assets::AssetType type, const std::string& name) {
 	// Clear selection if the deleted asset was selected
 	if (selected_asset_.type == type && selected_asset_.name == name) {
 		selected_asset_.Clear();
@@ -546,6 +535,5 @@ void EditorScene::StopScene() {
 	// Ensure editor camera is active again
 	engine_->ecs.SetActiveCamera(editor_camera_);
 }
-
 
 } // namespace editor

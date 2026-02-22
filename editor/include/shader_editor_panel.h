@@ -38,7 +38,7 @@ public:
 	 * @brief Open a shader asset for editing
 	 * @param asset Pointer to the shader asset info
 	 */
-	void OpenAsset(engine::scene::ShaderAssetInfo* asset);
+	void OpenAsset(engine::assets::ShaderAssetInfo* asset);
 
 	/**
 	 * @brief Create a new empty shader
@@ -84,7 +84,7 @@ private:
 	EditorMode mode_ = EditorMode::Code;
 
 	// Current asset being edited
-	engine::scene::ShaderAssetInfo* current_asset_ = nullptr;
+	engine::assets::ShaderAssetInfo* current_asset_ = nullptr;
 
 	// Shader data
 	std::string shader_name_ = "Untitled";

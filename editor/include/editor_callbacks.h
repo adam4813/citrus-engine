@@ -13,7 +13,7 @@ class ICommand;
 
 using EntityCallback = std::function<void(engine::ecs::Entity)>;
 using VoidCallback = std::function<void()>;
-using AssetCallback = std::function<void(engine::scene::AssetType, const std::string&)>;
+using AssetCallback = std::function<void(engine::assets::AssetType, const std::string&)>;
 using CommandCallback = std::function<void(std::unique_ptr<ICommand>)>;
 using PrefabCallback = std::function<void(const std::string&)>;
 using FilePathCallback = std::function<void(const std::string&)>;

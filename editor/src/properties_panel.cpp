@@ -26,10 +26,7 @@ std::optional<FileDialogPopup> s_field_file_dialog;
 bool s_field_file_dialog_modified = false;
 
 /// Open a file browse dialog targeting a string field
-void OpenFieldBrowseDialog(
-		const char* title,
-		const std::vector<std::string>& extensions,
-		std::string* target) {
+void OpenFieldBrowseDialog(const char* title, const std::vector<std::string>& extensions, std::string* target) {
 	s_field_file_dialog.emplace(title, FileDialogMode::Open, extensions);
 	s_field_file_dialog->SetCallback([target](const std::string& path) {
 		*target = path;
@@ -71,14 +68,11 @@ bool RenderSingleField(const engine::ecs::FieldInfo& field, void* field_ptr, eng
 	const char* label = GetFieldLabel(field);
 
 	switch (field.type) {
-	case engine::ecs::FieldType::Bool:
-		return ImGui::Checkbox(label, static_cast<bool*>(field_ptr));
+	case engine::ecs::FieldType::Bool: return ImGui::Checkbox(label, static_cast<bool*>(field_ptr));
 
-	case engine::ecs::FieldType::Int:
-		return ImGui::InputInt(label, static_cast<int*>(field_ptr));
+	case engine::ecs::FieldType::Int: return ImGui::InputInt(label, static_cast<int*>(field_ptr));
 
-	case engine::ecs::FieldType::Float:
-		return ImGui::InputFloat(label, static_cast<float*>(field_ptr));
+	case engine::ecs::FieldType::Float: return ImGui::InputFloat(label, static_cast<float*>(field_ptr));
 
 	case engine::ecs::FieldType::String:
 	{
@@ -114,21 +108,15 @@ bool RenderSingleField(const engine::ecs::FieldInfo& field, void* field_ptr, eng
 		}
 		return modified;
 	}
-	case engine::ecs::FieldType::Vec2:
-		return ImGui::InputFloat2(label, static_cast<float*>(field_ptr));
+	case engine::ecs::FieldType::Vec2: return ImGui::InputFloat2(label, static_cast<float*>(field_ptr));
 
-	case engine::ecs::FieldType::Vec3:
-		return ImGui::InputFloat3(label, static_cast<float*>(field_ptr));
+	case engine::ecs::FieldType::Vec3: return ImGui::InputFloat3(label, static_cast<float*>(field_ptr));
 
-	case engine::ecs::FieldType::Vec4:
-		return ImGui::InputFloat4(label, static_cast<float*>(field_ptr));
+	case engine::ecs::FieldType::Vec4: return ImGui::InputFloat4(label, static_cast<float*>(field_ptr));
 
-	case engine::ecs::FieldType::Color:
-		return ImGui::ColorEdit4(label, static_cast<float*>(field_ptr));
+	case engine::ecs::FieldType::Color: return ImGui::ColorEdit4(label, static_cast<float*>(field_ptr));
 
-	case engine::ecs::FieldType::ReadOnly:
-		ImGui::Text("%s: (read-only)", label);
-		return false;
+	case engine::ecs::FieldType::ReadOnly: ImGui::Text("%s: (read-only)", label); return false;
 
 	case engine::ecs::FieldType::Enum:
 	{
@@ -200,23 +188,40 @@ bool RenderSingleField(const engine::ecs::FieldInfo& field, void* field_ptr, eng
 				}
 				ImGui::SameLine();
 				if (i > 0) {
-					if (ImGui::SmallButton("^")) { swap_idx = static_cast<int>(i) - 1; }
-				} else {
+					if (ImGui::SmallButton("^")) {
+						swap_idx = static_cast<int>(i) - 1;
+					}
+				}
+				else {
 					ImGui::Dummy(ImVec2(ImGui::CalcTextSize("^").x + ImGui::GetStyle().FramePadding.x * 2, 0));
 				}
 				ImGui::SameLine();
 				if (i + 1 < vec->size()) {
-					if (ImGui::SmallButton("v")) { swap_idx = static_cast<int>(i); }
-				} else {
+					if (ImGui::SmallButton("v")) {
+						swap_idx = static_cast<int>(i);
+					}
+				}
+				else {
 					ImGui::Dummy(ImVec2(ImGui::CalcTextSize("v").x + ImGui::GetStyle().FramePadding.x * 2, 0));
 				}
 				ImGui::SameLine();
-				if (ImGui::SmallButton("X")) { remove_idx = static_cast<int>(i); }
+				if (ImGui::SmallButton("X")) {
+					remove_idx = static_cast<int>(i);
+				}
 				ImGui::PopID();
 			}
-			if (remove_idx >= 0) { vec->erase(vec->begin() + remove_idx); modified = true; }
-			if (swap_idx >= 0) { std::swap((*vec)[swap_idx], (*vec)[swap_idx + 1]); modified = true; }
-			if (ImGui::Button("+ Add")) { vec->emplace_back(0); modified = true; }
+			if (remove_idx >= 0) {
+				vec->erase(vec->begin() + remove_idx);
+				modified = true;
+			}
+			if (swap_idx >= 0) {
+				std::swap((*vec)[swap_idx], (*vec)[swap_idx + 1]);
+				modified = true;
+			}
+			if (ImGui::Button("+ Add")) {
+				vec->emplace_back(0);
+				modified = true;
+			}
 			ImGui::TreePop();
 		}
 		return modified;
@@ -237,23 +242,40 @@ bool RenderSingleField(const engine::ecs::FieldInfo& field, void* field_ptr, eng
 				}
 				ImGui::SameLine();
 				if (i > 0) {
-					if (ImGui::SmallButton("^")) { swap_idx = static_cast<int>(i) - 1; }
-				} else {
+					if (ImGui::SmallButton("^")) {
+						swap_idx = static_cast<int>(i) - 1;
+					}
+				}
+				else {
 					ImGui::Dummy(ImVec2(ImGui::CalcTextSize("^").x + ImGui::GetStyle().FramePadding.x * 2, 0));
 				}
 				ImGui::SameLine();
 				if (i + 1 < vec->size()) {
-					if (ImGui::SmallButton("v")) { swap_idx = static_cast<int>(i); }
-				} else {
+					if (ImGui::SmallButton("v")) {
+						swap_idx = static_cast<int>(i);
+					}
+				}
+				else {
 					ImGui::Dummy(ImVec2(ImGui::CalcTextSize("v").x + ImGui::GetStyle().FramePadding.x * 2, 0));
 				}
 				ImGui::SameLine();
-				if (ImGui::SmallButton("X")) { remove_idx = static_cast<int>(i); }
+				if (ImGui::SmallButton("X")) {
+					remove_idx = static_cast<int>(i);
+				}
 				ImGui::PopID();
 			}
-			if (remove_idx >= 0) { vec->erase(vec->begin() + remove_idx); modified = true; }
-			if (swap_idx >= 0) { std::swap((*vec)[swap_idx], (*vec)[swap_idx + 1]); modified = true; }
-			if (ImGui::Button("+ Add")) { vec->emplace_back(0.0f); modified = true; }
+			if (remove_idx >= 0) {
+				vec->erase(vec->begin() + remove_idx);
+				modified = true;
+			}
+			if (swap_idx >= 0) {
+				std::swap((*vec)[swap_idx], (*vec)[swap_idx + 1]);
+				modified = true;
+			}
+			if (ImGui::Button("+ Add")) {
+				vec->emplace_back(0.0f);
+				modified = true;
+			}
 			ImGui::TreePop();
 		}
 		return modified;
@@ -269,11 +291,10 @@ bool RenderSingleField(const engine::ecs::FieldInfo& field, void* field_ptr, eng
 
 			// Build asset name list once if needed
 			std::vector<std::string> asset_names;
-			if (is_asset_ref && scene) {
+			if (is_asset_ref) {
 				asset_names.push_back("");
-				for (const auto& asset : scene->GetAssets().GetAll()) {
-					if (const auto* type_info =
-								engine::scene::AssetRegistry::Instance().GetTypeInfo(asset->type);
+				for (const auto& asset : engine::assets::AssetCache::Instance().GetAll()) {
+					if (const auto* type_info = engine::assets::AssetRegistry::Instance().GetTypeInfo(asset->type);
 						type_info && type_info->type_name == field.asset_type) {
 						asset_names.push_back(asset->name);
 					}
@@ -298,11 +319,14 @@ bool RenderSingleField(const engine::ecs::FieldInfo& field, void* field_ptr, eng
 								elem = name;
 								modified = true;
 							}
-							if (selected) { ImGui::SetItemDefaultFocus(); }
+							if (selected) {
+								ImGui::SetItemDefaultFocus();
+							}
 						}
 						ImGui::EndCombo();
 					}
-				} else if (is_file_path) {
+				}
+				else if (is_file_path) {
 					// Render as file path with browse button
 					char buffer[256];
 					std::strncpy(buffer, elem.c_str(), sizeof(buffer) - 1);
@@ -316,7 +340,8 @@ bool RenderSingleField(const engine::ecs::FieldInfo& field, void* field_ptr, eng
 					if (ImGui::SmallButton("...")) {
 						OpenFieldBrowseDialog("Browse File", field.file_extensions, &elem);
 					}
-				} else {
+				}
+				else {
 					// Plain string input
 					char buffer[256];
 					std::strncpy(buffer, elem.c_str(), sizeof(buffer) - 1);
@@ -330,23 +355,40 @@ bool RenderSingleField(const engine::ecs::FieldInfo& field, void* field_ptr, eng
 
 				ImGui::SameLine();
 				if (i > 0) {
-					if (ImGui::SmallButton("^")) { swap_idx = static_cast<int>(i) - 1; }
-				} else {
+					if (ImGui::SmallButton("^")) {
+						swap_idx = static_cast<int>(i) - 1;
+					}
+				}
+				else {
 					ImGui::Dummy(ImVec2(ImGui::CalcTextSize("^").x + ImGui::GetStyle().FramePadding.x * 2, 0));
 				}
 				ImGui::SameLine();
 				if (i + 1 < vec->size()) {
-					if (ImGui::SmallButton("v")) { swap_idx = static_cast<int>(i); }
-				} else {
+					if (ImGui::SmallButton("v")) {
+						swap_idx = static_cast<int>(i);
+					}
+				}
+				else {
 					ImGui::Dummy(ImVec2(ImGui::CalcTextSize("v").x + ImGui::GetStyle().FramePadding.x * 2, 0));
 				}
 				ImGui::SameLine();
-				if (ImGui::SmallButton("X")) { remove_idx = static_cast<int>(i); }
+				if (ImGui::SmallButton("X")) {
+					remove_idx = static_cast<int>(i);
+				}
 				ImGui::PopID();
 			}
-			if (remove_idx >= 0) { vec->erase(vec->begin() + remove_idx); modified = true; }
-			if (swap_idx >= 0) { std::swap((*vec)[swap_idx], (*vec)[swap_idx + 1]); modified = true; }
-			if (ImGui::Button("+ Add")) { vec->emplace_back(); modified = true; }
+			if (remove_idx >= 0) {
+				vec->erase(vec->begin() + remove_idx);
+				modified = true;
+			}
+			if (swap_idx >= 0) {
+				std::swap((*vec)[swap_idx], (*vec)[swap_idx + 1]);
+				modified = true;
+			}
+			if (ImGui::Button("+ Add")) {
+				vec->emplace_back();
+				modified = true;
+			}
 			ImGui::TreePop();
 		}
 		return modified;
@@ -356,17 +398,15 @@ bool RenderSingleField(const engine::ecs::FieldInfo& field, void* field_ptr, eng
 	{
 		auto* str = static_cast<std::string*>(field_ptr);
 
-		// Build list of available names: scene assets + file system scan
+		// Build list of available names: cached assets + file system scan
 		std::vector<std::string> asset_names;
 		asset_names.push_back(""); // Allow empty/none selection
 
-		// Scan scene assets of matching type
-		if (scene) {
-			for (const auto& asset : scene->GetAssets().GetAll()) {
-				if (const auto* type_info = engine::scene::AssetRegistry::Instance().GetTypeInfo(asset->type);
-					type_info && type_info->type_name == field.asset_type) {
-					asset_names.push_back(asset->name);
-				}
+		// Scan cached assets of matching type
+		for (const auto& asset : engine::assets::AssetCache::Instance().GetAll()) {
+			if (const auto* type_info = engine::assets::AssetRegistry::Instance().GetTypeInfo(asset->type);
+				type_info && type_info->type_name == field.asset_type) {
+				asset_names.push_back(asset->name);
 			}
 		}
 
@@ -412,9 +452,7 @@ bool RenderSingleField(const engine::ecs::FieldInfo& field, void* field_ptr, eng
 		{
 			std::string browse_id = std::string("...##assetref_browse_") + field.name;
 			if (ImGui::Button(browse_id.c_str())) {
-				auto exts = field.file_extensions.empty()
-					? std::vector<std::string>{".json"}
-					: field.file_extensions;
+				auto exts = field.file_extensions.empty() ? std::vector<std::string>{".json"} : field.file_extensions;
 				OpenFieldBrowseDialog("Browse Asset", exts, str);
 			}
 		}
@@ -451,7 +489,8 @@ bool RenderSingleField(const engine::ecs::FieldInfo& field, void* field_ptr, eng
 					s_clip_id = 0;
 					s_play_handle = 0;
 					s_playing_asset.clear();
-				} else {
+				}
+				else {
 					// Stop any existing preview first
 					if (s_audio_playing) {
 						audio.StopSound(s_play_handle);
@@ -462,8 +501,9 @@ bool RenderSingleField(const engine::ecs::FieldInfo& field, void* field_ptr, eng
 						s_audio_playing = false;
 					}
 					// Load and play the referenced sound asset
-					auto sound_asset = scene->GetAssets().FindTyped<engine::scene::SoundAssetInfo>(*str);
-					if (sound_asset && !sound_asset->file_path.empty()) {
+					if (auto sound_asset =
+								engine::assets::AssetCache::Instance().FindTyped<engine::assets::SoundAssetInfo>(*str);
+						sound_asset && !sound_asset->file_path.empty()) {
 						if (!audio.IsInitialized()) {
 							audio.Initialize();
 						}
@@ -504,7 +544,8 @@ bool RenderCompoundChildren(engine::physics::CollisionShape& shape) {
 
 		// Collapsible header per child with remove button
 		int type_idx = static_cast<int>(child.type);
-		const char* type_label = (type_idx >= 0 && type_idx < kChildShapeTypeCount) ? kChildShapeTypeLabels[type_idx] : "Unknown";
+		const char* type_label =
+				(type_idx >= 0 && type_idx < kChildShapeTypeCount) ? kChildShapeTypeLabels[type_idx] : "Unknown";
 		std::string header = "Child " + std::to_string(i) + " (" + type_label + ")";
 		bool child_open = ImGui::CollapsingHeader(
 				header.c_str(), ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_AllowOverlap);
@@ -1029,15 +1070,15 @@ void PropertiesPanel::RenderAssetProperties(engine::scene::Scene* scene, const A
 		return;
 	}
 
-	// Find the asset
-	const auto asset = scene->GetAssets().Find(selected_asset.name, selected_asset.type);
+	// Find the asset in global cache first, fall back to scene
+	const auto asset = engine::assets::AssetCache::Instance().Find(selected_asset.name, selected_asset.type);
 	if (!asset) {
 		ImGui::TextDisabled("Asset not found");
 		return;
 	}
 
 	// Get type info for field metadata
-	const auto* type_info = engine::scene::AssetRegistry::Instance().GetTypeInfo(selected_asset.type);
+	const auto* type_info = engine::assets::AssetRegistry::Instance().GetTypeInfo(selected_asset.type);
 	if (!type_info) {
 		ImGui::TextDisabled("Unknown asset type");
 		return;

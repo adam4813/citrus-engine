@@ -142,8 +142,8 @@ private:
 	void OnEntityDeleted(engine::ecs::Entity entity);
 	void OnSceneModified();
 	void OnShowRenameDialog(engine::ecs::Entity entity);
-	void OnAssetSelected(engine::scene::AssetType type, const std::string& name);
-	void OnAssetDeleted(engine::scene::AssetType type, const std::string& name);
+	void OnAssetSelected(engine::assets::AssetType type, const std::string& name);
+	void OnAssetDeleted(engine::assets::AssetType type, const std::string& name);
 
 	// ========================================================================
 	// State

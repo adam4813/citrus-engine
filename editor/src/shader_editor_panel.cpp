@@ -65,21 +65,21 @@ void ShaderEditorPanel::RenderToolbar(engine::scene::Scene* scene) {
 				NewShader();
 			}
 
-			// List shader assets from scene to open
-			if (scene && ImGui::BeginMenu("Open Asset")) {
-				auto& assets = scene->GetAssets();
+			// List shader assets from cache to open
+			if (ImGui::BeginMenu("Open Asset")) {
+				auto shader_assets = engine::assets::AssetCache::Instance().GetByType(engine::assets::AssetType::SHADER);
 				bool has_shaders = false;
-				for (const auto& asset : assets.GetAll()) {
-					if (asset && asset->type == engine::scene::AssetType::SHADER) {
+				for (const auto& asset : shader_assets) {
+					if (asset) {
 						has_shaders = true;
 						const bool is_current = (current_asset_ && current_asset_->name == asset->name);
 						if (ImGui::MenuItem(asset->name.c_str(), nullptr, is_current)) {
-							OpenAsset(static_cast<engine::scene::ShaderAssetInfo*>(asset.get()));
+							OpenAsset(static_cast<engine::assets::ShaderAssetInfo*>(asset.get()));
 						}
 					}
 				}
 				if (!has_shaders) {
-					ImGui::TextDisabled("No shader assets in scene");
+					ImGui::TextDisabled("No shader assets");
 				}
 				ImGui::EndMenu();
 			}
@@ -488,7 +488,7 @@ void ShaderEditorPanel::NewShader() {
 	SetDirty(false);
 }
 
-void ShaderEditorPanel::OpenAsset(engine::scene::ShaderAssetInfo* asset) {
+void ShaderEditorPanel::OpenAsset(engine::assets::ShaderAssetInfo* asset) {
 	if (!asset) {
 		return;
 	}

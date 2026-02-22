@@ -54,17 +54,6 @@ bool SceneSerializer::Save(const Scene& scene, ecs::ECSWorld& world, const platf
 		settings["description"] = scene.GetDescription();
 		doc["settings"] = settings;
 
-		// Serialize assets (before entities - order matters for loading)
-		json assets_array = json::array();
-		for (const auto& asset_ptr : scene.GetAssets().GetAll()) {
-			if (asset_ptr) {
-				json asset_json;
-				asset_ptr->ToJson(asset_json);
-				assets_array.push_back(asset_json);
-			}
-		}
-		doc["assets"] = assets_array;
-
 		// Serialize entities using flecs
 		const std::string flecs_json = SerializeEntities(scene, world);
 		doc["flecs_data"] = flecs_json;
@@ -183,19 +172,6 @@ SceneId SceneSerializer::Load(const platform::fs::Path& path, SceneManager& mana
 					cfg.enable_sleeping = pcfg["enable_sleeping"].get<bool>();
 				}
 			}
-		}
-
-		// Add assets BEFORE entities (order matters - entities may reference assets)
-		if (doc.contains("assets") && doc["assets"].is_array()) {
-			for (const auto& asset_json : doc["assets"]) {
-				if (auto asset = AssetInfo::FromJson(asset_json)) {
-					scene.GetAssets().Add(std::move(asset));
-				}
-			}
-		}
-
-		if (!scene.LoadAssets()) {
-			std::cerr << "SceneSerializer: Warning - some assets failed to load" << std::endl;
 		}
 
 		// Deserialize entities

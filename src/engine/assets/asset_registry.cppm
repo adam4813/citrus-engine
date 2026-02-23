@@ -408,6 +408,7 @@ struct SoundAssetInfo : AssetInfo {
 	std::string file_path;
 	float volume{1.0F};
 	bool loop{false};
+	uint32_t clip_id{0}; // Runtime: audio clip handle from AudioSystem
 
 	SoundAssetInfo() : AssetInfo("", AssetType::SOUND) {}
 	SoundAssetInfo(std::string asset_name, std::string path = "") :

@@ -14,6 +14,7 @@ module engine.asset_registry;
 import engine.rendering;
 import engine.platform;
 import engine.assets;
+import engine.audio;
 
 namespace engine::assets {
 
@@ -505,11 +506,29 @@ void AnimationAssetInfo::RegisterType() {
 
 // === SoundAssetInfo ===
 void SoundAssetInfo::DoInitialize() {
-	// Audio clips are loaded on-demand by the SoundRef observer in the ECS system
+	// No-op: clip is loaded in DoLoad
 }
 
 bool SoundAssetInfo::DoLoad() {
-	// Audio clips are loaded on-demand by the SoundRef observer in the ECS system
+	if (file_path.empty()) {
+		return true;
+	}
+	auto& audio_sys = audio::AudioSystem::Get();
+	if (!audio_sys.IsInitialized()) {
+		std::cerr << "SoundAssetInfo: AudioSystem not initialized, cannot load '" << name << "'" << '\n';
+		return false;
+	}
+	// Check if already loaded by name
+	clip_id = audio_sys.FindClipByName(name);
+	if (clip_id != 0) {
+		return true;
+	}
+	clip_id = audio_sys.LoadClipNamed(name, file_path);
+	if (clip_id == 0) {
+		std::cerr << "SoundAssetInfo: Failed to load audio clip '" << name << "' from " << file_path << '\n';
+		return false;
+	}
+	std::cout << "SoundAssetInfo: Loaded audio clip '" << name << "' (clip_id=" << clip_id << ")" << '\n';
 	return true;
 }
 

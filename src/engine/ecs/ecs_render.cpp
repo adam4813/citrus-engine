@@ -18,20 +18,20 @@ using namespace engine::assets;
 namespace engine::ecs {
 
 // === GENERIC ASSET REFERENCE BINDING ===
-// Template that wires up: component registration, With trait, and bidirectional observers.
+// Wires up: component registration, With trait, and forward observer.
 // RefComp must have a `std::string name` member.
+// AssetInfoT must have an `id` member of type IdType.
 // TargetComp is the component that holds the runtime ID (e.g., Renderable, AudioSource).
-// find_fn: resolves name → ID. name_fn: resolves ID → name (nullptr disables backward sync).
-template <typename RefComp, typename TargetComp, typename IdType, typename FindFn, typename NameFn>
+// The observer: ref.name → cache lookup → Load() → copy asset id → set on target.
+template <typename RefComp, typename AssetInfoT, typename TargetComp, typename IdType>
 void SetupAssetRefBinding(
 		flecs::world& world,
 		const std::string& ref_name,
 		const std::string& category,
 		std::string_view asset_type_name,
-		IdType TargetComp::* id_member,
+		IdType AssetInfoT::* asset_id_member,
+		IdType TargetComp::* target_id_member,
 		IdType invalid_value,
-		FindFn find_fn,
-		NameFn name_fn,
 		std::vector<std::string> file_extensions = {}) {
 	auto& registry = ComponentRegistry::Instance();
 
@@ -48,39 +48,21 @@ void SetupAssetRefBinding(
 		return;
 	}
 
-	// Forward observer: RefComp.name → TargetComp.id_member
+	// Forward observer: RefComp.name → AssetCache → Load → target id
 	const auto forward_name = ref_name + "Resolve";
 	world.observer<RefComp, TargetComp>(forward_name.c_str())
 			.event(flecs::OnSet)
-			.each([id_member, invalid_value, find_fn](flecs::entity, const RefComp& ref, TargetComp& target) {
+			.each([asset_id_member, target_id_member, invalid_value](
+						  flecs::entity, const RefComp& ref, TargetComp& target) {
 				if (ref.name.empty()) {
-					target.*id_member = invalid_value;
+					target.*target_id_member = invalid_value;
 					return;
 				}
-				if (const IdType id = find_fn(ref.name); id != invalid_value) {
-					target.*id_member = id;
+				if (auto asset = AssetCache::Instance().FindTyped<AssetInfoT>(ref.name)) {
+					asset->Load();
+					target.*target_id_member = (*asset).*asset_id_member;
 				}
 			});
-
-	// Backward observer: TargetComp.id_member → RefComp.name (skip if name_fn is nullptr)
-	if constexpr (requires { name_fn(std::declval<IdType>()); }) {
-		if (name_fn) {
-			const auto backward_name = ref_name + "Sync";
-			world.observer<TargetComp, RefComp>(backward_name.c_str())
-					.event(flecs::OnSet)
-					.each([id_member, invalid_value, name_fn](flecs::entity, const TargetComp& target, RefComp& ref) {
-						if (ref.name.empty()) {
-							return;
-						}
-						if (target.*id_member == invalid_value) {
-							return;
-						}
-						if (const std::string name = name_fn(target.*id_member); !name.empty() && ref.name != name) {
-							ref.name = name;
-						}
-					});
-		}
-	}
 }
 
 // Submit render commands for all renderable entities
@@ -229,85 +211,28 @@ void ECSWorld::SubmitRenderCommands(const Renderer& renderer) {
 // === ASSET REFERENCE INTEGRATIONS ===
 
 void ECSWorld::SetupShaderRefIntegration() {
-	SetupAssetRefBinding<ShaderRef, Renderable>(
-			world_,
-			"ShaderRef",
-			"Rendering",
-			ShaderAssetInfo::TYPE_NAME,
-			&Renderable::shader,
-			INVALID_SHADER,
-			[](const std::string& name) -> ShaderId {
-				if (auto asset = AssetCache::Instance().FindTyped<ShaderAssetInfo>(name)) {
-					asset->Load();
-					return asset->id;
-				}
-				return INVALID_SHADER;
-			},
-			[](const ShaderId id) { return GetRenderer().GetShaderManager().GetShaderName(id); });
+	SetupAssetRefBinding<ShaderRef, ShaderAssetInfo, Renderable>(
+			world_, "ShaderRef", "Rendering", ShaderAssetInfo::TYPE_NAME,
+			&ShaderAssetInfo::id, &Renderable::shader, INVALID_SHADER);
 }
 
 void ECSWorld::SetupMeshRefIntegration() {
-	SetupAssetRefBinding<MeshRef, Renderable>(
-			world_,
-			"MeshRef",
-			"Rendering",
-			MeshAssetInfo::TYPE_NAME,
-			&Renderable::mesh,
-			INVALID_MESH,
-			[](const std::string& name) -> MeshId {
-				if (auto asset = AssetCache::Instance().FindTyped<MeshAssetInfo>(name)) {
-					asset->Load();
-					return asset->id;
-				}
-				return INVALID_MESH;
-			},
-			[](const MeshId id) { return GetRenderer().GetMeshManager().GetMeshName(id); });
+	SetupAssetRefBinding<MeshRef, MeshAssetInfo, Renderable>(
+			world_, "MeshRef", "Rendering", MeshAssetInfo::TYPE_NAME,
+			&MeshAssetInfo::id, &Renderable::mesh, INVALID_MESH);
 }
 
 void ECSWorld::SetupMaterialRefIntegration() {
-	SetupAssetRefBinding<MaterialRef, Renderable>(
-			world_,
-			"MaterialRef",
-			"Rendering",
-			MaterialAssetInfo::TYPE_NAME,
-			&Renderable::material,
-			INVALID_MATERIAL,
-			[](const std::string& name) -> MaterialId {
-				if (auto asset = AssetCache::Instance().FindTyped<MaterialAssetInfo>(name)) {
-					asset->Load(); // Chains: material DoLoad → BindTextureSlot → texture Load
-					return asset->id;
-				}
-				return INVALID_MATERIAL;
-			},
-			[](const MaterialId id) { return GetRenderer().GetMaterialManager().GetMaterialName(id); },
+	SetupAssetRefBinding<MaterialRef, MaterialAssetInfo, Renderable>(
+			world_, "MaterialRef", "Rendering", MaterialAssetInfo::TYPE_NAME,
+			&MaterialAssetInfo::id, &Renderable::material, INVALID_MATERIAL,
 			{".material.json"});
 }
 
 void ECSWorld::SetupSoundRefIntegration() {
-	SetupAssetRefBinding<audio::SoundRef, audio::AudioSource>(
-			world_,
-			"SoundRef",
-			"Audio",
-			SoundAssetInfo::TYPE_NAME,
-			&audio::AudioSource::clip_id,
-			static_cast<uint32_t>(0),
-			[](const std::string& name) -> uint32_t {
-				auto& audio_sys = audio::AudioSystem::Get();
-				if (!audio_sys.IsInitialized()) {
-					return 0;
-				}
-				if (auto asset = AssetCache::Instance().FindTyped<SoundAssetInfo>(name)) {
-					asset->Load();
-					if (!asset->file_path.empty()) {
-						if (const uint32_t id = audio_sys.FindClipByName(name); id != 0) {
-							return id;
-						}
-						return audio_sys.LoadClipNamed(name, asset->file_path);
-					}
-				}
-				return 0;
-			},
-			std::function<std::string(uint32_t)>(nullptr)); // No backward sync for audio
+	SetupAssetRefBinding<audio::SoundRef, SoundAssetInfo, audio::AudioSource>(
+			world_, "SoundRef", "Audio", SoundAssetInfo::TYPE_NAME,
+			&SoundAssetInfo::clip_id, &audio::AudioSource::clip_id, static_cast<uint32_t>(0));
 }
 
 } // namespace engine::ecs

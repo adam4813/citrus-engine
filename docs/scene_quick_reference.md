@@ -101,27 +101,22 @@ scene.SetRenderCallback([]() {
 });
 ```
 
-## 📦 Scene Assets
+## 📦 Assets
 
 ```cpp
-auto& assets = scene.GetAssets();
+auto& cache = AssetCache::Instance();
 
 // Add assets
 auto shader = std::make_shared<ShaderAssetInfo>(
     "basic", "basic.vert", "basic.frag"
 );
-assets.Add(shader);
-
-auto mesh = std::make_shared<MeshAssetInfo>("cube", "cube");
-assets.Add(mesh);
+cache.Add(shader);
 
 // Find assets
-auto shader = assets.FindTyped<ShaderAssetInfo>("basic");
-auto all_shaders = assets.GetAllOfType<ShaderAssetInfo>();
+auto shader = cache.FindTyped<ShaderAssetInfo>("basic");
 
-// Load/unload
-scene.LoadAssets();
-scene.UnloadAssets();
+// Load from file
+auto asset = cache.LoadFromFile("path/to/asset.json");
 ```
 
 ## 🧩 Prefabs

@@ -23,8 +23,8 @@ Each asset goes through three states:
 ```mermaid
 stateDiagram-v2
     [*] --> Created: new ShaderAssetInfo()
-    Created --> Initialized: SceneAssets.Add()
-    Initialized --> Loaded: Scene.LoadAssets()
+    Created --> Initialized: AssetCache.Add()
+    Initialized --> Loaded: asset.Load()
     Loaded --> [*]
 
     Created: id = INVALID_SHADER
@@ -44,34 +44,29 @@ stateDiagram-v2
 
 ## Scene Loading Flow
 
-When loading a scene from JSON, assets are processed before entities so that entity components can reference asset IDs:
+When loading assets, the cache processes them through the two-phase pattern so that entity components can reference asset IDs:
 
 ```mermaid
 sequenceDiagram
     participant Serializer as SceneSerializer
-    participant Scene
-    participant Assets as SceneAssets
+    participant Cache as AssetCache
     participant Shader as ShaderAssetInfo
     participant Mgr as ShaderManager
-    Note over Serializer: Load scene from JSON
+    Note over Serializer: Load asset from file
     Serializer ->> Shader: FromJson(json)
     Note over Shader: Creates ShaderAssetInfo<br/>with paths, id=INVALID
-    Serializer ->> Assets: Add(shader)
-    Assets ->> Shader: Initialize()
+    Serializer ->> Cache: Add(shader)
+    Cache ->> Shader: Initialize()
     Shader ->> Mgr: CreateShader(name)
     Mgr -->> Shader: returns ShaderId
     Note over Shader: id = valid ShaderId<br/>(shader uncompiled)
     Note over Serializer: Repeat for all assets...
-    Serializer ->> Scene: LoadAssets()
-    Scene ->> Assets: GetAll()
-    loop For each asset
-        Scene ->> Shader: Load()
-        Shader ->> Mgr: CompileShader(id, vert, frag)
-        Mgr -->> Shader: returns success
-        Note over Shader: Shader now compiled<br/>loaded_ = true
-    end
+    Serializer ->> Shader: Load()
+    Shader ->> Mgr: CompileShader(id, vert, frag)
+    Mgr -->> Shader: returns success
+    Note over Shader: Shader now compiled<br/>loaded_ = true
 
-    Note over Serializer: Now deserialize entities...<br/>Entities can reference shader IDs
+    Note over Serializer: Entities can reference shader IDs
 ```
 
 ## Two-Phase Factory Pattern
@@ -103,7 +98,7 @@ bool success = shaderManager.CompileShader(id, "shader.vert", "shader.frag");
 
 ## Usage
 
-### Adding Assets to a Scene
+### Adding Assets
 
 ```cpp
 // Create shader asset
@@ -113,15 +108,15 @@ auto shader = std::make_shared<ShaderAssetInfo>(
     "shaders/basic.frag"    // fragment path
 );
 
-// Add to scene (calls Initialize, reserves shader ID)
-scene.GetAssets().Add(shader);
+// Add to global cache (calls Initialize, reserves shader ID)
+AssetCache::Instance().Add(shader);
 
 // shader->id is now valid, but shader is not compiled yet
 // shader->IsInitialized() == true
 // shader->IsLoaded() == false
 
-// Load all assets (compiles shaders)
-scene.LoadAssets();
+// Load the asset (compiles shader)
+shader->Load();
 
 // shader->IsLoaded() == true
 // Shader is now ready for rendering
@@ -131,18 +126,13 @@ scene.LoadAssets();
 
 ```cpp
 // Find by name and type
-auto shader = scene.GetAssets().Find("colored_3d", AssetType::SHADER);
+auto shader = AssetCache::Instance().Find("colored_3d", AssetType::SHADER);
 
 // Find with type casting
-auto shader = scene.GetAssets().FindTyped<ShaderAssetInfo>("colored_3d");
+auto shader = AssetCache::Instance().FindTyped<ShaderAssetInfo>("colored_3d");
 
-// Find with predicate
-auto shader = scene.GetAssets().FindTypedIf<ShaderAssetInfo>(
-    [](const ShaderAssetInfo& s) { return s.id == targetId; }
-);
-
-// Get all shaders
-auto shaders = scene.GetAssets().GetAllOfType<ShaderAssetInfo>();
+// Load from file
+auto asset = AssetCache::Instance().LoadFromFile("path/to/asset.json");
 ```
 
 ## JSON Serialization

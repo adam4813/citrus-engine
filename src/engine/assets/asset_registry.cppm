@@ -56,10 +56,6 @@ struct AssetTypeInfo {
  *       .Category("Rendering")
  *       .Field("name", &ShaderAssetInfo::name, "Name")
  *       .Field("vertex_path", &ShaderAssetInfo::vertex_path, "Vertex Shader", ecs::FieldType::FilePath)
- *       .FromJson([](const json& j) { ... })
- *       .ToJson([](json& j, shared_ptr<AssetInfo> asset) {
- *           if (auto shader_asset = dynamic_pointer_cast<ShaderAssetInfo>(asset)) { ... }
- *        })
  *       .CreateDefault([]() { return std::make_shared<ShaderAssetInfo>(); })
  *       .Build();
  */
@@ -171,12 +167,6 @@ public:
 		return RegisterType<T>(std::string(type_name), asset_type);
 	}
 
-	/// Create an asset from JSON
-	/// @return nullptr if type is unknown
-	[[nodiscard]] std::shared_ptr<AssetInfo> FromJson(const nlohmann::json& j) const;
-
-	void ToJson(nlohmann::json& j, const std::shared_ptr<AssetInfo>& asset) const;
-
 	/// Create a new default asset of the specified type
 	/// @return nullptr if type has no default factory
 	[[nodiscard]] std::shared_ptr<AssetInfo> CreateDefault(AssetType type) const;
@@ -223,7 +213,7 @@ struct AssetInfo {
 	AssetInfo() = default;
 	AssetInfo(std::string asset_name, const AssetType asset_type) : name(std::move(asset_name)), type(asset_type) {}
 
-	/// Called when asset is added to a SceneAssets container
+	/// Called when asset is added to the AssetCache
 	/// Use this to allocate resources (e.g., reserve shader IDs) before Load()
 	void Initialize();
 
@@ -471,7 +461,7 @@ protected:
 /// Polymorphic asset storage using shared_ptr (allows editor to hold references)
 using AssetPtr = std::shared_ptr<AssetInfo>;
 
-/// Global asset cache — project-level storage replacing per-scene SceneAssets.
+/// Global asset cache — project-level storage for all assets.
 /// Assets are cached by (name, type) key for O(1) lookup.
 class AssetCache {
 public:
@@ -524,9 +514,13 @@ public:
 	}
 
 	/// Load an asset from a JSON file on disk.
-	/// Uses AssetRegistry::from_json_factory to create the correct type, calls Load(), and caches.
+	/// Creates the correct type via AssetRegistry, calls Load(), and caches by asset name.
 	/// Returns the loaded asset, or nullptr on failure.
 	AssetPtr LoadFromFile(const std::string& path);
+
+	/// Save an asset to a JSON file on disk.
+	/// Works on any AssetPtr — the asset does not need to be in the cache.
+	bool SaveToFile(const AssetPtr& asset, const std::string& path);
 
 	/// Clear all cached assets.
 	void Clear();
@@ -537,6 +531,7 @@ public:
 private:
 	AssetCache() = default;
 	std::unordered_map<std::string, AssetPtr> cache_;
+	std::unordered_map<std::string, std::string> path_to_name_; // file path → asset name
 };
 
 } // namespace engine::assets

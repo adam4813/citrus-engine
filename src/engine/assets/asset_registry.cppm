@@ -334,6 +334,9 @@ struct MeshAssetInfo : AssetInfo {
 	/// Register this asset type with the AssetRegistry
 	static void RegisterType();
 
+	/// Register built-in mesh primitives (quad, cube, sphere) in the asset cache
+	static void RegisterBuiltins();
+
 	/// Set up ECS ref component + observer binding
 	static void SetupRefBinding(flecs::world& world);
 

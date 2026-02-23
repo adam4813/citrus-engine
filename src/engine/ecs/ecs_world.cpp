@@ -283,6 +283,9 @@ ECSWorld::ECSWorld() {
 		".sound.json", ".anim.json", ".data.json", ".prefab.json"
 	});
 
+	// Register built-in mesh primitives (quad, cube, sphere)
+	assets::MeshAssetInfo::RegisterBuiltins();
+
 	// Set up built-in systems
 	SetupMovementSystem();
 	SetupRotationSystem();

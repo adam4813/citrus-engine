@@ -17,6 +17,7 @@ using namespace engine::ecs;
 using namespace engine::scene;
 using namespace engine::components;
 using namespace engine::rendering;
+using namespace engine::assets;
 
 class SceneSerializationTest : public ::testing::Test {
 protected:

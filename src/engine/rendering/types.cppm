@@ -115,24 +115,6 @@ struct Renderable {
 	float alpha{1.0F};
 };
 
-// Asset reference component for shader - stores shader name for serialization
-// An observer resolves the name to ShaderId and updates Renderable::shader
-struct ShaderRef {
-	std::string name;
-};
-
-// Asset reference component for mesh - stores mesh asset name for serialization
-// An observer resolves the name to MeshId and updates Renderable::mesh
-struct MeshRef {
-	std::string name;
-};
-
-// Asset reference component for material - stores material asset name for serialization
-// An observer resolves the name to MaterialId and updates Renderable::material
-struct MaterialRef {
-	std::string name;
-};
-
 // Light component for lighting calculations
 struct Light {
 	enum class Type : int { Directional = 0, Point = 1, Spot = 2 };

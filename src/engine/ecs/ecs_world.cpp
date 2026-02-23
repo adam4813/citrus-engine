@@ -274,17 +274,8 @@ ECSWorld::ECSWorld() {
 	registry.Register<physics::IsTrigger>("IsTrigger", world_).Category("Physics").Build();
 	registry.Register<physics::IsSleeping>("IsSleeping", world_).Category("Physics").Build();
 
-	// Set up shader reference integration (ShaderRef component, With trait, observers)
-	SetupShaderRefIntegration();
-
-	// Set up mesh reference integration (MeshRef component, With trait, observers)
-	SetupMeshRefIntegration();
-
-	// Set up material reference integration (MaterialRef component, With trait, observers)
-	SetupMaterialRefIntegration();
-
-	// Set up sound reference integration (SoundRef component, With trait, observers)
-	SetupSoundRefIntegration();
+	// Initialize asset registry: registers ref components and sets up observers
+	assets::AssetRegistry::Instance().Initialize(world_);
 
 	// Set up built-in systems
 	SetupMovementSystem();

@@ -1,7 +1,6 @@
 module;
 
 #include <flecs.h>
-#include <functional>
 #include <iostream>
 #include <string>
 #include <vector>
@@ -16,54 +15,6 @@ using namespace engine::rendering;
 using namespace engine::assets;
 
 namespace engine::ecs {
-
-// === GENERIC ASSET REFERENCE BINDING ===
-// Wires up: component registration, With trait, and forward observer.
-// RefComp must have a `std::string name` member.
-// AssetInfoT must have an `id` member of type IdType.
-// TargetComp is the component that holds the runtime ID (e.g., Renderable, AudioSource).
-// The observer: ref.name → cache lookup → Load() → copy asset id → set on target.
-template <typename RefComp, typename AssetInfoT, typename TargetComp, typename IdType>
-void SetupAssetRefBinding(
-		flecs::world& world,
-		const std::string& ref_name,
-		const std::string& category,
-		std::string_view asset_type_name,
-		IdType AssetInfoT::* asset_id_member,
-		IdType TargetComp::* target_id_member,
-		IdType invalid_value,
-		std::vector<std::string> file_extensions = {}) {
-	auto& registry = ComponentRegistry::Instance();
-
-	auto builder = registry.Register<RefComp>(ref_name, world)
-						   .Category(category)
-						   .Field("name", &RefComp::name)
-						   .AssetRef(asset_type_name);
-	if (!file_extensions.empty()) {
-		builder.FileExtensions(std::move(file_extensions));
-	}
-	builder.Build();
-
-	if (!world.component<TargetComp>().add(flecs::With, world.component<RefComp>())) {
-		return;
-	}
-
-	// Forward observer: RefComp.name → AssetCache → Load → target id
-	const auto forward_name = ref_name + "Resolve";
-	world.observer<RefComp, TargetComp>(forward_name.c_str())
-			.event(flecs::OnSet)
-			.each([asset_id_member, target_id_member, invalid_value](
-						  flecs::entity, const RefComp& ref, TargetComp& target) {
-				if (ref.name.empty()) {
-					target.*target_id_member = invalid_value;
-					return;
-				}
-				if (auto asset = AssetCache::Instance().FindTyped<AssetInfoT>(ref.name)) {
-					asset->Load();
-					target.*target_id_member = (*asset).*asset_id_member;
-				}
-			});
-}
 
 // Submit render commands for all renderable entities
 void ECSWorld::SubmitRenderCommands(const Renderer& renderer) {
@@ -206,33 +157,6 @@ void ECSWorld::SubmitRenderCommands(const Renderer& renderer) {
 			renderer.FlushDebugLines();
 		}
 	}
-}
-
-// === ASSET REFERENCE INTEGRATIONS ===
-
-void ECSWorld::SetupShaderRefIntegration() {
-	SetupAssetRefBinding<ShaderRef, ShaderAssetInfo, Renderable>(
-			world_, "ShaderRef", "Rendering", ShaderAssetInfo::TYPE_NAME,
-			&ShaderAssetInfo::id, &Renderable::shader, INVALID_SHADER);
-}
-
-void ECSWorld::SetupMeshRefIntegration() {
-	SetupAssetRefBinding<MeshRef, MeshAssetInfo, Renderable>(
-			world_, "MeshRef", "Rendering", MeshAssetInfo::TYPE_NAME,
-			&MeshAssetInfo::id, &Renderable::mesh, INVALID_MESH);
-}
-
-void ECSWorld::SetupMaterialRefIntegration() {
-	SetupAssetRefBinding<MaterialRef, MaterialAssetInfo, Renderable>(
-			world_, "MaterialRef", "Rendering", MaterialAssetInfo::TYPE_NAME,
-			&MaterialAssetInfo::id, &Renderable::material, INVALID_MATERIAL,
-			{".material.json"});
-}
-
-void ECSWorld::SetupSoundRefIntegration() {
-	SetupAssetRefBinding<audio::SoundRef, SoundAssetInfo, audio::AudioSource>(
-			world_, "SoundRef", "Audio", SoundAssetInfo::TYPE_NAME,
-			&SoundAssetInfo::clip_id, &audio::AudioSource::clip_id, static_cast<uint32_t>(0));
 }
 
 } // namespace engine::ecs

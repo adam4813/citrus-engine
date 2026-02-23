@@ -1,6 +1,7 @@
 module;
 
 #include <cstdint>
+#include <flecs.h>
 #include <functional>
 #include <memory>
 #include <nlohmann/json_fwd.hpp>
@@ -157,6 +158,10 @@ public:
 	/// Get singleton instance
 	static AssetRegistry& Instance();
 
+	/// Initialize asset registry: register all asset types and set up ECS ref bindings.
+	/// Must be called once after the flecs world is created.
+	void Initialize(flecs::world& world);
+
 	/// Start registering an asset type with builder pattern
 	template <typename T> AssetTypeRegistration<T> RegisterType(const std::string& type_name, AssetType asset_type) {
 		return AssetTypeRegistration<T>(*this, type_name, asset_type);
@@ -268,6 +273,9 @@ struct ShaderAssetInfo : AssetInfo {
 	/// Register this asset type with the AssetRegistry
 	static void RegisterType();
 
+	/// Set up ECS ref component + observer binding
+	static void SetupRefBinding(flecs::world& world);
+
 	void FromJson(const nlohmann::json& j) override;
 	void ToJson(nlohmann::json& j) override;
 
@@ -276,6 +284,12 @@ protected:
 	bool DoLoad() override;
 	void DoUnload() override;
 	[[nodiscard]] std::string_view GetTypeName() const override { return TYPE_NAME; }
+};
+
+/// Asset reference component for shader - stores shader name for serialization.
+/// An observer resolves the name to ShaderId and updates Renderable::shader.
+struct ShaderRef {
+	std::string name;
 };
 
 /// Built-in mesh type names (used as mesh_type field value)
@@ -304,6 +318,9 @@ struct MeshAssetInfo : AssetInfo {
 	/// Register this asset type with the AssetRegistry
 	static void RegisterType();
 
+	/// Set up ECS ref component + observer binding
+	static void SetupRefBinding(flecs::world& world);
+
 	void FromJson(const nlohmann::json& j) override;
 	void ToJson(nlohmann::json& j) override;
 
@@ -312,6 +329,12 @@ protected:
 	bool DoLoad() override;
 	void DoUnload() override;
 	[[nodiscard]] std::string_view GetTypeName() const override { return TYPE_NAME; }
+};
+
+/// Asset reference component for mesh - stores mesh asset name for serialization.
+/// An observer resolves the name to MeshId and updates Renderable::mesh.
+struct MeshRef {
+	std::string name;
 };
 
 /// Texture asset definition
@@ -370,6 +393,10 @@ struct MaterialAssetInfo : AssetInfo {
 			AssetInfo(std::move(asset_name), AssetType::MATERIAL), shader_name(std::move(shader)) {}
 
 	static void RegisterType();
+
+	/// Set up ECS ref component + observer binding
+	static void SetupRefBinding(flecs::world& world);
+
 	void FromJson(const nlohmann::json& j) override;
 	void ToJson(nlohmann::json& j) override;
 
@@ -378,6 +405,12 @@ protected:
 	bool DoLoad() override;
 	void DoUnload() override;
 	[[nodiscard]] std::string_view GetTypeName() const override { return TYPE_NAME; }
+};
+
+/// Asset reference component for material - stores material asset name for serialization.
+/// An observer resolves the name to MaterialId and updates Renderable::material.
+struct MaterialRef {
+	std::string name;
 };
 
 /// Animation clip asset definition
@@ -416,6 +449,9 @@ struct SoundAssetInfo : AssetInfo {
 
 	static void RegisterType();
 
+	/// Set up ECS ref component + observer binding
+	static void SetupRefBinding(flecs::world& world);
+
 	void FromJson(const nlohmann::json& j) override;
 	void ToJson(nlohmann::json& j) override;
 
@@ -423,6 +459,12 @@ protected:
 	void DoInitialize() override;
 	bool DoLoad() override;
 	[[nodiscard]] std::string_view GetTypeName() const override { return TYPE_NAME; }
+};
+
+/// Asset reference component for sound - stores sound asset name for serialization.
+/// An observer resolves the name to a clip_id and updates AudioSource::clip_id.
+struct SoundRef {
+	std::string name;
 };
 
 /// Data table asset definition

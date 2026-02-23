@@ -212,13 +212,5 @@ private:
 	void SetupAnimationSystem() const;
 
 	void SetupAudioSystem() const;
-
-	void SetupShaderRefIntegration();
-
-	void SetupMeshRefIntegration();
-
-	void SetupMaterialRefIntegration();
-
-	void SetupSoundRefIntegration();
 };
 } // namespace engine::ecs

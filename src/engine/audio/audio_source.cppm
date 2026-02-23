@@ -31,10 +31,4 @@ struct AudioSource {
 			clip_id(audio_clip_id), volume(vol), looping(loop) {}
 };
 
-// Asset reference component for sound - stores sound asset name for serialization
-// An observer resolves the name to a clip_id and updates AudioSource::clip_id
-struct SoundRef {
-	std::string name;
-};
-
 } // namespace engine::audio

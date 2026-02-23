@@ -160,6 +160,11 @@ target_sources(engine-core PRIVATE
     # Assets module implementation
     assets/asset_manager.cpp
     assets/asset_registry.cpp
+    assets/shader_asset.cpp
+    assets/mesh_asset.cpp
+    assets/material_asset.cpp
+    assets/sound_asset.cpp
+    assets/other_assets.cpp
     assets/tileset.cpp
 
     # Audio module implementation

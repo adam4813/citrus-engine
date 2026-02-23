@@ -124,9 +124,9 @@ void MaterialEditorPanel::RenderMaterialProperties() {
 
 	// Section headers inserted before the first field of each group
 	static const std::unordered_map<std::string, const char*> kSectionHeaders = {
-		{"base_color", "Colors"},
-		{"albedo_map", "Texture Maps"},
-		{"metallic_factor", "PBR Properties"},
+			{"base_color", "Colors"},
+			{"albedo_map", "Texture Maps"},
+			{"metallic_factor", "PBR Properties"},
 	};
 
 	bool modified = false;

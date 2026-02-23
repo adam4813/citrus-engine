@@ -22,7 +22,10 @@ bool s_field_file_dialog_modified = false;
 void OpenFieldBrowseDialog(const char* title, const std::vector<std::string>& extensions, std::string* target) {
 	s_field_file_dialog.emplace(title, FileDialogMode::Open, extensions);
 	s_field_file_dialog->SetCallback([target](const std::string& path) {
-		*target = path;
+		// TODO: File paths should be stored as absolute path, but most components are using relative paths.
+		const auto relative_path =
+				std::filesystem::relative(std::filesystem::path(path), s_field_file_dialog->RootDirectory());
+		*target = relative_path.string();
 		s_field_file_dialog_modified = true;
 	});
 	s_field_file_dialog->Open();

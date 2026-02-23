@@ -247,10 +247,9 @@ void Renderer::SubmitRenderCommand(const RenderCommand& command) const {
 		const Material& material = pimpl_->material_manager.GetMaterial(command.material);
 		material.Apply(*shader);
 	}
-
-	// If no texture was bound by the material, bind the white texture to slot 0
-	// This ensures shaders that expect textures don't fail
-	if (const TextureId white_tex = pimpl_->texture_manager.GetWhiteTexture(); white_tex != INVALID_TEXTURE) {
+	else if (const TextureId white_tex = pimpl_->texture_manager.GetWhiteTexture();
+			 white_tex != INVALID_TEXTURE) {
+		// No material — bind the white texture as fallback so shaders that expect textures don't fail
 		if (const auto* gl_white_tex = GetGLTexture(white_tex)) {
 			glActiveTexture(GL_TEXTURE0);
 			glBindTexture(GL_TEXTURE_2D, gl_white_tex->handle);

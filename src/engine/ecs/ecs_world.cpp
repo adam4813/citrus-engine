@@ -84,7 +84,7 @@ ECSWorld::ECSWorld() {
 			.Field("angular", &Velocity::angular)
 			.Build();
 
-	// Renderable component (basic registration - ShaderRef integration added in SetupShaderRefIntegration)
+	// Renderable component
 	registry.Register<Renderable>("Renderable", world_)
 			.Category("Rendering")
 			.Field("visible", &Renderable::visible)
@@ -180,7 +180,7 @@ ECSWorld::ECSWorld() {
 			.Field("prefab_path", &PrefabInstance::prefab_path)
 			.Build();
 
-	// Register audio components (basic registration - SoundRef integration added in SetupSoundRefIntegration)
+	// Register audio components
 	// Register PlayState enum for proper serialization
 	world_.component<audio::PlayState>();
 
@@ -276,6 +276,12 @@ ECSWorld::ECSWorld() {
 
 	// Initialize asset registry: registers ref components and sets up observers
 	assets::AssetRegistry::Instance().Initialize(world_);
+
+	// Scan asset directory to register all known assets (metadata only, not loaded)
+	assets::AssetCache::Instance().ScanDirectory("assets/", {
+		".shader.json", ".mesh.json", ".material.json", ".texture.json",
+		".sound.json", ".anim.json", ".data.json", ".prefab.json"
+	});
 
 	// Set up built-in systems
 	SetupMovementSystem();

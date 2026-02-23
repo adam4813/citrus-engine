@@ -255,7 +255,7 @@ AssetPtr AssetCache::LoadFromFile(const std::string& path) {
 			asset->guid = GenerateGuid();
 		}
 
-		asset->Load();
+		// Assets are loaded on-demand when referenced by an entity (via SetupRefBinding observers)
 
 		// Cache by GUID (primary key) with name and path indices
 		cache_[asset->guid] = asset;
@@ -313,6 +313,12 @@ size_t AssetCache::ScanDirectory(const std::string& directory, const std::vector
 	const auto entries = platform::fs::ListDirectory(dir_path);
 
 	for (const auto& entry : entries) {
+		// Recursively scan subdirectories
+		if (platform::fs::IsDirectory(entry)) {
+			registered += ScanDirectory(entry.string(), extensions);
+			continue;
+		}
+
 		const auto filename = entry.filename().string();
 
 		// Filter by extensions

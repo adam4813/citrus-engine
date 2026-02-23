@@ -115,6 +115,18 @@ namespace engine::platform::fs {
         return Path("assets");
     }
 
+    bool Exists(const Path &path) {
+        return std::filesystem::exists(path);
+    }
+
+    bool IsFile(const Path &path) {
+        return std::filesystem::is_regular_file(path);
+    }
+
+    bool IsDirectory(const Path &path) {
+        return std::filesystem::is_directory(path);
+    }
+
     std::vector<Path> ListDirectory(const Path &path) {
         std::vector<Path> result;
         if (!std::filesystem::exists(path) || !std::filesystem::is_directory(path)) {

@@ -46,6 +46,7 @@ void AssetRegistry::Initialize(flecs::world& world) {
 	MeshAssetInfo::SetupRefBinding(world);
 	MaterialAssetInfo::SetupRefBinding(world);
 	SoundAssetInfo::SetupRefBinding(world);
+	TextureAssetInfo::SetupRefBinding(world);
 }
 
 std::shared_ptr<AssetInfo> AssetRegistry::CreateDefault(const AssetType type) const {

@@ -65,27 +65,10 @@ void ShaderAssetInfo::RegisterType() {
 }
 
 void ShaderAssetInfo::SetupRefBinding(flecs::world& world) {
-	auto& registry = ecs::ComponentRegistry::Instance();
-	registry.Register<ShaderRef>("ShaderRef", world)
-			.Category("Rendering")
-			.Field("name", &ShaderRef::name)
-			.AssetRef(ShaderAssetInfo::TYPE_NAME)
-			.Build();
-
-	world.component<rendering::Renderable>().add(flecs::With, world.component<ShaderRef>());
-
-	world.observer<ShaderRef, rendering::Renderable>("ShaderRefResolve")
-			.event(flecs::OnSet)
-			.each([](flecs::entity, const ShaderRef& ref, rendering::Renderable& target) {
-				if (ref.name.empty()) {
-					target.shader = rendering::INVALID_SHADER;
-					return;
-				}
-				if (auto asset = AssetCache::Instance().FindTyped<ShaderAssetInfo>(ref.name)) {
-					asset->Load();
-					target.shader = asset->id;
-				}
-			});
+	SetupRefBindingImpl<ShaderAssetInfo, ShaderRef, rendering::Renderable>(
+			world, "ShaderRef", "Rendering", "ShaderRefResolve", ShaderAssetInfo::TYPE_NAME,
+			[](const auto& asset, auto& target) { target.shader = asset->id; },
+			[](auto& target) { target.shader = rendering::INVALID_SHADER; });
 }
 
 } // namespace engine::assets

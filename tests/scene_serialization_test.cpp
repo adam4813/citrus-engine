@@ -422,7 +422,7 @@ TEST_F(SceneSerializationTest, SaveAndLoad_EntityWithShaderRef_PreservesShaderNa
 
 	// Add Renderable (which auto-adds ShaderRef) and set the shader name
 	entity.add<Renderable>();
-	entity.set<ShaderRef>({.name = "test_shader"});
+	entity.set<ShaderRef>({{"test_shader"}});
 
 	// Verify ShaderRef was set
 	ASSERT_TRUE(entity.has<ShaderRef>());

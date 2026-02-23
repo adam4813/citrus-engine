@@ -99,27 +99,10 @@ void MeshAssetInfo::RegisterType() {
 }
 
 void MeshAssetInfo::SetupRefBinding(flecs::world& world) {
-	auto& registry = ecs::ComponentRegistry::Instance();
-	registry.Register<MeshRef>("MeshRef", world)
-			.Category("Rendering")
-			.Field("name", &MeshRef::name)
-			.AssetRef(MeshAssetInfo::TYPE_NAME)
-			.Build();
-
-	world.component<rendering::Renderable>().add(flecs::With, world.component<MeshRef>());
-
-	world.observer<MeshRef, rendering::Renderable>("MeshRefResolve")
-			.event(flecs::OnSet)
-			.each([](flecs::entity, const MeshRef& ref, rendering::Renderable& target) {
-				if (ref.name.empty()) {
-					target.mesh = rendering::INVALID_MESH;
-					return;
-				}
-				if (auto asset = AssetCache::Instance().FindTyped<MeshAssetInfo>(ref.name)) {
-					asset->Load();
-					target.mesh = asset->id;
-				}
-			});
+	SetupRefBindingImpl<MeshAssetInfo, MeshRef, rendering::Renderable>(
+			world, "MeshRef", "Rendering", "MeshRefResolve", MeshAssetInfo::TYPE_NAME,
+			[](const auto& asset, auto& target) { target.mesh = asset->id; },
+			[](auto& target) { target.mesh = rendering::INVALID_MESH; });
 }
 
 } // namespace engine::assets

@@ -245,28 +245,21 @@ void MaterialAssetInfo::RegisterType() {
 }
 
 void MaterialAssetInfo::SetupRefBinding(flecs::world& world) {
+	SetupRefBindingImpl<MaterialAssetInfo, MaterialRef, rendering::Renderable>(
+			world, "MaterialRef", "Rendering", "MaterialRefResolve", MaterialAssetInfo::TYPE_NAME,
+			[](const auto& asset, auto& target) { target.material = asset->id; },
+			[](auto& target) { target.material = rendering::INVALID_MATERIAL; }, {".material.json"});
+}
+
+void TextureAssetInfo::SetupRefBinding(flecs::world& world) {
 	auto& registry = ecs::ComponentRegistry::Instance();
-	registry.Register<MaterialRef>("MaterialRef", world)
+	std::string TextureRef::* name_member = &AssetRefBase::name;
+	registry.Register<TextureRef>("TextureRef", world)
 			.Category("Rendering")
-			.Field("name", &MaterialRef::name)
-			.AssetRef(MaterialAssetInfo::TYPE_NAME)
-			.FileExtensions({".material.json"})
+			.Field("name", name_member)
+			.AssetRef(TextureAssetInfo::TYPE_NAME)
+			.FileExtensions({".png", ".jpg", ".jpeg", ".tga", ".bmp"})
 			.Build();
-
-	world.component<rendering::Renderable>().add(flecs::With, world.component<MaterialRef>());
-
-	world.observer<MaterialRef, rendering::Renderable>("MaterialRefResolve")
-			.event(flecs::OnSet)
-			.each([](flecs::entity, const MaterialRef& ref, rendering::Renderable& target) {
-				if (ref.name.empty()) {
-					target.material = rendering::INVALID_MATERIAL;
-					return;
-				}
-				if (auto asset = AssetCache::Instance().FindTyped<MaterialAssetInfo>(ref.name)) {
-					asset->Load();
-					target.material = asset->id;
-				}
-			});
 }
 
 } // namespace engine::assets

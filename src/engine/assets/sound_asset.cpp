@@ -67,27 +67,10 @@ void SoundAssetInfo::RegisterType() {
 }
 
 void SoundAssetInfo::SetupRefBinding(flecs::world& world) {
-	auto& registry = ecs::ComponentRegistry::Instance();
-	registry.Register<SoundRef>("SoundRef", world)
-			.Category("Audio")
-			.Field("name", &SoundRef::name)
-			.AssetRef(SoundAssetInfo::TYPE_NAME)
-			.Build();
-
-	world.component<audio::AudioSource>().add(flecs::With, world.component<SoundRef>());
-
-	world.observer<SoundRef, audio::AudioSource>("SoundRefResolve")
-			.event(flecs::OnSet)
-			.each([](flecs::entity, const SoundRef& ref, audio::AudioSource& target) {
-				if (ref.name.empty()) {
-					target.clip_id = 0;
-					return;
-				}
-				if (auto asset = AssetCache::Instance().FindTyped<SoundAssetInfo>(ref.name)) {
-					asset->Load();
-					target.clip_id = asset->clip_id;
-				}
-			});
+	SetupRefBindingImpl<SoundAssetInfo, SoundRef, audio::AudioSource>(
+			world, "SoundRef", "Audio", "SoundRefResolve", SoundAssetInfo::TYPE_NAME,
+			[](const auto& asset, auto& target) { target.clip_id = asset->clip_id; },
+			[](auto& target) { target.clip_id = 0; });
 }
 
 } // namespace engine::assets

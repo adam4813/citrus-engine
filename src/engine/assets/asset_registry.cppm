@@ -286,11 +286,16 @@ protected:
 	[[nodiscard]] std::string_view GetTypeName() const override { return TYPE_NAME; }
 };
 
-/// Asset reference component for shader - stores shader name for serialization.
-/// An observer resolves the name to ShaderId and updates Renderable::shader.
-struct ShaderRef {
+/// Common base for asset reference components.
+/// Each concrete ref type inherits this so flecs still uses the derived C++ type
+/// for component identity, while the shared base eliminates field duplication.
+struct AssetRefBase {
 	std::string name;
 };
+
+/// Asset reference component for shader - stores shader name for serialization.
+/// An observer resolves the name to ShaderId and updates Renderable::shader.
+struct ShaderRef : AssetRefBase {};
 
 /// Built-in mesh type names (used as mesh_type field value)
 namespace mesh_types {
@@ -333,9 +338,7 @@ protected:
 
 /// Asset reference component for mesh - stores mesh asset name for serialization.
 /// An observer resolves the name to MeshId and updates Renderable::mesh.
-struct MeshRef {
-	std::string name;
-};
+struct MeshRef : AssetRefBase {};
 
 /// Texture asset definition
 struct TextureAssetInfo : AssetInfo {
@@ -350,6 +353,9 @@ struct TextureAssetInfo : AssetInfo {
 
 	static void RegisterType();
 
+	/// Set up ECS ref component binding (registers TextureRef as a component)
+	static void SetupRefBinding(flecs::world& world);
+
 	void FromJson(const nlohmann::json& j) override;
 	void ToJson(nlohmann::json& j) override;
 
@@ -359,6 +365,9 @@ protected:
 	void DoUnload() override;
 	[[nodiscard]] std::string_view GetTypeName() const override { return TYPE_NAME; }
 };
+
+/// Asset reference component for texture - stores texture asset name for serialization.
+struct TextureRef : AssetRefBase {};
 
 /// Material asset definition - PBR material with static texture slots and properties
 struct MaterialAssetInfo : AssetInfo {
@@ -409,9 +418,7 @@ protected:
 
 /// Asset reference component for material - stores material asset name for serialization.
 /// An observer resolves the name to MaterialId and updates Renderable::material.
-struct MaterialRef {
-	std::string name;
-};
+struct MaterialRef : AssetRefBase {};
 
 /// Animation clip asset definition
 struct AnimationAssetInfo : AssetInfo {
@@ -463,9 +470,7 @@ protected:
 
 /// Asset reference component for sound - stores sound asset name for serialization.
 /// An observer resolves the name to a clip_id and updates AudioSource::clip_id.
-struct SoundRef {
-	std::string name;
-};
+struct SoundRef : AssetRefBase {};
 
 /// Data table asset definition
 struct DataTableAssetInfo : AssetInfo {
@@ -609,5 +614,46 @@ private:
 	std::unordered_map<std::string, uint32_t> path_to_guid_; // file path → guid
 	uint32_t next_guid_{1}; // Counter for GUID generation
 };
+
+// --- Data-driven SetupRefBinding template ---
+// Eliminates per-asset-type copy-paste for ref component registration + observer wiring.
+// Defined in the module interface so all implementation units can instantiate it.
+
+template <typename AssetInfoT, typename RefT, typename TargetT, typename AssignFn, typename ClearFn>
+void SetupRefBindingImpl(
+		flecs::world& world,
+		const char* ref_name,
+		const char* category,
+		const char* observer_name,
+		std::string_view asset_type_name,
+		AssignFn assign_fn,
+		ClearFn clear_fn,
+		std::vector<std::string> file_extensions = {}) {
+	auto& registry = ecs::ComponentRegistry::Instance();
+	// Explicit conversion from base-class member pointer to derived-class member pointer
+	// so that ComponentRegistration<RefT>::Field template deduction succeeds.
+	std::string RefT::* name_member = &AssetRefBase::name;
+	auto reg = registry.Register<RefT>(ref_name, world).Category(category).Field("name", name_member).AssetRef(
+			asset_type_name);
+	if (!file_extensions.empty()) {
+		reg.FileExtensions(std::move(file_extensions));
+	}
+	reg.Build();
+
+	world.component<TargetT>().add(flecs::With, world.component<RefT>());
+
+	world.template observer<RefT, TargetT>(observer_name)
+			.event(flecs::OnSet)
+			.each([assign_fn, clear_fn](flecs::entity, const RefT& ref, TargetT& target) {
+				if (ref.name.empty()) {
+					clear_fn(target);
+					return;
+				}
+				if (auto asset = AssetCache::Instance().template FindTyped<AssetInfoT>(ref.name)) {
+					asset->Load();
+					assign_fn(asset, target);
+				}
+			});
+}
 
 } // namespace engine::assets

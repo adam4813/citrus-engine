@@ -30,10 +30,12 @@ enum class FieldType {
 	ListFloat,
 	ListString,
 	ReadOnly, // Display-only string
-	AssetRef, // Reference to a scene asset (dropdown)
+	AssetRef, // Reference to a scene asset by name (string, cache-only dropdown)
+	UintAssetRef, // Reference to a scene asset by GUID (uint32_t, cache-only dropdown)
 	Enum, // Integer-backed enum displayed as combo box
 	FilePath, // String displayed with file browser hint
-	Selection // String-backed dropdown with fixed options
+	Selection, // String-backed dropdown with fixed options
+	Slider // Float displayed as slider with configurable min/max
 };
 
 /**
@@ -50,6 +52,8 @@ struct FieldInfo {
 	std::vector<std::string> enum_tooltips; // For Enum: tooltips for each option (index = integer value)
 	std::vector<std::string> options; // For Selection: valid string choices
 	std::vector<std::string> file_extensions; // For FilePath/AssetRef: file extension filters (e.g., ".json", ".png")
+	float slider_min{0.0f}; // For Slider: minimum value
+	float slider_max{1.0f}; // For Slider: maximum value
 	std::string visible_when_field; // If non-empty, this field is only visible when the named field has a matching value
 	std::vector<int> visible_when_values; // Enum values of the controlling field that make this field visible
 };
@@ -234,6 +238,18 @@ public:
 	ComponentRegistration& FileExtensions(std::vector<std::string> exts) {
 		if (!info_.fields.empty()) {
 			info_.fields.back().file_extensions = std::move(exts);
+		}
+		return *this;
+	}
+
+	/**
+	 * @brief Set slider range on the last field (changes type to Slider)
+	 */
+	ComponentRegistration& SliderRange(float min_val, float max_val) {
+		if (!info_.fields.empty()) {
+			info_.fields.back().type = FieldType::Slider;
+			info_.fields.back().slider_min = min_val;
+			info_.fields.back().slider_max = max_val;
 		}
 		return *this;
 	}

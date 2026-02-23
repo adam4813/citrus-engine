@@ -30,6 +30,7 @@ add_executable(
     src/editor_scene_clipboard.cpp
     src/editor_scene_file_ops.cpp
     src/editor_scene_menus.cpp
+    src/field_widgets.cpp
     src/graph_editor_panel.cpp
     src/hierarchy_panel.cpp
     src/material_editor_panel.cpp

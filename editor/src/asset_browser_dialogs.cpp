@@ -118,6 +118,10 @@ void AssetBrowserPanel::ShowEmptySpaceContextMenu() {
 			CreateNewMaterialFile();
 		}
 
+		if (ImGui::MenuItem("New Shader")) {
+			CreateNewShaderFile();
+		}
+
 		ImGui::Separator();
 
 		if (ImGui::MenuItem("Import Asset...")) {
@@ -351,6 +355,46 @@ void AssetBrowserPanel::CreateNewMaterialFile() {
 	}
 	catch (const std::exception& e) {
 		std::cerr << "Error creating material: " << e.what() << std::endl;
+	}
+}
+
+void AssetBrowserPanel::CreateNewShaderFile() {
+	try {
+		auto new_mat = current_directory_ / "NewShader.shader.json";
+		int counter = 1;
+		while (std::filesystem::exists(new_mat)) {
+			new_mat = current_directory_ / ("NewShader" + std::to_string(counter++) + ".shader.json");
+		}
+
+		// Use the asset registry to create a default shader and serialize it
+		auto default_asset = engine::assets::AssetRegistry::Instance().CreateDefault(engine::assets::AssetType::SHADER);
+		if (!default_asset) {
+			std::cerr << "Failed to create default shader from registry" << std::endl;
+			return;
+		}
+
+		// Set name from filename
+		std::string base_name = new_mat.stem().string();
+		if (base_name.ends_with(".shader")) {
+			base_name = base_name.substr(0, base_name.size() - 9);
+		}
+		default_asset->name = base_name;
+
+		nlohmann::json j;
+		default_asset->ToJson(j);
+		const std::string json_str = j.dump(2);
+
+		if (engine::assets::AssetManager::SaveTextFile(new_mat, json_str)) {
+			needs_refresh_ = true;
+			selected_item_path_ = new_mat;
+			std::cout << "Created new shader: " << new_mat << std::endl;
+		}
+		else {
+			std::cerr << "Failed to create shader file: " << new_mat << std::endl;
+		}
+	}
+	catch (const std::exception& e) {
+		std::cerr << "Error creating shader: " << e.what() << std::endl;
 	}
 }
 

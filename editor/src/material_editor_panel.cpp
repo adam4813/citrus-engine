@@ -1,12 +1,13 @@
 #include "material_editor_panel.h"
 
 #include "asset_editor_registry.h"
-#include "file_utils.h"
+#include "field_widgets.h"
 
 #include <filesystem>
 #include <imgui.h>
 #include <iostream>
 #include <nlohmann/json.hpp>
+#include <unordered_map>
 
 import engine;
 
@@ -80,6 +81,10 @@ void MaterialEditorPanel::Render() {
 		save_dialog_->Render();
 	}
 
+	if (RenderFieldDialogs()) {
+		SetDirty(true);
+	}
+
 	EndPanel();
 }
 
@@ -107,69 +112,26 @@ void MaterialEditorPanel::RenderToolbar() {
 	}
 }
 
-namespace {
-
-/// Render an AssetRef combo for a string field. Returns true if value changed.
-bool RenderAssetRefCombo(
-		const char* label,
-		std::string& value,
-		const std::string& asset_type,
-		const std::vector<std::string>& file_extensions = {}) {
-	// Build combined list: scene assets + file system matches
-	std::vector<std::string> names;
-	names.emplace_back(""); // (None) option
-
-	// Scan file system for matching files
-	if (!file_extensions.empty()) {
-		for (auto& file_path : ScanAssetFiles(file_extensions)) {
-			if (std::ranges::find(names, file_path) == names.end()) {
-				names.push_back(std::move(file_path));
-			}
-		}
-	}
-
-	// Ensure current value is in the list
-	if (!value.empty() && std::ranges::find(names, value) == names.end()) {
-		names.push_back(value);
-	}
-
-	int current_index = 0;
-	for (size_t i = 0; i < names.size(); ++i) {
-		if (names[i] == value) {
-			current_index = static_cast<int>(i);
-			break;
-		}
-	}
-
-	bool modified = false;
-	const char* preview = value.empty() ? "(None)" : value.c_str();
-	if (ImGui::BeginCombo(label, preview)) {
-		for (size_t i = 0; i < names.size(); ++i) {
-			const bool is_selected = (current_index == static_cast<int>(i));
-			const char* item_label = names[i].empty() ? "(None)" : names[i].c_str();
-			if (ImGui::Selectable(item_label, is_selected)) {
-				value = names[i];
-				modified = true;
-			}
-			if (is_selected) {
-				ImGui::SetItemDefaultFocus();
-			}
-		}
-		ImGui::EndCombo();
-	}
-	return modified;
-}
-
-} // namespace
-
 void MaterialEditorPanel::RenderMaterialProperties() {
 	ImGui::Text("Material: %s", material_->name.c_str());
 	ImGui::TextDisabled("%s", current_file_path_.c_str());
 	ImGui::Separator();
 
+	const auto* type_info = engine::assets::AssetRegistry::Instance().GetTypeInfo("material");
+	if (!type_info) {
+		return;
+	}
+
+	// Section headers inserted before the first field of each group
+	static const std::unordered_map<std::string, const char*> kSectionHeaders = {
+		{"base_color", "Colors"},
+		{"albedo_map", "Texture Maps"},
+		{"metallic_factor", "PBR Properties"},
+	};
+
 	bool modified = false;
 
-	// Name
+	// Render name field manually (always first)
 	{
 		char buffer[256];
 		std::strncpy(buffer, material_->name.c_str(), sizeof(buffer) - 1);
@@ -180,68 +142,18 @@ void MaterialEditorPanel::RenderMaterialProperties() {
 		}
 	}
 
-	// Shader (AssetRef combo — shaders are scene assets, not file assets)
-	/*if (RenderAssetRefCombo("Shader", material_->shader_ref_id, "shader")) {
-		modified = true;
-	}*/
-
-	ImGui::Separator();
-	ImGui::Text("Colors");
-
-	if (ImGui::ColorEdit4("Base Color", &material_->base_color.x)) {
-		modified = true;
-	}
-	if (ImGui::ColorEdit4("Emissive Color", &material_->emissive_color.x)) {
-		modified = true;
-	}
-
-	ImGui::Separator();
-	ImGui::Text("PBR Properties");
-
-	if (ImGui::SliderFloat("Metallic", &material_->metallic_factor, 0.0f, 1.0f)) {
-		modified = true;
-	}
-	if (ImGui::SliderFloat("Roughness", &material_->roughness_factor, 0.0f, 1.0f)) {
-		modified = true;
-	}
-	if (ImGui::SliderFloat("AO Strength", &material_->ao_strength, 0.0f, 1.0f)) {
-		modified = true;
-	}
-	if (ImGui::SliderFloat("Emissive Intensity", &material_->emissive_intensity, 0.0f, 10.0f)) {
-		modified = true;
-	}
-	if (ImGui::SliderFloat("Normal Strength", &material_->normal_strength, 0.0f, 2.0f)) {
-		modified = true;
-	}
-	if (ImGui::SliderFloat("Alpha Cutoff", &material_->alpha_cutoff, 0.0f, 1.0f)) {
-		modified = true;
-	}
-
-	ImGui::Separator();
-	ImGui::Text("Texture Maps");
-
-	static const std::vector<std::string> tex_exts = {".png", ".jpg", ".jpeg", ".tga", ".bmp"};
-
-	if (RenderAssetRefCombo("Albedo Map", material_->albedo_map, "texture", tex_exts)) {
-		modified = true;
-	}
-	if (RenderAssetRefCombo("Normal Map", material_->normal_map, "texture", tex_exts)) {
-		modified = true;
-	}
-	if (RenderAssetRefCombo("Metallic Map", material_->metallic_map, "texture", tex_exts)) {
-		modified = true;
-	}
-	if (RenderAssetRefCombo("Roughness Map", material_->roughness_map, "texture", tex_exts)) {
-		modified = true;
-	}
-	if (RenderAssetRefCombo("AO Map", material_->ao_map, "texture", tex_exts)) {
-		modified = true;
-	}
-	if (RenderAssetRefCombo("Emissive Map", material_->emissive_map, "texture", tex_exts)) {
-		modified = true;
-	}
-	if (RenderAssetRefCombo("Height Map", material_->height_map, "texture", tex_exts)) {
-		modified = true;
+	for (const auto& field : type_info->fields) {
+		if (field.name == "name") {
+			continue;
+		}
+		if (const auto it = kSectionHeaders.find(field.name); it != kSectionHeaders.end()) {
+			ImGui::Separator();
+			ImGui::Text("%s", it->second);
+		}
+		void* field_ptr = static_cast<char*>(static_cast<void*>(material_.get())) + field.offset;
+		if (RenderFieldWidget(field, field_ptr)) {
+			modified = true;
+		}
 	}
 
 	if (modified) {

@@ -109,13 +109,24 @@ public:
 		return *this;
 	}
 
+	/// Set slider range on the last field (changes type to Slider)
+	AssetTypeRegistration& SliderRange(float min_val, float max_val) {
+		if (!info_.fields.empty()) {
+			info_.fields.back().type = ecs::FieldType::Slider;
+			info_.fields.back().slider_min = min_val;
+			info_.fields.back().slider_max = max_val;
+		}
+		return *this;
+	}
+
 	/// Mark the last field as an asset reference with the given asset type key.
 	/// For list types, only sets asset_type hint (elements rendered as asset pickers).
 	AssetTypeRegistration& AssetRef(const std::string& asset_type_key) {
 		if (!info_.fields.empty()) {
 			auto& field_info = info_.fields.back();
 			if (field_info.type != ecs::FieldType::ListInt && field_info.type != ecs::FieldType::ListFloat
-				&& field_info.type != ecs::FieldType::ListString) {
+				&& field_info.type != ecs::FieldType::ListString
+				&& field_info.type != ecs::FieldType::UintAssetRef) {
 				field_info.type = ecs::FieldType::AssetRef;
 			}
 			field_info.asset_type = asset_type_key;

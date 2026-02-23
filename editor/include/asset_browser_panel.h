@@ -162,6 +162,11 @@ private:
 	void CreateNewMaterialFile();
 
 	/**
+	 * @brief Create a new shader file
+	 */
+	void CreateNewShaderFile();
+
+	/**
 	 * @brief Show import asset file dialog
 	 */
 	void ShowImportAssetDialog();

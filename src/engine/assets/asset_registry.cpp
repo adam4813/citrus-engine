@@ -36,44 +36,6 @@ AssetRegistry& AssetRegistry::Instance() {
 	return instance;
 }
 
-std::shared_ptr<AssetInfo> AssetRegistry::FromJson(const nlohmann::json& j) const {
-	const std::string type_str = j.value("type", "");
-	if (type_str.empty()) {
-		std::cerr << "AssetRegistry: Missing asset type \n";
-		return nullptr;
-	}
-	const auto* type_info = GetTypeInfo(type_str);
-	if (!type_info || !type_info->create_default_factory) {
-		std::cerr << "AssetRegistry: Unknown asset type '" << type_str << "'" << '\n';
-		return nullptr;
-	}
-
-	auto asset = type_info->create_default_factory();
-	if (!asset) {
-		std::cerr << "AssetRegistry: Failed to create asset of type '" << type_str << "'" << '\n';
-	}
-
-	asset->FromJson(j); // Populate common fields like name and type
-	return asset;
-}
-
-void AssetRegistry::ToJson(nlohmann::json& j, const std::shared_ptr<AssetInfo>& asset) const {
-	if (!asset) {
-		return;
-	}
-
-	if (const auto* type_info = GetTypeInfo(asset->type)) {
-		j["type"] = type_info->type_name; // Ensure type is included in JSON
-	}
-	else {
-		std::cerr << "AssetRegistry: Nothing registered for asset named '" << asset->name << "' serializing what we can"
-				  << '\n';
-	}
-
-	asset->ToJson(j);
-	j["name"] = asset->name; // Include common name field
-}
-
 std::shared_ptr<AssetInfo> AssetRegistry::CreateDefault(const AssetType type) const {
 	for (const auto& info : types_) {
 		if (info.asset_type == type && info.create_default_factory) {
@@ -688,9 +650,11 @@ std::vector<AssetPtr> AssetCache::GetByType(const AssetType type) const {
 }
 
 AssetPtr AssetCache::LoadFromFile(const std::string& path) {
-	// Check if already cached
-	if (const auto existing = cache_.find(path); existing != cache_.end()) {
-		return existing->second;
+	// Check if this file path was already loaded
+	if (const auto it = path_to_name_.find(path); it != path_to_name_.end()) {
+		if (const auto cached = cache_.find(it->second); cached != cache_.end()) {
+			return cached->second;
+		}
 	}
 
 	// Read JSON from disk
@@ -707,14 +671,30 @@ AssetPtr AssetCache::LoadFromFile(const std::string& path) {
 			return nullptr;
 		}
 
-		auto asset = AssetRegistry::Instance().FromJson(j);
-		if (!asset) {
+		// Look up type and create asset via factory
+		const std::string type_str = j.value("type", "");
+		if (type_str.empty()) {
+			std::cerr << "AssetCache::LoadFromFile: missing 'type' in " << path << '\n';
+			return nullptr;
+		}
+		const auto* type_info = AssetRegistry::Instance().GetTypeInfo(type_str);
+		if (!type_info || !type_info->create_default_factory) {
+			std::cerr << "AssetCache::LoadFromFile: unknown asset type '" << type_str << "'" << '\n';
 			return nullptr;
 		}
 
+		auto asset = type_info->create_default_factory();
+		if (!asset) {
+			std::cerr << "AssetCache::LoadFromFile: factory failed for type '" << type_str << "'" << '\n';
+			return nullptr;
+		}
+
+		asset->FromJson(j);
 		asset->Load();
 
-		cache_[path] = asset;
+		// Cache by asset name (not file path) so Find(name, type) works
+		path_to_name_[path] = asset->name;
+		cache_[asset->name] = asset;
 		return asset;
 	}
 	catch (const std::exception& e) {
@@ -723,6 +703,26 @@ AssetPtr AssetCache::LoadFromFile(const std::string& path) {
 	}
 }
 
-void AssetCache::Clear() { cache_.clear(); }
+bool AssetCache::SaveToFile(const AssetPtr& asset, const std::string& path) {
+	if (!asset) {
+		return false;
+	}
+
+	const auto* type_info = AssetRegistry::Instance().GetTypeInfo(asset->type);
+	if (!type_info) {
+		std::cerr << "AssetCache::SaveToFile: unknown type for asset '" << asset->name << "'" << '\n';
+		return false;
+	}
+
+	nlohmann::json j;
+	asset->ToJson(j);
+
+	return AssetManager::SaveTextFile(platform::fs::Path(path), j.dump(2));
+}
+
+void AssetCache::Clear() {
+	cache_.clear();
+	path_to_name_.clear();
+}
 
 } // namespace engine::assets

@@ -20,15 +20,8 @@ void MaterialEditorPanel::RegisterAssetHandlers(AssetEditorRegistry& registry) {
 
 void MaterialEditorPanel::OpenMaterial(const std::string& path) {
 	try {
-		const auto text = engine::assets::AssetManager::LoadTextFile(std::filesystem::path(path));
-		if (!text) {
-			std::cerr << "MaterialEditor: Failed to read " << path << std::endl;
-			return;
-		}
-		json j = json::parse(*text);
-
 		if (material_ = std::dynamic_pointer_cast<engine::assets::MaterialAssetInfo>(
-					engine::assets::AssetRegistry::Instance().FromJson(j));
+					engine::assets::AssetCache::Instance().LoadFromFile(path));
 			!material_) {
 			std::cerr << "MaterialEditor: JSON does not represent a MaterialAssetInfo: " << path << std::endl;
 			return;

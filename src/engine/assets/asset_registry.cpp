@@ -95,6 +95,7 @@ void AssetInfo::Unload() {
 	loaded_ = false;
 }
 void AssetInfo::FromJson(const nlohmann::json& j) {
+	guid = j.value("guid", 0u);
 	name = j.value("name", name);
 	if (const auto type_str = j.value("type", ""); !type_str.empty()) {
 		if (const auto* type_info = AssetRegistry::Instance().GetTypeInfo(type_str); type_info != nullptr) {
@@ -104,6 +105,7 @@ void AssetInfo::FromJson(const nlohmann::json& j) {
 }
 
 void AssetInfo::ToJson(nlohmann::json& j) {
+	j["guid"] = guid;
 	j["name"] = name;
 	j["type"] = GetTypeName();
 }
@@ -601,21 +603,46 @@ AssetCache& AssetCache::Instance() {
 void AssetCache::Add(AssetPtr asset) {
 	if (!asset)
 		return;
+	if (asset->guid == 0) {
+		asset->guid = GenerateGuid();
+	}
 	asset->Initialize();
-	cache_[asset->name] = std::move(asset);
+	cache_[asset->guid] = asset;
+	if (!asset->name.empty()) {
+		name_index_[asset->name] = asset->guid;
+	}
 }
 
 bool AssetCache::Remove(const std::string& name, const AssetType type) {
-	auto it = cache_.find(name);
+	auto nit = name_index_.find(name);
+	if (nit == name_index_.end()) {
+		return false;
+	}
+	auto it = cache_.find(nit->second);
 	if (it != cache_.end() && it->second && it->second->type == type) {
 		cache_.erase(it);
+		name_index_.erase(nit);
 		return true;
 	}
 	return false;
 }
 
+AssetPtr AssetCache::Find(const uint32_t guid) {
+	auto it = cache_.find(guid);
+	return (it != cache_.end()) ? it->second : nullptr;
+}
+
+std::shared_ptr<const AssetInfo> AssetCache::Find(const uint32_t guid) const {
+	auto it = cache_.find(guid);
+	return (it != cache_.end()) ? it->second : nullptr;
+}
+
 AssetPtr AssetCache::Find(const std::string& name, const AssetType type) {
-	auto it = cache_.find(name);
+	auto nit = name_index_.find(name);
+	if (nit == name_index_.end()) {
+		return nullptr;
+	}
+	auto it = cache_.find(nit->second);
 	if (it != cache_.end() && it->second && it->second->type == type) {
 		return it->second;
 	}
@@ -623,7 +650,11 @@ AssetPtr AssetCache::Find(const std::string& name, const AssetType type) {
 }
 
 std::shared_ptr<const AssetInfo> AssetCache::Find(const std::string& name, const AssetType type) const {
-	auto it = cache_.find(name);
+	auto nit = name_index_.find(name);
+	if (nit == name_index_.end()) {
+		return nullptr;
+	}
+	auto it = cache_.find(nit->second);
 	if (it != cache_.end() && it->second && it->second->type == type) {
 		return it->second;
 	}
@@ -651,7 +682,7 @@ std::vector<AssetPtr> AssetCache::GetByType(const AssetType type) const {
 
 AssetPtr AssetCache::LoadFromFile(const std::string& path) {
 	// Check if this file path was already loaded
-	if (const auto it = path_to_name_.find(path); it != path_to_name_.end()) {
+	if (const auto it = path_to_guid_.find(path); it != path_to_guid_.end()) {
 		if (const auto cached = cache_.find(it->second); cached != cache_.end()) {
 			return cached->second;
 		}
@@ -690,11 +721,20 @@ AssetPtr AssetCache::LoadFromFile(const std::string& path) {
 		}
 
 		asset->FromJson(j);
+
+		// Assign a GUID if the file didn't have one
+		if (asset->guid == 0) {
+			asset->guid = GenerateGuid();
+		}
+
 		asset->Load();
 
-		// Cache by asset name (not file path) so Find(name, type) works
-		path_to_name_[path] = asset->name;
-		cache_[asset->name] = asset;
+		// Cache by GUID (primary key) with name and path indices
+		cache_[asset->guid] = asset;
+		if (!asset->name.empty()) {
+			name_index_[asset->name] = asset->guid;
+		}
+		path_to_guid_[path] = asset->guid;
 		return asset;
 	}
 	catch (const std::exception& e) {
@@ -706,6 +746,11 @@ AssetPtr AssetCache::LoadFromFile(const std::string& path) {
 bool AssetCache::SaveToFile(const AssetPtr& asset, const std::string& path) {
 	if (!asset) {
 		return false;
+	}
+
+	// Ensure asset has a GUID before saving
+	if (asset->guid == 0) {
+		asset->guid = GenerateGuid();
 	}
 
 	const auto* type_info = AssetRegistry::Instance().GetTypeInfo(asset->type);
@@ -720,9 +765,18 @@ bool AssetCache::SaveToFile(const AssetPtr& asset, const std::string& path) {
 	return AssetManager::SaveTextFile(platform::fs::Path(path), j.dump(2));
 }
 
+uint32_t AssetCache::GenerateGuid() {
+	while (cache_.contains(next_guid_)) {
+		++next_guid_;
+	}
+	return next_guid_++;
+}
+
 void AssetCache::Clear() {
 	cache_.clear();
-	path_to_name_.clear();
+	name_index_.clear();
+	path_to_guid_.clear();
+	next_guid_ = 1;
 }
 
 } // namespace engine::assets

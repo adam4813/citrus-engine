@@ -203,6 +203,7 @@ template <typename T> void AssetTypeRegistration<T>::Build() { registry_.AddType
 
 /// Base asset definition - common fields for all asset types
 struct AssetInfo {
+	uint32_t guid{0}; // Stable identifier, persisted in asset JSON files
 	std::string name;
 	AssetType type{};
 	bool loaded_{false}; // Track whether this asset has been loaded
@@ -462,36 +463,44 @@ protected:
 using AssetPtr = std::shared_ptr<AssetInfo>;
 
 /// Global asset cache — project-level storage for all assets.
-/// Assets are cached by (name, type) key for O(1) lookup.
+/// Assets are cached by GUID (primary key) with a name index for convenience lookups.
 class AssetCache {
 public:
 	static AssetCache& Instance();
 
-	/// Add an asset to the cache (shares ownership). Overwrites existing if same name+type.
+	/// Add an asset to the cache (shares ownership).
+	/// Assigns a GUID if the asset doesn't have one (guid == 0).
 	void Add(AssetPtr asset);
 
 	/// Remove a cached asset by name and type.
 	bool Remove(const std::string& name, AssetType type);
 
-	/// Find asset by name and type.
+	/// Find asset by GUID (primary lookup).
+	AssetPtr Find(uint32_t guid);
+	[[nodiscard]] std::shared_ptr<const AssetInfo> Find(uint32_t guid) const;
+
+	/// Find asset by name and type (secondary lookup via name index).
 	AssetPtr Find(const std::string& name, AssetType type);
 	[[nodiscard]] std::shared_ptr<const AssetInfo> Find(const std::string& name, AssetType type) const;
 
 	/// Find typed asset by name.
 	template <typename T> std::shared_ptr<T> FindTyped(const std::string& name) {
-		auto it = cache_.find(name);
-		if (it != cache_.end()) {
-			if (auto typed = std::dynamic_pointer_cast<T>(it->second)) {
-				return typed;
+		if (const auto it = name_index_.find(name); it != name_index_.end()) {
+			if (const auto cached = cache_.find(it->second); cached != cache_.end()) {
+				if (auto typed = std::dynamic_pointer_cast<T>(cached->second)) {
+					return typed;
+				}
 			}
 		}
 		return nullptr;
 	}
 
 	template <typename T> std::shared_ptr<const T> FindTyped(const std::string& name) const {
-		if (const auto it = cache_.find(name); it != cache_.end()) {
-			if (auto typed = std::dynamic_pointer_cast<const T>(it->second)) {
-				return typed;
+		if (const auto it = name_index_.find(name); it != name_index_.end()) {
+			if (const auto cached = cache_.find(it->second); cached != cache_.end()) {
+				if (auto typed = std::dynamic_pointer_cast<const T>(cached->second)) {
+					return typed;
+				}
 			}
 		}
 		return nullptr;
@@ -514,12 +523,13 @@ public:
 	}
 
 	/// Load an asset from a JSON file on disk.
-	/// Creates the correct type via AssetRegistry, calls Load(), and caches by asset name.
+	/// Creates the correct type via AssetRegistry, calls Load(), and caches by GUID.
 	/// Returns the loaded asset, or nullptr on failure.
 	AssetPtr LoadFromFile(const std::string& path);
 
 	/// Save an asset to a JSON file on disk.
 	/// Works on any AssetPtr — the asset does not need to be in the cache.
+	/// Assigns a GUID if the asset doesn't have one (guid == 0).
 	bool SaveToFile(const AssetPtr& asset, const std::string& path);
 
 	/// Clear all cached assets.
@@ -528,10 +538,15 @@ public:
 	/// Get count.
 	[[nodiscard]] size_t Size() const { return cache_.size(); }
 
+	/// Generate a unique GUID not currently in the cache.
+	uint32_t GenerateGuid();
+
 private:
 	AssetCache() = default;
-	std::unordered_map<std::string, AssetPtr> cache_;
-	std::unordered_map<std::string, std::string> path_to_name_; // file path → asset name
+	std::unordered_map<uint32_t, AssetPtr> cache_; // guid → asset (primary)
+	std::unordered_map<std::string, uint32_t> name_index_; // name → guid (secondary)
+	std::unordered_map<std::string, uint32_t> path_to_guid_; // file path → guid
+	uint32_t next_guid_{1}; // Counter for GUID generation
 };
 
 } // namespace engine::assets

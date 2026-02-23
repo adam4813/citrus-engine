@@ -20,28 +20,20 @@ namespace engine::assets {
 
 AssetRegistry& AssetRegistry::Instance() {
 	static AssetRegistry instance;
-
-	static bool initialized = false;
-	if (!initialized) {
-		initialized = true;
-		ShaderAssetInfo::RegisterType();
-		MeshAssetInfo::RegisterType();
-		TextureAssetInfo::RegisterType();
-		MaterialAssetInfo::RegisterType();
-		AnimationAssetInfo::RegisterType();
-		SoundAssetInfo::RegisterType();
-		DataTableAssetInfo::RegisterType();
-		PrefabAssetInfo::RegisterType();
-	}
-
 	return instance;
 }
 
 void AssetRegistry::Initialize(flecs::world& world) {
-	// Ensure type registration has happened
-	Instance();
+	ShaderAssetInfo::RegisterType();
+	MeshAssetInfo::RegisterType();
+	TextureAssetInfo::RegisterType();
+	MaterialAssetInfo::RegisterType();
+	AnimationAssetInfo::RegisterType();
+	SoundAssetInfo::RegisterType();
+	DataTableAssetInfo::RegisterType();
+	PrefabAssetInfo::RegisterType();
 
-	// Set up ECS ref component bindings (observers that resolve name → runtime ID)
+	// Set up ECS ref component bindings (observers that resolve name → runtime ID), after all types are registered
 	ShaderAssetInfo::SetupRefBinding(world);
 	MeshAssetInfo::SetupRefBinding(world);
 	MaterialAssetInfo::SetupRefBinding(world);
@@ -326,8 +318,7 @@ size_t AssetCache::ScanDirectory(const std::string& directory, const std::vector
 		if (!extensions.empty()) {
 			bool matched = false;
 			for (const auto& ext : extensions) {
-				if (filename.length() >= ext.length()
-					&& filename.substr(filename.length() - ext.length()) == ext) {
+				if (filename.length() >= ext.length() && filename.substr(filename.length() - ext.length()) == ext) {
 					matched = true;
 					break;
 				}

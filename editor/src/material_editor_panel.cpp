@@ -181,9 +181,9 @@ void MaterialEditorPanel::RenderMaterialProperties() {
 	}
 
 	// Shader (AssetRef combo — shaders are scene assets, not file assets)
-	if (RenderAssetRefCombo("Shader", material_->shader_name, "shader")) {
+	/*if (RenderAssetRefCombo("Shader", material_->shader_ref_id, "shader")) {
 		modified = true;
-	}
+	}*/
 
 	ImGui::Separator();
 	ImGui::Text("Colors");

@@ -67,18 +67,24 @@ void TextureAssetInfo::RegisterType() {
 			.Build();
 }
 
+void TextureAssetInfo::SetupRefBinding(flecs::world& world) {
+	// TextureRef is a simple AssetRefBase that stores the texture asset name. An observer will resolve this name to a TextureId and update material properties at load time.
+}
+
 // === MaterialAssetInfo ===
 
 void MaterialAssetInfo::DoInitialize() {
 	auto& mat_mgr = rendering::GetRenderer().GetMaterialManager();
-	// Resolve shader by name
+
 	rendering::ShaderId shader_id = rendering::INVALID_SHADER;
-	if (!shader_name.empty()) {
-		shader_id = rendering::GetRenderer().GetShaderManager().FindShader(shader_name);
+	if (const auto shader_asset = AssetCache::Instance().FindTyped<ShaderAssetInfo>(shader_ref_id)) {
+		shader_asset->Load();
+		shader_id = shader_asset->id;
 	}
+
 	id = mat_mgr.CreateMaterial(name, shader_id);
-	std::cout << "MaterialAssetInfo: Created material '" << name << "' (id=" << id << ", shader=" << shader_name << ")"
-			  << '\n';
+	std::cout << "MaterialAssetInfo: Created material '" << name << "' (id=" << id << ", shader=" << shader_ref_id
+			  << ")" << '\n';
 }
 
 namespace {
@@ -86,16 +92,8 @@ void BindTextureSlot(rendering::Material& material, const std::string& texture_n
 	if (texture_name.empty()) {
 		return;
 	}
-	// Try loading through the asset cache first (chains Load on demand)
-	if (auto tex_asset = AssetCache::Instance().FindTyped<TextureAssetInfo>(texture_name)) {
-		tex_asset->Load();
-		if (tex_asset->id != rendering::INVALID_TEXTURE) {
-			material.SetTexture(uniform_name, tex_asset->id);
-			return;
-		}
-	}
-	// Fallback: load directly via texture manager (e.g., for raw image paths)
-	auto& tex_mgr = rendering::GetRenderer().GetTextureManager();
+
+	const auto& tex_mgr = rendering::GetRenderer().GetTextureManager();
 	auto texture_id = tex_mgr.FindTexture(texture_name);
 	if (texture_id == rendering::INVALID_TEXTURE) {
 		texture_id = tex_mgr.LoadTexture(texture_name);
@@ -150,7 +148,7 @@ void MaterialAssetInfo::DoUnload() {
 }
 
 void MaterialAssetInfo::FromJson(const nlohmann::json& j) {
-	shader_name = j.value("shader", "");
+	shader_ref_id = j.value("shader", 0);
 	// PBR texture maps
 	albedo_map = j.value("albedo_map", j.value("albedo_texture", ""));
 	normal_map = j.value("normal_map", j.value("normal_texture", ""));
@@ -179,7 +177,7 @@ void MaterialAssetInfo::FromJson(const nlohmann::json& j) {
 }
 
 void MaterialAssetInfo::ToJson(nlohmann::json& j) {
-	j["shader"] = shader_name;
+	j["shader"] = shader_ref_id;
 	// PBR texture maps
 	j["albedo_map"] = albedo_map;
 	j["normal_map"] = normal_map;
@@ -207,7 +205,7 @@ void MaterialAssetInfo::RegisterType() {
 			.DisplayName("Material")
 			.Category("Rendering")
 			.Field("name", &MaterialAssetInfo::name, "Name")
-			.Field("shader_name", &MaterialAssetInfo::shader_name, "Shader")
+			.Field("shader_name", &MaterialAssetInfo::shader_ref_id, "Shader")
 			.AssetRef(ShaderAssetInfo::TYPE_NAME)
 			// PBR colors
 			.Field("base_color", &MaterialAssetInfo::base_color, "Base Color", ecs::FieldType::Color)
@@ -246,20 +244,14 @@ void MaterialAssetInfo::RegisterType() {
 
 void MaterialAssetInfo::SetupRefBinding(flecs::world& world) {
 	SetupRefBindingImpl<MaterialAssetInfo, MaterialRef, rendering::Renderable>(
-			world, "MaterialRef", "Rendering", "MaterialRefResolve", MaterialAssetInfo::TYPE_NAME,
+			world,
+			"MaterialRef",
+			"Rendering",
+			"MaterialRefResolve",
+			MaterialAssetInfo::TYPE_NAME,
 			[](const auto& asset, auto& target) { target.material = asset->id; },
-			[](auto& target) { target.material = rendering::INVALID_MATERIAL; }, {".material.json"});
-}
-
-void TextureAssetInfo::SetupRefBinding(flecs::world& world) {
-	auto& registry = ecs::ComponentRegistry::Instance();
-	std::string TextureRef::* name_member = &AssetRefBase::name;
-	registry.Register<TextureRef>("TextureRef", world)
-			.Category("Rendering")
-			.Field("name", name_member)
-			.AssetRef(TextureAssetInfo::TYPE_NAME)
-			.FileExtensions({".png", ".jpg", ".jpeg", ".tga", ".bmp"})
-			.Build();
+			[](auto& target) { target.material = rendering::INVALID_MATERIAL; },
+			{".material.json"});
 }
 
 } // namespace engine::assets

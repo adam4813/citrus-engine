@@ -373,7 +373,7 @@ struct TextureRef : AssetRefBase {};
 struct MaterialAssetInfo : AssetInfo {
 	static constexpr std::string_view TYPE_NAME = "material";
 
-	std::string shader_name; // Custom shader override (empty = default PBR)
+	uint32_t shader_ref_id; // Custom shader override (empty = default PBR)
 	rendering::MaterialId id{rendering::INVALID_MATERIAL};
 
 	// PBR texture map slots (asset names resolved at load time)
@@ -398,8 +398,8 @@ struct MaterialAssetInfo : AssetInfo {
 	rendering::Vec4 emissive_color{0.0F, 0.0F, 0.0F, 1.0F};
 
 	MaterialAssetInfo() : AssetInfo("", AssetType::MATERIAL) {}
-	MaterialAssetInfo(std::string asset_name, std::string shader = "") :
-			AssetInfo(std::move(asset_name), AssetType::MATERIAL), shader_name(std::move(shader)) {}
+	MaterialAssetInfo(std::string asset_name, uint32_t shader_id = 0) :
+			AssetInfo(std::move(asset_name), AssetType::MATERIAL), shader_ref_id(shader_id) {}
 
 	static void RegisterType();
 
@@ -541,12 +541,19 @@ public:
 	[[nodiscard]] std::shared_ptr<const AssetInfo> Find(const std::string& name, AssetType type) const;
 
 	/// Find typed asset by name.
+	template <typename T> std::shared_ptr<T> FindTyped(const uint32_t guid) {
+		if (const auto cached = cache_.find(guid); cached != cache_.end()) {
+			if (auto typed = std::dynamic_pointer_cast<T>(cached->second)) {
+				return typed;
+			}
+		}
+		return nullptr;
+	}
+	/// Find typed asset by name.
 	template <typename T> std::shared_ptr<T> FindTyped(const std::string& name) {
 		if (const auto it = name_index_.find(name); it != name_index_.end()) {
-			if (const auto cached = cache_.find(it->second); cached != cache_.end()) {
-				if (auto typed = std::dynamic_pointer_cast<T>(cached->second)) {
-					return typed;
-				}
+			if (auto typed = FindTyped<T>(it->second)) {
+				return typed;
 			}
 		}
 		return nullptr;
@@ -630,11 +637,11 @@ void SetupRefBindingImpl(
 		ClearFn clear_fn,
 		std::vector<std::string> file_extensions = {}) {
 	auto& registry = ecs::ComponentRegistry::Instance();
-	// Explicit conversion from base-class member pointer to derived-class member pointer
-	// so that ComponentRegistration<RefT>::Field template deduction succeeds.
 	std::string RefT::* name_member = &AssetRefBase::name;
-	auto reg = registry.Register<RefT>(ref_name, world).Category(category).Field("name", name_member).AssetRef(
-			asset_type_name);
+	auto reg = registry.Register<RefT>(ref_name, world)
+					   .Category(category)
+					   .Field("name", name_member)
+					   .AssetRef(asset_type_name);
 	if (!file_extensions.empty()) {
 		reg.FileExtensions(std::move(file_extensions));
 	}
@@ -642,14 +649,14 @@ void SetupRefBindingImpl(
 
 	world.component<TargetT>().add(flecs::With, world.component<RefT>());
 
-	world.template observer<RefT, TargetT>(observer_name)
+	world.observer<RefT, TargetT>(observer_name)
 			.event(flecs::OnSet)
 			.each([assign_fn, clear_fn](flecs::entity, const RefT& ref, TargetT& target) {
 				if (ref.name.empty()) {
 					clear_fn(target);
 					return;
 				}
-				if (auto asset = AssetCache::Instance().template FindTyped<AssetInfoT>(ref.name)) {
+				if (auto asset = AssetCache::Instance().FindTyped<AssetInfoT>(ref.name)) {
 					asset->Load();
 					assign_fn(asset, target);
 				}

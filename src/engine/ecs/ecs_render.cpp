@@ -236,7 +236,13 @@ void ECSWorld::SetupShaderRefIntegration() {
 			ShaderAssetInfo::TYPE_NAME,
 			&Renderable::shader,
 			INVALID_SHADER,
-			[](const std::string& name) { return GetRenderer().GetShaderManager().FindShader(name); },
+			[](const std::string& name) -> ShaderId {
+				if (auto asset = AssetCache::Instance().FindTyped<ShaderAssetInfo>(name)) {
+					asset->Load();
+					return asset->id;
+				}
+				return INVALID_SHADER;
+			},
 			[](const ShaderId id) { return GetRenderer().GetShaderManager().GetShaderName(id); });
 }
 
@@ -248,7 +254,13 @@ void ECSWorld::SetupMeshRefIntegration() {
 			MeshAssetInfo::TYPE_NAME,
 			&Renderable::mesh,
 			INVALID_MESH,
-			[](const std::string& name) { return GetRenderer().GetMeshManager().FindMesh(name); },
+			[](const std::string& name) -> MeshId {
+				if (auto asset = AssetCache::Instance().FindTyped<MeshAssetInfo>(name)) {
+					asset->Load();
+					return asset->id;
+				}
+				return INVALID_MESH;
+			},
 			[](const MeshId id) { return GetRenderer().GetMeshManager().GetMeshName(id); });
 }
 
@@ -261,17 +273,9 @@ void ECSWorld::SetupMaterialRefIntegration() {
 			&Renderable::material,
 			INVALID_MATERIAL,
 			[](const std::string& name) -> MaterialId {
-				// Check if already loaded
-				const auto& mat_mgr = GetRenderer().GetMaterialManager();
-				if (const auto id = mat_mgr.FindMaterial(name); id != INVALID_MATERIAL) {
-					return id;
-				}
-				// Try loading from .material.json file via generic AssetCache
-				if (const auto asset = AssetCache::Instance().LoadFromFile(name)) {
-					if (const auto mat = std::dynamic_pointer_cast<MaterialAssetInfo>(asset)) {
-						mat->Load();
-						return mat_mgr.FindMaterial(name);
-					}
+				if (auto asset = AssetCache::Instance().FindTyped<MaterialAssetInfo>(name)) {
+					asset->Load(); // Chains: material DoLoad → BindTextureSlot → texture Load
+					return asset->id;
 				}
 				return INVALID_MATERIAL;
 			},
@@ -292,14 +296,13 @@ void ECSWorld::SetupSoundRefIntegration() {
 				if (!audio_sys.IsInitialized()) {
 					return 0;
 				}
-				// Check if already loaded by name
-				if (const uint32_t id = audio_sys.FindClipByName(name); id != 0) {
-					return id;
-				}
-				// Check global asset cache first
-				if (const auto sound_asset = AssetCache::Instance().FindTyped<SoundAssetInfo>(name)) {
-					if (!sound_asset->file_path.empty()) {
-						return audio_sys.LoadClipNamed(name, sound_asset->file_path);
+				if (auto asset = AssetCache::Instance().FindTyped<SoundAssetInfo>(name)) {
+					asset->Load();
+					if (!asset->file_path.empty()) {
+						if (const uint32_t id = audio_sys.FindClipByName(name); id != 0) {
+							return id;
+						}
+						return audio_sys.LoadClipNamed(name, asset->file_path);
 					}
 				}
 				return 0;

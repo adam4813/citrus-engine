@@ -315,6 +315,15 @@ void BindTextureSlot(rendering::Material& material, const std::string& texture_n
 	if (texture_name.empty()) {
 		return;
 	}
+	// Try loading through the asset cache first (chains Load on demand)
+	if (auto tex_asset = AssetCache::Instance().FindTyped<TextureAssetInfo>(texture_name)) {
+		tex_asset->Load();
+		if (tex_asset->id != rendering::INVALID_TEXTURE) {
+			material.SetTexture(uniform_name, tex_asset->id);
+			return;
+		}
+	}
+	// Fallback: load directly via texture manager (e.g., for raw image paths)
 	auto& tex_mgr = rendering::GetRenderer().GetTextureManager();
 	auto texture_id = tex_mgr.FindTexture(texture_name);
 	if (texture_id == rendering::INVALID_TEXTURE) {

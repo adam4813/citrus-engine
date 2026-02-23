@@ -2,6 +2,7 @@
 module;
 
 #include <cstdint>
+#include <filesystem>
 #include <string>
 #include <vector>
 #include <fstream>
@@ -112,5 +113,16 @@ namespace engine::platform::fs {
 
     Path GetAssetsDirectory() {
         return Path("assets");
+    }
+
+    std::vector<Path> ListDirectory(const Path &path) {
+        std::vector<Path> result;
+        if (!std::filesystem::exists(path) || !std::filesystem::is_directory(path)) {
+            return result;
+        }
+        for (const auto &entry : std::filesystem::directory_iterator(path)) {
+            result.push_back(entry.path());
+        }
+        return result;
     }
 } // namespace engine::platform::fs

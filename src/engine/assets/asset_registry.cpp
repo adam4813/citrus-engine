@@ -606,7 +606,6 @@ void AssetCache::Add(AssetPtr asset) {
 	if (asset->guid == 0) {
 		asset->guid = GenerateGuid();
 	}
-	asset->Initialize();
 	cache_[asset->guid] = asset;
 	if (!asset->name.empty()) {
 		name_index_[asset->name] = asset->guid;
@@ -777,6 +776,82 @@ void AssetCache::Clear() {
 	name_index_.clear();
 	path_to_guid_.clear();
 	next_guid_ = 1;
+}
+
+size_t AssetCache::ScanDirectory(const std::string& directory, const std::vector<std::string>& extensions) {
+	size_t registered = 0;
+	const auto dir_path = platform::fs::Path(directory);
+	const auto entries = platform::fs::ListDirectory(dir_path);
+
+	for (const auto& entry : entries) {
+		const auto filename = entry.filename().string();
+
+		// Filter by extensions
+		if (!extensions.empty()) {
+			bool matched = false;
+			for (const auto& ext : extensions) {
+				if (filename.length() >= ext.length()
+					&& filename.substr(filename.length() - ext.length()) == ext) {
+					matched = true;
+					break;
+				}
+			}
+			if (!matched) {
+				continue;
+			}
+		}
+		else if (filename.length() < 5 || filename.substr(filename.length() - 5) != ".json") {
+			continue; // Default: only .json files
+		}
+
+		// Skip if already registered by this path
+		const auto path_str = entry.string();
+		if (path_to_guid_.contains(path_str)) {
+			continue;
+		}
+
+		// Read and parse JSON
+		const auto text = AssetManager::LoadTextFile(entry);
+		if (!text) {
+			continue;
+		}
+
+		const auto j = nlohmann::json::parse(*text, nullptr, false);
+		if (j.is_discarded()) {
+			continue;
+		}
+
+		const std::string type_str = j.value("type", "");
+		if (type_str.empty()) {
+			continue;
+		}
+
+		const auto* type_info = AssetRegistry::Instance().GetTypeInfo(type_str);
+		if (!type_info || !type_info->create_default_factory) {
+			continue;
+		}
+
+		auto asset = type_info->create_default_factory();
+		if (!asset) {
+			continue;
+		}
+
+		asset->FromJson(j);
+
+		if (asset->guid == 0) {
+			asset->guid = GenerateGuid();
+		}
+
+		// Register (add to cache) without loading
+		cache_[asset->guid] = asset;
+		if (!asset->name.empty()) {
+			name_index_[asset->name] = asset->guid;
+		}
+		path_to_guid_[path_str] = asset->guid;
+		++registered;
+	}
+
+	return registered;
 }
 
 } // namespace engine::assets

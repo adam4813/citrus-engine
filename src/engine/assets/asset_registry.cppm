@@ -202,46 +202,54 @@ AssetTypeRegistration<T>::AssetTypeRegistration(
 template <typename T> void AssetTypeRegistration<T>::Build() { registry_.AddTypeInfo(std::move(info_)); }
 
 /// Base asset definition - common fields for all asset types
+///
+/// Asset lifecycle:
+///   Registered → Loaded
+///   - Registered: asset metadata is in the cache (name, guid, type, paths).
+///     No system resources allocated. Created by ScanDirectory or Add.
+///   - Loaded: subsystem has processed the asset. System resources are allocated
+///     (shader compiled, mesh geometry on GPU, audio decoded, etc.).
+///     Triggered by calling Load().
 struct AssetInfo {
 	uint32_t guid{0}; // Stable identifier, persisted in asset JSON files
 	std::string name;
 	AssetType type{};
-	bool loaded_{false}; // Track whether this asset has been loaded
-	bool initialized_{false}; // Track whether OnAdd has been called
 
 	virtual ~AssetInfo() = default;
 
 	AssetInfo() = default;
 	AssetInfo(std::string asset_name, const AssetType asset_type) : name(std::move(asset_name)), type(asset_type) {}
 
-	/// Called when asset is added to the AssetCache
-	/// Use this to allocate resources (e.g., reserve shader IDs) before Load()
-	void Initialize();
-
-	/// Returns true if Initialize() has been called
-	[[nodiscard]] bool IsInitialized() const { return initialized_; }
-
-	/// Load/compile this asset. Returns true if already loaded or successfully loaded.
+	/// Load this asset: allocates system resources (compiles shaders, uploads
+	/// geometry, decodes audio, etc.). Returns true if already loaded or success.
 	bool Load();
-	/// Unload/release this asset
+
+	/// Unload/release system resources for this asset.
 	void Unload();
 
 	virtual void FromJson(const nlohmann::json& j);
 	virtual void ToJson(nlohmann::json& j);
 
-	/// Check if this asset has been loaded
+	/// True if system resources have been allocated via Load().
 	[[nodiscard]] bool IsLoaded() const { return loaded_; }
 
 protected:
-	/// Override to allocate resources before Load (e.g., reserve shader ID)
+	bool loaded_{false};
+	bool initialized_{false}; // Internal: tracks DoInitialize() for two-phase loading
+
+	/// Reserve lightweight system resources (e.g., shader ID slot) before DoLoad
 	virtual void DoInitialize() {}
 
-	/// Override to implement asset-specific loading logic
+	/// Allocate full system resources (compile, upload, decode)
 	virtual bool DoLoad() { return true; }
 
 	virtual void DoUnload() {}
 
 	[[nodiscard]] virtual std::string_view GetTypeName() const = 0;
+
+private:
+	/// Internal: calls DoInitialize() once, used by Load()
+	void Initialize();
 };
 
 /// Shader asset definition
@@ -468,8 +476,9 @@ class AssetCache {
 public:
 	static AssetCache& Instance();
 
-	/// Add an asset to the cache (shares ownership).
+	/// Add an asset to the cache as "registered" (metadata only, not loaded).
 	/// Assigns a GUID if the asset doesn't have one (guid == 0).
+	/// Call asset->Load() separately when system resources are needed.
 	void Add(AssetPtr asset);
 
 	/// Remove a cached asset by name and type.
@@ -531,6 +540,15 @@ public:
 	/// Works on any AssetPtr — the asset does not need to be in the cache.
 	/// Assigns a GUID if the asset doesn't have one (guid == 0).
 	bool SaveToFile(const AssetPtr& asset, const std::string& path);
+
+	/// Scan a directory for asset JSON files and register them in the cache.
+	/// Assets are registered (metadata parsed, GUID assigned) but NOT loaded —
+	/// no system resources are allocated until Load() is called on each asset.
+	/// @param directory Path to scan (e.g., "assets/materials")
+	/// @param extensions File extensions to match (e.g., {".material.json", ".shader.json"}).
+	///                   If empty, scans all .json files.
+	/// @return Number of newly registered assets.
+	size_t ScanDirectory(const std::string& directory, const std::vector<std::string>& extensions = {});
 
 	/// Clear all cached assets.
 	void Clear();

@@ -117,7 +117,7 @@ void MaterialEditorPanel::RenderMaterialProperties() {
 	ImGui::TextDisabled("%s", current_file_path_.c_str());
 	ImGui::Separator();
 
-	const auto* type_info = engine::assets::AssetRegistry::Instance().GetTypeInfo("material");
+	const auto* type_info = engine::assets::AssetTypeRegistry::Instance().GetTypeInfo("material");
 	if (!type_info) {
 		return;
 	}

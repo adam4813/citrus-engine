@@ -34,7 +34,7 @@ enum class AssetType : uint8_t {
 
 // Forward declarations
 struct AssetInfo;
-class AssetRegistry;
+class AssetTypeRegistry;
 
 /**
  * @brief Information about a registered asset type
@@ -62,7 +62,7 @@ struct AssetTypeInfo {
  */
 template <typename T> class AssetTypeRegistration {
 public:
-	AssetTypeRegistration(AssetRegistry& registry, const std::string& type_name, AssetType asset_type);
+	AssetTypeRegistration(AssetTypeRegistry& registry, const std::string& type_name, AssetType asset_type);
 
 	AssetTypeRegistration& DisplayName(const std::string& name) {
 		info_.display_name = name;
@@ -125,8 +125,7 @@ public:
 		if (!info_.fields.empty()) {
 			auto& field_info = info_.fields.back();
 			if (field_info.type != ecs::FieldType::ListInt && field_info.type != ecs::FieldType::ListFloat
-				&& field_info.type != ecs::FieldType::ListString
-				&& field_info.type != ecs::FieldType::UintAssetRef) {
+				&& field_info.type != ecs::FieldType::ListString && field_info.type != ecs::FieldType::UintAssetRef) {
 				field_info.type = ecs::FieldType::AssetRef;
 			}
 			field_info.asset_type = asset_type_key;
@@ -158,20 +157,20 @@ private:
 		}
 	}
 
-	AssetRegistry& registry_;
+	AssetTypeRegistry& registry_;
 	AssetTypeInfo info_;
 };
 
 /// Registry for asset type factories and editor metadata
 /// Asset types self-register their deserialization factories and field info
-class AssetRegistry {
+class AssetTypeRegistry {
 public:
 	/// Get singleton instance
-	static AssetRegistry& Instance();
+	static AssetTypeRegistry& Instance();
 
 	/// Initialize asset registry: register all asset types and set up ECS ref bindings.
 	/// Must be called once after the flecs world is created.
-	void Initialize(flecs::world& world);
+	static void Initialize(flecs::world& world);
 
 	/// Start registering an asset type with builder pattern
 	template <typename T> AssetTypeRegistration<T> RegisterType(const std::string& type_name, AssetType asset_type) {
@@ -182,10 +181,6 @@ public:
 	AssetTypeRegistration<T> RegisterType(const std::string_view type_name, const AssetType asset_type) {
 		return RegisterType<T>(std::string(type_name), asset_type);
 	}
-
-	/// Create a new default asset of the specified type
-	/// @return nullptr if type has no default factory
-	[[nodiscard]] std::shared_ptr<AssetInfo> CreateDefault(AssetType type) const;
 
 	/// Get all registered asset types
 	[[nodiscard]] const std::vector<AssetTypeInfo>& GetAssetTypes() const { return types_; }
@@ -200,14 +195,14 @@ public:
 	void AddTypeInfo(AssetTypeInfo info);
 
 private:
-	AssetRegistry() = default;
+	AssetTypeRegistry() = default;
 	std::vector<AssetTypeInfo> types_;
 };
 
 // Template implementation
 template <typename T>
 AssetTypeRegistration<T>::AssetTypeRegistration(
-		AssetRegistry& registry, const std::string& type_name, const AssetType asset_type) : registry_(registry) {
+		AssetTypeRegistry& registry, const std::string& type_name, const AssetType asset_type) : registry_(registry) {
 	info_.type_name = type_name;
 	info_.display_name = type_name; // Default, override with DisplayName()
 	info_.category = "Other";
@@ -310,11 +305,11 @@ struct ShaderRef : AssetRefBase {};
 
 /// Built-in mesh type names (used as mesh_type field value)
 namespace mesh_types {
-constexpr const char* QUAD = "quad";
-constexpr const char* CUBE = "cube";
-constexpr const char* SPHERE = "sphere";
-constexpr const char* CAPSULE = "capsule"; // Future
-constexpr const char* FILE = "file";
+constexpr auto QUAD = "quad";
+constexpr auto CUBE = "cube";
+constexpr auto SPHERE = "sphere";
+constexpr auto CAPSULE = "capsule"; // Future
+constexpr auto FILE = "file";
 } // namespace mesh_types
 
 /// Mesh asset definition
@@ -327,9 +322,8 @@ struct MeshAssetInfo : AssetInfo {
 	std::string file_path; // Only used when mesh_type == "file"
 	rendering::MeshId id{rendering::INVALID_MESH}; // Populated in DoInitialize, geometry in DoLoad
 
-	MeshAssetInfo() : AssetInfo("", AssetType::MESH), mesh_type(mesh_types::QUAD) {}
-	MeshAssetInfo(std::string asset_name, std::string type = "") :
-			AssetInfo(std::move(asset_name), AssetType::MESH), mesh_type(std::move(type)) {}
+	MeshAssetInfo() : AssetInfo("", AssetType::MESH) {}
+	MeshAssetInfo(std::string asset_name) : AssetInfo(std::move(asset_name), AssetType::MESH) {}
 
 	/// Register this asset type with the AssetRegistry
 	static void RegisterType();
@@ -362,8 +356,7 @@ struct TextureAssetInfo : AssetInfo {
 	rendering::TextureId id{rendering::INVALID_TEXTURE};
 
 	TextureAssetInfo() : AssetInfo("", AssetType::TEXTURE) {}
-	TextureAssetInfo(std::string asset_name, std::string path = "") :
-			AssetInfo(std::move(asset_name), AssetType::TEXTURE), file_path(std::move(path)) {}
+	TextureAssetInfo(std::string asset_name) : AssetInfo(std::move(asset_name), AssetType::TEXTURE) {}
 
 	static void RegisterType();
 
@@ -387,7 +380,7 @@ struct TextureRef : AssetRefBase {};
 struct MaterialAssetInfo : AssetInfo {
 	static constexpr std::string_view TYPE_NAME = "material";
 
-	uint32_t shader_ref_id; // Custom shader override (empty = default PBR)
+	uint32_t shader_ref_id{0}; // Custom shader override (empty = default PBR)
 	rendering::MaterialId id{rendering::INVALID_MATERIAL};
 
 	// PBR texture map slots (asset names resolved at load time)
@@ -412,8 +405,7 @@ struct MaterialAssetInfo : AssetInfo {
 	rendering::Vec4 emissive_color{0.0F, 0.0F, 0.0F, 1.0F};
 
 	MaterialAssetInfo() : AssetInfo("", AssetType::MATERIAL) {}
-	MaterialAssetInfo(std::string asset_name, uint32_t shader_id = 0) :
-			AssetInfo(std::move(asset_name), AssetType::MATERIAL), shader_ref_id(shader_id) {}
+	MaterialAssetInfo(std::string asset_name) : AssetInfo(std::move(asset_name), AssetType::MATERIAL) {}
 
 	static void RegisterType();
 
@@ -438,11 +430,10 @@ struct MaterialRef : AssetRefBase {};
 struct AnimationAssetInfo : AssetInfo {
 	static constexpr std::string_view TYPE_NAME = "animation_clip";
 
-	std::string clip_path;
+	std::string file_path;
 
 	AnimationAssetInfo() : AssetInfo("", AssetType::ANIMATION_CLIP) {}
-	AnimationAssetInfo(std::string asset_name, std::string path = "") :
-			AssetInfo(std::move(asset_name), AssetType::ANIMATION_CLIP), clip_path(std::move(path)) {}
+	AnimationAssetInfo(std::string asset_name) : AssetInfo(std::move(asset_name), AssetType::ANIMATION_CLIP) {}
 
 	static void RegisterType();
 
@@ -465,8 +456,7 @@ struct SoundAssetInfo : AssetInfo {
 	uint32_t clip_id{0}; // Runtime: audio clip handle from AudioSystem
 
 	SoundAssetInfo() : AssetInfo("", AssetType::SOUND) {}
-	SoundAssetInfo(std::string asset_name, std::string path = "") :
-			AssetInfo(std::move(asset_name), AssetType::SOUND), file_path(std::move(path)) {}
+	SoundAssetInfo(std::string asset_name) : AssetInfo(std::move(asset_name), AssetType::SOUND) {}
 
 	static void RegisterType();
 
@@ -494,8 +484,7 @@ struct DataTableAssetInfo : AssetInfo {
 	std::string schema_name;
 
 	DataTableAssetInfo() : AssetInfo("", AssetType::DATA_TABLE) {}
-	DataTableAssetInfo(std::string asset_name, std::string path = "") :
-			AssetInfo(std::move(asset_name), AssetType::DATA_TABLE), file_path(std::move(path)) {}
+	DataTableAssetInfo(std::string asset_name) : AssetInfo(std::move(asset_name), AssetType::DATA_TABLE) {}
 
 	static void RegisterType();
 
@@ -515,8 +504,7 @@ struct PrefabAssetInfo : AssetInfo {
 	std::string file_path;
 
 	PrefabAssetInfo() : AssetInfo("", AssetType::PREFAB) {}
-	PrefabAssetInfo(std::string asset_name, std::string path = "") :
-			AssetInfo(std::move(asset_name), AssetType::PREFAB), file_path(std::move(path)) {}
+	PrefabAssetInfo(std::string asset_name) : AssetInfo(std::move(asset_name), AssetType::PREFAB) {}
 
 	static void RegisterType();
 
@@ -538,10 +526,13 @@ class AssetCache {
 public:
 	static AssetCache& Instance();
 
+	/// Creates a new default asset of the specified type, adds it to the cache, and returns it.
+	AssetPtr Create(AssetType type, const std::string& name);
+
 	/// Add an asset to the cache as "registered" (metadata only, not loaded).
 	/// Assigns a GUID if the asset doesn't have one (guid == 0).
 	/// Call asset->Load() separately when system resources are needed.
-	void Add(AssetPtr asset);
+	void Add(const AssetPtr& asset);
 
 	/// Remove a cached asset by name and type.
 	bool Remove(const std::string& name, AssetType type);
@@ -654,6 +645,7 @@ void SetupRefBindingImpl(
 	std::string RefT::* name_member = &AssetRefBase::name;
 	auto reg = registry.Register<RefT>(ref_name, world)
 					   .Category(category)
+					   .Hidden()
 					   .Field("name", name_member)
 					   .AssetRef(asset_type_name);
 	if (!file_extensions.empty()) {
@@ -675,6 +667,25 @@ void SetupRefBindingImpl(
 					assign_fn(asset, target);
 				}
 			});
+
+	// Prevent removing the ref component if the target still has it, to ensure the binding stays consistent.
+	// The ref can only be removed if the target component is removed
+	world.observer<RefT>((std::string(observer_name) + "_ReAdd").c_str())
+			.event(flecs::OnRemove)
+			.each([clear_fn](flecs::entity e, RefT ref) {
+				if (e.has<TargetT>()) {
+					// Cleanup since we cannot re-add the same component
+					if (ref.name.empty()) {
+						clear_fn(e.get_mut<TargetT>());
+					}
+					e.add<RefT>();
+				}
+			});
+
+	// Remove refs if the target component is removed, to prevent dangling references
+	world.observer<TargetT>((std::string(observer_name) + "_Clear").c_str())
+			.event(flecs::OnRemove)
+			.each([](flecs::entity e, TargetT) { e.remove<RefT>(); });
 }
 
 } // namespace engine::assets

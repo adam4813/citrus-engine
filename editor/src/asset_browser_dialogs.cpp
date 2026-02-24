@@ -327,7 +327,7 @@ void AssetBrowserPanel::CreateNewMaterialFile() {
 
 		// Use the asset registry to create a default material and serialize it
 		auto default_asset =
-				engine::assets::AssetRegistry::Instance().CreateDefault(engine::assets::AssetType::MATERIAL);
+				engine::assets::AssetCache::Instance().Create(engine::assets::AssetType::MATERIAL, "NewMaterial");
 		if (!default_asset) {
 			std::cerr << "Failed to create default material from registry" << std::endl;
 			return;
@@ -367,7 +367,8 @@ void AssetBrowserPanel::CreateNewShaderFile() {
 		}
 
 		// Use the asset registry to create a default shader and serialize it
-		auto default_asset = engine::assets::AssetRegistry::Instance().CreateDefault(engine::assets::AssetType::SHADER);
+		auto default_asset =
+				engine::assets::AssetCache::Instance().Create(engine::assets::AssetType::SHADER, "NewShader");
 		if (!default_asset) {
 			std::cerr << "Failed to create default shader from registry" << std::endl;
 			return;

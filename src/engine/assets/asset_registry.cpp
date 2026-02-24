@@ -18,12 +18,12 @@ import engine.assets;
 
 namespace engine::assets {
 
-AssetRegistry& AssetRegistry::Instance() {
-	static AssetRegistry instance;
+AssetTypeRegistry& AssetTypeRegistry::Instance() {
+	static AssetTypeRegistry instance;
 	return instance;
 }
 
-void AssetRegistry::Initialize(flecs::world& world) {
+void AssetTypeRegistry::Initialize(flecs::world& world) {
 	ShaderAssetInfo::RegisterType();
 	MeshAssetInfo::RegisterType();
 	TextureAssetInfo::RegisterType();
@@ -41,16 +41,7 @@ void AssetRegistry::Initialize(flecs::world& world) {
 	TextureAssetInfo::SetupRefBinding(world);
 }
 
-std::shared_ptr<AssetInfo> AssetRegistry::CreateDefault(const AssetType type) const {
-	for (const auto& info : types_) {
-		if (info.asset_type == type && info.create_default_factory) {
-			return info.create_default_factory();
-		}
-	}
-	return nullptr;
-}
-
-const AssetTypeInfo* AssetRegistry::GetTypeInfo(const AssetType type) const {
+const AssetTypeInfo* AssetTypeRegistry::GetTypeInfo(const AssetType type) const {
 	for (const auto& info : types_) {
 		if (info.asset_type == type) {
 			return &info;
@@ -59,7 +50,7 @@ const AssetTypeInfo* AssetRegistry::GetTypeInfo(const AssetType type) const {
 	return nullptr;
 }
 
-const AssetTypeInfo* AssetRegistry::GetTypeInfo(const std::string& type_name) const {
+const AssetTypeInfo* AssetTypeRegistry::GetTypeInfo(const std::string& type_name) const {
 	for (const auto& info : types_) {
 		if (info.type_name == type_name) {
 			return &info;
@@ -68,7 +59,7 @@ const AssetTypeInfo* AssetRegistry::GetTypeInfo(const std::string& type_name) co
 	return nullptr;
 }
 
-void AssetRegistry::AddTypeInfo(AssetTypeInfo info) { types_.push_back(std::move(info)); }
+void AssetTypeRegistry::AddTypeInfo(AssetTypeInfo info) { types_.push_back(std::move(info)); }
 
 void AssetInfo::Initialize() {
 	if (initialized_) {
@@ -92,6 +83,7 @@ bool AssetInfo::Load() {
 	}
 	return false;
 }
+
 void AssetInfo::Unload() {
 	if (!loaded_) {
 		return; // Not loaded
@@ -99,11 +91,12 @@ void AssetInfo::Unload() {
 	DoUnload();
 	loaded_ = false;
 }
+
 void AssetInfo::FromJson(const nlohmann::json& j) {
-	guid = j.value("guid", 0u);
+	guid = j.value("guid", 0U);
 	name = j.value("name", name);
 	if (const auto type_str = j.value("type", ""); !type_str.empty()) {
-		if (const auto* type_info = AssetRegistry::Instance().GetTypeInfo(type_str); type_info != nullptr) {
+		if (const auto* type_info = AssetTypeRegistry::Instance().GetTypeInfo(type_str); type_info != nullptr) {
 			type = type_info->asset_type;
 		}
 	}
@@ -121,10 +114,22 @@ AssetCache& AssetCache::Instance() {
 	static AssetCache instance;
 	return instance;
 }
+AssetPtr AssetCache::Create(const AssetType type, const std::string& name) {
+	if (const auto* type_info = AssetTypeRegistry::Instance().GetTypeInfo(type);
+		type_info && type_info->create_default_factory) {
+		if (auto asset = type_info->create_default_factory()) {
+			asset->name = name;
+			Add(asset);
+			return asset;
+		}
+	}
+	return nullptr;
+}
 
-void AssetCache::Add(AssetPtr asset) {
-	if (!asset)
+void AssetCache::Add(const AssetPtr& asset) {
+	if (!asset) {
 		return;
+	}
 	if (asset->guid == 0) {
 		asset->guid = GenerateGuid();
 	}
@@ -135,12 +140,11 @@ void AssetCache::Add(AssetPtr asset) {
 }
 
 bool AssetCache::Remove(const std::string& name, const AssetType type) {
-	auto nit = name_index_.find(name);
+	const auto nit = name_index_.find(name);
 	if (nit == name_index_.end()) {
 		return false;
 	}
-	auto it = cache_.find(nit->second);
-	if (it != cache_.end() && it->second && it->second->type == type) {
+	if (const auto it = cache_.find(nit->second); it != cache_.end() && it->second && it->second->type == type) {
 		cache_.erase(it);
 		name_index_.erase(nit);
 		return true;
@@ -149,34 +153,32 @@ bool AssetCache::Remove(const std::string& name, const AssetType type) {
 }
 
 AssetPtr AssetCache::Find(const uint32_t guid) {
-	auto it = cache_.find(guid);
+	const auto it = cache_.find(guid);
 	return (it != cache_.end()) ? it->second : nullptr;
 }
 
 std::shared_ptr<const AssetInfo> AssetCache::Find(const uint32_t guid) const {
-	auto it = cache_.find(guid);
+	const auto it = cache_.find(guid);
 	return (it != cache_.end()) ? it->second : nullptr;
 }
 
 AssetPtr AssetCache::Find(const std::string& name, const AssetType type) {
-	auto nit = name_index_.find(name);
+	const auto nit = name_index_.find(name);
 	if (nit == name_index_.end()) {
 		return nullptr;
 	}
-	auto it = cache_.find(nit->second);
-	if (it != cache_.end() && it->second && it->second->type == type) {
+	if (const auto it = cache_.find(nit->second); it != cache_.end() && it->second && it->second->type == type) {
 		return it->second;
 	}
 	return nullptr;
 }
 
 std::shared_ptr<const AssetInfo> AssetCache::Find(const std::string& name, const AssetType type) const {
-	auto nit = name_index_.find(name);
+	const auto nit = name_index_.find(name);
 	if (nit == name_index_.end()) {
 		return nullptr;
 	}
-	auto it = cache_.find(nit->second);
-	if (it != cache_.end() && it->second && it->second->type == type) {
+	if (const auto it = cache_.find(nit->second); it != cache_.end() && it->second && it->second->type == type) {
 		return it->second;
 	}
 	return nullptr;
@@ -229,7 +231,7 @@ AssetPtr AssetCache::LoadFromFile(const std::string& path) {
 			std::cerr << "AssetCache::LoadFromFile: missing 'type' in " << path << '\n';
 			return nullptr;
 		}
-		const auto* type_info = AssetRegistry::Instance().GetTypeInfo(type_str);
+		const auto* type_info = AssetTypeRegistry::Instance().GetTypeInfo(type_str);
 		if (!type_info || !type_info->create_default_factory) {
 			std::cerr << "AssetCache::LoadFromFile: unknown asset type '" << type_str << "'" << '\n';
 			return nullptr;
@@ -274,8 +276,7 @@ bool AssetCache::SaveToFile(const AssetPtr& asset, const std::string& path) {
 		asset->guid = GenerateGuid();
 	}
 
-	const auto* type_info = AssetRegistry::Instance().GetTypeInfo(asset->type);
-	if (!type_info) {
+	if (const auto* type_info = AssetTypeRegistry::Instance().GetTypeInfo(asset->type); !type_info) {
 		std::cerr << "AssetCache::SaveToFile: unknown type for asset '" << asset->name << "'" << '\n';
 		return false;
 	}
@@ -303,9 +304,8 @@ void AssetCache::Clear() {
 size_t AssetCache::ScanDirectory(const std::string& directory, const std::vector<std::string>& extensions) {
 	size_t registered = 0;
 	const auto dir_path = platform::fs::Path(directory);
-	const auto entries = platform::fs::ListDirectory(dir_path);
 
-	for (const auto& entry : entries) {
+	for (const auto entries = platform::fs::ListDirectory(dir_path); const auto& entry : entries) {
 		// Recursively scan subdirectories
 		if (platform::fs::IsDirectory(entry)) {
 			registered += ScanDirectory(entry.string(), extensions);
@@ -353,12 +353,12 @@ size_t AssetCache::ScanDirectory(const std::string& directory, const std::vector
 			continue;
 		}
 
-		const auto* type_info = AssetRegistry::Instance().GetTypeInfo(type_str);
+		const auto* type_info = AssetTypeRegistry::Instance().GetTypeInfo(type_str);
 		if (!type_info || !type_info->create_default_factory) {
 			continue;
 		}
 
-		auto asset = type_info->create_default_factory();
+		const auto asset = type_info->create_default_factory();
 		if (!asset) {
 			continue;
 		}

@@ -87,7 +87,7 @@ void MeshAssetInfo::ToJson(nlohmann::json& j) {
 }
 
 void MeshAssetInfo::RegisterType() {
-	AssetRegistry::Instance()
+	AssetTypeRegistry::Instance()
 			.RegisterType<MeshAssetInfo>(MeshAssetInfo::TYPE_NAME, AssetType::MESH)
 			.DisplayName("Mesh")
 			.Category("Rendering")
@@ -101,18 +101,21 @@ void MeshAssetInfo::RegisterType() {
 void MeshAssetInfo::RegisterBuiltins() {
 	auto& cache = AssetCache::Instance();
 
-	const auto quad = std::make_shared<MeshAssetInfo>("Quad", mesh_types::QUAD);
+	const auto quad = std::make_shared<MeshAssetInfo>("Quad");
+	quad->mesh_type = mesh_types::QUAD;
 	quad->params[0] = 1.0f;
 	quad->params[1] = 1.0f;
 	cache.Add(quad);
 
-	const auto cube = std::make_shared<MeshAssetInfo>("Cube", mesh_types::CUBE);
+	const auto cube = std::make_shared<MeshAssetInfo>("Cube");
+	cube->mesh_type = mesh_types::CUBE;
 	cube->params[0] = 1.0f;
 	cube->params[1] = 1.0f;
 	cube->params[2] = 1.0f;
 	cache.Add(cube);
 
-	const auto sphere = std::make_shared<MeshAssetInfo>("Sphere", mesh_types::SPHERE);
+	const auto sphere = std::make_shared<MeshAssetInfo>("Sphere");
+	sphere->mesh_type = mesh_types::SPHERE;
 	sphere->params[0] = 0.5f; // radius — produces 1-unit diameter
 	sphere->params[1] = 32.0f; // segments
 	cache.Add(sphere);

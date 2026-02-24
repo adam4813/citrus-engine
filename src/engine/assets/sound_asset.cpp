@@ -55,7 +55,7 @@ void SoundAssetInfo::ToJson(nlohmann::json& j) {
 }
 
 void SoundAssetInfo::RegisterType() {
-	AssetRegistry::Instance()
+	AssetTypeRegistry::Instance()
 			.RegisterType<SoundAssetInfo>(SoundAssetInfo::TYPE_NAME, AssetType::SOUND)
 			.DisplayName("Sound")
 			.Category("Audio")
@@ -68,7 +68,11 @@ void SoundAssetInfo::RegisterType() {
 
 void SoundAssetInfo::SetupRefBinding(flecs::world& world) {
 	SetupRefBindingImpl<SoundAssetInfo, SoundRef, audio::AudioSource>(
-			world, "SoundRef", "Audio", "SoundRefResolve", SoundAssetInfo::TYPE_NAME,
+			world,
+			"SoundRef",
+			"Audio",
+			"SoundRefResolve",
+			SoundAssetInfo::TYPE_NAME,
 			[](const auto& asset, auto& target) { target.clip_id = asset->clip_id; },
 			[](auto& target) { target.clip_id = 0; });
 }

@@ -19,22 +19,22 @@ bool AnimationAssetInfo::DoLoad() {
 }
 
 void AnimationAssetInfo::FromJson(const nlohmann::json& j) {
-	clip_path = j.value("clip_path", "");
+	file_path = j.value("file_path", "");
 	AssetInfo::FromJson(j);
 }
 
 void AnimationAssetInfo::ToJson(nlohmann::json& j) {
-	j["clip_path"] = clip_path;
+	j["file_path"] = file_path;
 	AssetInfo::ToJson(j);
 }
 
 void AnimationAssetInfo::RegisterType() {
-	AssetRegistry::Instance()
+	AssetTypeRegistry::Instance()
 			.RegisterType<AnimationAssetInfo>(AnimationAssetInfo::TYPE_NAME, AssetType::ANIMATION_CLIP)
 			.DisplayName("Animation Clip")
 			.Category("Animation")
 			.Field("name", &AnimationAssetInfo::name, "Name")
-			.Field("clip_path", &AnimationAssetInfo::clip_path, "Clip Path", ecs::FieldType::FilePath)
+			.Field("file_path", &AnimationAssetInfo::file_path, "File Path", ecs::FieldType::FilePath)
 			.Build();
 }
 
@@ -61,7 +61,7 @@ void DataTableAssetInfo::ToJson(nlohmann::json& j) {
 }
 
 void DataTableAssetInfo::RegisterType() {
-	AssetRegistry::Instance()
+	AssetTypeRegistry::Instance()
 			.RegisterType<DataTableAssetInfo>(DataTableAssetInfo::TYPE_NAME, AssetType::DATA_TABLE)
 			.DisplayName("Data Table")
 			.Category("Data")
@@ -92,7 +92,7 @@ void PrefabAssetInfo::ToJson(nlohmann::json& j) {
 }
 
 void PrefabAssetInfo::RegisterType() {
-	AssetRegistry::Instance()
+	AssetTypeRegistry::Instance()
 			.RegisterType<PrefabAssetInfo>(PrefabAssetInfo::TYPE_NAME, AssetType::PREFAB)
 			.DisplayName("Prefab")
 			.Category("Scene")

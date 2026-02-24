@@ -58,7 +58,7 @@ void TextureAssetInfo::ToJson(nlohmann::json& j) {
 }
 
 void TextureAssetInfo::RegisterType() {
-	AssetRegistry::Instance()
+	AssetTypeRegistry::Instance()
 			.RegisterType<TextureAssetInfo>(TextureAssetInfo::TYPE_NAME, AssetType::TEXTURE)
 			.DisplayName("Texture")
 			.Category("Rendering")
@@ -200,7 +200,7 @@ void MaterialAssetInfo::ToJson(nlohmann::json& j) {
 }
 
 void MaterialAssetInfo::RegisterType() {
-	AssetRegistry::Instance()
+	AssetTypeRegistry::Instance()
 			.RegisterType<MaterialAssetInfo>(MaterialAssetInfo::TYPE_NAME, AssetType::MATERIAL)
 			.DisplayName("Material")
 			.Category("Rendering")

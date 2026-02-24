@@ -268,7 +268,7 @@ bool RenderFieldWidget(const engine::ecs::FieldInfo& field, void* data, engine::
 			if (is_asset_ref) {
 				asset_names.push_back("");
 				for (const auto& asset : engine::assets::AssetCache::Instance().GetAll()) {
-					if (const auto* type_info = engine::assets::AssetRegistry::Instance().GetTypeInfo(asset->type);
+					if (const auto* type_info = engine::assets::AssetTypeRegistry::Instance().GetTypeInfo(asset->type);
 						type_info && type_info->type_name == field.asset_type) {
 						asset_names.push_back(asset->name);
 					}
@@ -373,7 +373,7 @@ bool RenderFieldWidget(const engine::ecs::FieldInfo& field, void* data, engine::
 		std::vector<std::string> asset_names;
 		asset_names.push_back("");
 		for (const auto& asset : engine::assets::AssetCache::Instance().GetAll()) {
-			if (const auto* type_info = engine::assets::AssetRegistry::Instance().GetTypeInfo(asset->type);
+			if (const auto* type_info = engine::assets::AssetTypeRegistry::Instance().GetTypeInfo(asset->type);
 				type_info && type_info->type_name == field.asset_type) {
 				asset_names.push_back(asset->name);
 			}
@@ -472,7 +472,7 @@ bool RenderFieldWidget(const engine::ecs::FieldInfo& field, void* data, engine::
 		std::vector<std::pair<uint32_t, std::string>> assets;
 		assets.emplace_back(0u, "(None)");
 		for (const auto& asset : engine::assets::AssetCache::Instance().GetAll()) {
-			if (const auto* type_info = engine::assets::AssetRegistry::Instance().GetTypeInfo(asset->type);
+			if (const auto* type_info = engine::assets::AssetTypeRegistry::Instance().GetTypeInfo(asset->type);
 				type_info && type_info->type_name == field.asset_type) {
 				assets.emplace_back(asset->guid, asset->name);
 			}

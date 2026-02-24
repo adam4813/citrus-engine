@@ -275,13 +275,19 @@ ECSWorld::ECSWorld() {
 	registry.Register<physics::IsSleeping>("IsSleeping", world_).Category("Physics").Build();
 
 	// Initialize asset registry: registers ref components and sets up observers
-	assets::AssetRegistry::Instance().Initialize(world_);
+	assets::AssetTypeRegistry::Instance().Initialize(world_);
 
 	// Scan asset directory to register all known assets (metadata only, not loaded)
-	assets::AssetCache::Instance().ScanDirectory("assets/", {
-		".shader.json", ".mesh.json", ".material.json", ".texture.json",
-		".sound.json", ".anim.json", ".data.json", ".prefab.json"
-	});
+	assets::AssetCache::Instance().ScanDirectory(
+			"assets/",
+			{".shader.json",
+			 ".mesh.json",
+			 ".material.json",
+			 ".texture.json",
+			 ".sound.json",
+			 ".anim.json",
+			 ".data.json",
+			 ".prefab.json"});
 
 	// Register built-in mesh primitives (quad, cube, sphere)
 	assets::MeshAssetInfo::RegisterBuiltins();

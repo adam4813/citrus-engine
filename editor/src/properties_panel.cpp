@@ -590,7 +590,7 @@ void PropertiesPanel::RenderAssetProperties(engine::scene::Scene* scene, const A
 	}
 
 	// Get type info for field metadata
-	const auto* type_info = engine::assets::AssetRegistry::Instance().GetTypeInfo(selected_asset.type);
+	const auto* type_info = engine::assets::AssetTypeRegistry::Instance().GetTypeInfo(selected_asset.type);
 	if (!type_info) {
 		ImGui::TextDisabled("Unknown asset type");
 		return;

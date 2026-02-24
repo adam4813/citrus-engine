@@ -54,7 +54,7 @@ void ShaderAssetInfo::ToJson(nlohmann::json& j) {
 }
 
 void ShaderAssetInfo::RegisterType() {
-	AssetRegistry::Instance()
+	AssetTypeRegistry::Instance()
 			.RegisterType<ShaderAssetInfo>(ShaderAssetInfo::TYPE_NAME, AssetType::SHADER)
 			.DisplayName("Shader")
 			.Category("Rendering")

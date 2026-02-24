@@ -80,6 +80,8 @@ public:
 	/// @return ShaderId that can be used immediately (shader is invalid until compiled)
 	ShaderId CreateShader(const std::string& name) const;
 
+	void Initialize() const;
+
 	/// Compile an existing shader from file paths
 	/// @return true if compilation succeeded
 	bool

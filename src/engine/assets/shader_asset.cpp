@@ -3,6 +3,7 @@ module;
 #include <flecs.h>
 #include <iostream>
 #include <nlohmann/json.hpp>
+#include <spdlog/spdlog.h>
 #include <string>
 #include <vector>
 
@@ -64,9 +65,28 @@ void ShaderAssetInfo::RegisterType() {
 			.Build();
 }
 
+void ShaderAssetInfo::RegisterBuiltins() {
+	auto& cache = AssetCache::Instance();
+	const auto default_2d_shader = cache.Create<ShaderAssetInfo>(AssetType::SHADER, "__default_2d");
+	default_2d_shader->vertex_path = "assets/shaders/basic.vert";
+	default_2d_shader->fragment_path = "assets/shaders/basic.frag";
+
+	const auto default_3d_shader = cache.Create<ShaderAssetInfo>(AssetType::SHADER, "__default_3d_lit");
+	default_3d_shader->vertex_path = "assets/shaders/lit_3d.vert";
+	default_3d_shader->fragment_path = "assets/shaders/lit_3d.frag";
+
+	const auto unlit_shader = cache.Create<ShaderAssetInfo>(AssetType::SHADER, "__unlit");
+	unlit_shader->vertex_path = "assets/shaders/unlit.vert";
+	unlit_shader->fragment_path = "assets/shaders/unlit.frag";
+}
+
 void ShaderAssetInfo::SetupRefBinding(flecs::world& world) {
 	SetupRefBindingImpl<ShaderAssetInfo, ShaderRef, rendering::Renderable>(
-			world, "ShaderRef", "Rendering", "ShaderRefResolve", ShaderAssetInfo::TYPE_NAME,
+			world,
+			"ShaderRef",
+			"Rendering",
+			"ShaderRefResolve",
+			ShaderAssetInfo::TYPE_NAME,
 			[](const auto& asset, auto& target) { target.shader = asset->id; },
 			[](auto& target) { target.shader = rendering::INVALID_SHADER; });
 }

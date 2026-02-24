@@ -291,6 +291,7 @@ ECSWorld::ECSWorld() {
 
 	// Register built-in mesh primitives (quad, cube, sphere)
 	assets::MeshAssetInfo::RegisterBuiltins();
+	assets::ShaderAssetInfo::RegisterBuiltins();
 
 	// Set up built-in systems
 	SetupMovementSystem();

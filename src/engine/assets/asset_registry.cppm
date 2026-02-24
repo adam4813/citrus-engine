@@ -3,6 +3,7 @@ module;
 #include <cstdint>
 #include <flecs.h>
 #include <functional>
+#include <iostream>
 #include <memory>
 #include <nlohmann/json_fwd.hpp>
 #include <ranges>
@@ -272,12 +273,13 @@ struct ShaderAssetInfo : AssetInfo {
 	rendering::ShaderId id{rendering::INVALID_SHADER}; // Populated in DoInitialize, compiled in DoLoad
 
 	ShaderAssetInfo() : AssetInfo("", AssetType::SHADER) {}
-	ShaderAssetInfo(std::string asset_name, std::string vert = "", std::string frag = "") :
-			AssetInfo(std::move(asset_name), AssetType::SHADER), vertex_path(std::move(vert)),
-			fragment_path(std::move(frag)) {}
+	ShaderAssetInfo(std::string asset_name) : AssetInfo(std::move(asset_name), AssetType::SHADER) {}
 
 	/// Register this asset type with the AssetRegistry
 	static void RegisterType();
+
+	/// Register built-in shaders (e.g., default PBR shader) in the asset cache
+	static void RegisterBuiltins();
 
 	/// Set up ECS ref component + observer binding
 	static void SetupRefBinding(flecs::world& world);
@@ -528,6 +530,7 @@ public:
 
 	/// Creates a new default asset of the specified type, adds it to the cache, and returns it.
 	AssetPtr Create(AssetType type, const std::string& name);
+	template <typename T> std::shared_ptr<T> Create(AssetType type, const std::string& name);
 
 	/// Add an asset to the cache as "registered" (metadata only, not loaded).
 	/// Assigns a GUID if the asset doesn't have one (guid == 0).
@@ -626,6 +629,17 @@ private:
 	std::unordered_map<std::string, uint32_t> path_to_guid_; // file path → guid
 	uint32_t next_guid_{1}; // Counter for GUID generation
 };
+
+template <typename T> std::shared_ptr<T> AssetCache::Create(const AssetType type, const std::string& name) {
+	if (const auto assetPtr = Create(type, name)) {
+		if (auto asset = std::dynamic_pointer_cast<T>(assetPtr)) {
+			return asset;
+		}
+		std::cerr << "AssetCache::Create: Asset was created but unable to cast to requested type\n";
+	}
+
+	return nullptr;
+}
 
 // --- Data-driven SetupRefBinding template ---
 // Eliminates per-asset-type copy-paste for ref component registration + observer wiring.

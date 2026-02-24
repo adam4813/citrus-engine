@@ -14,6 +14,7 @@ module;
 
 module engine.rendering;
 
+import engine.asset_registry;
 import engine.assets;
 import engine.platform;
 import glm;
@@ -241,45 +242,39 @@ struct ShaderManager::Impl {
 	ShaderId default_3d_shader_id = INVALID_SHADER;
 	ShaderId unlit_shader_id = INVALID_SHADER;
 
-	void InitializeDefaultShaders(const ShaderManager& manager) {
-		// clang-format off
-		// Load 2D shader (basic.vert/basic.frag)
-		default_2d_shader_id = manager.LoadShader(
-			"__default_2d",
-			"assets/shaders/basic.vert",
-			"assets/shaders/basic.frag"
-		);
+	void PopulateDefaultShaders() {
+		// The shaders are loaded via the ShaderAssetInfo entries in the asset registry, which are populated from the embedded default shaders in assets.cpp. We just need to look them up by their known names and store their IDs here for easy access.
+		auto& cache = assets::AssetCache::Instance();
+		const auto default_2d_shader = std::dynamic_pointer_cast<assets::ShaderAssetInfo>(
+				cache.Find("__default_2d", assets::AssetType::SHADER));
+		default_2d_shader->Load(); // They asset may not be loaded into the shader manager yet
+		default_2d_shader_id = default_2d_shader->id;
 
 		if (default_2d_shader_id == INVALID_SHADER) {
 			spdlog::warn("Failed to load default 2D shader");
 		}
 
-		// Load 3D lit shader (lit_3d.vert/lit_3d.frag)
-		default_3d_shader_id = manager.LoadShader(
-			"__default_3d_lit",
-			"assets/shaders/lit_3d.vert",
-			"assets/shaders/lit_3d.frag"
-		);
+		const auto default_3d_shader = std::dynamic_pointer_cast<assets::ShaderAssetInfo>(
+				cache.Find("__default_3d_lit", assets::AssetType::SHADER));
+		default_3d_shader->Load(); // They asset may not be loaded into the shader manager yet
+		default_3d_shader_id = default_3d_shader->id;
 
 		if (default_3d_shader_id == INVALID_SHADER) {
 			spdlog::warn("Failed to load default 3D lit shader");
 		}
 
-		// Load unlit shader (unlit.vert/unlit.frag)
-		unlit_shader_id = manager.LoadShader(
-			"__unlit",
-			"assets/shaders/unlit.vert",
-			"assets/shaders/unlit.frag"
-		);
+		const auto unlit_shader =
+				std::dynamic_pointer_cast<assets::ShaderAssetInfo>(cache.Find("__unlit", assets::AssetType::SHADER));
+		unlit_shader->Load(); // They asset may not be loaded into the shader manager yet
+		unlit_shader_id = unlit_shader->id;
 
 		if (unlit_shader_id == INVALID_SHADER) {
 			spdlog::warn("Failed to load unlit shader");
 		}
-		// clang-format on
 	}
 };
 
-ShaderManager::ShaderManager() : pimpl_(std::make_unique<Impl>()) { pimpl_->InitializeDefaultShaders(*this); }
+ShaderManager::ShaderManager() : pimpl_(std::make_unique<Impl>()) {}
 
 ShaderManager::~ShaderManager() = default;
 
@@ -296,6 +291,8 @@ ShaderId ShaderManager::CreateShader(const std::string& name) const {
 	pimpl_->name_to_id[name] = id;
 	return id;
 }
+
+void ShaderManager::Initialize() const { pimpl_->PopulateDefaultShaders(); }
 
 bool ShaderManager::CompileShader(
 		const ShaderId id, const platform::fs::Path& vertex_path, const platform::fs::Path& fragment_path) const {

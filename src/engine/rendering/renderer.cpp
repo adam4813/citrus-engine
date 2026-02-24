@@ -178,6 +178,8 @@ void main() {
 
 	glBindVertexArray(0);
 
+	// Initialize and populate default shaders
+	pimpl_->shader_manager.Initialize();
 	// Initialize material manager with default materials
 	pimpl_->material_manager.Initialize(pimpl_->shader_manager);
 
@@ -247,8 +249,7 @@ void Renderer::SubmitRenderCommand(const RenderCommand& command) const {
 		const Material& material = pimpl_->material_manager.GetMaterial(command.material);
 		material.Apply(*shader);
 	}
-	else if (const TextureId white_tex = pimpl_->texture_manager.GetWhiteTexture();
-			 white_tex != INVALID_TEXTURE) {
+	else if (const TextureId white_tex = pimpl_->texture_manager.GetWhiteTexture(); white_tex != INVALID_TEXTURE) {
 		// No material — bind the white texture as fallback so shaders that expect textures don't fail
 		if (const auto* gl_white_tex = GetGLTexture(white_tex)) {
 			glActiveTexture(GL_TEXTURE0);

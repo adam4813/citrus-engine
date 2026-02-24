@@ -1,6 +1,7 @@
 module;
 
 #include <any>
+#include <iostream>
 #include <optional>
 #include <string>
 #include <unordered_map>
@@ -48,12 +49,11 @@ public:
 			return std::nullopt;
 		}
 
-		try {
-			return std::any_cast<T>(it->second);
+		if (auto ptr = std::any_cast<T>(&(it->second))) {
+			return *ptr;
 		}
-		catch (const std::bad_any_cast&) {
-			return std::nullopt;
-		}
+
+		return std::nullopt;
 	}
 
 	/**

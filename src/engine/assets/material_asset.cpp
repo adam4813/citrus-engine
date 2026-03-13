@@ -65,6 +65,14 @@ void TextureAssetInfo::RegisterType() {
 			.Field("name", &TextureAssetInfo::name, "Name")
 			.Field("file_path", &TextureAssetInfo::file_path, "File Path", ecs::FieldType::FilePath)
 			.Build();
+
+	// Register file importers for raw image files
+	AssetCache::Instance().RegisterFileImporter({".png", ".jpg", ".jpeg", ".tga", ".bmp"},
+			[](const std::string& name, const std::string& path) -> std::shared_ptr<AssetInfo> {
+				auto asset = std::make_shared<TextureAssetInfo>(name);
+				asset->file_path = path;
+				return asset;
+			});
 }
 
 void TextureAssetInfo::SetupRefBinding(flecs::world& world) {

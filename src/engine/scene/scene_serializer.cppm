@@ -23,9 +23,7 @@ inline constexpr int SCENE_FORMAT_VERSION = 1;
 ///     "version": 1,
 ///     "name": "Scene Name",
 ///     "metadata": { ... },
-///     "assets": [
-///         { "type": "shader", "name": "...", "vertex_path": "...", "fragment_path": "..." }
-///     ],
+///     "settings": { ... },
 ///     "flecs_data": "<flecs world JSON>",
 ///     "active_camera": "path/to/camera/entity"  // optional
 /// }

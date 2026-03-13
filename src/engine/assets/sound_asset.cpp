@@ -64,6 +64,14 @@ void SoundAssetInfo::RegisterType() {
 			.Field("volume", &SoundAssetInfo::volume, "Volume")
 			.Field("loop", &SoundAssetInfo::loop, "Loop")
 			.Build();
+
+	// Register file importers for raw audio files
+	AssetCache::Instance().RegisterFileImporter({".wav", ".mp3", ".ogg", ".flac"},
+			[](const std::string& name, const std::string& path) -> std::shared_ptr<AssetInfo> {
+				auto asset = std::make_shared<SoundAssetInfo>(name);
+				asset->file_path = path;
+				return asset;
+			});
 }
 
 void SoundAssetInfo::SetupRefBinding(flecs::world& world) {

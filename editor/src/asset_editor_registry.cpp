@@ -65,6 +65,13 @@ bool AssetEditorRegistry::TryOpen(const std::string& path) const {
 				return true;
 			}
 		}
+		if (filename.ends_with(".sound.json")) {
+			auto it = handlers_.find("sound");
+			if (it != handlers_.end()) {
+				it->second(path);
+				return true;
+			}
+		}
 		if (filename.ends_with(".prefab.json")) {
 			auto it = handlers_.find("prefab");
 			if (it != handlers_.end()) {

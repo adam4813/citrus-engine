@@ -253,9 +253,6 @@ void AssetBrowserPanel::CreateNewSceneFile() {
 		settings["description"] = "";
 		scene_doc["settings"] = settings;
 
-		// Empty assets array
-		scene_doc["assets"] = json::array();
-
 		// Empty flecs data (empty world)
 		scene_doc["flecs_data"] = "{}";
 

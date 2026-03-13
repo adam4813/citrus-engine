@@ -1,6 +1,7 @@
 module;
 
 #include <algorithm>
+#include <cctype>
 #include <flecs.h>
 #include <functional>
 #include <iostream>
@@ -301,6 +302,40 @@ void AssetCache::Clear() {
 	next_guid_ = 1;
 }
 
+void AssetCache::RegisterFileImporter(const std::vector<std::string>& file_extensions, FileImportFactory factory) {
+	for (auto ext : file_extensions) {
+		if (ext.empty()) {
+			continue;
+		}
+		// Ensure extension starts with a dot and is lowercase
+		if (ext[0] != '.') {
+			ext = '.' + ext;
+		}
+		std::ranges::transform(ext, ext.begin(), ::tolower);
+		file_importers_[ext] = factory;
+	}
+}
+
+AssetPtr AssetCache::TryFileImport(const std::string& filename, const std::string& file_path) {
+	// Extract extension from filename
+	const auto dot = filename.rfind('.');
+	if (dot == std::string::npos) {
+		return nullptr;
+	}
+	std::string ext = filename.substr(dot);
+	// Lowercase the extension for case-insensitive matching
+	std::ranges::transform(ext, ext.begin(), ::tolower);
+
+	const auto it = file_importers_.find(ext);
+	if (it == file_importers_.end()) {
+		return nullptr;
+	}
+
+	// Derive asset name from filename stem
+	const std::string name = filename.substr(0, dot);
+	return it->second(name, file_path);
+}
+
 size_t AssetCache::ScanDirectory(const std::string& directory, const std::vector<std::string>& extensions) {
 	size_t registered = 0;
 	const auto dir_path = platform::fs::Path(directory);
@@ -313,8 +348,32 @@ size_t AssetCache::ScanDirectory(const std::string& directory, const std::vector
 		}
 
 		const auto filename = entry.filename().string();
+		const auto path_str = entry.string();
 
-		// Filter by extensions
+		// Skip if already registered by this path
+		if (path_to_guid_.contains(path_str)) {
+			continue;
+		}
+
+		// Try file importers first (handles raw asset files like .wav, .png, etc.)
+		if (auto asset = TryFileImport(filename, path_str)) {
+			// Skip if an asset with this name already exists (JSON asset takes priority)
+			if (!asset->name.empty() && name_index_.contains(asset->name)) {
+				continue;
+			}
+			if (asset->guid == 0) {
+				asset->guid = GenerateGuid();
+			}
+			cache_[asset->guid] = asset;
+			if (!asset->name.empty()) {
+				name_index_[asset->name] = asset->guid;
+			}
+			path_to_guid_[path_str] = asset->guid;
+			++registered;
+			continue;
+		}
+
+		// Filter by extensions for JSON asset files
 		if (!extensions.empty()) {
 			bool matched = false;
 			for (const auto& ext : extensions) {
@@ -329,12 +388,6 @@ size_t AssetCache::ScanDirectory(const std::string& directory, const std::vector
 		}
 		else if (filename.length() < 5 || filename.substr(filename.length() - 5) != ".json") {
 			continue; // Default: only .json files
-		}
-
-		// Skip if already registered by this path
-		const auto path_str = entry.string();
-		if (path_to_guid_.contains(path_str)) {
-			continue;
 		}
 
 		// Read and parse JSON

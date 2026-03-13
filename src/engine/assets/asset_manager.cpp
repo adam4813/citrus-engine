@@ -1,10 +1,10 @@
 module;
 
 #include <filesystem>
+#include <iostream>
 #include <memory>
 #include <string>
 #include <vector>
-#include <iostream>
 #define STB_IMAGE_IMPLEMENTATION
 #include <optional>
 #include <stb_image.h>
@@ -14,111 +14,115 @@ module engine.assets;
 import engine.platform;
 
 namespace engine::assets {
-    AssetManager &AssetManager::Instance() {
-        static AssetManager instance;
-        return instance;
-    }
+AssetManager& AssetManager::Instance() {
+	static AssetManager instance;
+	return instance;
+}
 
-    std::shared_ptr<Image> AssetManager::LoadImage(const std::string &path) {
-        using namespace engine::platform;
-        // Build full path to asset
-        const fs::Path asset_path = fs::GetAssetsDirectory() / path;
-        std::cout << "Loading image from: " << asset_path.string() << std::endl;
-        fs::File file;
-        if (!file.Open(asset_path, fs::FileMode::Read)) {
-            // Could not open file
-            return nullptr;
-        }
-        const std::vector<uint8_t> file_data = file.ReadAll();
-        if (file_data.empty()) {
-            // File is empty or failed to read
-            return nullptr;
-        }
-        int width = 0;
-        int height = 0;
-        int channels = 0;
-        stbi_set_flip_vertically_on_load(true);
-        stbi_uc *pixels = stbi_load_from_memory(file_data.data(), static_cast<int>(file_data.size()), &width, &height,
-                                                &channels, 4);
-        if (!pixels) {
-            // stb_image failed to decode
-            return nullptr;
-        }
-        auto image = std::make_shared<Image>();
-        image->width = width;
-        image->height = height;
-        image->channels = 4; // Force RGBA
-        image->pixel_data.assign(pixels, pixels + (width * height * 4));
-        image->name = path;
-        stbi_image_free(pixels);
-        return image;
-    }
+std::shared_ptr<Image> AssetManager::LoadImage(const std::string& path) {
+	using namespace engine::platform;
+	const fs::Path asset_path = fs::GetAssetsDirectory() / path;
+	return LoadImage(asset_path);
+}
 
-    std::optional<std::string> AssetManager::LoadTextFile(const std::string &path) {
-        using namespace engine::platform;
-        const fs::Path asset_path = fs::GetAssetsDirectory() / path;
-        return LoadTextFile(asset_path);
-    }
+std::shared_ptr<Image> AssetManager::LoadImage(const std::filesystem::path& absolute_path) {
+	using namespace engine::platform;
+	std::cout << "Loading image from: " << absolute_path.string() << std::endl;
+	fs::File file;
+	if (!file.Open(absolute_path, fs::FileMode::Read)) {
+		// Could not open file
+		return nullptr;
+	}
+	const std::vector<uint8_t> file_data = file.ReadAll();
+	if (file_data.empty()) {
+		// File is empty or failed to read
+		return nullptr;
+	}
+	int width = 0;
+	int height = 0;
+	int channels = 0;
+	stbi_set_flip_vertically_on_load(true);
+	stbi_uc* pixels =
+			stbi_load_from_memory(file_data.data(), static_cast<int>(file_data.size()), &width, &height, &channels, 4);
+	if (!pixels) {
+		// stb_image failed to decode
+		return nullptr;
+	}
+	auto image = std::make_shared<Image>();
+	image->width = width;
+	image->height = height;
+	image->channels = 4; // Force RGBA
+	image->pixel_data.assign(pixels, pixels + (width * height * 4));
+	image->name = absolute_path.filename().string();
+	stbi_image_free(pixels);
+	return image;
+}
 
-    std::optional<std::vector<uint8_t>> AssetManager::LoadBinaryFile(const std::string &path) {
-        using namespace engine::platform;
-        const fs::Path asset_path = fs::GetAssetsDirectory() / path;
-        return LoadBinaryFile(asset_path);
-    }
+std::optional<std::string> AssetManager::LoadTextFile(const std::string& path) {
+	using namespace engine::platform;
+	const fs::Path asset_path = fs::GetAssetsDirectory() / path;
+	return LoadTextFile(asset_path);
+}
 
-    bool AssetManager::SaveTextFile(const std::string &path, const std::string &content) {
-        using namespace engine::platform;
-        const fs::Path asset_path = fs::GetAssetsDirectory() / path;
-        return SaveTextFile(asset_path, content);
-    }
+std::optional<std::vector<uint8_t>> AssetManager::LoadBinaryFile(const std::string& path) {
+	using namespace engine::platform;
+	const fs::Path asset_path = fs::GetAssetsDirectory() / path;
+	return LoadBinaryFile(asset_path);
+}
 
-    bool AssetManager::SaveBinaryFile(const std::string &path, const std::vector<uint8_t> &data) {
-        using namespace engine::platform;
-        const fs::Path asset_path = fs::GetAssetsDirectory() / path;
-        return SaveBinaryFile(asset_path, data);
-    }
+bool AssetManager::SaveTextFile(const std::string& path, const std::string& content) {
+	using namespace engine::platform;
+	const fs::Path asset_path = fs::GetAssetsDirectory() / path;
+	return SaveTextFile(asset_path, content);
+}
 
-    std::optional<std::string> AssetManager::LoadTextFile(const std::filesystem::path &absolute_path) {
-        using namespace engine::platform;
-        fs::File file;
-        if (!file.Open(absolute_path, fs::FileMode::Read, fs::FileType::Text)) {
-            return std::nullopt;
-        }
-        std::string text = file.ReadText();
-        if (text.empty()) {
-            return std::nullopt;
-        }
-        return text;
-    }
+bool AssetManager::SaveBinaryFile(const std::string& path, const std::vector<uint8_t>& data) {
+	using namespace engine::platform;
+	const fs::Path asset_path = fs::GetAssetsDirectory() / path;
+	return SaveBinaryFile(asset_path, data);
+}
 
-    std::optional<std::vector<uint8_t>> AssetManager::LoadBinaryFile(const std::filesystem::path &absolute_path) {
-        using namespace engine::platform;
-        fs::File file;
-        if (!file.Open(absolute_path, fs::FileMode::Read)) {
-            return std::nullopt;
-        }
-        const std::vector<uint8_t> data = file.ReadAll();
-        if (data.empty()) {
-            return std::nullopt;
-        }
-        return data;
-    }
+std::optional<std::string> AssetManager::LoadTextFile(const std::filesystem::path& absolute_path) {
+	using namespace engine::platform;
+	fs::File file;
+	if (!file.Open(absolute_path, fs::FileMode::Read, fs::FileType::Text)) {
+		return std::nullopt;
+	}
+	std::string text = file.ReadText();
+	if (text.empty()) {
+		return std::nullopt;
+	}
+	return text;
+}
 
-    bool AssetManager::SaveTextFile(const std::filesystem::path &absolute_path, const std::string &content) {
-        using namespace engine::platform;
-        fs::File file;
-        if (!file.Open(absolute_path, fs::FileMode::Write, fs::FileType::Text)) {
-            return false;
-        }
-        return file.WriteText(content);
-    }
+std::optional<std::vector<uint8_t>> AssetManager::LoadBinaryFile(const std::filesystem::path& absolute_path) {
+	using namespace engine::platform;
+	fs::File file;
+	if (!file.Open(absolute_path, fs::FileMode::Read)) {
+		return std::nullopt;
+	}
+	const std::vector<uint8_t> data = file.ReadAll();
+	if (data.empty()) {
+		return std::nullopt;
+	}
+	return data;
+}
 
-    bool AssetManager::SaveBinaryFile(const std::filesystem::path &absolute_path, const std::vector<uint8_t> &data) {
-        using namespace engine::platform;
-        fs::File file;
-        if (!file.Open(absolute_path, fs::FileMode::Write)) {
-            return false;
-        }
-        return file.Write(data.data(), data.size()) == data.size();
-    }
+bool AssetManager::SaveTextFile(const std::filesystem::path& absolute_path, const std::string& content) {
+	using namespace engine::platform;
+	fs::File file;
+	if (!file.Open(absolute_path, fs::FileMode::Write, fs::FileType::Text)) {
+		return false;
+	}
+	return file.WriteText(content);
+}
+
+bool AssetManager::SaveBinaryFile(const std::filesystem::path& absolute_path, const std::vector<uint8_t>& data) {
+	using namespace engine::platform;
+	fs::File file;
+	if (!file.Open(absolute_path, fs::FileMode::Write)) {
+		return false;
+	}
+	return file.Write(data.data(), data.size()) == data.size();
+}
 } // namespace engine::assets

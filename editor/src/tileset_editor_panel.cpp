@@ -139,9 +139,7 @@ void TilesetEditorPanel::LoadSourceImage(engine::Engine& engine, const std::stri
 		return;
 	}
 
-	// TODO: Add LoadImage overload that takes a path and update this to use it
-	const auto relative_path = std::filesystem::relative(std::filesystem::path(path), image_dialog_.RootDirectory());
-	const auto image = engine::assets::AssetManager::LoadImage(relative_path.string());
+	const auto image = engine::assets::AssetManager::LoadImage(engine::platform::fs::Path(path));
 	if (!image || !image->IsValid()) {
 		load_error_message_ = "Failed to load image: " + path;
 		return;

@@ -151,9 +151,7 @@ void SpriteEditorPanel::LoadSourceImage(engine::Engine& engine, const std::strin
 		return;
 	}
 
-	// TODO: Add LoadImage overload that takes a path and update this to use it
-	const auto relative_path = std::filesystem::relative(std::filesystem::path(path), image_dialog_.RootDirectory());
-	const auto image = engine::assets::AssetManager::LoadImage(relative_path.string());
+	const auto image = engine::assets::AssetManager::LoadImage(engine::platform::fs::Path(path));
 	if (!image || !image->IsValid()) {
 		status_message_ = "Failed to load image: " + path;
 		status_is_error_ = true;

@@ -171,10 +171,9 @@ TextureId TextureManager::CreateTexture(const std::string& name, const TextureCr
 }
 
 TextureId TextureManager::LoadTexture(const platform::fs::Path& path, const TextureParameters& parameter) const {
-	const std::string path_str = path.string();
-
 	// Check cache first
-	if (const auto cache_it = pimpl_->texture_cache.find(path_str); cache_it != pimpl_->texture_cache.end()) {
+	if (const auto cache_it = pimpl_->texture_cache.find(path.filename().string());
+		cache_it != pimpl_->texture_cache.end()) {
 		// Return cached texture if it's still valid
 		if (IsValid(cache_it->second)) {
 			return cache_it->second;
@@ -183,7 +182,7 @@ TextureId TextureManager::LoadTexture(const platform::fs::Path& path, const Text
 	}
 
 	// Load image and create texture
-	const auto image = assets::AssetManager::Instance().LoadImage(path_str);
+	const auto image = assets::AssetManager::Instance().LoadImage(path);
 	if (!image || !image->IsValid()) {
 		return INVALID_TEXTURE;
 	}

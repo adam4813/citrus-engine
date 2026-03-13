@@ -67,7 +67,8 @@ void TextureAssetInfo::RegisterType() {
 			.Build();
 
 	// Register file importers for raw image files
-	AssetCache::Instance().RegisterFileImporter({".png", ".jpg", ".jpeg", ".tga", ".bmp"},
+	AssetCache::Instance().RegisterFileImporter(
+			{".png", ".jpg", ".jpeg", ".tga", ".bmp"},
 			[](const std::string& name, const std::string& path) -> std::shared_ptr<AssetInfo> {
 				auto asset = std::make_shared<TextureAssetInfo>(name);
 				asset->file_path = path;
@@ -96,19 +97,29 @@ void MaterialAssetInfo::DoInitialize() {
 }
 
 namespace {
-void BindTextureSlot(rendering::Material& material, const std::string& texture_name, const char* uniform_name) {
-	if (texture_name.empty()) {
+void BindTextureSlot(rendering::Material& material, const std::string& texture_asset_name, const char* uniform_name) {
+	if (texture_asset_name.empty()) {
 		return;
 	}
 
-	const auto& tex_mgr = rendering::GetRenderer().GetTextureManager();
-	auto texture_id = tex_mgr.FindTexture(texture_name);
+	// Resolve texture via AssetCache (asset reference by name)
+	if (auto tex_asset = AssetCache::Instance().FindTyped<TextureAssetInfo>(texture_asset_name)) {
+		tex_asset->Load();
+		if (tex_asset->id != rendering::INVALID_TEXTURE) {
+			material.SetTexture(uniform_name, tex_asset->id);
+			return;
+		}
+	}
+
+	// Fallback: try loading as a file path for backward compatibility
+	/*const auto& tex_mgr = rendering::GetRenderer().GetTextureManager();
+	auto texture_id = tex_mgr.FindTexture(texture_asset_name);
 	if (texture_id == rendering::INVALID_TEXTURE) {
-		texture_id = tex_mgr.LoadTexture(texture_name);
+		texture_id = tex_mgr.LoadTexture(texture_asset_name);
 	}
 	if (texture_id != rendering::INVALID_TEXTURE) {
 		material.SetTexture(uniform_name, texture_id);
-	}
+	}*/
 }
 } // namespace
 
@@ -218,21 +229,21 @@ void MaterialAssetInfo::RegisterType() {
 			// PBR colors
 			.Field("base_color", &MaterialAssetInfo::base_color, "Base Color", ecs::FieldType::Color)
 			.Field("emissive_color", &MaterialAssetInfo::emissive_color, "Emissive Color", ecs::FieldType::Color)
-			// PBR textures
-			.Field("albedo_map", &MaterialAssetInfo::albedo_map, "Albedo Map", ecs::FieldType::FilePath)
-			.FileExtensions({".png", ".jpg", ".jpeg", ".tga", ".bmp"})
-			.Field("normal_map", &MaterialAssetInfo::normal_map, "Normal Map", ecs::FieldType::FilePath)
-			.FileExtensions({".png", ".jpg", ".jpeg", ".tga", ".bmp"})
-			.Field("metallic_map", &MaterialAssetInfo::metallic_map, "Metallic Map", ecs::FieldType::FilePath)
-			.FileExtensions({".png", ".jpg", ".jpeg", ".tga", ".bmp"})
-			.Field("roughness_map", &MaterialAssetInfo::roughness_map, "Roughness Map", ecs::FieldType::FilePath)
-			.FileExtensions({".png", ".jpg", ".jpeg", ".tga", ".bmp"})
-			.Field("ao_map", &MaterialAssetInfo::ao_map, "AO Map", ecs::FieldType::FilePath)
-			.FileExtensions({".png", ".jpg", ".jpeg", ".tga", ".bmp"})
-			.Field("emissive_map", &MaterialAssetInfo::emissive_map, "Emissive Map", ecs::FieldType::FilePath)
-			.FileExtensions({".png", ".jpg", ".jpeg", ".tga", ".bmp"})
-			.Field("height_map", &MaterialAssetInfo::height_map, "Height Map", ecs::FieldType::FilePath)
-			.FileExtensions({".png", ".jpg", ".jpeg", ".tga", ".bmp"})
+			// PBR textures (asset references to TextureAssetInfo)
+			.Field("albedo_map", &MaterialAssetInfo::albedo_map, "Albedo Map", ecs::FieldType::AssetRef)
+			.AssetRef(TextureAssetInfo::TYPE_NAME)
+			.Field("normal_map", &MaterialAssetInfo::normal_map, "Normal Map", ecs::FieldType::AssetRef)
+			.AssetRef(TextureAssetInfo::TYPE_NAME)
+			.Field("metallic_map", &MaterialAssetInfo::metallic_map, "Metallic Map", ecs::FieldType::AssetRef)
+			.AssetRef(TextureAssetInfo::TYPE_NAME)
+			.Field("roughness_map", &MaterialAssetInfo::roughness_map, "Roughness Map", ecs::FieldType::AssetRef)
+			.AssetRef(TextureAssetInfo::TYPE_NAME)
+			.Field("ao_map", &MaterialAssetInfo::ao_map, "AO Map", ecs::FieldType::AssetRef)
+			.AssetRef(TextureAssetInfo::TYPE_NAME)
+			.Field("emissive_map", &MaterialAssetInfo::emissive_map, "Emissive Map", ecs::FieldType::AssetRef)
+			.AssetRef(TextureAssetInfo::TYPE_NAME)
+			.Field("height_map", &MaterialAssetInfo::height_map, "Height Map", ecs::FieldType::AssetRef)
+			.AssetRef(TextureAssetInfo::TYPE_NAME)
 			// PBR scalars
 			.Field("metallic_factor", &MaterialAssetInfo::metallic_factor, "Metallic")
 			.SliderRange(0.0f, 1.0f)

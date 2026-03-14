@@ -21,6 +21,8 @@ add_executable(
     src/asset_browser_dialogs.cpp
     src/asset_browser_scanning.cpp
     src/asset_editor_registry.cpp
+    src/asset_preview_registry.cpp
+    src/editor_asset_scanner.cpp
     src/code_editor_panel.cpp
     src/command.cpp
     src/commands/clipboard_commands.cpp

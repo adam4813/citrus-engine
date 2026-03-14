@@ -1,5 +1,7 @@
 #include "debug-ui.h"
 #include "editor_scene.h"
+#include "asset_preview_registry.h"
+#include "editor_asset_scanner.h"
 
 #include <iostream>
 #include <string>
@@ -125,8 +127,16 @@ int main(int argc, char* argv[]) {
 	// Set window title
 	glfwSetWindowTitle(app_state.engine.window, "Citrus Scene Editor");
 
+	// Scan project assets directory (editor concern, not engine)
+	editor::ScanAssetsDirectory("assets/",
+			{".shader.json", ".mesh.json", ".material.json", ".texture.json",
+			 ".sound.json", ".anim.json", ".data.json", ".prefab.json"});
+
 	// Initialize debug UI (ImGui)
 	app_state.debug_ui.Init(app_state.engine.window);
+
+	// Register asset preview generators (thumbnails, icons)
+	editor::RegisterBuiltinPreviews();
 
 	// Initialize editor scene
 	app_state.editor_scene.Initialize(app_state.engine);

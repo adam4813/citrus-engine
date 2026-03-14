@@ -1,5 +1,7 @@
 #pragma once
 
+#include "asset_preview_registry.h"
+
 #include <algorithm>
 #include <filesystem>
 #include <imgui.h>
@@ -17,44 +19,9 @@ struct FileEntry {
 };
 
 /// Return a short icon label for the given path based on extension.
+/// Delegates to AssetPreviewRegistry for data-driven lookup.
 inline std::string GetFileIcon(const std::filesystem::path& p) {
-	if (std::filesystem::is_directory(p)) {
-		return "[D]";
-	}
-
-	const auto ext = p.extension().string();
-	const auto fname = p.filename().string();
-	if (ext == ".scene" || fname.ends_with(".scene.json")) {
-		return "[Sc]";
-	}
-	if (ext == ".prefab" || fname.ends_with(".prefab.json")) {
-		return "[P]";
-	}
-	if (fname.ends_with(".tileset.json")) {
-		return "[TS]";
-	}
-	if (fname.ends_with(".data.json")) {
-		return "[Dt]";
-	}
-	if (ext == ".png" || ext == ".jpg" || ext == ".jpeg" || ext == ".tga" || ext == ".bmp") {
-		return "[T]";
-	}
-	if (ext == ".wav" || ext == ".ogg" || ext == ".mp3") {
-		return "[S]";
-	}
-	if (ext == ".obj" || ext == ".fbx" || ext == ".gltf" || ext == ".glb") {
-		return "[M]";
-	}
-	if (ext == ".lua" || ext == ".as" || ext == ".js") {
-		return "[Sc]";
-	}
-	if (ext == ".glsl" || ext == ".vert" || ext == ".frag" || ext == ".shader") {
-		return "[Sh]";
-	}
-	if (ext == ".json") {
-		return "[J]";
-	}
-	return "[F]";
+	return AssetPreviewRegistry::Instance().GetAppearance(p).icon;
 }
 
 /// List directory contents, optionally filtering by extensions.

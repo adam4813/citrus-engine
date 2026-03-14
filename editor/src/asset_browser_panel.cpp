@@ -34,26 +34,13 @@ AssetBrowserPanel::AssetBrowserPanel() {
 
 std::string_view AssetBrowserPanel::GetPanelName() const { return "Assets"; }
 
-AssetBrowserPanel::~AssetBrowserPanel() { ClearThumbnailCache(); }
-
-ImVec4 AssetBrowserPanel::GetAssetTypeColor(AssetFileType type) {
-	switch (type) {
-	case AssetFileType::Scene: return {0.3f, 0.85f, 0.4f, 1.0f};
-	case AssetFileType::Prefab: return {0.4f, 0.6f, 1.0f, 1.0f};
-	case AssetFileType::Texture: return {0.95f, 0.75f, 0.2f, 1.0f};
-	case AssetFileType::Sound: return {1.0f, 0.55f, 0.2f, 1.0f};
-	case AssetFileType::Mesh: return {0.7f, 0.4f, 0.9f, 1.0f};
-	case AssetFileType::Script: return {0.3f, 0.8f, 0.8f, 1.0f};
-	case AssetFileType::Shader: return {0.9f, 0.4f, 0.7f, 1.0f};
-	case AssetFileType::DataTable: return {0.65f, 0.65f, 0.65f, 1.0f};
-	case AssetFileType::Directory: return {0.95f, 0.85f, 0.3f, 1.0f};
-	default: return {0.55f, 0.55f, 0.55f, 1.0f};
-	}
-}
+AssetBrowserPanel::~AssetBrowserPanel() { AssetPreviewRegistry::Instance().ClearCache(); }
 
 void AssetBrowserPanel::SetCallbacks(const EditorCallbacks& callbacks) { callbacks_ = callbacks; }
 
-AssetFileType AssetBrowserPanel::GetAssetFileType(const std::filesystem::path& path) {
+namespace {
+
+AssetFileType GetAssetFileType(const std::filesystem::path& path) {
 	if (std::filesystem::is_directory(path)) {
 		return AssetFileType::Directory;
 	}
@@ -91,6 +78,8 @@ AssetFileType AssetBrowserPanel::GetAssetFileType(const std::filesystem::path& p
 
 	return AssetFileType::All;
 }
+
+} // namespace
 
 bool AssetBrowserPanel::PassesFilter(const FileSystemItem& item) const {
 	// Search filter
@@ -369,15 +358,18 @@ void AssetBrowserPanel::RenderAssetItemList(const FileSystemItem& item) {
 	}
 
 	ImGui::TableNextColumn();
-	const ImVec4 tc = GetAssetTypeColor(GetAssetFileType(item.path));
-	ImGui::TextColored(tc, "%s", item.type_icon.c_str());
+	const auto list_appearance = AssetPreviewRegistry::Instance().GetAppearance(item.path);
+	ImGui::TextColored(list_appearance.color, "%s",
+			item.type_icon.empty() ? list_appearance.icon.c_str() : item.type_icon.c_str());
 }
 
 void AssetBrowserPanel::RenderAssetItemGrid(const FileSystemItem& item) {
 	const float cell_width = ImGui::GetContentRegionAvail().x;
 	const float icon_size = 64.0f;
 	const bool is_selected = (item.path == selected_item_path_);
-	const auto file_type = GetAssetFileType(item.path);
+
+	auto& preview_registry = AssetPreviewRegistry::Instance();
+	const auto appearance = preview_registry.GetAppearance(item.path);
 
 	ImGui::BeginGroup();
 
@@ -387,42 +379,31 @@ void AssetBrowserPanel::RenderAssetItemGrid(const FileSystemItem& item) {
 
 	bool clicked = false;
 
-	// For texture files, try to show an image thumbnail
-	if (file_type == AssetFileType::Texture) {
-		const uint32_t thumb_id = GetOrLoadThumbnail(item.path);
-		if (thumb_id != 0) {
-			if (is_selected) {
-				ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetStyleColorVec4(ImGuiCol_ButtonActive));
-			}
-			const auto imgui_tex = static_cast<ImTextureID>(static_cast<uintptr_t>(thumb_id));
-			clicked = ImGui::ImageButton("##thumb", imgui_tex, ImVec2(icon_size, icon_size));
-			if (is_selected) {
-				ImGui::PopStyleColor();
-			}
+	// Try to show a thumbnail if a preview generator is registered
+	const uint32_t thumb_id =
+			!item.is_directory ? preview_registry.GetOrGeneratePreview(item.path) : 0;
+	if (thumb_id != 0) {
+		if (is_selected) {
+			ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetStyleColorVec4(ImGuiCol_ButtonActive));
 		}
-		else {
-			// Fallback: colored text button
-			const ImVec4 tc = GetAssetTypeColor(file_type);
-			ImGui::PushStyleColor(
-					ImGuiCol_Button,
-					is_selected ? ImGui::GetStyleColorVec4(ImGuiCol_ButtonActive)
-								: ImVec4(tc.x * 0.25f, tc.y * 0.25f, tc.z * 0.25f, 1.0f));
-			ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(tc.x * 0.4f, tc.y * 0.4f, tc.z * 0.4f, 1.0f));
-			ImGui::PushStyleColor(ImGuiCol_Text, tc);
-			clicked = ImGui::Button(item.type_icon.c_str(), ImVec2(icon_size, icon_size));
-			ImGui::PopStyleColor(3);
+		const auto imgui_tex = static_cast<ImTextureID>(static_cast<uintptr_t>(thumb_id));
+		clicked = ImGui::ImageButton("##thumb", imgui_tex, ImVec2(icon_size, icon_size));
+		if (is_selected) {
+			ImGui::PopStyleColor();
 		}
 	}
 	else {
-		// Colored button for non-image asset types
-		const ImVec4 tc = GetAssetTypeColor(file_type);
+		// Colored icon button from appearance registry
+		const ImVec4& tc = appearance.color;
 		ImGui::PushStyleColor(
 				ImGuiCol_Button,
 				is_selected ? ImGui::GetStyleColorVec4(ImGuiCol_ButtonActive)
 							: ImVec4(tc.x * 0.25f, tc.y * 0.25f, tc.z * 0.25f, 1.0f));
 		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(tc.x * 0.4f, tc.y * 0.4f, tc.z * 0.4f, 1.0f));
 		ImGui::PushStyleColor(ImGuiCol_Text, tc);
-		clicked = ImGui::Button(item.type_icon.c_str(), ImVec2(icon_size, icon_size));
+		const std::string& icon =
+				item.type_icon.empty() ? appearance.icon : item.type_icon;
+		clicked = ImGui::Button(icon.c_str(), ImVec2(icon_size, icon_size));
 		ImGui::PopStyleColor(3);
 	}
 

@@ -218,7 +218,7 @@ template <typename T> void AssetTypeRegistration<T>::Build() { registry_.AddType
 /// Asset lifecycle:
 ///   Registered → Loaded
 ///   - Registered: asset metadata is in the cache (name, guid, type, paths).
-///     No system resources allocated. Created by ScanDirectory or Add.
+///     No system resources allocated. Created by Add().
 ///   - Loaded: subsystem has processed the asset. System resources are allocated
 ///     (shader compiled, mesh geometry on GPU, audio decoded, etc.).
 ///     Triggered by calling Load().
@@ -608,23 +608,17 @@ public:
 	/// Assigns a GUID if the asset doesn't have one (guid == 0).
 	bool SaveToFile(const AssetPtr& asset, const std::string& path);
 
-	/// Scan a directory for asset files and register them in the cache.
-	/// Handles both JSON asset files (filtered by extensions) and raw asset files
-	/// (matched by registered file importers, e.g., .wav → SoundAssetInfo).
-	/// Assets are registered (metadata parsed, GUID assigned) but NOT loaded —
-	/// no system resources are allocated until Load() is called on each asset.
-	/// @param directory Path to scan (e.g., "assets/materials")
-	/// @param extensions File extensions to match for JSON files (e.g., {".material.json"}).
-	///                   If empty, scans all .json files. Raw file importers run regardless.
-	/// @return Number of newly registered assets.
-	size_t ScanDirectory(const std::string& directory, const std::vector<std::string>& extensions = {});
-
 	/// Register a file importer for raw asset files (non-JSON).
-	/// When ScanDirectory encounters a file matching one of the given extensions,
+	/// When scanning encounters a file matching one of the given extensions,
 	/// the factory is called to create an asset entry with default settings.
 	/// @param file_extensions Extensions to match (e.g., {".wav", ".mp3", ".ogg"})
 	/// @param factory Function that creates an asset from (name, file_path)
 	void RegisterFileImporter(const std::vector<std::string>& file_extensions, FileImportFactory factory);
+
+	/// Try to import a raw file using registered file importers.
+	/// Returns the created asset, or nullptr if no importer matched.
+	/// The asset is NOT added to the cache — caller should call Add() if wanted.
+	AssetPtr TryFileImport(const std::string& filename, const std::string& file_path);
 
 	/// Clear all cached assets.
 	void Clear();
@@ -637,10 +631,6 @@ public:
 
 private:
 	AssetCache() = default;
-
-	/// Try to import a raw file using registered file importers.
-	/// Returns the created asset, or nullptr if no importer matched.
-	AssetPtr TryFileImport(const std::string& filename, const std::string& file_path);
 
 	std::unordered_map<uint32_t, AssetPtr> cache_; // guid → asset (primary)
 	std::unordered_map<std::string, uint32_t> name_index_; // name → guid (secondary)

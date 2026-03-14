@@ -1,5 +1,6 @@
 #pragma once
 
+#include "asset_preview_registry.h"
 #include "editor_callbacks.h"
 #include "editor_panel.h"
 #include "file_dialog.h"
@@ -172,30 +173,9 @@ private:
 	void ShowImportAssetDialog();
 
 	/**
-	 * @brief Get the asset file type from extension
-	 */
-	static AssetFileType GetAssetFileType(const std::filesystem::path& path);
-
-	/**
-	 * @brief Get a color associated with an asset file type
-	 */
-	static ImVec4 GetAssetTypeColor(AssetFileType type);
-
-	/**
 	 * @brief Check if an item passes the current filter
 	 */
 	bool PassesFilter(const FileSystemItem& item) const;
-
-	/**
-	 * @brief Load or retrieve a cached thumbnail GL texture for an image file
-	 * @return OpenGL texture ID, or 0 if loading failed
-	 */
-	uint32_t GetOrLoadThumbnail(const std::filesystem::path& path);
-
-	/**
-	 * @brief Free all cached thumbnail GL textures
-	 */
-	void ClearThumbnailCache();
 
 	EditorCallbacks callbacks_;
 	bool prefabs_scanned_ = false;
@@ -222,9 +202,6 @@ private:
 
 	// Import asset dialog
 	std::unique_ptr<FileDialogPopup> import_dialog_;
-
-	// Thumbnail cache: file path -> GL texture ID
-	std::unordered_map<std::string, uint32_t> thumbnail_cache_;
 };
 
 } // namespace editor

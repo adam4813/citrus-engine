@@ -195,6 +195,7 @@ private:
 
 	// Play mode snapshot — stores serialized scene state to restore on Stop
 	std::string play_mode_snapshot_;
+	std::string play_mode_camera_path_; // Saved camera entity path for re-resolution after restore
 
 	// Clipboard for copy/paste operations
 	std::string clipboard_json_;

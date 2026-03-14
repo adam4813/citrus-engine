@@ -497,9 +497,23 @@ void EditorScene::PlayScene() {
 	const auto& scene = scene_manager.GetScene(editor_scene_id_);
 	play_mode_snapshot_ = engine::scene::SceneSerializer::SnapshotEntities(scene, engine_->ecs);
 
+	// Save the scene active camera path so we can restore it after stop
+	// (entity references become invalid when entities are destroyed/restored)
+	if (scene_active_camera_.is_valid()) {
+		play_mode_camera_path_ = std::string(scene_active_camera_.path().c_str());
+	}
+	else {
+		play_mode_camera_path_.clear();
+	}
+
 	// Deselect to avoid dangling entity references after restore
 	selected_entity_ = {};
 	selection_type_ = SelectionType::None;
+
+	// Switch to game camera for play mode
+	if (scene_active_camera_.is_valid()) {
+		engine_->ecs.SetActiveCamera(scene_active_camera_);
+	}
 
 	state_.is_running = true;
 }
@@ -530,6 +544,18 @@ void EditorScene::StopScene() {
 	if (!play_mode_snapshot_.empty()) {
 		engine::scene::SceneSerializer::RestoreEntities(play_mode_snapshot_, scene, engine_->ecs);
 		play_mode_snapshot_.clear();
+	}
+
+	// Re-resolve scene_active_camera_ from saved path (entity handles changed after restore)
+	if (!play_mode_camera_path_.empty()) {
+		const flecs::world& w = engine_->ecs.GetWorld();
+		if (const auto cam = w.lookup(play_mode_camera_path_.c_str()); cam.is_valid()) {
+			scene_active_camera_ = cam;
+		}
+		else {
+			scene_active_camera_ = {};
+		}
+		play_mode_camera_path_.clear();
 	}
 
 	// Ensure editor camera is active again

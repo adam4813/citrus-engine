@@ -1,5 +1,6 @@
 module;
 
+#include <cstring>
 #include <flecs.h>
 #include <functional>
 #include <glm/gtx/norm.hpp>
@@ -184,6 +185,8 @@ ECSWorld::ECSWorld() {
 	// Register PlayState enum for proper serialization
 	world_.component<audio::PlayState>();
 
+	// Register AudioSource with ComponentRegistry for editor properties panel.
+	// Only persistent fields are registered — clip_id and play_handle are runtime-only.
 	registry.Register<audio::AudioSource>("AudioSource", world_)
 			.Category("Audio")
 			.Field("volume", &audio::AudioSource::volume)
@@ -194,6 +197,48 @@ ECSWorld::ECSWorld() {
 			.Field("state", &audio::AudioSource::state)
 			.EnumLabels({"Stopped", "Playing", "Paused"})
 			.Build();
+
+	// Override Flecs serialization with opaque type to exclude runtime fields (clip_id, play_handle).
+	// The default .member() registration above creates wrong offsets because clip_id is skipped,
+	// but the opaque serializer uses the correct struct member offsets directly.
+	{
+		// Shadow component describes the serialization schema (persistent fields only)
+		auto as_type = world_.component("AudioSourceSchema")
+								 .member<float>("volume")
+								 .member<float>("pitch")
+								 .member<bool>("looping")
+								 .member<bool>("spatial")
+								 .member<glm::vec3>("position")
+								 .member<int>("state");
+
+		world_.component<audio::AudioSource>()
+				.opaque(as_type)
+				.serialize([](const flecs::serializer* s, const audio::AudioSource* data) -> int {
+					s->member("volume");
+					s->value(data->volume);
+					s->member("pitch");
+					s->value(data->pitch);
+					s->member("looping");
+					s->value(data->looping);
+					s->member("spatial");
+					s->value(data->spatial);
+					s->member("position");
+					s->value(data->position);
+					s->member("state");
+					int state_val = static_cast<int>(data->state);
+					s->value(state_val);
+					return 0;
+				})
+				.ensure_member([](audio::AudioSource* dst, const char* member) -> void* {
+					if (!strcmp(member, "volume")) return &dst->volume;
+					if (!strcmp(member, "pitch")) return &dst->pitch;
+					if (!strcmp(member, "looping")) return &dst->looping;
+					if (!strcmp(member, "spatial")) return &dst->spatial;
+					if (!strcmp(member, "position")) return &dst->position;
+					if (!strcmp(member, "state")) return &dst->state;
+					return nullptr; // clip_id, play_handle — not deserialized
+				});
+	}
 
 	registry.Register<audio::AudioListener>("AudioListener", world_)
 			.Category("Audio")

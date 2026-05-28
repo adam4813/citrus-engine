@@ -75,6 +75,12 @@ public:
 	void SetCallbacks(const EditorCallbacks& callbacks);
 
 	/**
+	 * @brief Point the browser at a new assets root directory and refresh.
+	 *        Called when a project is opened so the browser reflects the active project's assets/.
+	 */
+	void SetAssetsRoot(const std::filesystem::path& root);
+
+	/**
 	 * @brief Render the asset browser panel
 	 * @param scene The current scene to display assets from
 	 * @param selected_asset Currently selected asset (for highlighting)

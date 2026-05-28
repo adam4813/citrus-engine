@@ -22,6 +22,14 @@ add_executable(
     src/asset_browser_scanning.cpp
     src/asset_editor_registry.cpp
     src/asset_preview_registry.cpp
+    src/build/asset_packager.cpp
+    src/build/build_dialog.cpp
+    src/build/build_job.cpp
+    src/build/build_menu.cpp
+    src/build/build_reporter.cpp
+    src/build/build_stager.cpp
+    src/build/project_model.cpp
+    src/build/toolchain_runner.cpp
     src/editor_asset_scanner.cpp
     src/code_editor_panel.cpp
     src/command.cpp
@@ -53,6 +61,12 @@ target_include_directories(citrus-scene-editor
 
 # Link to the engine (provides all dependencies transitively)
 target_link_libraries(citrus-scene-editor PRIVATE citrus-engine::engine-core imgui::imgui)
+
+# Point the build subsystem at the runtime template shipped with the engine source tree.
+# At runtime the editor can also be overridden via the CITRUS_TEMPLATE_DIR environment variable.
+target_compile_definitions(citrus-scene-editor
+    PRIVATE
+    "CITRUS_EDITOR_TEMPLATE_DIR=\"${CMAKE_CURRENT_SOURCE_DIR}/../templates/game-project\"")
 
 # Setup asset handling
 setup_asset_preload(citrus-scene-editor "${CMAKE_CURRENT_SOURCE_DIR}/assets")

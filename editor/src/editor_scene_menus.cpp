@@ -33,6 +33,10 @@ void EditorScene::RenderMenuBar() {
 
 			ImGui::Separator();
 
+			build_menu_.RenderFileMenuItems();
+
+			ImGui::Separator();
+
 			if (ImGui::MenuItem("Exit", "Alt+F4")) {
 				// TODO: Handle exit with unsaved changes check
 			}

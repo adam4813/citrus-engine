@@ -116,10 +116,16 @@ private:
 		ImGui::TextDisabled("%s", current_dir_.string().c_str());
 		ImGui::Separator();
 
-		// Parent directory entry
-		if (current_dir_ != root_ && ImGui::Selectable("[..] ..", false, ImGuiSelectableFlags_AllowDoubleClick)
+		// Parent directory entry (always allow ascending so users can browse the full filesystem).
+		// Note: convert to absolute so single-component relative paths like "assets" still have a parent.
+		std::error_code parent_ec;
+		auto abs_current = std::filesystem::absolute(current_dir_, parent_ec);
+		const bool has_parent = !parent_ec && abs_current.has_parent_path()
+			&& abs_current.parent_path() != abs_current;
+		if (has_parent
+			&& ImGui::Selectable("[..] ..", false, ImGuiSelectableFlags_AllowDoubleClick)
 			&& ImGui::IsMouseDoubleClicked(0)) {
-			current_dir_ = current_dir_.parent_path();
+			current_dir_ = abs_current.parent_path();
 			needs_refresh_ = true;
 		}
 

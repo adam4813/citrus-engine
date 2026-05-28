@@ -1,10 +1,11 @@
 {
   "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg.schema.json",
-  "name": "my-game",
-  "version": "0.1.0",
-  "description": "A game built with Citrus Engine",
+  "name": "@PROJECT_NAME@",
+  "version": "@PROJECT_VERSION@",
+  "description": "@PROJECT_DESCRIPTION@",
   "dependencies": [
-    "citrus-engine"
+    "citrus-engine",
+    "nlohmann-json"
   ],
   "supports": "windows | linux | osx | emscripten",
   "builtin-baseline": "dd3097e305afa53f7b4312371f62058d2e665320",

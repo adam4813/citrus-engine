@@ -38,6 +38,18 @@ AssetBrowserPanel::~AssetBrowserPanel() { AssetPreviewRegistry::Instance().Clear
 
 void AssetBrowserPanel::SetCallbacks(const EditorCallbacks& callbacks) { callbacks_ = callbacks; }
 
+void AssetBrowserPanel::SetAssetsRoot(const std::filesystem::path& root) {
+	assets_root_ = root;
+	current_directory_ = root;
+	needs_refresh_ = true;
+	prefabs_scanned_ = false;
+	prefab_files_.clear();
+	selected_item_path_.clear();
+	if (import_dialog_) {
+		import_dialog_->SetRoot(root);
+	}
+}
+
 namespace {
 
 AssetFileType GetAssetFileType(const std::filesystem::path& path) {

@@ -262,14 +262,22 @@ target_link_libraries(engine-core
 )
 
 if (EMSCRIPTEN)
+    # -pthread must be PUBLIC so it propagates to anything that links engine-core:
+    # Emscripten requires the flag on BOTH compile and link, and game executables
+    # (and miniaudio's audio thread) won't function without it.
+    target_compile_options(engine-core PUBLIC -pthread)
     target_link_options(engine-core
         PUBLIC
+        -pthread
         -sMIN_WEBGL_VERSION=2
         -sMAX_WEBGL_VERSION=2
         -sUSE_GLFW=3
         -sSTACK_SIZE=1mb
         -EXPORTED_RUNTIME_METHODS=cwrap
         -sALLOW_MEMORY_GROWTH=1
+        # Allow the audio thread (and any other worker) to spawn without blocking
+        # the initial bring-up on the main thread.
+        -sPTHREAD_POOL_SIZE=4
     )
 endif ()
 

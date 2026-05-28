@@ -1,5 +1,8 @@
 #include "editor_scene.h"
 
+#include "build/build_menu.h"
+#include "build/project_model.h"
+
 #include <iostream>
 
 namespace editor {
@@ -70,6 +73,15 @@ void EditorScene::OpenScene(const std::string& path) {
 	hierarchy_panel_.ClearNodeState();
 	command_history_.Clear();
 
+	// Attempt to detect a containing project (project.json walking up).
+	auto project = build::TryLoadProjectForScene(path);
+	if (project) {
+		asset_browser_panel_.SetAssetsRoot(project->AssetsDir());
+		open_scene_dialog_.SetRoot(project->project_root);
+		save_scene_dialog_.SetRoot(project->project_root);
+	}
+	build_menu_.SetProject(std::move(project));
+
 	std::cout << "EditorScene: Scene loaded from: " << path << std::endl;
 }
 
@@ -117,6 +129,15 @@ void EditorScene::SaveSceneAs(const std::string& path) {
 
 	// Save
 	SaveScene();
+
+	// Re-detect project (saving to a new location may move us inside a project).
+	auto project = build::TryLoadProjectForScene(path);
+	if (project) {
+		asset_browser_panel_.SetAssetsRoot(project->AssetsDir());
+		open_scene_dialog_.SetRoot(project->project_root);
+		save_scene_dialog_.SetRoot(project->project_root);
+	}
+	build_menu_.SetProject(std::move(project));
 }
 
 } // namespace editor

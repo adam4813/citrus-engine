@@ -9,6 +9,7 @@
 #include "asset_browser_panel.h"
 #include "asset_editor_registry.h"
 #include "behavior_tree_editor_panel.h"
+#include "build/build_menu.h"
 #include "code_editor_panel.h"
 #include "command.h"
 #include "data_table_editor_panel.h"
@@ -183,6 +184,9 @@ private:
 	TilesetEditorPanel tileset_editor_panel_;
 	BehaviorTreeEditorPanel behavior_tree_editor_panel_;
 	MaterialEditorPanel material_editor_panel_;
+
+	// Build/packaging subsystem (File > Build, BuildDialog).
+	build::BuildMenu build_menu_;
 
 	// All panels for iteration (View menu, asset handler registration)
 	std::vector<EditorPanel*> panels_;

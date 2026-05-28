@@ -31,6 +31,7 @@ void EditorScene::Initialize(engine::Engine& engine) {
 	// Set up scene file dialogs
 	open_scene_dialog_.SetCallback([this](const std::string& path) { OpenScene(path); });
 	save_scene_dialog_.SetCallback([this](const std::string& path) { SaveSceneAs(path); });
+	build_menu_.SetOpenSceneCallback([this](const std::string& path) { OpenScene(path); });
 
 	// Create editor camera (not part of the scene, used for viewport navigation)
 	// Manually created in Flecs ECS world, so it isn't under the scene root entity.
@@ -320,6 +321,7 @@ void EditorScene::RenderUI(engine::Engine& engine) {
 
 	open_scene_dialog_.Render();
 	save_scene_dialog_.Render();
+	build_menu_.RenderDialog();
 
 	if (state_.show_rename_entity_dialog) {
 		ImGui::OpenPopup("RenameEntityPopup");

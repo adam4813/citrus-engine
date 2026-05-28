@@ -236,6 +236,32 @@ python -m http.server 8080
 # Navigate to http://localhost:8080/your-game.html
 ```
 
+### Building From the Scene Editor
+
+Once your project directory contains a `project.json` (the same schema produced by the
+project template), you can build directly from the editor without touching the command line:
+
+1. **Open any scene that lives inside your project directory.** When the editor opens a scene
+   it walks upward looking for `project.json`; the menu items below stay disabled until one is
+   found.
+2. Open **`File > Build`** and pick a target. Targets are populated from
+   `project.json` → `build.targets[]` (e.g. *Native (Release)*, *Web (Release)*).
+3. A modal progress dialog appears. It shows the current phase
+   (Staging → Configuring → Compiling → Installing), a progress bar, a tailing log, and
+   **Cancel** while the job is running.
+4. When the build finishes successfully, click **Open Output Folder** to jump to the produced
+   binary (and `assets/` + `project.json` next to it). On failure, **Copy Log** copies the
+   full output so you can paste it into an issue.
+
+Under the hood the editor stages a copy of the runtime template (`templates/game-project/`)
+into `<project>/build/<target>/staging/`, substitutes your project's name/version/window
+settings, copies your `assets/` directory and `project.json`, then invokes
+`cmake` + `vcpkg` (and Emscripten for web targets) to produce the binary.
+
+> **First-time builds are slow.** vcpkg compiles the engine and its dependencies on the
+> first build for each target; subsequent rebuilds reuse the cache and are much faster.
+> Make sure `VCPKG_ROOT` is set in your environment, and `EMSDK` as well when targeting Web.
+
 ## Next Steps
 
 Now that you have a basic project running, explore these topics:

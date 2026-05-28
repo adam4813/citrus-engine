@@ -46,7 +46,7 @@ compile_commands.json
 # YouCompleteMe
 .ycm_extra_conf.py
 
-build/
+/build/
 lib/
 bin/
 

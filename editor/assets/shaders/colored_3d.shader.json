@@ -1,0 +1,9 @@
+{
+  "_metadata": {
+    "guid": 1939643290,
+    "name": "Colored 3D 2",
+    "type": "shader"
+  },
+  "fragment_path": "assets/shaders/colored_3d.frag",
+  "vertex_path": "assets/shaders/colored_3d.vert"
+}

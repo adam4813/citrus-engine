@@ -503,6 +503,110 @@ bool RenderFieldWidget(const engine::ecs::FieldInfo& field, void* data, engine::
 		}
 		return modified;
 	}
+
+	case engine::ecs::FieldType::AssetReference:
+	{
+		// Unified asset reference: edits an engine::assets::AssetRef (guid + path).
+		// The dropdown shows friendly asset names; selecting writes the asset's GUID
+		// plus its source path (so disk assets stay resolvable across renames, while
+		// built-ins that have no backing file store a GUID only).
+		auto* ref = static_cast<engine::assets::AssetRef*>(data);
+		auto& cache = engine::assets::AssetCache::Instance();
+
+		std::vector<engine::assets::AssetPtr> assets;
+		for (const auto& asset : cache.GetAll()) {
+			if (const auto* type_info = engine::assets::AssetTypeRegistry::Instance().GetTypeInfo(asset->type);
+				type_info && type_info->type_name == field.asset_type) {
+				assets.push_back(asset);
+			}
+		}
+
+		const engine::assets::AssetPtr current = cache.Resolve(*ref);
+		const std::string current_name = current ? current->name : std::string{};
+
+		bool modified = false;
+		const char* preview =
+				ref->IsEmpty() ? "(None)" : (current_name.empty() ? "(Unresolved)" : current_name.c_str());
+		if (ImGui::BeginCombo(label, preview)) {
+			if (ImGui::Selectable("(None)", ref->IsEmpty())) {
+				*ref = engine::assets::AssetRef{};
+				modified = true;
+			}
+			for (const auto& asset : assets) {
+				const bool is_selected = current && current->guid == asset->guid;
+				const char* item_label = asset->name.empty() ? "(Unnamed)" : asset->name.c_str();
+				if (ImGui::Selectable(item_label, is_selected)) {
+					engine::assets::AssetRef new_ref;
+					new_ref.guid = asset->guid;
+					new_ref.path = cache.GetSourcePath(asset->guid);
+					*ref = new_ref;
+					modified = true;
+				}
+				if (is_selected) {
+					ImGui::SetItemDefaultFocus();
+				}
+			}
+			ImGui::EndCombo();
+		}
+
+		// Audio preview button for sound asset references.
+		if (field.asset_type == "sound" && !ref->IsEmpty() && scene) {
+			static bool s_audio_playing = false;
+			static uint32_t s_clip_id = 0;
+			static uint32_t s_play_handle = 0;
+			static uint32_t s_playing_guid = 0;
+
+			if (s_audio_playing && s_play_handle != 0) {
+				auto& audio = engine::audio::AudioSystem::Get();
+				if (!audio.IsSoundPlaying(s_play_handle)) {
+					audio.UnloadClip(s_clip_id);
+					s_audio_playing = false;
+					s_clip_id = 0;
+					s_play_handle = 0;
+					s_playing_guid = 0;
+				}
+			}
+
+			const auto sound_asset = std::dynamic_pointer_cast<engine::assets::SoundAssetInfo>(current);
+			const bool is_this_playing = s_audio_playing && current && s_playing_guid == current->guid;
+			ImGui::SameLine();
+			const char* btn_label = is_this_playing ? "Stop##snd_preview" : "Play##snd_preview";
+			if (ImGui::SmallButton(btn_label)) {
+				auto& audio = engine::audio::AudioSystem::Get();
+				if (is_this_playing) {
+					audio.StopSound(s_play_handle);
+					audio.UnloadClip(s_clip_id);
+					s_audio_playing = false;
+					s_clip_id = 0;
+					s_play_handle = 0;
+					s_playing_guid = 0;
+				}
+				else {
+					if (s_audio_playing) {
+						audio.StopSound(s_play_handle);
+						audio.UnloadClip(s_clip_id);
+						s_clip_id = 0;
+						s_play_handle = 0;
+						s_playing_guid = 0;
+						s_audio_playing = false;
+					}
+					if (sound_asset && !sound_asset->file_path.empty()) {
+						if (!audio.IsInitialized()) {
+							audio.Initialize();
+						}
+						s_clip_id = audio.LoadClip(sound_asset->file_path);
+						if (s_clip_id != 0) {
+							s_play_handle = audio.PlaySoundClip(s_clip_id, sound_asset->volume, false);
+							s_audio_playing = s_play_handle != 0;
+							s_playing_guid = s_audio_playing ? current->guid : 0;
+						}
+					}
+				}
+			}
+		}
+
+		return modified;
+	}
 	}
 	return false;
 }

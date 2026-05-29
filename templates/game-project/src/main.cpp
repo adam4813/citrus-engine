@@ -150,7 +150,14 @@ size_t ScanAssetsDirectory(const std::filesystem::path& directory) {
 		if (j.is_discarded())
 			continue;
 
-		const std::string type_str = j.value("type", "");
+		// Identity (including type) lives under "_metadata"; fall back to legacy top-level "type".
+		std::string type_str;
+		if (const auto meta = j.find("_metadata"); meta != j.end() && meta->is_object()) {
+			type_str = meta->value("type", std::string{});
+		}
+		else {
+			type_str = j.value("type", std::string{});
+		}
 		if (type_str.empty())
 			continue;
 

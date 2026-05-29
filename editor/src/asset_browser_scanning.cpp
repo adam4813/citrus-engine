@@ -18,6 +18,10 @@ void AssetBrowserPanel::RefreshCurrentDirectory() {
 
 	try {
 		for (const auto& entry : std::filesystem::directory_iterator(current_directory_)) {
+			// Hide sidecar metadata descriptors from the browser.
+			if (!entry.is_directory() && entry.path().filename().string().ends_with(".meta.json")) {
+				continue;
+			}
 			FileSystemItem item(entry.path(), entry.is_directory());
 			item.type_icon = GetFileIcon(entry);
 			current_items_.push_back(item);

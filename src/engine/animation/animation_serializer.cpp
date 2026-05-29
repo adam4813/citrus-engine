@@ -7,6 +7,7 @@ module engine.animation.serializer;
 
 import engine.animation;
 import engine.assets;
+import engine.asset_registry;
 import engine.platform;
 import glm;
 
@@ -128,7 +129,7 @@ json AnimationSerializer::ToJson(const AnimationClip& clip) {
 		tracks_json.push_back(TrackToJson(track));
 	}
 
-	return json{{"asset_type", "animation"}, {"name", clip.name}, {"duration", clip.duration}, {"looping", clip.looping}, {"tracks", tracks_json}};
+	return json{{"name", clip.name}, {"duration", clip.duration}, {"looping", clip.looping}, {"tracks", tracks_json}};
 }
 
 std::shared_ptr<AnimationClip> AnimationSerializer::FromJson(const json& j) {
@@ -149,6 +150,7 @@ std::shared_ptr<AnimationClip> AnimationSerializer::FromJson(const json& j) {
 bool AnimationSerializer::SaveToFile(const AnimationClip& clip, const platform::fs::Path& path) {
 	try {
 		json j = ToJson(clip);
+		assets::StampAssetMetadata(j, "animation", path.string(), clip.name);
 		return assets::AssetManager::SaveTextFile(path, j.dump(2));
 	}
 	catch (...) {

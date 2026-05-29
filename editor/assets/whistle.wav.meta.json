@@ -1,0 +1,13 @@
+{
+  "_metadata": {
+    "guid": 2969411412,
+    "name": "whistle",
+    "path": "assets/whistle.wav",
+    "source_hash": 17913291408213887910,
+    "source_size": 113100,
+    "type": "sound"
+  },
+  "file_path": "assets/whistle.wav",
+  "loop": false,
+  "volume": 1.0
+}

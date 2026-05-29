@@ -423,11 +423,11 @@ TEST_F(SceneSerializationTest, SaveAndLoad_EntityWithShaderRef_PreservesShaderGu
 	// Add Renderable (which auto-adds ShaderRef) and set the shader GUID
 	constexpr uint32_t kTestShaderGuid = 12345u;
 	entity.add<Renderable>();
-	entity.set<ShaderRef>({{kTestShaderGuid}});
+	entity.set<ShaderRef>({{kTestShaderGuid, ""}});
 
 	// Verify ShaderRef was set
 	ASSERT_TRUE(entity.has<ShaderRef>());
-	EXPECT_EQ(entity.get<ShaderRef>().guid, kTestShaderGuid);
+	EXPECT_EQ(entity.get<ShaderRef>().ref.guid, kTestShaderGuid);
 
 	// Save and reload
 	const platform::fs::Path path(temp_file_.string());
@@ -443,5 +443,5 @@ TEST_F(SceneSerializationTest, SaveAndLoad_EntityWithShaderRef_PreservesShaderGu
 	ASSERT_TRUE(loaded_entity.is_valid());
 	ASSERT_TRUE(loaded_entity.has<Renderable>());
 	ASSERT_TRUE(loaded_entity.has<ShaderRef>());
-	EXPECT_EQ(loaded_entity.get<ShaderRef>().guid, kTestShaderGuid);
+	EXPECT_EQ(loaded_entity.get<ShaderRef>().ref.guid, kTestShaderGuid);
 }

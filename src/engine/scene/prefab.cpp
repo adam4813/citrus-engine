@@ -9,6 +9,7 @@ module;
 module engine.scene.prefab;
 
 import engine.assets;
+import engine.asset_registry;
 import engine.ecs;
 import engine.platform;
 import engine.scene;
@@ -52,6 +53,8 @@ bool PrefabUtility::WritePrefabFile(const ecs::Entity& prefab_entity, const plat
 		entities_array.push_back(entity_entry);
 
 		prefab_doc["entities"] = entities_array;
+
+		assets::StampAssetMetadata(prefab_doc, "prefab", file_path.string(), prefab_entity.name().c_str());
 
 		const std::string json_str = prefab_doc.dump(2);
 		if (!assets::AssetManager::SaveTextFile(file_path, json_str)) {

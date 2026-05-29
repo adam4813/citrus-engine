@@ -473,7 +473,6 @@ void SpriteEditorPanel::ExportAtlas() {
 
 	try {
 		json j;
-		j["asset_type"] = "sprite_atlas";
 		j["image"] = image_path_;
 
 		json sprites_array = json::array();
@@ -488,6 +487,7 @@ void SpriteEditorPanel::ExportAtlas() {
 		}
 		j["sprites"] = sprites_array;
 
+		engine::assets::StampAssetMetadata(j, "sprite_atlas", export_path);
 		if (!engine::assets::AssetManager::SaveTextFile(std::filesystem::path(export_path), j.dump(2))) {
 			status_message_ = "Failed to save: " + export_path;
 			status_is_error_ = true;

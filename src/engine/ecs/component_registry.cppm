@@ -32,6 +32,7 @@ enum class FieldType {
 	ReadOnly, // Display-only string
 	AssetRef, // Reference to a scene asset by name (string, cache-only dropdown)
 	UintAssetRef, // Reference to a scene asset by GUID (uint32_t, cache-only dropdown)
+	AssetReference, // Unified asset reference (engine::assets::AssetRef value: guid + path)
 	Enum, // Integer-backed enum displayed as combo box
 	FilePath, // String displayed with file browser hint
 	Selection, // String-backed dropdown with fixed options
@@ -199,7 +200,8 @@ public:
 			// For list types, only set the asset_type hint (elements rendered as asset pickers).
 			// Preserve UintAssetRef (GUID-backed) fields rather than forcing string-by-name AssetRef.
 			if (f.type != FieldType::ListInt && f.type != FieldType::ListFloat
-				&& f.type != FieldType::ListString && f.type != FieldType::UintAssetRef) {
+				&& f.type != FieldType::ListString && f.type != FieldType::UintAssetRef
+				&& f.type != FieldType::AssetReference) {
 				f.type = FieldType::AssetRef;
 			}
 			f.asset_type = asset_type_key;
@@ -267,12 +269,40 @@ public:
 		return *this;
 	}
 
-	void Build();
-
-private:
 	/**
-     * @brief Register a member with flecs reflection system
-     */
+	 * @brief Register a nested struct field whose flecs member type is supplied by id.
+	 *
+	 * Used for value types (e.g. engine::assets::AssetRef) that live in a module which
+	 * depends on this one, so the type cannot be referenced here directly. The caller
+	 * registers the struct's flecs reflection separately and passes its component id.
+	 *
+	 * @param field_name    Member name (matches the flecs member + JSON key)
+	 * @param offset        Byte offset of the member within the component
+	 * @param size          Size of the member in bytes
+	 * @param member_type_id flecs component id of the member's struct type
+	 * @param field_type    Inspector FieldType used to pick the editor widget
+	 * @param asset_type_key Asset type hint for asset-reference widgets (may be empty)
+	 */
+	ComponentRegistration& StructField(
+			const std::string& field_name,
+			const size_t offset,
+			const size_t size,
+			const flecs::entity_t member_type_id,
+			const FieldType field_type,
+			const std::string& asset_type_key = {}) {
+		FieldInfo field;
+		field.name = field_name;
+		field.type = field_type;
+		field.offset = offset;
+		field.size = size;
+		field.asset_type = asset_type_key;
+		info_.fields.push_back(std::move(field));
+
+		component_.member(member_type_id, field_name.c_str(), 0, offset);
+		return *this;
+	}
+
+	void Build();
 	template <typename FieldT> void RegisterFlecsMember(const std::string& field_name) {
 		if constexpr (std::is_same_v<FieldT, bool>) {
 			component_.member<bool>(field_name.c_str());

@@ -609,7 +609,6 @@ TEST(AnimationSerializerTest, json_contains_expected_fields) {
 
 	auto json = AnimationSerializer::ToJson(clip);
 
-	EXPECT_EQ(json["asset_type"], "animation");
 	EXPECT_EQ(json["name"], "FieldCheck");
 	EXPECT_EQ(json["looping"], true);
 	EXPECT_TRUE(json.contains("tracks"));

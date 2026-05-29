@@ -576,9 +576,9 @@ bool DataTableEditorPanel::SaveTable(const std::string& path) {
 	try {
 		std::string json_str = engine::data::DataSerializer::SerializeTable(*table_);
 
-		// Inject asset_type into the serialized JSON
+		// Stamp unified _metadata onto the serialized table JSON
 		auto j = nlohmann::json::parse(json_str);
-		j["asset_type"] = "data_table";
+		engine::assets::StampAssetMetadata(j, "data_table", path);
 		json_str = j.dump(2);
 
 		if (!engine::assets::AssetManager::SaveTextFile(std::filesystem::path(path), json_str)) {

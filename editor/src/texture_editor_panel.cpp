@@ -1129,10 +1129,10 @@ bool TextureEditorPanel::OpenTexture(const std::string& path) {
 }
 
 bool TextureEditorPanel::SaveTexture(const std::string& path) {
-	// Serialize graph, then override asset_type for texture files
+	// Serialize graph, then stamp _metadata with the procedural_texture type
 	auto json_str = engine::graph::GraphSerializer::Serialize(*texture_graph_);
 	auto j = nlohmann::json::parse(json_str);
-	j["asset_type"] = "procedural_texture";
+	engine::assets::StampAssetMetadata(j, "procedural_texture", path);
 
 	if (engine::assets::AssetManager::SaveTextFile(std::filesystem::path(path), j.dump(2))) {
 		current_file_path_ = path;

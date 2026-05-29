@@ -77,7 +77,7 @@ void TextureAssetInfo::RegisterType() {
 }
 
 void TextureAssetInfo::SetupRefBinding(flecs::world& world) {
-	// TextureRef is a simple AssetRefBase that stores the texture asset GUID. An observer will resolve this GUID to a TextureId and update material properties at load time.
+	// TextureRef stores an AssetRef (GUID + path). An observer resolves it to a TextureId and updates material properties at load time.
 }
 
 // === MaterialAssetInfo ===
@@ -86,40 +86,29 @@ void MaterialAssetInfo::DoInitialize() {
 	auto& mat_mgr = rendering::GetRenderer().GetMaterialManager();
 
 	rendering::ShaderId shader_id = rendering::INVALID_SHADER;
-	if (const auto shader_asset = AssetCache::Instance().FindTyped<ShaderAssetInfo>(shader_ref_id)) {
+	if (const auto shader_asset = AssetCache::Instance().ResolveTyped<ShaderAssetInfo>(shader)) {
 		shader_asset->Load();
 		shader_id = shader_asset->id;
 	}
 
 	id = mat_mgr.CreateMaterial(name, shader_id);
-	std::cout << "MaterialAssetInfo: Created material '" << name << "' (id=" << id << ", shader=" << shader_ref_id
+	std::cout << "MaterialAssetInfo: Created material '" << name << "' (id=" << id << ", shader=" << shader.guid
 			  << ")" << '\n';
 }
 
 namespace {
-void BindTextureSlot(rendering::Material& material, const std::string& texture_asset_name, const char* uniform_name) {
-	if (texture_asset_name.empty()) {
+void BindTextureSlot(rendering::Material& material, const AssetRef& texture_ref, const char* uniform_name) {
+	if (texture_ref.IsEmpty()) {
 		return;
 	}
 
-	// Resolve texture via AssetCache (asset reference by name)
-	if (auto tex_asset = AssetCache::Instance().FindTyped<TextureAssetInfo>(texture_asset_name)) {
+	// Resolve texture via AssetCache (by GUID or source path).
+	if (auto tex_asset = AssetCache::Instance().ResolveTyped<TextureAssetInfo>(texture_ref)) {
 		tex_asset->Load();
 		if (tex_asset->id != rendering::INVALID_TEXTURE) {
 			material.SetTexture(uniform_name, tex_asset->id);
-			return;
 		}
 	}
-
-	// Fallback: try loading as a file path for backward compatibility
-	/*const auto& tex_mgr = rendering::GetRenderer().GetTextureManager();
-	auto texture_id = tex_mgr.FindTexture(texture_asset_name);
-	if (texture_id == rendering::INVALID_TEXTURE) {
-		texture_id = tex_mgr.LoadTexture(texture_asset_name);
-	}
-	if (texture_id != rendering::INVALID_TEXTURE) {
-		material.SetTexture(uniform_name, texture_id);
-	}*/
 }
 } // namespace
 
@@ -154,7 +143,7 @@ bool MaterialAssetInfo::DoLoad() {
 	BindTextureSlot(material, height_map, "u_HeightMap");
 
 	// Set texture presence flags for shaders
-	material.SetProperty("u_HasAlbedoMap", albedo_map.empty() ? 0 : 1);
+	material.SetProperty("u_HasAlbedoMap", albedo_map.IsEmpty() ? 0 : 1);
 
 	std::cout << "MaterialAssetInfo: Loaded material '" << name << "' (id=" << id << ")" << '\n';
 	return true;
@@ -167,15 +156,15 @@ void MaterialAssetInfo::DoUnload() {
 }
 
 void MaterialAssetInfo::FromJson(const nlohmann::json& j) {
-	shader_ref_id = j.value("shader", 0);
+	shader = AssetRefFromJson(j.value("shader", nlohmann::json::object()));
 	// PBR texture maps
-	albedo_map = j.value("albedo_map", j.value("albedo_texture", ""));
-	normal_map = j.value("normal_map", j.value("normal_texture", ""));
-	metallic_map = j.value("metallic_map", j.value("metallic_texture", ""));
-	roughness_map = j.value("roughness_map", j.value("roughness_texture", ""));
-	ao_map = j.value("ao_map", j.value("ao_texture", ""));
-	emissive_map = j.value("emissive_map", j.value("emissive_texture", ""));
-	height_map = j.value("height_map", j.value("height_texture", ""));
+	albedo_map = AssetRefFromJson(j.value("albedo_map", nlohmann::json::object()));
+	normal_map = AssetRefFromJson(j.value("normal_map", nlohmann::json::object()));
+	metallic_map = AssetRefFromJson(j.value("metallic_map", nlohmann::json::object()));
+	roughness_map = AssetRefFromJson(j.value("roughness_map", nlohmann::json::object()));
+	ao_map = AssetRefFromJson(j.value("ao_map", nlohmann::json::object()));
+	emissive_map = AssetRefFromJson(j.value("emissive_map", nlohmann::json::object()));
+	height_map = AssetRefFromJson(j.value("height_map", nlohmann::json::object()));
 	// PBR scalars
 	metallic_factor = j.value("metallic_factor", 0.0f);
 	roughness_factor = j.value("roughness_factor", 0.5f);
@@ -196,15 +185,15 @@ void MaterialAssetInfo::FromJson(const nlohmann::json& j) {
 }
 
 void MaterialAssetInfo::ToJson(nlohmann::json& j) {
-	j["shader"] = shader_ref_id;
+	j["shader"] = AssetRefToJson(shader);
 	// PBR texture maps
-	j["albedo_map"] = albedo_map;
-	j["normal_map"] = normal_map;
-	j["metallic_map"] = metallic_map;
-	j["roughness_map"] = roughness_map;
-	j["ao_map"] = ao_map;
-	j["emissive_map"] = emissive_map;
-	j["height_map"] = height_map;
+	j["albedo_map"] = AssetRefToJson(albedo_map);
+	j["normal_map"] = AssetRefToJson(normal_map);
+	j["metallic_map"] = AssetRefToJson(metallic_map);
+	j["roughness_map"] = AssetRefToJson(roughness_map);
+	j["ao_map"] = AssetRefToJson(ao_map);
+	j["emissive_map"] = AssetRefToJson(emissive_map);
+	j["height_map"] = AssetRefToJson(height_map);
 	// PBR scalars
 	j["metallic_factor"] = metallic_factor;
 	j["roughness_factor"] = roughness_factor;
@@ -224,25 +213,25 @@ void MaterialAssetInfo::RegisterType() {
 			.DisplayName("Material")
 			.Category("Rendering")
 			.Field("name", &MaterialAssetInfo::name, "Name")
-			.Field("shader_name", &MaterialAssetInfo::shader_ref_id, "Shader", ecs::FieldType::UintAssetRef)
+			.Field("shader", &MaterialAssetInfo::shader, "Shader", ecs::FieldType::AssetReference)
 			.AssetRef(ShaderAssetInfo::TYPE_NAME)
 			// PBR colors
 			.Field("base_color", &MaterialAssetInfo::base_color, "Base Color", ecs::FieldType::Color)
 			.Field("emissive_color", &MaterialAssetInfo::emissive_color, "Emissive Color", ecs::FieldType::Color)
 			// PBR textures (asset references to TextureAssetInfo)
-			.Field("albedo_map", &MaterialAssetInfo::albedo_map, "Albedo Map", ecs::FieldType::AssetRef)
+			.Field("albedo_map", &MaterialAssetInfo::albedo_map, "Albedo Map", ecs::FieldType::AssetReference)
 			.AssetRef(TextureAssetInfo::TYPE_NAME)
-			.Field("normal_map", &MaterialAssetInfo::normal_map, "Normal Map", ecs::FieldType::AssetRef)
+			.Field("normal_map", &MaterialAssetInfo::normal_map, "Normal Map", ecs::FieldType::AssetReference)
 			.AssetRef(TextureAssetInfo::TYPE_NAME)
-			.Field("metallic_map", &MaterialAssetInfo::metallic_map, "Metallic Map", ecs::FieldType::AssetRef)
+			.Field("metallic_map", &MaterialAssetInfo::metallic_map, "Metallic Map", ecs::FieldType::AssetReference)
 			.AssetRef(TextureAssetInfo::TYPE_NAME)
-			.Field("roughness_map", &MaterialAssetInfo::roughness_map, "Roughness Map", ecs::FieldType::AssetRef)
+			.Field("roughness_map", &MaterialAssetInfo::roughness_map, "Roughness Map", ecs::FieldType::AssetReference)
 			.AssetRef(TextureAssetInfo::TYPE_NAME)
-			.Field("ao_map", &MaterialAssetInfo::ao_map, "AO Map", ecs::FieldType::AssetRef)
+			.Field("ao_map", &MaterialAssetInfo::ao_map, "AO Map", ecs::FieldType::AssetReference)
 			.AssetRef(TextureAssetInfo::TYPE_NAME)
-			.Field("emissive_map", &MaterialAssetInfo::emissive_map, "Emissive Map", ecs::FieldType::AssetRef)
+			.Field("emissive_map", &MaterialAssetInfo::emissive_map, "Emissive Map", ecs::FieldType::AssetReference)
 			.AssetRef(TextureAssetInfo::TYPE_NAME)
-			.Field("height_map", &MaterialAssetInfo::height_map, "Height Map", ecs::FieldType::AssetRef)
+			.Field("height_map", &MaterialAssetInfo::height_map, "Height Map", ecs::FieldType::AssetReference)
 			.AssetRef(TextureAssetInfo::TYPE_NAME)
 			// PBR scalars
 			.Field("metallic_factor", &MaterialAssetInfo::metallic_factor, "Metallic")

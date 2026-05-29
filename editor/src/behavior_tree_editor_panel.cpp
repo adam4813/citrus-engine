@@ -4,6 +4,7 @@
 #include <filesystem>
 #include <imgui.h>
 #include <iostream>
+#include <nlohmann/json.hpp>
 
 import engine;
 
@@ -316,23 +317,18 @@ void BehaviorTreeEditorPanel::NewTree() {
 }
 
 bool BehaviorTreeEditorPanel::SaveTree(const std::string& path) {
-	// Placeholder for JSON serialization
-	// In a real implementation, this would serialize the tree to JSON
 	std::cout << "Saving behavior tree to: " << path << std::endl;
 
-	// For now, just create a simple placeholder file
-	std::string content = "{\n";
-	content += "  \"type\": \"behavior_tree\",\n";
-	content += "  \"version\": \"1.0\",\n";
+	nlohmann::json j;
+	j["version"] = "1.0";
 	if (root_node_) {
-		content += "  \"root\": {\n";
-		content += "    \"type\": \"" + std::string(root_node_->GetTypeName()) + "\",\n";
-		content += "    \"name\": \"" + std::string(root_node_->GetName()) + "\"\n";
-		content += "  }\n";
+		j["root"] = {
+				{"type", std::string(root_node_->GetTypeName())}, {"name", std::string(root_node_->GetName())}};
 	}
-	content += "}\n";
 
-	if (engine::assets::AssetManager::SaveTextFile(std::filesystem::path(path), content)) {
+	engine::assets::StampAssetMetadata(j, "behavior_tree", path);
+
+	if (engine::assets::AssetManager::SaveTextFile(std::filesystem::path(path), j.dump(2))) {
 		SetDirty(false);
 		return true;
 	}

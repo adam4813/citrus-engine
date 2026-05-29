@@ -1,5 +1,7 @@
 #include "shader_editor_panel.h"
 
+#include "asset_editor_registry.h"
+
 #include <imgui.h>
 #include <imgui_internal.h>
 #include <nlohmann/json.hpp>
@@ -7,6 +9,7 @@
 #include <algorithm>
 #include <cmath>
 #include <filesystem>
+#include <iostream>
 #include <regex>
 #include <sstream>
 
@@ -488,6 +491,20 @@ void ShaderEditorPanel::NewShader() {
 	// Clear graph
 	shader_graph_ = std::make_unique<engine::graph::NodeGraph>();
 	SetDirty(false);
+}
+
+void ShaderEditorPanel::RegisterAssetHandlers(AssetEditorRegistry& registry) {
+	registry.Register("shader", [this](const std::string& path) { OpenShaderFile(path); });
+}
+
+void ShaderEditorPanel::OpenShaderFile(const std::string& path) {
+	auto asset = std::dynamic_pointer_cast<engine::assets::ShaderAssetInfo>(
+			engine::assets::AssetCache::Instance().LoadFromFile(path));
+	if (!asset) {
+		std::cerr << "ShaderEditor: JSON does not represent a ShaderAssetInfo: " << path << std::endl;
+		return;
+	}
+	OpenAsset(asset);
 }
 
 void ShaderEditorPanel::OpenAsset(std::shared_ptr<engine::assets::ShaderAssetInfo> asset) {

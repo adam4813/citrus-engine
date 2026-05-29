@@ -550,7 +550,6 @@ void TilesetEditorPanel::NewTileset() {
 bool TilesetEditorPanel::SaveTileset(const std::string& path) {
 	try {
 		json j;
-		j["asset_type"] = "tileset";
 		j["source_image_path"] = tileset_->source_image_path;
 		j["tile_width"] = tileset_->grid.cell_width;
 		j["tile_height"] = tileset_->grid.cell_height;
@@ -571,6 +570,7 @@ bool TilesetEditorPanel::SaveTileset(const std::string& path) {
 		}
 		j["tiles"] = tiles_array;
 
+		engine::assets::StampAssetMetadata(j, "tileset", path);
 		if (!engine::assets::AssetManager::SaveTextFile(std::filesystem::path(path), j.dump(2))) {
 			return false;
 		}

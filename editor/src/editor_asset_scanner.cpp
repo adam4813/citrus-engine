@@ -1,12 +1,6 @@
 #include "editor_asset_scanner.h"
 
 #include <filesystem>
-#include <fstream>
-#include <iostream>
-#include <sstream>
-#include <string>
-
-#include <nlohmann/json.hpp>
 
 import engine;
 
@@ -29,14 +23,25 @@ size_t ScanAssetsDirectory(const std::string& directory, const std::vector<std::
 		const auto filename = entry.path().filename().string();
 		const auto path_str = entry.path().string();
 
-		// Try file importers first (handles raw asset files like .wav, .png, etc.)
-		if (auto asset = cache.TryFileImport(filename, path_str)) {
-			cache.Add(asset);
-			++registered;
+		// Skip sidecar descriptors: they are metadata for a raw source file, not
+		// standalone assets, and are consumed via AssetCache::LoadOrImportSource.
+		if (filename.length() >= 10 && filename.substr(filename.length() - 10) == ".meta.json") {
 			continue;
 		}
 
-		// Filter by extensions for JSON asset files
+		const bool is_json = filename.length() >= 5 && filename.substr(filename.length() - 5) == ".json";
+
+		// Raw asset files (e.g. .wav, .png): import via the registered importer, creating
+		// a persistent "<source>.meta.json" descriptor and indexing the source path so the
+		// asset resolves by path/GUID later.
+		if (!is_json) {
+			if (cache.LoadOrImportSource(path_str)) {
+				++registered;
+			}
+			continue;
+		}
+
+		// Filter JSON asset files by the requested extensions (e.g. ".material.json").
 		if (!extensions.empty()) {
 			bool matched = false;
 			for (const auto& ext : extensions) {
@@ -50,42 +55,11 @@ size_t ScanAssetsDirectory(const std::string& directory, const std::vector<std::
 				continue;
 			}
 		}
-		else if (filename.length() < 5 || filename.substr(filename.length() - 5) != ".json") {
-			continue; // Default: only .json files
-		}
 
-		// Read and parse JSON
-		std::ifstream file(entry.path());
-		if (!file.is_open()) {
-			continue;
+		// JSON-native asset definition: load + cache (path-indexed, GUID recovered/assigned).
+		if (cache.LoadFromFile(path_str)) {
+			++registered;
 		}
-		std::ostringstream ss;
-		ss << file.rdbuf();
-		const auto text = ss.str();
-
-		const auto j = nlohmann::json::parse(text, nullptr, false);
-		if (j.is_discarded()) {
-			continue;
-		}
-
-		const std::string type_str = j.value("type", "");
-		if (type_str.empty()) {
-			continue;
-		}
-
-		const auto* type_info = engine::assets::AssetTypeRegistry::Instance().GetTypeInfo(type_str);
-		if (!type_info || !type_info->create_default_factory) {
-			continue;
-		}
-
-		const auto asset = type_info->create_default_factory();
-		if (!asset) {
-			continue;
-		}
-
-		asset->FromJson(j);
-		cache.Add(asset);
-		++registered;
 	}
 
 	return registered;

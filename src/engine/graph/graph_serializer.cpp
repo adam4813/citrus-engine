@@ -12,6 +12,7 @@ import :graph_serializer;
 import :node_graph;
 import :types;
 import engine.assets;
+import engine.asset_registry;
 import engine.platform;
 import glm;
 
@@ -86,8 +87,7 @@ static PinValue from_json_value(const json& j, PinType type) {
 std::string GraphSerializer::Serialize(const NodeGraph& graph) {
 	json j;
 
-	// Asset type and version
-	j["asset_type"] = "node_graph";
+	// Format version (asset identity is stamped into _metadata at save time)
 	j["version"] = GRAPH_FORMAT_VERSION;
 
 	// Serialize nodes
@@ -257,8 +257,13 @@ bool GraphSerializer::Deserialize(const std::string& json_str, NodeGraph& graph)
 }
 
 bool GraphSerializer::Save(const NodeGraph& graph, const platform::fs::Path& path) {
-	std::string json_str = Serialize(graph);
-	return assets::AssetManager::SaveTextFile(path, json_str);
+	json j = json::parse(Serialize(graph), nullptr, false);
+	if (j.is_discarded()) {
+		return false;
+	}
+	const std::string path_str = path.string();
+	assets::StampAssetMetadata(j, "node_graph", path_str);
+	return assets::AssetManager::SaveTextFile(path, j.dump(2));
 }
 
 bool GraphSerializer::Load(const platform::fs::Path& path, NodeGraph& graph) {

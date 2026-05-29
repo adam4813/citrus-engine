@@ -861,7 +861,6 @@ bool SoundEditorPanel::LoadPresetFromJson(const std::string& path) {
 bool SoundEditorPanel::SavePresetToJson(const std::string& path) {
 	try {
 		json j;
-		j["asset_type"] = "sound";
 
 		// Save preset parameters
 		j["waveform"] = static_cast<int>(preset_.waveform);
@@ -892,6 +891,7 @@ bool SoundEditorPanel::SavePresetToJson(const std::string& path) {
 			j["export_wav_path"] = export_wav_path_;
 		}
 
+		engine::assets::StampAssetMetadata(j, "sound", path);
 		return engine::assets::AssetManager::SaveTextFile(std::filesystem::path(path), j.dump(2));
 	}
 	catch (const std::exception& e) {

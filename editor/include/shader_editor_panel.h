@@ -35,6 +35,17 @@ public:
 	void Render(engine::scene::Scene* scene);
 
 	/**
+	 * @brief Register this panel's asset type handlers with the editor registry
+	 */
+	void RegisterAssetHandlers(AssetEditorRegistry& registry) override;
+
+	/**
+	 * @brief Open a shader asset for editing from a descriptor file path
+	 * @param path Path to the .shader.json descriptor
+	 */
+	void OpenShaderFile(const std::string& path);
+
+	/**
 	 * @brief Open a shader asset for editing
 	 * @param asset Pointer to the shader asset info
 	 */

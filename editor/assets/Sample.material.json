@@ -1,0 +1,57 @@
+{
+  "_metadata": {
+    "guid": 3910957236,
+    "name": "Sample",
+    "type": "material"
+  },
+  "albedo_map": {
+    "guid": 0,
+    "path": ""
+  },
+  "alpha_cutoff": 0.5,
+  "ao_map": {
+    "guid": 0,
+    "path": ""
+  },
+  "ao_strength": 1.0,
+  "base_color": [
+    1.0,
+    1.0,
+    1.0,
+    1.0
+  ],
+  "emissive_color": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+  ],
+  "emissive_intensity": 0.0,
+  "emissive_map": {
+    "guid": 0,
+    "path": ""
+  },
+  "height_map": {
+    "guid": 0,
+    "path": ""
+  },
+  "metallic_factor": 0.0,
+  "metallic_map": {
+    "guid": 0,
+    "path": ""
+  },
+  "normal_map": {
+    "guid": 0,
+    "path": ""
+  },
+  "normal_strength": 1.093000054359436,
+  "roughness_factor": 0.5,
+  "roughness_map": {
+    "guid": 0,
+    "path": ""
+  },
+  "shader": {
+    "guid": 1939643290,
+    "path": "assets/shaders/colored_3d.shader.json"
+  }
+}

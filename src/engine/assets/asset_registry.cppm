@@ -142,7 +142,8 @@ public:
 		if (!info_.fields.empty()) {
 			auto& field_info = info_.fields.back();
 			if (field_info.type != ecs::FieldType::ListInt && field_info.type != ecs::FieldType::ListFloat
-				&& field_info.type != ecs::FieldType::ListString && field_info.type != ecs::FieldType::UintAssetRef) {
+				&& field_info.type != ecs::FieldType::ListString && field_info.type != ecs::FieldType::UintAssetRef
+				&& field_info.type != ecs::FieldType::AssetReference) {
 				field_info.type = ecs::FieldType::AssetRef;
 			}
 			field_info.asset_type = asset_type_key;
@@ -263,6 +264,8 @@ struct AssetInfo {
 
 protected:
 	bool loaded_{false};
+	bool loading_{false}; // Re-entrancy guard: prevents infinite recursion when
+						  // resolving nested asset refs (e.g. material -> texture).
 	bool initialized_{false}; // Internal: tracks DoInitialize() for two-phase loading
 
 	/// Reserve lightweight system resources (e.g., shader ID slot) before DoLoad
@@ -310,17 +313,36 @@ protected:
 	[[nodiscard]] std::string_view GetTypeName() const override { return TYPE_NAME; }
 };
 
-/// Common base for asset reference components.
-/// Each concrete ref type inherits this so flecs still uses the derived C++ type
-/// for component identity, while the shared base eliminates field duplication.
-/// Stores the referenced asset's stable GUID (0 = no reference).
-struct AssetRefBase {
+/// Unified asset reference value type used by both ECS ref components and
+/// asset-internal slots (e.g. material texture maps).
+///
+/// Exactly one identity is authoritative, encoded by which fields are set:
+///   - guid != 0, path empty        → builtin/procedural asset (no source file)
+///   - guid != 0 && !path.empty()   → disk-backed asset (guid = stable identity, path = locator)
+///   - guid == 0 && !path.empty()   → unresolved import (resolve by path, then assign guid)
+///   - guid == 0 && path empty      → null reference
+///
+/// Resolution precedence (see AssetCache::Resolve): guid → path → content-hash relink.
+struct AssetRef {
 	uint32_t guid{0};
+	std::string path;
+
+	[[nodiscard]] static AssetRef FromGuid(const uint32_t g) { return AssetRef{g, std::string{}}; }
+	[[nodiscard]] static AssetRef FromPath(std::string p) { return AssetRef{0, std::move(p)}; }
+	[[nodiscard]] bool IsEmpty() const { return guid == 0 && path.empty(); }
 };
 
-/// Asset reference component for shader - stores shader GUID for serialization.
-/// An observer resolves the GUID to ShaderId and updates Renderable::shader.
-struct ShaderRef : AssetRefBase {};
+/// Serialize an AssetRef to its canonical JSON form: {"guid": N, "path": "..."}.
+nlohmann::json AssetRefToJson(const AssetRef& ref);
+
+/// Parse an AssetRef from JSON. Accepts the canonical object form {guid, path}.
+AssetRef AssetRefFromJson(const nlohmann::json& j);
+
+/// Asset reference component for shader - holds an AssetRef for serialization.
+/// An observer resolves the ref to a ShaderId and updates Renderable::shader.
+struct ShaderRef {
+	AssetRef ref;
+};
 
 /// Built-in mesh type names (used as mesh_type field value)
 namespace mesh_types {
@@ -363,9 +385,11 @@ protected:
 	[[nodiscard]] std::string_view GetTypeName() const override { return TYPE_NAME; }
 };
 
-/// Asset reference component for mesh - stores mesh GUID for serialization.
-/// An observer resolves the GUID to MeshId and updates Renderable::mesh.
-struct MeshRef : AssetRefBase {};
+/// Asset reference component for mesh - holds an AssetRef for serialization.
+/// An observer resolves the ref to a MeshId and updates Renderable::mesh.
+struct MeshRef {
+	AssetRef ref;
+};
 
 /// Texture asset definition
 struct TextureAssetInfo : AssetInfo {
@@ -392,24 +416,26 @@ protected:
 	[[nodiscard]] std::string_view GetTypeName() const override { return TYPE_NAME; }
 };
 
-/// Asset reference component for texture - stores texture GUID for serialization.
-struct TextureRef : AssetRefBase {};
+/// Asset reference component for texture - holds an AssetRef for serialization.
+struct TextureRef {
+	AssetRef ref;
+};
 
 /// Material asset definition - PBR material with static texture slots and properties
 struct MaterialAssetInfo : AssetInfo {
 	static constexpr std::string_view TYPE_NAME = "material";
 
-	uint32_t shader_ref_id{0}; // Custom shader override (empty = default PBR)
+	AssetRef shader; // Custom shader override (empty = default PBR)
 	rendering::MaterialId id{rendering::INVALID_MATERIAL};
 
-	// PBR texture map slots (asset names resolved at load time)
-	std::string albedo_map;
-	std::string normal_map;
-	std::string metallic_map;
-	std::string roughness_map;
-	std::string ao_map;
-	std::string emissive_map;
-	std::string height_map;
+	// PBR texture map slots (asset references resolved at load time)
+	AssetRef albedo_map;
+	AssetRef normal_map;
+	AssetRef metallic_map;
+	AssetRef roughness_map;
+	AssetRef ao_map;
+	AssetRef emissive_map;
+	AssetRef height_map;
 
 	// PBR scalar properties
 	float metallic_factor{0.0F};
@@ -441,9 +467,11 @@ protected:
 	[[nodiscard]] std::string_view GetTypeName() const override { return TYPE_NAME; }
 };
 
-/// Asset reference component for material - stores material GUID for serialization.
-/// An observer resolves the GUID to MaterialId and updates Renderable::material.
-struct MaterialRef : AssetRefBase {};
+/// Asset reference component for material - holds an AssetRef for serialization.
+/// An observer resolves the ref to a MaterialId and updates Renderable::material.
+struct MaterialRef {
+	AssetRef ref;
+};
 
 /// Animation clip asset definition
 struct AnimationAssetInfo : AssetInfo {
@@ -491,9 +519,11 @@ protected:
 	[[nodiscard]] std::string_view GetTypeName() const override { return TYPE_NAME; }
 };
 
-/// Asset reference component for sound - stores sound GUID for serialization.
-/// An observer resolves the GUID to a clip_id and updates AudioSource::clip_id.
-struct SoundRef : AssetRefBase {};
+/// Asset reference component for sound - holds an AssetRef for serialization.
+/// An observer resolves the ref to a clip_id and updates AudioSource::clip_id.
+struct SoundRef {
+	AssetRef ref;
+};
 
 /// Data table asset definition
 struct DataTableAssetInfo : AssetInfo {
@@ -578,6 +608,27 @@ public:
 		}
 		return nullptr;
 	}
+
+	/// Resolve an AssetRef to a cached asset, loading/importing from disk if needed.
+	/// Resolution precedence: guid (if non-zero and cached) → path (cached, then load
+	/// from disk / import raw + sidecar) → content-hash relink. Returns nullptr if the
+	/// reference is empty or cannot be resolved.
+	AssetPtr Resolve(const AssetRef& ref);
+
+	/// Resolve an AssetRef and cast to the requested concrete asset type.
+	template <typename T> std::shared_ptr<T> ResolveTyped(const AssetRef& ref) {
+		if (auto asset = Resolve(ref)) {
+			return std::dynamic_pointer_cast<T>(asset);
+		}
+		return nullptr;
+	}
+
+	/// Find a cached asset by its source/definition file path (normalized).
+	AssetPtr FindByPath(const std::string& path);
+
+	/// Return the source/definition file path a cached asset was loaded from, or an
+	/// empty string for built-in/procedural assets that have no backing file.
+	[[nodiscard]] std::string GetSourcePath(uint32_t guid) const;
 	/// Find typed asset by name.
 	template <typename T> std::shared_ptr<T> FindTyped(const std::string& name) {
 		if (const auto it = name_index_.find(name); it != name_index_.end()) {
@@ -651,6 +702,23 @@ public:
 	/// so it never collides with hardcoded built-in GUIDs. Returns 0 if name is empty.
 	[[nodiscard]] static uint32_t ComputeStableGuid(AssetType type, const std::string& name);
 
+	/// Load an asset from a raw source file (e.g. .png, .wav), using a sibling
+	/// "<source>.meta.json" descriptor to recover the persistent GUID + import
+	/// options. If no descriptor exists, the file is imported with defaults and a
+	/// descriptor is written so the GUID stays stable across runs.
+	AssetPtr LoadOrImportSource(const std::string& source_path);
+
+	/// Path of the sidecar descriptor for a raw source file ("<source>.meta.json").
+	[[nodiscard]] static std::string MetaPathFor(const std::string& source_path);
+
+	/// Compute a content hash + byte size for a file (used for move/relink detection).
+	/// Returns {0,0} if the file cannot be read.
+	[[nodiscard]] static std::pair<uint64_t, uint64_t> HashFile(const std::string& path);
+
+	/// Write a "<source>.meta.json" descriptor capturing the asset's GUID, type,
+	/// import settings, and source content hash/size.
+	static bool WriteMeta(const AssetPtr& asset, const std::string& source_path);
+
 private:
 	AssetCache() = default;
 
@@ -660,12 +728,30 @@ private:
 
 	std::unordered_map<uint32_t, AssetPtr> cache_; // guid → asset (primary)
 	std::unordered_map<std::string, uint32_t> name_index_; // name → guid (secondary)
-	std::unordered_map<std::string, uint32_t> path_to_guid_; // file path → guid
+	std::unordered_map<std::string, uint32_t> path_to_guid_; // file/source path → guid
 	uint32_t next_guid_{1}; // Counter for GUID generation
 
 	/// Registered file importers: extension → factory
 	std::unordered_map<std::string, FileImportFactory> file_importers_;
 };
+
+/// Generate a fresh, persistent asset GUID in the non-reserved range
+/// (1 .. builtin_guids::RESERVED_BASE-1). Used by editor save paths that manage
+/// their own descriptor files outside the AssetCache.
+uint32_t GenerateAssetGuid();
+
+/// Read the asset type name from a descriptor json, preferring the grouped
+/// "_metadata.type" block and falling back to the legacy top-level "asset_type"
+/// then "type" keys. Returns an empty string if none is present.
+std::string ReadAssetMetadataType(const nlohmann::json& j);
+
+/// Stamp a unified "_metadata" block (guid + type [+ name]) onto a serialized
+/// asset json before it is written to `path`. If a descriptor already exists at
+/// `path` with a "_metadata.guid", that GUID is preserved so re-saving keeps the
+/// asset's identity; otherwise a fresh GUID is generated. Any legacy top-level
+/// "asset_type" key is removed.
+void StampAssetMetadata(
+		nlohmann::json& j, const std::string& type, const std::string& path, const std::string& name = {});
 
 template <typename T> std::shared_ptr<T> AssetCache::Create(const AssetType type, const std::string& name) {
 	if (const auto assetPtr = Create(type, name)) {
@@ -693,12 +779,20 @@ void SetupRefBindingImpl(
 		ClearFn clear_fn,
 		std::vector<std::string> file_extensions = {}) {
 	auto& registry = ecs::ComponentRegistry::Instance();
-	uint32_t RefT::* guid_member = &AssetRefBase::guid;
+	// Each ref component holds a single nested AssetRef member. Register it by the
+	// AssetRef flecs component id (registered in AssetTypeRegistry::Initialize) so the
+	// component_registry module need not depend on the asset_registry module.
+	const size_t ref_offset = reinterpret_cast<size_t>(&(static_cast<RefT*>(nullptr)->ref));
 	auto reg = registry.Register<RefT>(ref_name, world)
 					   .Category(category)
 					   .Hidden()
-					   .Field("guid", guid_member, ecs::FieldType::UintAssetRef)
-					   .AssetRef(asset_type_name);
+					   .StructField(
+							   "ref",
+							   ref_offset,
+							   sizeof(AssetRef),
+							   world.component<AssetRef>().id(),
+							   ecs::FieldType::AssetReference,
+							   std::string(asset_type_name));
 	if (!file_extensions.empty()) {
 		reg.FileExtensions(std::move(file_extensions));
 	}
@@ -709,16 +803,16 @@ void SetupRefBindingImpl(
 	world.observer<RefT, TargetT>(observer_name)
 			.event(flecs::OnSet)
 			.each([assign_fn, clear_fn](flecs::entity, const RefT& ref, TargetT& target) {
-				if (ref.guid == 0) {
+				if (ref.ref.IsEmpty()) {
 					clear_fn(target);
 					return;
 				}
-				if (auto asset = AssetCache::Instance().FindTyped<AssetInfoT>(ref.guid)) {
+				if (auto asset = AssetCache::Instance().ResolveTyped<AssetInfoT>(ref.ref)) {
 					asset->Load();
 					assign_fn(asset, target);
 				}
 				else {
-					// GUID references an asset that isn't in the cache: clear the target
+					// Reference points at an asset that can't be resolved: clear the target
 					// so stale/broken references don't keep using a previously assigned asset.
 					clear_fn(target);
 				}
@@ -731,7 +825,7 @@ void SetupRefBindingImpl(
 			.each([clear_fn](flecs::entity e, RefT ref) {
 				if (e.has<TargetT>()) {
 					// Cleanup since we cannot re-add the same component
-					if (ref.guid == 0) {
+					if (ref.ref.IsEmpty()) {
 						clear_fn(e.get_mut<TargetT>());
 					}
 					e.add<RefT>();

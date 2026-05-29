@@ -27,7 +27,7 @@ CodeEditorPanel::~CodeEditorPanel() = default;
 std::string_view CodeEditorPanel::GetPanelName() const { return "Code Editor"; }
 
 void CodeEditorPanel::RegisterAssetHandlers(AssetEditorRegistry& registry) {
-	for (const auto& ext : {".lua", ".as", ".glsl", ".vert", ".frag", ".cpp", ".h", ".hpp", ".c", ".shader"}) {
+	for (const auto& ext : {".lua", ".as", ".glsl", ".vert", ".frag", ".cpp", ".h", ".hpp", ".c", ".md"}) {
 		registry.RegisterExtension(ext, [this](const std::string& path) {
 			OpenFile(path);
 			SetVisible(true);

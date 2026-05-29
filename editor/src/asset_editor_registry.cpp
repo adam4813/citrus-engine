@@ -21,8 +21,8 @@ bool AssetEditorRegistry::TryOpen(const std::string& path) const {
 			auto text = engine::assets::AssetManager::LoadTextFile(file_path);
 			if (text) {
 				json j = json::parse(*text);
-				if (j.contains(TYPE_KEY) && j[TYPE_KEY].is_string()) {
-					const auto asset_type = j[TYPE_KEY].get<std::string>();
+				// Prefer the unified "_metadata.type"; fall back to legacy "asset_type"/"type".
+				if (const auto asset_type = engine::assets::ReadAssetMetadataType(j); !asset_type.empty()) {
 					auto it = handlers_.find(asset_type);
 					if (it != handlers_.end()) {
 						it->second(path);
@@ -35,8 +35,15 @@ bool AssetEditorRegistry::TryOpen(const std::string& path) const {
 			// JSON parse failed, fall through to extension matching
 		}
 
-		// Fallback: match compound extensions for legacy files without asset_type
+		// Fallback: match compound extensions for legacy files without a type field
 		const auto filename = file_path.filename().string();
+		if (filename.ends_with(".shader.json")) {
+			auto it = handlers_.find("shader");
+			if (it != handlers_.end()) {
+				it->second(path);
+				return true;
+			}
+		}
 		if (filename.ends_with(".tileset.json")) {
 			auto it = handlers_.find("tileset");
 			if (it != handlers_.end()) {

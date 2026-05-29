@@ -3,10 +3,14 @@
 #include <cstdint>
 #include <filesystem>
 #include <fstream>
+#include <memory>
 #include <string>
 #include <vector>
 
+#include <nlohmann/json.hpp>
+
 import engine.assets;
+import engine.asset_registry;
 
 using namespace engine::assets;
 
@@ -198,4 +202,86 @@ TEST(ImageTest, zero_dimensions_is_invalid) {
 	img.height = 16;
 	img.pixel_data.resize(16, 0);
 	EXPECT_FALSE(img.IsValid());
+}
+
+// =============================================================================
+// AssetCache::LoadOrImportSource - raw-file import + sidecar metadata
+// =============================================================================
+
+namespace {
+/// Minimal concrete asset used to exercise the raw-file import pipeline without
+/// pulling in a renderer-backed asset type.
+struct TestRawAsset : AssetInfo {
+	TestRawAsset() : AssetInfo("", AssetType{}) {}
+	explicit TestRawAsset(std::string n) : AssetInfo(std::move(n), AssetType{}) {}
+
+protected:
+	[[nodiscard]] std::string_view GetTypeName() const override { return "test_raw"; }
+};
+} // namespace
+
+// Regression: LoadOrImportSource must pass the filename WITH its extension to the
+// importer (previously it passed the stem, so no importer was ever matched and no
+// sidecar ".meta.json" was written).
+TEST_F(AssetManagerTest, import_source_matches_importer_and_writes_metadata) {
+	auto& cache = AssetCache::Instance();
+	cache.RegisterFileImporter(
+			{".citrustest"}, [](const std::string& name, const std::string&) -> std::shared_ptr<AssetInfo> {
+				return std::make_shared<TestRawAsset>(name);
+			});
+
+	const auto raw = temp_dir_ / "widget.citrustest";
+	const std::vector<uint8_t> bytes = {1, 2, 3, 4, 5};
+	ASSERT_TRUE(AssetManager::SaveBinaryFile(raw, bytes));
+
+	const std::string raw_path = raw.string();
+	const auto asset = cache.LoadOrImportSource(raw_path);
+	ASSERT_NE(asset, nullptr);
+	EXPECT_NE(asset->guid, 0U);
+	EXPECT_EQ(asset->name, "widget");
+
+	const std::filesystem::path meta = raw_path + ".meta.json";
+	ASSERT_TRUE(std::filesystem::exists(meta));
+
+	const auto meta_text = AssetManager::LoadTextFile(meta);
+	ASSERT_TRUE(meta_text.has_value());
+	const auto j = nlohmann::json::parse(*meta_text, nullptr, false);
+	ASSERT_FALSE(j.is_discarded());
+
+	// Identity + source locator live under a single grouped "_metadata" block.
+	ASSERT_TRUE(j.contains("_metadata"));
+	const auto& m = j["_metadata"];
+	EXPECT_EQ(m.value("guid", 0U), asset->guid);
+	EXPECT_EQ(m.value("type", std::string{}), "test_raw");
+	EXPECT_FALSE(m.value("path", std::string{}).empty());
+	EXPECT_EQ(m.value("source_size", static_cast<uint64_t>(0)), bytes.size());
+	EXPECT_NE(m.value("source_hash", static_cast<uint64_t>(0)), static_cast<uint64_t>(0));
+}
+
+// The persistent GUID in the sidecar's "_metadata" must survive a cache reload:
+// re-importing the same source after Clear() recovers the original GUID via the meta.
+TEST_F(AssetManagerTest, import_source_recovers_guid_from_metadata) {
+	auto& cache = AssetCache::Instance();
+	cache.RegisterFileImporter(
+			{".citrustest"}, [](const std::string& name, const std::string&) -> std::shared_ptr<AssetInfo> {
+				return std::make_shared<TestRawAsset>(name);
+			});
+	// Register the type so meta-recovery can reconstruct the asset via "_metadata.type".
+	AssetTypeRegistry::Instance().RegisterType<TestRawAsset>(std::string_view{"test_raw"}, AssetType{}).Build();
+
+	const auto raw = temp_dir_ / "gadget.citrustest";
+	const std::vector<uint8_t> bytes = {9, 8, 7};
+	ASSERT_TRUE(AssetManager::SaveBinaryFile(raw, bytes));
+	const std::string raw_path = raw.string();
+
+	const auto first = cache.LoadOrImportSource(raw_path);
+	ASSERT_NE(first, nullptr);
+	const uint32_t original_guid = first->guid;
+	ASSERT_NE(original_guid, 0U);
+
+	cache.Clear(); // drop the in-memory cache; the on-disk sidecar persists
+
+	const auto recovered = cache.LoadOrImportSource(raw_path);
+	ASSERT_NE(recovered, nullptr);
+	EXPECT_EQ(recovered->guid, original_guid);
 }

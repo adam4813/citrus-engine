@@ -131,9 +131,7 @@ void AssetCache::Add(const AssetPtr& asset) {
 	if (!asset) {
 		return;
 	}
-	if (asset->guid == 0) {
-		asset->guid = GenerateGuid();
-	}
+	AssignGuidIfNeeded(asset);
 	cache_[asset->guid] = asset;
 	if (!asset->name.empty()) {
 		name_index_[asset->name] = asset->guid;
@@ -246,10 +244,8 @@ AssetPtr AssetCache::LoadFromFile(const std::string& path) {
 
 		asset->FromJson(j);
 
-		// Assign a GUID if the file didn't have one
-		if (asset->guid == 0) {
-			asset->guid = GenerateGuid();
-		}
+		// Assign a deterministic GUID if the file didn't have one
+		AssignGuidIfNeeded(asset);
 
 		// Assets are loaded on-demand when referenced by an entity (via SetupRefBinding observers)
 
@@ -273,9 +269,7 @@ bool AssetCache::SaveToFile(const AssetPtr& asset, const std::string& path) {
 	}
 
 	// Ensure asset has a GUID before saving
-	if (asset->guid == 0) {
-		asset->guid = GenerateGuid();
-	}
+	AssignGuidIfNeeded(asset);
 
 	if (const auto* type_info = AssetTypeRegistry::Instance().GetTypeInfo(asset->type); !type_info) {
 		std::cerr << "AssetCache::SaveToFile: unknown type for asset '" << asset->name << "'" << '\n';
@@ -293,6 +287,53 @@ uint32_t AssetCache::GenerateGuid() {
 		++next_guid_;
 	}
 	return next_guid_++;
+}
+
+uint32_t AssetCache::ComputeStableGuid(const AssetType type, const std::string& name) {
+	if (name.empty()) {
+		return 0;
+	}
+	// FNV-1a 32-bit hash over a type-namespaced key so assets of different types
+	// that share a name don't collide on the global GUID key space.
+	constexpr uint32_t fnv_offset = 2166136261U;
+	constexpr uint32_t fnv_prime = 16777619U;
+	uint32_t hash = fnv_offset;
+	const auto mix = [&hash](const unsigned char byte) {
+		hash ^= byte;
+		hash *= fnv_prime;
+	};
+	mix(static_cast<unsigned char>(type));
+	mix(static_cast<unsigned char>(':'));
+	for (const char c : name) {
+		mix(static_cast<unsigned char>(c));
+	}
+	// Constrain to the non-reserved range so we never collide with built-in GUIDs.
+	hash %= builtin_guids::RESERVED_BASE;
+	if (hash == 0) {
+		hash = 1;
+	}
+	return hash;
+}
+
+void AssetCache::AssignGuidIfNeeded(const AssetPtr& asset) {
+	if (!asset || asset->guid != 0) {
+		return;
+	}
+	uint32_t guid = ComputeStableGuid(asset->type, asset->name);
+	if (guid == 0) {
+		// No stable key available (empty name): fall back to the runtime counter.
+		asset->guid = GenerateGuid();
+		return;
+	}
+	// Resolve the rare hash collision by probing forward within the non-reserved range,
+	// skipping slots already occupied by a different asset.
+	while (cache_.contains(guid) && cache_.at(guid) != asset) {
+		guid = (guid + 1) % builtin_guids::RESERVED_BASE;
+		if (guid == 0) {
+			guid = 1;
+		}
+	}
+	asset->guid = guid;
 }
 
 void AssetCache::Clear() {

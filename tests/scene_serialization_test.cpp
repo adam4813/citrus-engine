@@ -413,20 +413,21 @@ TEST_F(SceneSerializationTest, Renderable_AutomaticallyAddsShaderRef) {
 	EXPECT_TRUE(entity.has<ShaderRef>());
 }
 
-TEST_F(SceneSerializationTest, SaveAndLoad_EntityWithShaderRef_PreservesShaderName) {
+TEST_F(SceneSerializationTest, SaveAndLoad_EntityWithShaderRef_PreservesShaderGuid) {
 	const SceneId scene_id = scene_manager_->CreateScene("ShaderRefSaveLoadTest");
 	ASSERT_NE(scene_id, INVALID_SCENE);
 
 	const auto& scene = scene_manager_->GetScene(scene_id);
 	const auto entity = scene.CreateEntity("EntityWithShader");
 
-	// Add Renderable (which auto-adds ShaderRef) and set the shader name
+	// Add Renderable (which auto-adds ShaderRef) and set the shader GUID
+	constexpr uint32_t kTestShaderGuid = 12345u;
 	entity.add<Renderable>();
-	entity.set<ShaderRef>({{"test_shader"}});
+	entity.set<ShaderRef>({{kTestShaderGuid}});
 
 	// Verify ShaderRef was set
 	ASSERT_TRUE(entity.has<ShaderRef>());
-	EXPECT_EQ(entity.get<ShaderRef>().name, "test_shader");
+	EXPECT_EQ(entity.get<ShaderRef>().guid, kTestShaderGuid);
 
 	// Save and reload
 	const platform::fs::Path path(temp_file_.string());
@@ -436,11 +437,11 @@ TEST_F(SceneSerializationTest, SaveAndLoad_EntityWithShaderRef_PreservesShaderNa
 	const SceneId loaded_id = scene_manager_->LoadSceneFromFile(path);
 	ASSERT_NE(loaded_id, INVALID_SCENE);
 
-	// Verify the ShaderRef name was preserved
+	// Verify the ShaderRef GUID was preserved
 	const auto& loaded_scene = scene_manager_->GetScene(loaded_id);
 	const auto loaded_entity = loaded_scene.FindEntityByName("EntityWithShader");
 	ASSERT_TRUE(loaded_entity.is_valid());
 	ASSERT_TRUE(loaded_entity.has<Renderable>());
 	ASSERT_TRUE(loaded_entity.has<ShaderRef>());
-	EXPECT_EQ(loaded_entity.get<ShaderRef>().name, "test_shader");
+	EXPECT_EQ(loaded_entity.get<ShaderRef>().guid, kTestShaderGuid);
 }

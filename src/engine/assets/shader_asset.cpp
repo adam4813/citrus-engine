@@ -67,17 +67,24 @@ void ShaderAssetInfo::RegisterType() {
 
 void ShaderAssetInfo::RegisterBuiltins() {
 	auto& cache = AssetCache::Instance();
-	const auto default_2d_shader = cache.Create<ShaderAssetInfo>(AssetType::SHADER, "__default_2d");
+
+	const auto default_2d_shader = std::make_shared<ShaderAssetInfo>("__default_2d");
+	default_2d_shader->guid = builtin_guids::SHADER_DEFAULT_2D;
 	default_2d_shader->vertex_path = "assets/shaders/basic.vert";
 	default_2d_shader->fragment_path = "assets/shaders/basic.frag";
+	cache.Add(default_2d_shader);
 
-	const auto default_3d_shader = cache.Create<ShaderAssetInfo>(AssetType::SHADER, "__default_3d_lit");
+	const auto default_3d_shader = std::make_shared<ShaderAssetInfo>("__default_3d_lit");
+	default_3d_shader->guid = builtin_guids::SHADER_DEFAULT_3D_LIT;
 	default_3d_shader->vertex_path = "assets/shaders/lit_3d.vert";
 	default_3d_shader->fragment_path = "assets/shaders/lit_3d.frag";
+	cache.Add(default_3d_shader);
 
-	const auto unlit_shader = cache.Create<ShaderAssetInfo>(AssetType::SHADER, "__unlit");
+	const auto unlit_shader = std::make_shared<ShaderAssetInfo>("__unlit");
+	unlit_shader->guid = builtin_guids::SHADER_UNLIT;
 	unlit_shader->vertex_path = "assets/shaders/unlit.vert";
 	unlit_shader->fragment_path = "assets/shaders/unlit.frag";
+	cache.Add(unlit_shader);
 }
 
 void ShaderAssetInfo::SetupRefBinding(flecs::world& world) {

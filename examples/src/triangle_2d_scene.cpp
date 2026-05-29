@@ -45,7 +45,7 @@ public:
 
 		// Load the colored 2D shader
 		triangle_shader_ = engine.renderer->GetShaderManager().LoadShader(
-				"colored_2d", "shaders/colored_2d.vert", "shaders/colored_2d.frag");
+				"colored_2d", "assets/shaders/colored_2d.vert", "assets/shaders/colored_2d.frag");
 
 		// Initialize transform
 		position_ = glm::vec2(0.0f, 0.0f);

@@ -196,9 +196,10 @@ public:
 	ComponentRegistration& AssetRef(const std::string& asset_type_key) {
 		if (!info_.fields.empty()) {
 			auto& f = info_.fields.back();
-			// For list types, only set the asset_type hint (elements rendered as asset pickers)
+			// For list types, only set the asset_type hint (elements rendered as asset pickers).
+			// Preserve UintAssetRef (GUID-backed) fields rather than forcing string-by-name AssetRef.
 			if (f.type != FieldType::ListInt && f.type != FieldType::ListFloat
-				&& f.type != FieldType::ListString) {
+				&& f.type != FieldType::ListString && f.type != FieldType::UintAssetRef) {
 				f.type = FieldType::AssetRef;
 			}
 			f.asset_type = asset_type_key;

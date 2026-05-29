@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <filesystem>
 #include <regex>
 #include <sstream>
 
@@ -525,14 +526,15 @@ bool ShaderEditorPanel::LoadSourceFromFiles() {
 	bool loaded_any = false;
 
 	if (!current_asset_->vertex_path.empty()) {
-		if (auto text = engine::assets::AssetManager::LoadTextFile(current_asset_->vertex_path)) {
+		if (auto text = engine::assets::AssetManager::LoadTextFile(std::filesystem::path{current_asset_->vertex_path})) {
 			vertex_source_ = std::move(*text);
 			loaded_any = true;
 		}
 	}
 
 	if (!current_asset_->fragment_path.empty()) {
-		if (auto text = engine::assets::AssetManager::LoadTextFile(current_asset_->fragment_path)) {
+		if (auto text =
+					engine::assets::AssetManager::LoadTextFile(std::filesystem::path{current_asset_->fragment_path})) {
 			fragment_source_ = std::move(*text);
 			loaded_any = true;
 		}
@@ -551,7 +553,8 @@ bool ShaderEditorPanel::SaveSourceToFiles() {
 	bool success = true;
 
 	if (!current_asset_->vertex_path.empty()) {
-		if (!engine::assets::AssetManager::SaveTextFile(current_asset_->vertex_path, vertex_source_)) {
+		if (!engine::assets::AssetManager::SaveTextFile(
+					std::filesystem::path{current_asset_->vertex_path}, vertex_source_)) {
 			error_message_ = "Failed to save vertex shader: " + current_asset_->vertex_path;
 			has_errors_ = true;
 			success = false;
@@ -559,7 +562,8 @@ bool ShaderEditorPanel::SaveSourceToFiles() {
 	}
 
 	if (!current_asset_->fragment_path.empty()) {
-		if (!engine::assets::AssetManager::SaveTextFile(current_asset_->fragment_path, fragment_source_)) {
+		if (!engine::assets::AssetManager::SaveTextFile(
+					std::filesystem::path{current_asset_->fragment_path}, fragment_source_)) {
 			error_message_ = "Failed to save fragment shader: " + current_asset_->fragment_path;
 			has_errors_ = true;
 			success = false;

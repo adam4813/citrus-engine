@@ -73,7 +73,7 @@ void BatchRenderer::Initialize() {
 		auto& texture_mgr = renderer.GetTextureManager();
 
 		// Load UI batch shader
-		platform::fs::Path shader_dir = "shaders";
+		platform::fs::Path shader_dir = "assets/shaders";
 		state_->ui_shader =
 				shader_mgr.LoadShader("ui_batch", shader_dir / "ui_batch.vert", shader_dir / "ui_batch.frag");
 

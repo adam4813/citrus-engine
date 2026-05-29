@@ -31,6 +31,22 @@ enum class AssetType : uint8_t {
 	PREFAB,
 };
 
+/// Stable, hardcoded GUIDs for built-in assets (shaders, mesh primitives).
+/// Built-ins are created in code rather than loaded from disk, so they need fixed
+/// GUIDs to remain referenceable across runs. These live in a reserved high range
+/// that deterministic name-hashed GUIDs (see AssetCache) never produce.
+namespace builtin_guids {
+inline constexpr uint32_t RESERVED_BASE = 0xF0000000U;
+
+inline constexpr uint32_t SHADER_DEFAULT_2D = 0xF0000001U;
+inline constexpr uint32_t SHADER_DEFAULT_3D_LIT = 0xF0000002U;
+inline constexpr uint32_t SHADER_UNLIT = 0xF0000003U;
+
+inline constexpr uint32_t MESH_QUAD = 0xF0000011U;
+inline constexpr uint32_t MESH_CUBE = 0xF0000012U;
+inline constexpr uint32_t MESH_SPHERE = 0xF0000013U;
+} // namespace builtin_guids
+
 // === ASSET FIELD REFLECTION SYSTEM ===
 
 // Forward declarations
@@ -297,12 +313,13 @@ protected:
 /// Common base for asset reference components.
 /// Each concrete ref type inherits this so flecs still uses the derived C++ type
 /// for component identity, while the shared base eliminates field duplication.
+/// Stores the referenced asset's stable GUID (0 = no reference).
 struct AssetRefBase {
-	std::string name;
+	uint32_t guid{0};
 };
 
-/// Asset reference component for shader - stores shader name for serialization.
-/// An observer resolves the name to ShaderId and updates Renderable::shader.
+/// Asset reference component for shader - stores shader GUID for serialization.
+/// An observer resolves the GUID to ShaderId and updates Renderable::shader.
 struct ShaderRef : AssetRefBase {};
 
 /// Built-in mesh type names (used as mesh_type field value)
@@ -346,8 +363,8 @@ protected:
 	[[nodiscard]] std::string_view GetTypeName() const override { return TYPE_NAME; }
 };
 
-/// Asset reference component for mesh - stores mesh asset name for serialization.
-/// An observer resolves the name to MeshId and updates Renderable::mesh.
+/// Asset reference component for mesh - stores mesh GUID for serialization.
+/// An observer resolves the GUID to MeshId and updates Renderable::mesh.
 struct MeshRef : AssetRefBase {};
 
 /// Texture asset definition
@@ -375,7 +392,7 @@ protected:
 	[[nodiscard]] std::string_view GetTypeName() const override { return TYPE_NAME; }
 };
 
-/// Asset reference component for texture - stores texture asset name for serialization.
+/// Asset reference component for texture - stores texture GUID for serialization.
 struct TextureRef : AssetRefBase {};
 
 /// Material asset definition - PBR material with static texture slots and properties
@@ -424,8 +441,8 @@ protected:
 	[[nodiscard]] std::string_view GetTypeName() const override { return TYPE_NAME; }
 };
 
-/// Asset reference component for material - stores material asset name for serialization.
-/// An observer resolves the name to MaterialId and updates Renderable::material.
+/// Asset reference component for material - stores material GUID for serialization.
+/// An observer resolves the GUID to MaterialId and updates Renderable::material.
 struct MaterialRef : AssetRefBase {};
 
 /// Animation clip asset definition
@@ -474,8 +491,8 @@ protected:
 	[[nodiscard]] std::string_view GetTypeName() const override { return TYPE_NAME; }
 };
 
-/// Asset reference component for sound - stores sound asset name for serialization.
-/// An observer resolves the name to a clip_id and updates AudioSource::clip_id.
+/// Asset reference component for sound - stores sound GUID for serialization.
+/// An observer resolves the GUID to a clip_id and updates AudioSource::clip_id.
 struct SoundRef : AssetRefBase {};
 
 /// Data table asset definition
@@ -626,11 +643,20 @@ public:
 	/// Get count.
 	[[nodiscard]] size_t Size() const { return cache_.size(); }
 
-	/// Generate a unique GUID not currently in the cache.
+	/// Generate a unique GUID not currently in the cache (runtime counter fallback).
 	uint32_t GenerateGuid();
+
+	/// Compute a stable, deterministic GUID for an asset from its type and name.
+	/// Returns a value in the non-reserved range (< builtin_guids::RESERVED_BASE),
+	/// so it never collides with hardcoded built-in GUIDs. Returns 0 if name is empty.
+	[[nodiscard]] static uint32_t ComputeStableGuid(AssetType type, const std::string& name);
 
 private:
 	AssetCache() = default;
+
+	/// Assign a GUID to an asset that doesn't have one (guid == 0), preferring the
+	/// deterministic name-hash and probing for a free slot on the rare collision.
+	void AssignGuidIfNeeded(const AssetPtr& asset);
 
 	std::unordered_map<uint32_t, AssetPtr> cache_; // guid → asset (primary)
 	std::unordered_map<std::string, uint32_t> name_index_; // name → guid (secondary)
@@ -667,11 +693,11 @@ void SetupRefBindingImpl(
 		ClearFn clear_fn,
 		std::vector<std::string> file_extensions = {}) {
 	auto& registry = ecs::ComponentRegistry::Instance();
-	std::string RefT::* name_member = &AssetRefBase::name;
+	uint32_t RefT::* guid_member = &AssetRefBase::guid;
 	auto reg = registry.Register<RefT>(ref_name, world)
 					   .Category(category)
 					   .Hidden()
-					   .Field("name", name_member)
+					   .Field("guid", guid_member, ecs::FieldType::UintAssetRef)
 					   .AssetRef(asset_type_name);
 	if (!file_extensions.empty()) {
 		reg.FileExtensions(std::move(file_extensions));
@@ -683,13 +709,18 @@ void SetupRefBindingImpl(
 	world.observer<RefT, TargetT>(observer_name)
 			.event(flecs::OnSet)
 			.each([assign_fn, clear_fn](flecs::entity, const RefT& ref, TargetT& target) {
-				if (ref.name.empty()) {
+				if (ref.guid == 0) {
 					clear_fn(target);
 					return;
 				}
-				if (auto asset = AssetCache::Instance().FindTyped<AssetInfoT>(ref.name)) {
+				if (auto asset = AssetCache::Instance().FindTyped<AssetInfoT>(ref.guid)) {
 					asset->Load();
 					assign_fn(asset, target);
+				}
+				else {
+					// GUID references an asset that isn't in the cache: clear the target
+					// so stale/broken references don't keep using a previously assigned asset.
+					clear_fn(target);
 				}
 			});
 
@@ -700,7 +731,7 @@ void SetupRefBindingImpl(
 			.each([clear_fn](flecs::entity e, RefT ref) {
 				if (e.has<TargetT>()) {
 					// Cleanup since we cannot re-add the same component
-					if (ref.name.empty()) {
+					if (ref.guid == 0) {
 						clear_fn(e.get_mut<TargetT>());
 					}
 					e.add<RefT>();

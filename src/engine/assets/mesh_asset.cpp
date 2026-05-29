@@ -102,12 +102,14 @@ void MeshAssetInfo::RegisterBuiltins() {
 	auto& cache = AssetCache::Instance();
 
 	const auto quad = std::make_shared<MeshAssetInfo>("Quad");
+	quad->guid = builtin_guids::MESH_QUAD;
 	quad->mesh_type = mesh_types::QUAD;
 	quad->params[0] = 1.0f;
 	quad->params[1] = 1.0f;
 	cache.Add(quad);
 
 	const auto cube = std::make_shared<MeshAssetInfo>("Cube");
+	cube->guid = builtin_guids::MESH_CUBE;
 	cube->mesh_type = mesh_types::CUBE;
 	cube->params[0] = 1.0f;
 	cube->params[1] = 1.0f;
@@ -115,6 +117,7 @@ void MeshAssetInfo::RegisterBuiltins() {
 	cache.Add(cube);
 
 	const auto sphere = std::make_shared<MeshAssetInfo>("Sphere");
+	sphere->guid = builtin_guids::MESH_SPHERE;
 	sphere->mesh_type = mesh_types::SPHERE;
 	sphere->params[0] = 0.5f; // radius — produces 1-unit diameter
 	sphere->params[1] = 32.0f; // segments

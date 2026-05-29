@@ -77,7 +77,7 @@ void TextureAssetInfo::RegisterType() {
 }
 
 void TextureAssetInfo::SetupRefBinding(flecs::world& world) {
-	// TextureRef is a simple AssetRefBase that stores the texture asset name. An observer will resolve this name to a TextureId and update material properties at load time.
+	// TextureRef is a simple AssetRefBase that stores the texture asset GUID. An observer will resolve this GUID to a TextureId and update material properties at load time.
 }
 
 // === MaterialAssetInfo ===

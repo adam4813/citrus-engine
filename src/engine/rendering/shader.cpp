@@ -298,8 +298,8 @@ bool ShaderManager::CompileShader(
 		const ShaderId id, const platform::fs::Path& vertex_path, const platform::fs::Path& fragment_path) const {
 	// Load shader source files
 	auto& asset_manager = assets::AssetManager::Instance();
-	const auto vertex_src_opt = asset_manager.LoadTextFile(vertex_path.string());
-	const auto fragment_src_opt = asset_manager.LoadTextFile(fragment_path.string());
+	const auto vertex_src_opt = asset_manager.LoadTextFile(vertex_path);
+	const auto fragment_src_opt = asset_manager.LoadTextFile(fragment_path);
 	if (!vertex_src_opt || !fragment_src_opt) {
 		spdlog::error("Failed to load shader sources: {}, {}", vertex_path.string(), fragment_path.string());
 		return false;

@@ -70,3 +70,5 @@ site/
 # Node.js dependencies
 node_modules/
 /plan/issues/*
+
+_codeql_detected_source_root

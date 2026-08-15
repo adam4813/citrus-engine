@@ -5,9 +5,6 @@ include(CMakeFindDependencyMacro)
 # Expose installed assets directory for consumers
 set(CITRUS_ENGINE_ASSETS_INSTALL_DIR "${PACKAGE_PREFIX_DIR}/share/citrus-engine/assets")
 
-# Disable C++ extensions to ensure portability for GNU and Clang
-set(CMAKE_CXX_EXTENSIONS OFF)
-
 # Find required dependencies that the engine needs
 find_dependency(Angelscript CONFIG)
 find_dependency(Bullet CONFIG REQUIRED)

@@ -1,4 +1,7 @@
-﻿cmake_minimum_required(VERSION 3.30)
+cmake_minimum_required(VERSION 4.0)
+
+# Honor CMAKE_MSVC_RUNTIME_LIBRARY (CMP0091) — must precede project()
+cmake_policy(SET CMP0091 NEW)
 
 # Project configuration
 project(citrus-engine
@@ -7,7 +10,6 @@ project(citrus-engine
     LANGUAGES CXX
 )
 
-# C++20 requirements
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)

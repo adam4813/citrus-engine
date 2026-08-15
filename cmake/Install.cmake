@@ -20,15 +20,6 @@ install(TARGETS engine-core
     FILE_SET CXX_MODULES DESTINATION include/citrus-engine
 )
 
-# Install headers and modules (if needed for consumption)
-install(DIRECTORY src/engine/
-    DESTINATION include/citrus-engine
-    FILES_MATCHING
-    PATTERN "*.cppm"
-    PATTERN "*.h"
-    PATTERN "*.hpp"
-)
-
 # Install assets (configurable location) only if the assets directory exists
 if (EXISTS "${CMAKE_SOURCE_DIR}/assets")
     install(DIRECTORY assets/
@@ -56,7 +47,7 @@ install(EXPORT citrus-engine-targets${PLATFORM_SUFFIX}
     NAMESPACE citrus-engine::
 )
 
-# Configure and install package config files (only for the first platform installed)
+# Configure and install package config files
 include(CMakePackageConfigHelpers)
 
 configure_package_config_file(
@@ -87,4 +78,4 @@ set(CPACK_PACKAGE_CONTACT "contact@gameengine.dev")
 
 include(CPack)
 
-message(STATUS "Installation and packaging configured for ${CMAKE_SYSTEM_NAME} (${PLATFORM_SUFFIX})")
+message(STATUS "Installation configured for ${CMAKE_SYSTEM_NAME} (${PLATFORM_SUFFIX})")

@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.30)
+cmake_minimum_required(VERSION 4.0)
 
 # Scene Editor project configuration
 project(
@@ -87,7 +87,7 @@ if (EMSCRIPTEN)
         -sINITIAL_MEMORY=${INITIAL_MEMORY_BYTES}
         -sMAXIMUM_MEMORY=${MAXIMUM_MEMORY_BYTES}
         -sALLOW_MEMORY_GROWTH=1
-        # Debug vs Release specific flags
+        # Debug vs Release specific flags (set here since this is the top-level consumer)
         "$<$<CONFIG:Debug>:-sASSERTIONS=1;-sGL_DEBUG=1>"
         "$<$<NOT:$<CONFIG:Debug>>:-O3;--closure 1>")
 

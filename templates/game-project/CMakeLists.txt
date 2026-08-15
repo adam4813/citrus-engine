@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.30)
+cmake_minimum_required(VERSION 4.0)
 
 # Honor CMAKE_MSVC_RUNTIME_LIBRARY (CMP0091). Required for static-runtime triplets
 # like x64-windows-static so the project's own targets link against /MT[d] to match

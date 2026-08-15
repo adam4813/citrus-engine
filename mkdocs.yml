@@ -25,7 +25,8 @@ markdown_extensions:
       anchor_linenums: true
   - pymdownx.superfences
   - pymdownx.inlinehilite
-  - pymdownx.snippets
+  - pymdownx.snippets:
+      base_path: ["."]
   - pymdownx.details
   - tables
   - toc:
@@ -49,6 +50,11 @@ nav:
     - Tilemap System: tilemap-system.md
   - API Reference:
     - Overview: api/index.md
+  - Development:
+    - Contributing: contributing.md
+    - Code Style: code-style.md
+    - C++20 Modules: cpp20-modules.md
+    - Design Principles: design-principles.md
 
 plugins:
   - search

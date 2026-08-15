@@ -18,23 +18,6 @@
 
 <img src="docs/assets/citrus-engine-logo.svg" alt="Citrus Engine Logo" width="300"/>
 
-**-or-**
-
-```
-              .≈≈≈≈≈.
-          ,≈≈≈  [C] ≈≈≈,        🍊 CITRUS ENGINE 🍊
-        ≈≈   ╔═══╗    ≈≈≈      
-      ≈≈    ║ ⚙ ║   🖱️  ≈≈     Mechanical Orange:  
-     ≈≈     ╚═══╝    ╱▔╲ ≈     Where code meets citrus!
-    ≈≈   ─────●─────  ╲_╱≈     
-    ≈≈      ╱│╲         ≈≈     Modern C++20 Engine
-    ≈≈    🕹️ │          ≈≈     with fresh performance
-     ≈≈      │   ═══   ≈≈      
-      ≈≈≈    └──○══   ≈≈       
-        ≈≈≈          ≈≈
-          '≈≈≈≈≈≈≈≈≈'
-```
-
 ### 🍋 **Fresh, Zesty Game Engine for Modern C++** 🍊
 
 _Get more juice from your code with C++20, ECS architecture, and cross-platform awesomeness!_
@@ -67,31 +50,18 @@ Engine gives your project that fresh C++20 boost it needs!
 
 ## 🌟 Core Features
 
-<div align="center">
-
-```
-    🍋 MODERN C++20           🍊 ECS ARCHITECTURE        🍈 CROSS-PLATFORM
-   ╔══════════════╗         ╔══════════════╗          ╔══════════════╗
-   ║   Modules    ║         ║   Flecs ECS  ║          ║   Windows    ║
-   ║   Concepts   ║  ━━━━━  ║ Data-Oriented║  ━━━━━   ║    Linux     ║
-   ║ Coroutines   ║         ║ Cache-Friendly║         ║ WebAssembly  ║
-   ╚══════════════╝         ╚══════════════╝          ╚══════════════╝
-```
-
-</div>
-
 ### ⚡ Key Features
 
 | Feature                         | Description                                                                                                         |
 |---------------------------------|---------------------------------------------------------------------------------------------------------------------|
 | 🎯 **Modern C++20**             | Leverage modules, concepts, coroutines, and ranges for clean, expressive code                                       |
-| ⚡ **ECS Architecture**          | Data-oriented Entity Component System using [Flecs](https://github.com/SanderMertens/flecs) for maximum performance |
+| ⚡ **ECS Architecture**         | Data-oriented Entity Component System using [Flecs](https://github.com/SanderMertens/flecs) for maximum performance |
 | 🎨 **Cross-Platform Rendering** | OpenGL ES 2.0 / WebGL abstraction for consistent visuals everywhere                                                 |
 | 🚀 **Multi-Threading**          | Job system with frame pipelining for parallel execution                                                             |
 | 🌐 **WebAssembly First**        | Deploy to browsers with full feature parity to native builds                                                        |
 | 📦 **vcpkg Integration**        | Easy dependency management with vcpkg overlay ports                                                                 |
 | 🎮 **ImGui Integration**        | Built-in immediate mode GUI for development tools                                                                   |
-| 🗺️ **Tilemap System**          | Efficient 2D tile-based rendering for strategy and simulation games                                                 |
+| 🗺️ **Tilemap System**           | Efficient 2D tile-based rendering for strategy and simulation games                                                 |
 | 🎯 **Zero License Fees**        | Open source with no royalties or subscriptions                                                                      |
 
 ---
@@ -100,104 +70,217 @@ Engine gives your project that fresh C++20 boost it needs!
 
 ### 📋 Prerequisites
 
-Before you begin, ensure you have these tools installed:
+Before you begin, ensure you have the required tools for your platform:
 
-#### 🪟 Windows Development
+#### 🪟 Windows (Native Build)
 
-- **Visual Studio 2022** (17.0 or later) with C++20 support
-- **CMake 3.20+**
-- **vcpkg** package manager
+- **Visual Studio 2022** (17.0 or later) with C++20 support, OR standalone Clang-18+
+- **CMake 3.28+**
+- **vcpkg** (in parent directory of ENV)
 - **Git** for version control
+- **Ninja** build tool (recommended; CMake will use it if available)
 
-#### 🌐 WebAssembly (Additional)
+#### 🐧 Linux (Native Build)
 
-- **Emscripten SDK (emsdk)** for WASM compilation
-- **Node.js** (optional, for local web server)
+```bash
+# Install system dependencies (all in one command)
+sudo apt-get update && sudo apt-get install -y \
+  build-essential cmake ninja-build pkg-config clang-18 \
+  libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev \
+  libxi-dev libgl1-mesa-dev libglu1-mesa-dev
+```
+
+#### 🌐 WebAssembly / Emscripten (WASM Build)
+
+```bash
+# Install Emscripten SDK (one time)
+cd /opt  # or preferred location
+git clone https://github.com/emscripten-core/emsdk.git
+cd emsdk
+./emsdk install latest
+./emsdk activate latest
+
+# Verify installation
+emcc --version  # Should show version 3.1.40 or later
+```
+
+#### macOS
+
+- **Xcode Command Line Tools** (`xcode-select --install`)
+- **CMake 3.28+** (via Homebrew: `brew install cmake`)
+- **Clang-18+** (via Homebrew: `brew install clang-tools`)
+- **Ninja** (via Homebrew: `brew install ninja`)
+- **vcpkg** (in parent directory of citrus-engine)
 
 ### ⚙️ Environment Setup
 
-<details>
-<summary><b>🔧 Click to expand setup instructions</b></summary>
-
-#### 1. Install vcpkg
+#### 1. Clone and Bootstrap vcpkg
 
 ```bash
-git clone https://github.com/Microsoft/vcpkg.git C:\vcpkg
-cd C:\vcpkg
-.\bootstrap-vcpkg.bat
+cd /path/to/vcpkg
+git clone https://github.com/microsoft/vcpkg.git
+cd vcpkg
+./bootstrap-vcpkg.sh      # Linux/macOS
+vcpkg\bootstrap-vcpkg.bat # Windows
 ```
 
-Set environment variable:
+#### 2. Set Environment Variables
+
+**Linux/macOS Native:**
 
 ```bash
-VCPKG_ROOT=C:\vcpkg
+export VCPKG_ROOT=/path/to/vcpkg
+export CC=clang-18
+export CXX=clang++-18
 ```
 
-#### 2. Install Emscripten (for WASM builds)
+**Linux/macOS Web (Emscripten):**
 
 ```bash
-git clone https://github.com/emscripten-core/emsdk.git C:\emsdk
-cd C:\emsdk
-emsdk install latest
-emsdk activate latest
+source /path/to/emsdk/emsdk_env.sh  # Sets CC/CXX automatically
+export VCPKG_ROOT=/path/to/vcpkg
 ```
 
-Set environment variable:
+**Windows:**
 
-```bash
-EMSDK=C:\emsdk
+```cmd
+set VCPKG_ROOT=\path\to\vcpkg
 ```
 
-</details>
+If using MSVC on Windows, also note: Visual Studio Developer Command Prompt initializes the environment automatically.
 
 ### 🏗️ Building Citrus Engine
 
-#### 🪟 Native Windows Build
+#### 🪟 Windows Native Build (MSVC)
 
 ```bash
-# Configure the build
-cmake --preset default
+# From Visual Studio Developer Command Prompt:
+cd citrus-engine
+cmake --preset native -DVCPKG_TARGET_TRIPLET=x64-windows
+cmake --build --preset native-debug --parallel %NUMBER_OF_PROCESSORS%
 
-# Build the project
-cmake --build build/native --config Release
-
-# Install the engine (optional, for use in other projects)
-cmake --install build/native --config Release
-
-# Run the demo 🎮
-./build/native/Release/citrus-engine-demo.exe
+# Or with Clang:
+cmake --preset native -DVCPKG_TARGET_TRIPLET=x64-windows
+cmake --build --preset native-debug
 ```
 
-#### 🌐 WebAssembly Build
+#### 🐧 Linux Native Build
 
 ```bash
-# Configure for WASM
-cmake --preset wasm-emscripten
+cd citrus-engine
+export CC=clang-18 CXX=clang++-18 VCPKG_ROOT=/path/to/vcpkg
 
-# Build WASM version
-cmake --build build/wasm --config Release
-
-# Install (optional)
-cmake --install build/wasm --config Release
-
-# Run locally with built-in server 🌐
-cmake --build build/wasm --target serve-citrus-engine-demo
-# Navigate to http://localhost:8080/citrus-engine-demo.html
+cmake --preset native -DVCPKG_TARGET_TRIPLET=x64-linux
+cmake --build --preset native-debug --parallel $(nproc)
 ```
 
-### 📦 Installing via vcpkg
-
-Citrus Engine can be installed as a vcpkg port with all dependencies included:
+#### 🍎 macOS Native Build
 
 ```bash
-# Windows (static)
-vcpkg install citrus-engine:x64-windows-static --overlay-ports=ports
+cd citrus-engine
+export VCPKG_ROOT=/path/to/vcpkg
 
-# WebAssembly
-vcpkg install citrus-engine:wasm32-emscripten --overlay-ports=ports
+cmake --preset native -DVCPKG_TARGET_TRIPLET=x64-osx
+cmake --build --preset native-debug --parallel $(sysctl -n hw.ncpu)
 ```
 
-Use in your CMake project:
+#### 🌐 WebAssembly Build (Emscripten)
+
+```bash
+source /path/to/emsdk/emsdk_env.sh
+export VCPKG_ROOT=/path/to/vcpkg
+
+cd citrus-engine
+cmake --preset native -DVCPKG_TARGET_TRIPLET=wasm32-emscripten
+cmake --build --preset native-debug
+```
+
+**First build will take longer** as vcpkg builds all dependencies.
+
+#### 📋 Platform Triplets
+
+| Platform       | Triplet           | Command                                                          |
+|----------------|-------------------|------------------------------------------------------------------|
+| Windows Native | x64-windows       | `cmake --preset native -DVCPKG_TARGET_TRIPLET=x64-windows`       |
+| Linux Native   | x64-linux         | `cmake --preset native -DVCPKG_TARGET_TRIPLET=x64-linux`         |
+| macOS Native   | x64-osx           | `cmake --preset native -DVCPKG_TARGET_TRIPLET=x64-osx`           |
+| WebAssembly    | wasm32-emscripten | `cmake --preset native -DVCPKG_TARGET_TRIPLET=wasm32-emscripten` |
+
+**Important**: Only use native or test targets, `cli-*` are for CLI only. Always specify `-DVCPKG_TARGET_TRIPLET` on the
+command line.
+
+### 🔨 Common Build Workflows
+
+#### Basic Build
+
+```bash
+cmake --build --preset native-debug
+```
+
+This builds with debug symbols for development.
+
+#### Parallel Build (Faster)
+
+```bash
+# Linux/macOS
+cmake --build --preset native-debug --parallel $(nproc)
+
+# Windows
+cmake --build --preset cative-debug --parallel %NUMBER_OF_PROCESSORS%
+```
+
+#### Release Build
+
+```bash
+cmake --build --preset native-release
+```
+
+Use release builds for performance testing and distribution.
+
+#### Rebuild from Scratch
+
+```bash
+rm -rf build/native  # Remove build directory
+cmake --preset native -DVCPKG_TARGET_TRIPLET=<triplet>
+cmake --build --preset native-debug
+```
+
+#### Rebuild Tests Only
+
+```bash
+cmake --build --preset native-test-debug --target <test-name>
+```
+
+#### Run Specific Tests
+
+```bash
+ctest --preset native-test-debug -R <test-pattern>
+```
+
+For example: `ctest --preset native-test-debug -R "Transform"` runs all tests matching "Transform".
+
+### 🐛 Common Build Issues
+
+| Problem                                 | Solution                                                              |
+|-----------------------------------------|-----------------------------------------------------------------------|
+| "Could not find CMake version 3.28"     | Install CMake 3.28+: https://cmake.org/download/                      |
+| "fatal error: 'flecs.h' file not found" | Reconfigure: `cmake --preset native -DVCPKG_TARGET_TRIPLET=<triplet>` |
+| "error: use of undeclared identifier"   | Check module preambles for missing `#include <cstdint>`               |
+| "cannot find compiler (Linux)"          | Set `export CC=clang-18 CXX=clang++-18` and try again                 |
+| "ModuleNotFound" errors (CMake 3.31+)   | Reconfigure with `CMAKE_CXX_SCAN_FOR_MODULES=OFF`                     |
+| Build hangs on Windows                  | Kill cmake process and use `/J` flag for shorter paths if needed      |
+| Tests pass locally but fail in CI       | Ensure triplet, compiler, and CMake version match CI workflow         |
+
+### 💻 Compiler Requirements
+
+| Platform | Compiler   | Min Version | Notes                                   |
+|----------|------------|-------------|-----------------------------------------|
+| Windows  | MSVC       | 2022        | Or MinGW-w64 GCC 10+                    |
+| Linux    | Clang      | 18+         | GCC has incomplete C++20 module support |
+| macOS    | Clang      | 10+         | Via Xcode Command Line Tools            |
+| Web      | Emscripten | 3.1.40+     | Latest from emsdk                       |
+
+### 📦 Installing via vcpkg (For Use in Other Projects)
 
 ```cmake
 find_package(citrus-engine CONFIG REQUIRED)
@@ -236,7 +319,7 @@ Transform your game development with the power of citrus! Here's how to integrat
 
 > 💡 **Note**: The `overrides` block ensures compatible versions of logging libraries are used.
 
-#### 2. Setup Your CMakeLists.txt
+#### 2. Set up Your CMakeLists.txt
 
 ```cmake
 cmake_minimum_required(VERSION 3.20)
@@ -431,12 +514,12 @@ in [issue #TBD].
 ```bash
 # Native build
 cmake --preset native
-cmake --build build/native --config Release
+cmake --build --preset native-release
 ./build/native/your-game
 
 # WebAssembly build
 cmake --preset wasm
-cmake --build build/wasm --config Release
+cmake --build --preset wasm-release
 cd build/wasm && python -m http.server 8080
 ```
 
@@ -541,41 +624,22 @@ citrus-engine/
 
 ## 🧪 Development & Testing
 
-### 🎮 MVP Demo Features
-
-Our current MVP demonstrates the power of Citrus Engine:
-
-- ✅ **10 textured cubes** with independent rotation
-- ✅ **Real-time input** via WASD/arrow keys
-- ✅ **2D HUD overlay** with sprite rendering
-- ✅ **Cross-platform** (Windows + WebAssembly)
-
-### 🎹 Demo Controls
-
-| Key            | Action                     |
-|----------------|----------------------------|
-| **WASD**       | Move camera/world position |
-| **Arrow Keys** | Rotate selected objects    |
-| **ESC**        | Exit application           |
-
 ### 🔧 Development Workflow
 
 ```bash
 # Quick rebuild and test
-cmake --build build/native --config Release && ./build/native/Release/citrus-engine-demo.exe
-
-# Test WASM build locally
-cmake --build build/wasm --target serve-citrus-engine-demo
+cmake --build --preset cli-native-debug
+ctest --preset cli-native-test-debug
 ```
 
 ### 🧪 Running Tests
 
 ```bash
-# Run unit tests (when implemented)
-ctest --build-dir build/native --config Release
+# Run tests
+ctest --preset native-test-debug
 
-# Performance profiling
-cmake --build build/native --config RelWithDebInfo
+# Run specific test pattern
+ctest --preset native-test-debug -R "Transform"
 ```
 
 ---
@@ -653,13 +717,13 @@ emsdk activate latest
 
 ```bash
 # 🐛 Debug: Slower, full debugging symbols
-cmake --build build/native --config Debug
+cmake --build --preset native-debug
 
 # 🚀 Release: Optimized, minimal debug info
-cmake --build build/native --config Release
+cmake --build --preset native-release
 
-# 🔍 RelWithDebInfo: Optimized + debugging (best for profiling)
-cmake --build build/native --config RelWithDebInfo
+# 🔍 Profile: Build release, then run with profiler attached
+cmake --build --preset native-release
 ```
 
 ---
@@ -668,46 +732,7 @@ cmake --build build/native --config RelWithDebInfo
 
 We'd love your help making Citrus Engine even more refreshing! 🍊
 
-### 💻 Code Style
-
-Follow the **Citrus Code Style** guidelines:
-
-- **C++20 standard** with modern features preferred
-- **snake_case** for variables and functions
-- **PascalCase** for types and classes
-- **UPPER_CASE** for constants and macros
-- See [CODE_STYLE_GUIDE.md](CODE_STYLE_GUIDE.md) for detailed guidelines
-
-### 🌱 Adding New Systems
-
-1. **📋 Plan**: Create system documentation in `plan/systems/`
-2. **🎯 Design**: Define module interface in `plan/modules/`
-3. **💻 Implement**: Add code in appropriate `src/engine/` subdirectory
-4. **🧪 Test**: Add comprehensive unit tests
-5. **📝 Document**: Update README and relevant docs
-
-### 🧪 Testing Guidelines
-
-```bash
-# Run unit tests
-ctest --build-dir build/native --config Release
-
-# Manual testing checklist
-# ✅ Build both native and WASM versions
-# ✅ Verify identical visual output
-# ✅ Test all input controls
-# ✅ Check error handling edge cases
-```
-
-### 📝 Contribution Process
-
-1. 🍴 Fork the repository
-2. 🌿 Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. 💻 Make your changes following the code style
-4. ✅ Test thoroughly (native + WASM)
-5. 📝 Commit with clear messages (`git commit -m 'Add amazing feature'`)
-6. 🚀 Push to your branch (`git push origin feature/amazing-feature`)
-7. 🎉 Open a Pull Request
+See **[CONTRIBUTING.md](CONTRIBUTING.md)** for the full guide: development setup, PR process, testing requirements, commit conventions, and code style references.
 
 ---
 
@@ -750,10 +775,12 @@ Thank you to all our contributors who help make Citrus Engine better!
 
 ### 📁 Additional Documentation
 
-- 📋 **[Code Style Guide](CODE_STYLE_GUIDE.md)** - Coding standards and conventions
-- 🗺️ **[Tilemap System](docs/tilemap-system.md)** - 2D tile rendering documentation
-- 🏗️ **[Architecture](plan/ARCH_ENGINE_CORE_v1.md)** - Engine architecture overview
-- 📊 **[System Status](plan/ENGINE_SYSTEM_STATUS_TREE.md)** - Current implementation status
+- 📋 **[Code Style Guide](CODE_STYLE_GUIDE.md)** — Naming, formatting, design principles index
+- 🤝 **[Contributing Guide](CONTRIBUTING.md)** — How to contribute to the project
+- 🧪 **[Testing Guide](TESTING.md)** — Test structure and priorities
+- 🎨 **[UI Development Bible](UI_DEVELOPMENT_BIBLE.md)** — Batch rendering UI patterns
+- 🗺️ **[Tilemap System](docs/tilemap-system.md)** — 2D tile rendering documentation
+- 🏗️ **[Architecture](plan/ARCH_ENGINE_CORE_v1.md)** — Engine architecture overview
 
 ---
 

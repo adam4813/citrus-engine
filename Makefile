@@ -12,3 +12,6 @@ docs-serve: ## Build and serve documentation locally with auto-reload
 
 docs-clean: ## Clean documentation build artifacts
 	@./scripts/build-docs.sh --clean
+
+format: ## Format all code using clang-format (.c, .cpp, .h, .hpp, .cppm)
+	@./scripts/format-code.sh

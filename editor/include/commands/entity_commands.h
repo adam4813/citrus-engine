@@ -152,8 +152,10 @@ public:
 	 * @param new_parent The new parent entity
 	 */
 	ReparentEntityCommand(
-			engine::scene::Scene* scene, const engine::ecs::Entity entity, const engine::ecs::Entity new_parent) :
-			scene_(scene), entity_(entity), old_parent_(scene->GetParent(entity)), new_parent_(new_parent) {}
+		engine::scene::Scene* scene,
+		const engine::ecs::Entity entity,
+		const engine::ecs::Entity new_parent
+	) : scene_(scene), entity_(entity), old_parent_(scene->GetParent(entity)), new_parent_(new_parent) {}
 
 	void Execute() override {
 		if (entity_.is_valid()) {
@@ -198,8 +200,10 @@ private:
 class WrapEntityCommand : public ICommand {
 public:
 	WrapEntityCommand(
-			engine::scene::Scene* scene, const engine::ecs::Entity entity, const engine::ecs::Entity current_parent) :
-			scene_(scene), entity_(entity), current_parent_(current_parent) {}
+		engine::scene::Scene* scene,
+		const engine::ecs::Entity entity,
+		const engine::ecs::Entity current_parent
+	) : scene_(scene), entity_(entity), current_parent_(current_parent) {}
 
 	void Execute() override {
 		if (!scene_ || !entity_.is_valid()) {
@@ -243,11 +247,11 @@ private:
 class InstantiatePrefabCommand : public ICommand {
 public:
 	InstantiatePrefabCommand(
-			std::string prefab_path,
-			engine::scene::Scene* scene,
-			engine::ecs::ECSWorld& world,
-			const engine::ecs::Entity parent) :
-			prefab_path_(std::move(prefab_path)), scene_(scene), world_(world), parent_(parent) {}
+		std::string prefab_path,
+		engine::scene::Scene* scene,
+		engine::ecs::ECSWorld& world,
+		const engine::ecs::Entity parent
+	) : prefab_path_(std::move(prefab_path)), scene_(scene), world_(world), parent_(parent) {}
 
 	void Execute() override {
 		if (!scene_) {

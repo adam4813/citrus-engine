@@ -27,12 +27,13 @@ public:
 	 * @param description Human-readable description (e.g., "Move Entity")
 	 */
 	TransformChangeCommand(
-			engine::ecs::Entity entity,
-			const engine::components::Transform& old_transform,
-			const engine::components::Transform& new_transform,
-			std::string description)
-		: entity_(entity), old_transform_(old_transform), new_transform_(new_transform),
-		  description_(std::move(description)) {}
+		engine::ecs::Entity entity,
+		const engine::components::Transform& old_transform,
+		const engine::components::Transform& new_transform,
+		std::string description
+	) :
+			entity_(entity), old_transform_(old_transform), new_transform_(new_transform),
+			description_(std::move(description)) {}
 
 	void Execute() override {
 		if (entity_.is_valid()) {
@@ -69,8 +70,8 @@ public:
 	 * @param component_id The Flecs component ID
 	 * @param component_name Human-readable component name
 	 */
-	AddComponentCommand(engine::ecs::Entity entity, flecs::id_t component_id, std::string component_name)
-		: entity_(entity), component_id_(component_id), component_name_(std::move(component_name)) {}
+	AddComponentCommand(engine::ecs::Entity entity, flecs::id_t component_id, std::string component_name) :
+			entity_(entity), component_id_(component_id), component_name_(std::move(component_name)) {}
 
 	void Execute() override {
 		if (entity_.is_valid() && !entity_.has(component_id_)) {
@@ -107,8 +108,8 @@ public:
 	 * @param component_id The Flecs component ID
 	 * @param component_name Human-readable component name
 	 */
-	RemoveComponentCommand(engine::ecs::Entity entity, flecs::id_t component_id, std::string component_name)
-		: entity_(entity), component_id_(component_id), component_name_(std::move(component_name)) {
+	RemoveComponentCommand(engine::ecs::Entity entity, flecs::id_t component_id, std::string component_name) :
+			entity_(entity), component_id_(component_id), component_name_(std::move(component_name)) {
 		// Store only this component's state for undo
 		if (entity.is_valid() && entity.has(component_id)) {
 			StoreComponentJson(entity, component_id);

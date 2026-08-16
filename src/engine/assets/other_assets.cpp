@@ -30,12 +30,12 @@ void AnimationAssetInfo::ToJson(nlohmann::json& j) {
 
 void AnimationAssetInfo::RegisterType() {
 	AssetTypeRegistry::Instance()
-			.RegisterType<AnimationAssetInfo>(AnimationAssetInfo::TYPE_NAME, AssetType::ANIMATION_CLIP)
-			.DisplayName("Animation Clip")
-			.Category("Animation")
-			.Field("name", &AnimationAssetInfo::name, "Name")
-			.Field("file_path", &AnimationAssetInfo::file_path, "File Path", ecs::FieldType::FilePath)
-			.Build();
+		.RegisterType<AnimationAssetInfo>(AnimationAssetInfo::TYPE_NAME, AssetType::ANIMATION_CLIP)
+		.DisplayName("Animation Clip")
+		.Category("Animation")
+		.Field("name", &AnimationAssetInfo::name, "Name")
+		.Field("file_path", &AnimationAssetInfo::file_path, "File Path", ecs::FieldType::FilePath)
+		.Build();
 }
 
 // === DataTableAssetInfo ===
@@ -62,13 +62,13 @@ void DataTableAssetInfo::ToJson(nlohmann::json& j) {
 
 void DataTableAssetInfo::RegisterType() {
 	AssetTypeRegistry::Instance()
-			.RegisterType<DataTableAssetInfo>(DataTableAssetInfo::TYPE_NAME, AssetType::DATA_TABLE)
-			.DisplayName("Data Table")
-			.Category("Data")
-			.Field("name", &DataTableAssetInfo::name, "Name")
-			.Field("file_path", &DataTableAssetInfo::file_path, "File Path", ecs::FieldType::FilePath)
-			.Field("schema_name", &DataTableAssetInfo::schema_name, "Schema Name")
-			.Build();
+		.RegisterType<DataTableAssetInfo>(DataTableAssetInfo::TYPE_NAME, AssetType::DATA_TABLE)
+		.DisplayName("Data Table")
+		.Category("Data")
+		.Field("name", &DataTableAssetInfo::name, "Name")
+		.Field("file_path", &DataTableAssetInfo::file_path, "File Path", ecs::FieldType::FilePath)
+		.Field("schema_name", &DataTableAssetInfo::schema_name, "Schema Name")
+		.Build();
 }
 
 // === PrefabAssetInfo ===
@@ -93,12 +93,12 @@ void PrefabAssetInfo::ToJson(nlohmann::json& j) {
 
 void PrefabAssetInfo::RegisterType() {
 	AssetTypeRegistry::Instance()
-			.RegisterType<PrefabAssetInfo>(PrefabAssetInfo::TYPE_NAME, AssetType::PREFAB)
-			.DisplayName("Prefab")
-			.Category("Scene")
-			.Field("name", &PrefabAssetInfo::name, "Name")
-			.Field("file_path", &PrefabAssetInfo::file_path, "File Path", ecs::FieldType::FilePath)
-			.Build();
+		.RegisterType<PrefabAssetInfo>(PrefabAssetInfo::TYPE_NAME, AssetType::PREFAB)
+		.DisplayName("Prefab")
+		.Category("Scene")
+		.Field("name", &PrefabAssetInfo::name, "Name")
+		.Field("file_path", &PrefabAssetInfo::file_path, "File Path", ecs::FieldType::FilePath)
+		.Build();
 }
 
 } // namespace engine::assets

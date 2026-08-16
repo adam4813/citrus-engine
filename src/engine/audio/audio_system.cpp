@@ -158,7 +158,8 @@ uint32_t AudioSystem::LoadClip(const std::string& file_path) {
 
 	// Compute duration from total frame count
 	ma_uint64 total_frames = 0;
-	if (ma_decoder_get_length_in_pcm_frames(&decoder, &total_frames) == MA_SUCCESS && total_frames > 0
+	if (ma_decoder_get_length_in_pcm_frames(&decoder, &total_frames) == MA_SUCCESS
+		&& total_frames > 0
 		&& clip.sample_rate > 0) {
 		clip.duration = static_cast<float>(total_frames) / static_cast<float>(clip.sample_rate);
 	}
@@ -170,12 +171,13 @@ uint32_t AudioSystem::LoadClip(const std::string& file_path) {
 
 	clips_[clip_id] = clip;
 	spdlog::info(
-			"[Audio] Loaded clip '{}' (ID: {}, {}Hz, {}ch, {:.2f}s)",
-			file_path,
-			clip_id,
-			clip.sample_rate,
-			clip.channels,
-			clip.duration);
+		"[Audio] Loaded clip '{}' (ID: {}, {}Hz, {}ch, {:.2f}s)",
+		file_path,
+		clip_id,
+		clip.sample_rate,
+		clip.channels,
+		clip.duration
+	);
 	return clip_id;
 }
 
@@ -245,17 +247,19 @@ uint32_t AudioSystem::PlaySoundClip(uint32_t clip_id, float volume, bool looping
 	instance->clip_id = clip_id;
 
 	ma_result result = ma_sound_init_from_file(
-			&backend_->engine,
-			clip_it->second.file_path.c_str(),
-			MA_SOUND_FLAG_DECODE,
-			nullptr,
-			nullptr,
-			&instance->sound);
+		&backend_->engine,
+		clip_it->second.file_path.c_str(),
+		MA_SOUND_FLAG_DECODE,
+		nullptr,
+		nullptr,
+		&instance->sound
+	);
 	if (result != MA_SUCCESS) {
 		spdlog::error(
-				"[Audio] Failed to create sound from clip '{}' (error: {})",
-				clip_it->second.file_path,
-				static_cast<int>(result));
+			"[Audio] Failed to create sound from clip '{}' (error: {})",
+			clip_it->second.file_path,
+			static_cast<int>(result)
+		);
 		return 0;
 	}
 
@@ -272,12 +276,13 @@ uint32_t AudioSystem::PlaySoundClip(uint32_t clip_id, float volume, bool looping
 
 	backend_->sounds[handle] = std::move(instance);
 	spdlog::debug(
-			"[Audio] Playing clip '{}' (ID: {}, handle: {}, volume: {:.2f}, looping: {})",
-			clip_it->second.file_path,
-			clip_id,
-			handle,
-			volume,
-			looping);
+		"[Audio] Playing clip '{}' (ID: {}, handle: {}, volume: {:.2f}, looping: {})",
+		clip_it->second.file_path,
+		clip_id,
+		handle,
+		volume,
+		looping
+	);
 	return handle;
 }
 
@@ -384,7 +389,12 @@ void AudioSystem::SetListenerPosition(const AudioListener& listener) {
 	}
 
 	ma_engine_listener_set_position(
-			&backend_->engine, 0, listener.position.x, listener.position.y, listener.position.z);
+		&backend_->engine,
+		0,
+		listener.position.x,
+		listener.position.y,
+		listener.position.z
+	);
 	ma_engine_listener_set_direction(&backend_->engine, 0, listener.forward.x, listener.forward.y, listener.forward.z);
 	ma_engine_listener_set_world_up(&backend_->engine, 0, listener.up.x, listener.up.y, listener.up.z);
 }

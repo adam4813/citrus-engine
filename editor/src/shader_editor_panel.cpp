@@ -72,7 +72,7 @@ void ShaderEditorPanel::RenderToolbar(engine::scene::Scene* scene) {
 			// List shader assets from cache to open
 			if (ImGui::BeginMenu("Open Asset")) {
 				auto shader_assets =
-						engine::assets::AssetCache::Instance().GetByType(engine::assets::AssetType::SHADER);
+					engine::assets::AssetCache::Instance().GetByType(engine::assets::AssetType::SHADER);
 				bool has_shaders = false;
 				for (const auto& asset : shader_assets) {
 					if (asset) {
@@ -162,11 +162,12 @@ void ShaderEditorPanel::RenderCodeEditor() {
 			ImGui::BeginChild("VertexEditor", ImVec2(0, 0), false);
 
 			if (ImGui::InputTextMultiline(
-						vertex_id,
-						vertex_buffer_,
-						sizeof(vertex_buffer_),
-						ImVec2(-1, -1),
-						ImGuiInputTextFlags_AllowTabInput)) {
+					vertex_id,
+					vertex_buffer_,
+					sizeof(vertex_buffer_),
+					ImVec2(-1, -1),
+					ImGuiInputTextFlags_AllowTabInput
+				)) {
 				vertex_source_ = vertex_buffer_;
 				SetDirty(true);
 			}
@@ -204,11 +205,12 @@ void ShaderEditorPanel::RenderCodeEditor() {
 			ImGui::BeginChild("FragmentEditor", ImVec2(0, 0), false);
 
 			if (ImGui::InputTextMultiline(
-						fragment_id,
-						fragment_buffer_,
-						sizeof(fragment_buffer_),
-						ImVec2(-1, -1),
-						ImGuiInputTextFlags_AllowTabInput)) {
+					fragment_id,
+					fragment_buffer_,
+					sizeof(fragment_buffer_),
+					ImVec2(-1, -1),
+					ImGuiInputTextFlags_AllowTabInput
+				)) {
 				fragment_source_ = fragment_buffer_;
 				SetDirty(true);
 			}
@@ -244,15 +246,17 @@ void ShaderEditorPanel::RenderGraphCanvas() {
 	const float grid_step = GRID_SIZE * canvas_zoom_;
 	for (float x = fmodf(canvas_offset_.x, grid_step); x < canvas_sz.x; x += grid_step) {
 		draw_list->AddLine(
-				ImVec2(canvas_p0_.x + x, canvas_p0_.y),
-				ImVec2(canvas_p0_.x + x, canvas_p1.y),
-				IM_COL32(50, 50, 50, 255));
+			ImVec2(canvas_p0_.x + x, canvas_p0_.y),
+			ImVec2(canvas_p0_.x + x, canvas_p1.y),
+			IM_COL32(50, 50, 50, 255)
+		);
 	}
 	for (float y = fmodf(canvas_offset_.y, grid_step); y < canvas_sz.y; y += grid_step) {
 		draw_list->AddLine(
-				ImVec2(canvas_p0_.x, canvas_p0_.y + y),
-				ImVec2(canvas_p1.x, canvas_p0_.y + y),
-				IM_COL32(50, 50, 50, 255));
+			ImVec2(canvas_p0_.x, canvas_p0_.y + y),
+			ImVec2(canvas_p1.x, canvas_p0_.y + y),
+			IM_COL32(50, 50, 50, 255)
+		);
 	}
 
 	// Clip rendering to canvas
@@ -291,12 +295,13 @@ void ShaderEditorPanel::RenderGraphNode(const engine::graph::Node& node) {
 	draw_list->AddRectFilled(node_pos, ImVec2(node_pos.x + NODE_WIDTH, node_pos.y + node_height), node_bg_col, 4.0f);
 
 	draw_list->AddRect(
-			node_pos,
-			ImVec2(node_pos.x + NODE_WIDTH, node_pos.y + node_height),
-			IM_COL32(100, 100, 100, 255),
-			4.0f,
-			0,
-			1.5f);
+		node_pos,
+		ImVec2(node_pos.x + NODE_WIDTH, node_pos.y + node_height),
+		IM_COL32(100, 100, 100, 255),
+		4.0f,
+		0,
+		1.5f
+	);
 
 	// Node title
 	draw_list->AddText(ImVec2(node_pos.x + 5, node_pos.y + 5), IM_COL32(255, 255, 255, 255), node.type_name.c_str());
@@ -319,12 +324,13 @@ void ShaderEditorPanel::RenderGraphLink(const engine::graph::Link& link) {
 	// Draw bezier curve
 	const float curve_strength = 50.0f;
 	draw_list->AddBezierCubic(
-			p1,
-			ImVec2(p1.x + curve_strength, p1.y),
-			ImVec2(p2.x - curve_strength, p2.y),
-			p2,
-			IM_COL32(200, 200, 200, 255),
-			2.0f);
+		p1,
+		ImVec2(p1.x + curve_strength, p1.y),
+		ImVec2(p2.x - curve_strength, p2.y),
+		p2,
+		IM_COL32(200, 200, 200, 255),
+		2.0f
+	);
 }
 
 void ShaderEditorPanel::RenderGraphContextMenu() {
@@ -355,8 +361,9 @@ void ShaderEditorPanel::RenderGraphContextMenu() {
 
 ImVec2 ShaderEditorPanel::GetNodeScreenPos(const engine::graph::Node& node) const {
 	return ImVec2(
-			canvas_p0_.x + canvas_offset_.x + node.position.x * canvas_zoom_,
-			canvas_p0_.y + canvas_offset_.y + node.position.y * canvas_zoom_);
+		canvas_p0_.x + canvas_offset_.x + node.position.x * canvas_zoom_,
+		canvas_p0_.y + canvas_offset_.y + node.position.y * canvas_zoom_
+	);
 }
 
 ImVec2 ShaderEditorPanel::GetPinScreenPos(const engine::graph::Node& node, int pin_index, bool is_output) const {
@@ -378,7 +385,11 @@ bool ShaderEditorPanel::HitTestPin(const ImVec2& point, const ImVec2& pin_pos) c
 }
 
 bool ShaderEditorPanel::FindPinUnderMouse(
-		const ImVec2& mouse_pos, int& out_node_id, int& out_pin_index, bool& out_is_output) const {
+	const ImVec2& mouse_pos,
+	int& out_node_id,
+	int& out_pin_index,
+	bool& out_is_output
+) const {
 	for (const auto& node : shader_graph_->GetNodes()) {
 		// Check output pins
 		for (size_t i = 0; i < node.outputs.size(); ++i) {
@@ -499,7 +510,8 @@ void ShaderEditorPanel::RegisterAssetHandlers(AssetEditorRegistry& registry) {
 
 void ShaderEditorPanel::OpenShaderFile(const std::string& path) {
 	auto asset = std::dynamic_pointer_cast<engine::assets::ShaderAssetInfo>(
-			engine::assets::AssetCache::Instance().LoadFromFile(path));
+		engine::assets::AssetCache::Instance().LoadFromFile(path)
+	);
 	if (!asset) {
 		std::cerr << "ShaderEditor: JSON does not represent a ShaderAssetInfo: " << path << std::endl;
 		return;
@@ -543,7 +555,8 @@ bool ShaderEditorPanel::LoadSourceFromFiles() {
 	bool loaded_any = false;
 
 	if (!current_asset_->vertex_path.empty()) {
-		if (auto text = engine::assets::AssetManager::LoadTextFile(std::filesystem::path{current_asset_->vertex_path})) {
+		if (auto text =
+				engine::assets::AssetManager::LoadTextFile(std::filesystem::path{current_asset_->vertex_path})) {
 			vertex_source_ = std::move(*text);
 			loaded_any = true;
 		}
@@ -551,7 +564,7 @@ bool ShaderEditorPanel::LoadSourceFromFiles() {
 
 	if (!current_asset_->fragment_path.empty()) {
 		if (auto text =
-					engine::assets::AssetManager::LoadTextFile(std::filesystem::path{current_asset_->fragment_path})) {
+				engine::assets::AssetManager::LoadTextFile(std::filesystem::path{current_asset_->fragment_path})) {
 			fragment_source_ = std::move(*text);
 			loaded_any = true;
 		}
@@ -571,7 +584,9 @@ bool ShaderEditorPanel::SaveSourceToFiles() {
 
 	if (!current_asset_->vertex_path.empty()) {
 		if (!engine::assets::AssetManager::SaveTextFile(
-					std::filesystem::path{current_asset_->vertex_path}, vertex_source_)) {
+				std::filesystem::path{current_asset_->vertex_path},
+				vertex_source_
+			)) {
 			error_message_ = "Failed to save vertex shader: " + current_asset_->vertex_path;
 			has_errors_ = true;
 			success = false;
@@ -580,7 +595,9 @@ bool ShaderEditorPanel::SaveSourceToFiles() {
 
 	if (!current_asset_->fragment_path.empty()) {
 		if (!engine::assets::AssetManager::SaveTextFile(
-					std::filesystem::path{current_asset_->fragment_path}, fragment_source_)) {
+				std::filesystem::path{current_asset_->fragment_path},
+				fragment_source_
+			)) {
 			error_message_ = "Failed to save fragment shader: " + current_asset_->fragment_path;
 			has_errors_ = true;
 			success = false;
@@ -619,14 +636,16 @@ bool ShaderEditorPanel::CompileShader() {
 				brace_count--;
 				if (brace_count < 0) {
 					error_message_ =
-							shader_type + " line " + std::to_string(line_num) + ": Unmatched closing brace '}'";
+						shader_type + " line " + std::to_string(line_num) + ": Unmatched closing brace '}'";
 					return false;
 				}
 			}
 		}
 
 		if (brace_count != 0) {
-			error_message_ = shader_type + ": Unmatched braces (missing " + std::to_string(std::abs(brace_count))
+			error_message_ = shader_type
+							 + ": Unmatched braces (missing "
+							 + std::to_string(std::abs(brace_count))
 							 + " closing brace(s))";
 			return false;
 		}
@@ -785,8 +804,8 @@ void RegisterShaderGraphNodes(engine::graph::NodeTypeRegistry& registry) {
 	{
 		NodeTypeDefinition def("Add", "Math", "Add two values");
 		def.default_inputs = {
-				Pin(0, "A", PinType::Float, PinDirection::Input, 0.0f),
-				Pin(0, "B", PinType::Float, PinDirection::Input, 0.0f),
+			Pin(0, "A", PinType::Float, PinDirection::Input, 0.0f),
+			Pin(0, "B", PinType::Float, PinDirection::Input, 0.0f),
 		};
 		def.default_outputs = {Pin(0, "Result", PinType::Float, PinDirection::Output, 0.0f)};
 		registry.Register(def);
@@ -794,8 +813,8 @@ void RegisterShaderGraphNodes(engine::graph::NodeTypeRegistry& registry) {
 	{
 		NodeTypeDefinition def("Multiply", "Math", "Multiply two values");
 		def.default_inputs = {
-				Pin(0, "A", PinType::Float, PinDirection::Input, 1.0f),
-				Pin(0, "B", PinType::Float, PinDirection::Input, 1.0f),
+			Pin(0, "A", PinType::Float, PinDirection::Input, 1.0f),
+			Pin(0, "B", PinType::Float, PinDirection::Input, 1.0f),
 		};
 		def.default_outputs = {Pin(0, "Result", PinType::Float, PinDirection::Output, 0.0f)};
 		registry.Register(def);
@@ -803,8 +822,8 @@ void RegisterShaderGraphNodes(engine::graph::NodeTypeRegistry& registry) {
 	{
 		NodeTypeDefinition def("Subtract", "Math", "Subtract B from A");
 		def.default_inputs = {
-				Pin(0, "A", PinType::Float, PinDirection::Input, 0.0f),
-				Pin(0, "B", PinType::Float, PinDirection::Input, 0.0f),
+			Pin(0, "A", PinType::Float, PinDirection::Input, 0.0f),
+			Pin(0, "B", PinType::Float, PinDirection::Input, 0.0f),
 		};
 		def.default_outputs = {Pin(0, "Result", PinType::Float, PinDirection::Output, 0.0f)};
 		registry.Register(def);
@@ -812,8 +831,8 @@ void RegisterShaderGraphNodes(engine::graph::NodeTypeRegistry& registry) {
 	{
 		NodeTypeDefinition def("Divide", "Math", "Divide A by B");
 		def.default_inputs = {
-				Pin(0, "A", PinType::Float, PinDirection::Input, 1.0f),
-				Pin(0, "B", PinType::Float, PinDirection::Input, 1.0f),
+			Pin(0, "A", PinType::Float, PinDirection::Input, 1.0f),
+			Pin(0, "B", PinType::Float, PinDirection::Input, 1.0f),
 		};
 		def.default_outputs = {Pin(0, "Result", PinType::Float, PinDirection::Output, 0.0f)};
 		registry.Register(def);
@@ -821,8 +840,8 @@ void RegisterShaderGraphNodes(engine::graph::NodeTypeRegistry& registry) {
 	{
 		NodeTypeDefinition def("Power", "Math", "Raise A to the power of B");
 		def.default_inputs = {
-				Pin(0, "Base", PinType::Float, PinDirection::Input, 1.0f),
-				Pin(0, "Exponent", PinType::Float, PinDirection::Input, 2.0f),
+			Pin(0, "Base", PinType::Float, PinDirection::Input, 1.0f),
+			Pin(0, "Exponent", PinType::Float, PinDirection::Input, 2.0f),
 		};
 		def.default_outputs = {Pin(0, "Result", PinType::Float, PinDirection::Output, 0.0f)};
 		registry.Register(def);
@@ -842,9 +861,9 @@ void RegisterShaderGraphNodes(engine::graph::NodeTypeRegistry& registry) {
 	{
 		NodeTypeDefinition def("Lerp", "Math", "Linear interpolation");
 		def.default_inputs = {
-				Pin(0, "A", PinType::Float, PinDirection::Input, 0.0f),
-				Pin(0, "B", PinType::Float, PinDirection::Input, 1.0f),
-				Pin(0, "T", PinType::Float, PinDirection::Input, 0.5f),
+			Pin(0, "A", PinType::Float, PinDirection::Input, 0.0f),
+			Pin(0, "B", PinType::Float, PinDirection::Input, 1.0f),
+			Pin(0, "T", PinType::Float, PinDirection::Input, 0.5f),
 		};
 		def.default_outputs = {Pin(0, "Result", PinType::Float, PinDirection::Output, 0.0f)};
 		registry.Register(def);
@@ -852,9 +871,9 @@ void RegisterShaderGraphNodes(engine::graph::NodeTypeRegistry& registry) {
 	{
 		NodeTypeDefinition def("Clamp", "Math", "Clamp value between min and max");
 		def.default_inputs = {
-				Pin(0, "Value", PinType::Float, PinDirection::Input, 0.0f),
-				Pin(0, "Min", PinType::Float, PinDirection::Input, 0.0f),
-				Pin(0, "Max", PinType::Float, PinDirection::Input, 1.0f),
+			Pin(0, "Value", PinType::Float, PinDirection::Input, 0.0f),
+			Pin(0, "Min", PinType::Float, PinDirection::Input, 0.0f),
+			Pin(0, "Max", PinType::Float, PinDirection::Input, 1.0f),
 		};
 		def.default_outputs = {Pin(0, "Result", PinType::Float, PinDirection::Output, 0.0f)};
 		registry.Register(def);
@@ -862,8 +881,8 @@ void RegisterShaderGraphNodes(engine::graph::NodeTypeRegistry& registry) {
 	{
 		NodeTypeDefinition def("Step", "Math", "Step function (0 if x < edge, 1 otherwise)");
 		def.default_inputs = {
-				Pin(0, "Edge", PinType::Float, PinDirection::Input, 0.5f),
-				Pin(0, "X", PinType::Float, PinDirection::Input, 0.0f),
+			Pin(0, "Edge", PinType::Float, PinDirection::Input, 0.5f),
+			Pin(0, "X", PinType::Float, PinDirection::Input, 0.0f),
 		};
 		def.default_outputs = {Pin(0, "Result", PinType::Float, PinDirection::Output, 0.0f)};
 		registry.Register(def);
@@ -871,9 +890,9 @@ void RegisterShaderGraphNodes(engine::graph::NodeTypeRegistry& registry) {
 	{
 		NodeTypeDefinition def("SmoothStep", "Math", "Smooth Hermite interpolation");
 		def.default_inputs = {
-				Pin(0, "Edge0", PinType::Float, PinDirection::Input, 0.0f),
-				Pin(0, "Edge1", PinType::Float, PinDirection::Input, 1.0f),
-				Pin(0, "X", PinType::Float, PinDirection::Input, 0.5f),
+			Pin(0, "Edge0", PinType::Float, PinDirection::Input, 0.0f),
+			Pin(0, "Edge1", PinType::Float, PinDirection::Input, 1.0f),
+			Pin(0, "X", PinType::Float, PinDirection::Input, 0.5f),
 		};
 		def.default_outputs = {Pin(0, "Result", PinType::Float, PinDirection::Output, 0.0f)};
 		registry.Register(def);
@@ -889,20 +908,20 @@ void RegisterShaderGraphNodes(engine::graph::NodeTypeRegistry& registry) {
 		NodeTypeDefinition def("ChannelSplit", "Color", "Split color into R, G, B, A channels");
 		def.default_inputs = {Pin(0, "Color", PinType::Color, PinDirection::Input, glm::vec4(0.0f))};
 		def.default_outputs = {
-				Pin(0, "R", PinType::Float, PinDirection::Output, 0.0f),
-				Pin(0, "G", PinType::Float, PinDirection::Output, 0.0f),
-				Pin(0, "B", PinType::Float, PinDirection::Output, 0.0f),
-				Pin(0, "A", PinType::Float, PinDirection::Output, 0.0f),
+			Pin(0, "R", PinType::Float, PinDirection::Output, 0.0f),
+			Pin(0, "G", PinType::Float, PinDirection::Output, 0.0f),
+			Pin(0, "B", PinType::Float, PinDirection::Output, 0.0f),
+			Pin(0, "A", PinType::Float, PinDirection::Output, 0.0f),
 		};
 		registry.Register(def);
 	}
 	{
 		NodeTypeDefinition def("ChannelMerge", "Color", "Merge R, G, B, A into color");
 		def.default_inputs = {
-				Pin(0, "R", PinType::Float, PinDirection::Input, 0.0f),
-				Pin(0, "G", PinType::Float, PinDirection::Input, 0.0f),
-				Pin(0, "B", PinType::Float, PinDirection::Input, 0.0f),
-				Pin(0, "A", PinType::Float, PinDirection::Input, 1.0f),
+			Pin(0, "R", PinType::Float, PinDirection::Input, 0.0f),
+			Pin(0, "G", PinType::Float, PinDirection::Input, 0.0f),
+			Pin(0, "B", PinType::Float, PinDirection::Input, 0.0f),
+			Pin(0, "A", PinType::Float, PinDirection::Input, 1.0f),
 		};
 		def.default_outputs = {Pin(0, "Color", PinType::Color, PinDirection::Output, glm::vec4(0.0f))};
 		registry.Register(def);
@@ -912,7 +931,7 @@ void RegisterShaderGraphNodes(engine::graph::NodeTypeRegistry& registry) {
 	{
 		NodeTypeDefinition def("TextureSample", "Texture", "Sample texture at UV coordinates");
 		def.default_inputs = {
-				Pin(0, "UV", PinType::Vec2, PinDirection::Input, glm::vec2(0.0f)),
+			Pin(0, "UV", PinType::Vec2, PinDirection::Input, glm::vec2(0.0f)),
 		};
 		def.default_outputs = {Pin(0, "Color", PinType::Color, PinDirection::Output, glm::vec4(1.0f))};
 		registry.Register(def);

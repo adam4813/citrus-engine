@@ -14,7 +14,7 @@ namespace editor {
 
 /**
  * @brief Shader editor panel with code and node graph modes
- * 
+ *
  * Features:
  * - Code editor mode: Multi-line text editor with vertex/fragment tabs
  * - Node graph mode: Visual shader graph using GraphEditorPanel

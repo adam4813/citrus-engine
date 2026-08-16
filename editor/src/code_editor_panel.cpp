@@ -191,7 +191,12 @@ void CodeEditorPanel::RenderEditor() {
 	ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[0]); // Use monospace font if available
 
 	if (ImGui::InputTextMultiline(
-				"##editor", &edit_buffer[0], edit_buffer.capacity(), ImVec2(-FLT_MIN, -FLT_MIN), flags)) {
+			"##editor",
+			&edit_buffer[0],
+			edit_buffer.capacity(),
+			ImVec2(-FLT_MIN, -FLT_MIN),
+			flags
+		)) {
 		// Content changed
 		edit_buffer.resize(std::strlen(edit_buffer.c_str())); // Trim to actual size
 		if (edit_buffer != file.content) {

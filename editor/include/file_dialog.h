@@ -93,7 +93,11 @@ public:
 		// Bottom: filename input + buttons
 		ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x - 160);
 		if (ImGui::InputText(
-					"##filename", file_name_buffer_, sizeof(file_name_buffer_), ImGuiInputTextFlags_EnterReturnsTrue)) {
+				"##filename",
+				file_name_buffer_,
+				sizeof(file_name_buffer_),
+				ImGuiInputTextFlags_EnterReturnsTrue
+			)) {
 			Confirm();
 		}
 		ImGui::SameLine();
@@ -120,8 +124,7 @@ private:
 		// Note: convert to absolute so single-component relative paths like "assets" still have a parent.
 		std::error_code parent_ec;
 		auto abs_current = std::filesystem::absolute(current_dir_, parent_ec);
-		const bool has_parent = !parent_ec && abs_current.has_parent_path()
-			&& abs_current.parent_path() != abs_current;
+		const bool has_parent = !parent_ec && abs_current.has_parent_path() && abs_current.parent_path() != abs_current;
 		if (has_parent
 			&& ImGui::Selectable("[..] ..", false, ImGuiSelectableFlags_AllowDoubleClick)
 			&& ImGui::IsMouseDoubleClicked(0)) {

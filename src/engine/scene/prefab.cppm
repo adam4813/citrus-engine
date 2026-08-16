@@ -43,7 +43,11 @@ public:
 	/// @param parent Optional parent entity
 	/// @return The instantiated entity (inherits from the prefab via is_a)
 	static ecs::Entity InstantiatePrefab(
-			const platform::fs::Path& prefab_path, const Scene* scene, ecs::ECSWorld& world, const ecs::Entity& parent);
+		const platform::fs::Path& prefab_path,
+		const Scene* scene,
+		ecs::ECSWorld& world,
+		const ecs::Entity& parent
+	);
 
 	/// Apply changes from a prefab instance back to the prefab source file.
 	/// @param instance The entity that is a prefab instance (has is_a relationship)

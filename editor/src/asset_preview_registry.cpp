@@ -23,8 +23,7 @@ AssetPreviewRegistry& AssetPreviewRegistry::Instance() {
 	return instance;
 }
 
-void AssetPreviewRegistry::RegisterPreview(
-		const std::vector<std::string>& extensions, PreviewGenerator generator) {
+void AssetPreviewRegistry::RegisterPreview(const std::vector<std::string>& extensions, PreviewGenerator generator) {
 	for (const auto& ext : extensions) {
 		std::string lower_ext = ext;
 		std::transform(lower_ext.begin(), lower_ext.end(), lower_ext.begin(), ::tolower);
@@ -32,8 +31,7 @@ void AssetPreviewRegistry::RegisterPreview(
 	}
 }
 
-void AssetPreviewRegistry::RegisterAppearance(
-		const std::vector<std::string>& extensions, AppearanceFn appearance) {
+void AssetPreviewRegistry::RegisterAppearance(const std::vector<std::string>& extensions, AppearanceFn appearance) {
 	for (const auto& ext : extensions) {
 		std::string lower_ext = ext;
 		std::transform(lower_ext.begin(), lower_ext.end(), lower_ext.begin(), ::tolower);
@@ -66,8 +64,7 @@ bool AssetPreviewRegistry::HasPreviewGenerator(const std::filesystem::path& path
 	return preview_generators_.contains(ext);
 }
 
-AssetPreviewRegistry::FileTypeAppearance AssetPreviewRegistry::GetAppearance(
-		const std::filesystem::path& path) const {
+AssetPreviewRegistry::FileTypeAppearance AssetPreviewRegistry::GetAppearance(const std::filesystem::path& path) const {
 	if (std::filesystem::is_directory(path)) {
 		return {"[D]", ImVec4(0.95f, 0.85f, 0.3f, 1.0f)};
 	}
@@ -142,8 +139,7 @@ uint32_t GenerateImageThumbnail(const std::filesystem::path& path) {
 	std::vector<unsigned char> thumb_data;
 
 	if (width > MAX_THUMB || height > MAX_THUMB) {
-		const float scale =
-				static_cast<float>(MAX_THUMB) / static_cast<float>(std::max(width, height));
+		const float scale = static_cast<float>(MAX_THUMB) / static_cast<float>(std::max(width, height));
 		thumb_w = std::max(1, static_cast<int>(static_cast<float>(width) * scale));
 		thumb_h = std::max(1, static_cast<int>(static_cast<float>(height) * scale));
 		thumb_data.resize(static_cast<size_t>(thumb_w) * thumb_h * 4);
@@ -180,51 +176,59 @@ void RegisterBuiltinPreviews() {
 	auto& registry = AssetPreviewRegistry::Instance();
 
 	// Image thumbnails
-	registry.RegisterPreview(
-			{".png", ".jpg", ".jpeg", ".tga", ".bmp"}, [](const std::filesystem::path& p) -> uint32_t {
-				return GenerateImageThumbnail(p);
-			});
+	registry.RegisterPreview({".png", ".jpg", ".jpeg", ".tga", ".bmp"}, [](const std::filesystem::path& p) -> uint32_t {
+		return GenerateImageThumbnail(p);
+	});
 
 	// Icon appearances for file types without visual previews
 	registry.RegisterAppearance(
-			{".png", ".jpg", ".jpeg", ".tga", ".bmp"},
-			[](const std::filesystem::path&) -> AssetPreviewRegistry::FileTypeAppearance {
-				return {"[T]", ImVec4(0.95f, 0.75f, 0.2f, 1.0f)};
-			});
+		{".png", ".jpg", ".jpeg", ".tga", ".bmp"},
+		[](const std::filesystem::path&) -> AssetPreviewRegistry::FileTypeAppearance {
+			return {"[T]", ImVec4(0.95f, 0.75f, 0.2f, 1.0f)};
+		}
+	);
 
 	registry.RegisterAppearance(
-			{".wav", ".ogg", ".mp3", ".flac"},
-			[](const std::filesystem::path&) -> AssetPreviewRegistry::FileTypeAppearance {
-				return {"[S]", ImVec4(1.0f, 0.55f, 0.2f, 1.0f)};
-			});
+		{".wav", ".ogg", ".mp3", ".flac"},
+		[](const std::filesystem::path&) -> AssetPreviewRegistry::FileTypeAppearance {
+			return {"[S]", ImVec4(1.0f, 0.55f, 0.2f, 1.0f)};
+		}
+	);
 
 	registry.RegisterAppearance(
-			{".obj", ".fbx", ".gltf", ".glb"},
-			[](const std::filesystem::path&) -> AssetPreviewRegistry::FileTypeAppearance {
-				return {"[M]", ImVec4(0.7f, 0.4f, 0.9f, 1.0f)};
-			});
+		{".obj", ".fbx", ".gltf", ".glb"},
+		[](const std::filesystem::path&) -> AssetPreviewRegistry::FileTypeAppearance {
+			return {"[M]", ImVec4(0.7f, 0.4f, 0.9f, 1.0f)};
+		}
+	);
 
 	registry.RegisterAppearance(
-			{".lua", ".as", ".js"},
-			[](const std::filesystem::path&) -> AssetPreviewRegistry::FileTypeAppearance {
-				return {"[Sc]", ImVec4(0.3f, 0.8f, 0.8f, 1.0f)};
-			});
+		{".lua", ".as", ".js"},
+		[](const std::filesystem::path&) -> AssetPreviewRegistry::FileTypeAppearance {
+			return {"[Sc]", ImVec4(0.3f, 0.8f, 0.8f, 1.0f)};
+		}
+	);
 
 	registry.RegisterAppearance(
-			{".glsl", ".vert", ".frag", ".shader"},
-			[](const std::filesystem::path&) -> AssetPreviewRegistry::FileTypeAppearance {
-				return {"[Sh]", ImVec4(0.9f, 0.4f, 0.7f, 1.0f)};
-			});
+		{".glsl", ".vert", ".frag", ".shader"},
+		[](const std::filesystem::path&) -> AssetPreviewRegistry::FileTypeAppearance {
+			return {"[Sh]", ImVec4(0.9f, 0.4f, 0.7f, 1.0f)};
+		}
+	);
 
-	registry.RegisterAppearance({".scene"},
-			[](const std::filesystem::path&) -> AssetPreviewRegistry::FileTypeAppearance {
-				return {"[Sc]", ImVec4(0.3f, 0.85f, 0.4f, 1.0f)};
-			});
+	registry.RegisterAppearance(
+		{".scene"},
+		[](const std::filesystem::path&) -> AssetPreviewRegistry::FileTypeAppearance {
+			return {"[Sc]", ImVec4(0.3f, 0.85f, 0.4f, 1.0f)};
+		}
+	);
 
-	registry.RegisterAppearance({".prefab"},
-			[](const std::filesystem::path&) -> AssetPreviewRegistry::FileTypeAppearance {
-				return {"[P]", ImVec4(0.4f, 0.6f, 1.0f, 1.0f)};
-			});
+	registry.RegisterAppearance(
+		{".prefab"},
+		[](const std::filesystem::path&) -> AssetPreviewRegistry::FileTypeAppearance {
+			return {"[P]", ImVec4(0.4f, 0.6f, 1.0f, 1.0f)};
+		}
+	);
 }
 
 } // namespace editor

@@ -64,7 +64,7 @@ enum class BrushMode { SingleTile, RectangleFill, Eraser };
 
 /**
  * @brief Tileset editor panel for editing tileset definitions
- * 
+ *
  * Provides a visual editor for creating and editing tilesets with per-tile
  * properties, collision flags, tags, and custom metadata. Uses placeholder
  * colored rectangles instead of actual texture loading.
@@ -165,7 +165,10 @@ private:
 	FileDialogPopup open_dialog_{"Open Tileset", FileDialogMode::Open, {".json"}};
 	FileDialogPopup save_dialog_{"Save Tileset As", FileDialogMode::Save, {".json"}};
 	FileDialogPopup image_dialog_{
-			"Select Source Image", FileDialogMode::Open, {".png", ".jpg", ".jpeg", ".tga", ".bmp"}};
+		"Select Source Image",
+		FileDialogMode::Open,
+		{".png", ".jpg", ".jpeg", ".tga", ".bmp"}
+	};
 
 	// Deferred image loading after OpenTileset
 	bool pending_image_load_ = false;

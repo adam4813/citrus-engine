@@ -45,8 +45,7 @@ size_t ScanAssetsDirectory(const std::string& directory, const std::vector<std::
 		if (!extensions.empty()) {
 			bool matched = false;
 			for (const auto& ext : extensions) {
-				if (filename.length() >= ext.length()
-					&& filename.substr(filename.length() - ext.length()) == ext) {
+				if (filename.length() >= ext.length() && filename.substr(filename.length() - ext.length()) == ext) {
 					matched = true;
 					break;
 				}

@@ -18,12 +18,13 @@ std::string_view ViewportPanel::GetPanelName() const { return "Viewport"; }
 void ViewportPanel::SetCallbacks(const EditorCallbacks& callbacks) { callbacks_ = callbacks; }
 
 void ViewportPanel::Render(
-		engine::Engine& engine,
-		engine::scene::Scene* scene,
-		const bool is_running,
-		const flecs::entity editor_camera,
-		const float delta_time,
-		const flecs::entity selected_entity) {
+	engine::Engine& engine,
+	engine::scene::Scene* scene,
+	const bool is_running,
+	const flecs::entity editor_camera,
+	const float delta_time,
+	const flecs::entity selected_entity
+) {
 	if (!IsVisible()) {
 		return;
 	}
@@ -43,7 +44,8 @@ void ViewportPanel::Render(
 	const auto viewport_height = static_cast<uint32_t>(content_size.y);
 
 	// Resize framebuffer if viewport size changed
-	if (viewport_width > 0 && viewport_height > 0
+	if (viewport_width > 0
+		&& viewport_height > 0
 		&& (viewport_width != last_width_ || viewport_height != last_height_)) {
 		framebuffer_.Resize(viewport_width, viewport_height);
 		last_width_ = viewport_width;
@@ -55,7 +57,7 @@ void ViewportPanel::Render(
 			auto& camera = active_camera.get_mut<engine::components::Camera>();
 			// TODO: Set up sending viewport size to ECS system and have it update all cameras, instead of just setting a fixed 16:9 aspect ratio here
 			camera.aspect_ratio =
-					16.0F / 9.0F; //static_cast<float>(viewport_width) / static_cast<float>(viewport_height);
+				16.0F / 9.0F; // static_cast<float>(viewport_width) / static_cast<float>(viewport_height);
 		}
 	}
 
@@ -119,26 +121,34 @@ void ViewportPanel::Render(
 
 			// Draw mode indicator
 			draw_list->AddRectFilled(
-					ImVec2(viewport_min.x + padding, viewport_min.y + padding),
-					ImVec2(viewport_min.x + padding + mode_text_size.x + 10.0f,
-						   viewport_min.y + padding + mode_text_size.y + 6.0f),
-					IM_COL32(40, 40, 40, 200));
+				ImVec2(viewport_min.x + padding, viewport_min.y + padding),
+				ImVec2(
+					viewport_min.x + padding + mode_text_size.x + 10.0f,
+					viewport_min.y + padding + mode_text_size.y + 6.0f
+				),
+				IM_COL32(40, 40, 40, 200)
+			);
 			draw_list->AddText(
-					ImVec2(viewport_min.x + padding + 5.0f, viewport_min.y + padding + 3.0f),
-					IM_COL32(255, 255, 255, 255),
-					mode_text);
+				ImVec2(viewport_min.x + padding + 5.0f, viewport_min.y + padding + 3.0f),
+				IM_COL32(255, 255, 255, 255),
+				mode_text
+			);
 
 			// Draw space indicator below mode
 			const float space_y_offset = mode_text_size.y + 6.0f + spacing;
 			draw_list->AddRectFilled(
-					ImVec2(viewport_min.x + padding, viewport_min.y + padding + space_y_offset),
-					ImVec2(viewport_min.x + padding + space_text_size.x + 10.0f,
-						   viewport_min.y + padding + space_y_offset + space_text_size.y + 6.0f),
-					IM_COL32(40, 40, 40, 200));
+				ImVec2(viewport_min.x + padding, viewport_min.y + padding + space_y_offset),
+				ImVec2(
+					viewport_min.x + padding + space_text_size.x + 10.0f,
+					viewport_min.y + padding + space_y_offset + space_text_size.y + 6.0f
+				),
+				IM_COL32(40, 40, 40, 200)
+			);
 			draw_list->AddText(
-					ImVec2(viewport_min.x + padding + 5.0f, viewport_min.y + padding + space_y_offset + 3.0f),
-					IM_COL32(255, 255, 255, 255),
-					space_text);
+				ImVec2(viewport_min.x + padding + 5.0f, viewport_min.y + padding + space_y_offset + 3.0f),
+				IM_COL32(255, 255, 255, 255),
+				space_text
+			);
 		}
 
 		// Draw orientation gizmo in upper-right corner
@@ -164,17 +174,19 @@ void ViewportPanel::RenderPlayModeIndicator(const ImVec2& cursor_pos) {
 	const ImVec2 play_text_size = ImGui::CalcTextSize(play_text);
 
 	draw_list->AddRectFilled(
-			ImVec2(cursor_pos.x + 5, cursor_pos.y + 5),
-			ImVec2(cursor_pos.x + play_text_size.x + 15, cursor_pos.y + play_text_size.y + 15),
-			IM_COL32(0, 100, 0, 200));
+		ImVec2(cursor_pos.x + 5, cursor_pos.y + 5),
+		ImVec2(cursor_pos.x + play_text_size.x + 15, cursor_pos.y + play_text_size.y + 15),
+		IM_COL32(0, 100, 0, 200)
+	);
 	draw_list->AddText(ImVec2(cursor_pos.x + 10, cursor_pos.y + 10), IM_COL32(255, 255, 255, 255), play_text);
 }
 
 void ViewportPanel::HandleObjectPicking(
-		const flecs::entity editor_camera,
-		const ImVec2& viewport_min,
-		const ImVec2& viewport_size,
-		engine::scene::Scene* scene) {
+	const flecs::entity editor_camera,
+	const ImVec2& viewport_min,
+	const ImVec2& viewport_size,
+	engine::scene::Scene* scene
+) {
 	// Only handle picking when we have a valid callback
 	if (!callbacks_.on_entity_selected) {
 		return;
@@ -209,7 +221,9 @@ void ViewportPanel::HandleObjectPicking(
 			const ImVec2 viewport_mouse = {mouse_pos.x - viewport_min.x, mouse_pos.y - viewport_min.y};
 
 			// Check if mouse is within viewport bounds
-			if (viewport_mouse.x >= 0 && viewport_mouse.x < viewport_size.x && viewport_mouse.y >= 0
+			if (viewport_mouse.x >= 0
+				&& viewport_mouse.x < viewport_size.x
+				&& viewport_mouse.y >= 0
 				&& viewport_mouse.y < viewport_size.y) {
 				// Perform picking
 				PickEntityAtMousePosition(editor_camera, viewport_mouse, viewport_size, scene);
@@ -221,10 +235,11 @@ void ViewportPanel::HandleObjectPicking(
 }
 
 void ViewportPanel::PickEntityAtMousePosition(
-		const flecs::entity editor_camera,
-		const ImVec2& viewport_mouse,
-		const ImVec2& viewport_size,
-		engine::scene::Scene* scene) {
+	const flecs::entity editor_camera,
+	const ImVec2& viewport_mouse,
+	const ImVec2& viewport_size,
+	engine::scene::Scene* scene
+) {
 	if (!editor_camera.is_valid() || !editor_camera.has<engine::components::Camera>()) {
 		return;
 	}
@@ -274,7 +289,7 @@ void ViewportPanel::PickEntityAtMousePosition(
 			engine::physics::Ray ray;
 			ray.origin = ray_origin;
 			ray.direction = ray_world;
-			ray.max_distance = 10000.0f; // Large distance for viewport picking
+			ray.max_distance = 10000.0f;     // Large distance for viewport picking
 			ray.collision_mask = 0xFFFFFFFF; // Pick all layers
 
 			// Perform raycast

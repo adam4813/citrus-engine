@@ -67,17 +67,26 @@ std::string ReplaceAll(std::string s, const std::string& from, const std::string
 } // namespace
 
 std::string BuildStager::SubstituteTokens(
-		const std::string& source,
-		const ProjectModel& project,
-		const BuildTarget& target,
-		const std::filesystem::path& template_dir) {
+	const std::string& source,
+	const ProjectModel& project,
+	const BuildTarget& target,
+	const std::filesystem::path& template_dir
+) {
 	std::string s = source;
 	s = ReplaceAll(s, "@PROJECT_NAME@", project.name);
 	s = ReplaceAll(s, "@PROJECT_VERSION@", project.version);
 	s = ReplaceAll(s, "@PROJECT_DESCRIPTION@", project.description);
 	s = ReplaceAll(s, "@WINDOW_TITLE@", project.window.title);
-	s = ReplaceAll(s, "@INITIAL_MEMORY_BYTES@", std::to_string(static_cast<uint64_t>(target.initial_memory_mb) * 1024 * 1024));
-	s = ReplaceAll(s, "@MAXIMUM_MEMORY_BYTES@", std::to_string(static_cast<uint64_t>(target.max_memory_mb) * 1024 * 1024));
+	s = ReplaceAll(
+		s,
+		"@INITIAL_MEMORY_BYTES@",
+		std::to_string(static_cast<uint64_t>(target.initial_memory_mb) * 1024 * 1024)
+	);
+	s = ReplaceAll(
+		s,
+		"@MAXIMUM_MEMORY_BYTES@",
+		std::to_string(static_cast<uint64_t>(target.max_memory_mb) * 1024 * 1024)
+	);
 
 	// Absolute path to the engine's overlay-ports directory, resolved from the template
 	// location. Use forward slashes so the substituted value is safe inside JSON.
@@ -90,7 +99,6 @@ std::string BuildStager::SubstituteTokens(
 	s = ReplaceAll(s, "@OVERLAY_TRIPLETS_PATH@", overlay_triplets.generic_string());
 	return s;
 }
-
 
 std::filesystem::path BuildStager::LocateTemplateDir() {
 	namespace fs = std::filesystem;
@@ -136,11 +144,12 @@ BuildStager::StagingPaths BuildStager::ComputePaths(const ProjectModel& project,
 }
 
 bool BuildStager::Stage(
-		const ProjectModel& project,
-		const BuildTarget& target,
-		IAssetPackager& packager,
-		const StagingPaths& paths,
-		BuildReporter& reporter) {
+	const ProjectModel& project,
+	const BuildTarget& target,
+	IAssetPackager& packager,
+	const StagingPaths& paths,
+	BuildReporter& reporter
+) {
 	namespace fs = std::filesystem;
 	reporter.SetPhase(BuildPhase::Staging);
 
@@ -185,7 +194,10 @@ bool BuildStager::Stage(
 			fs::path stripped;
 			bool first = true;
 			for (const auto& seg : scene_rel) {
-				if (first) { first = false; continue; }
+				if (first) {
+					first = false;
+					continue;
+				}
 				stripped /= seg;
 			}
 			scene_rel = stripped;

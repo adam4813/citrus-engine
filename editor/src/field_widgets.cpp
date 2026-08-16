@@ -24,7 +24,7 @@ void OpenFieldBrowseDialog(const char* title, const std::vector<std::string>& ex
 	s_field_file_dialog->SetCallback([target](const std::string& path) {
 		// TODO: File paths should be stored as absolute path, but most components are using relative paths.
 		const auto relative_path =
-				std::filesystem::relative(std::filesystem::path(path), s_field_file_dialog->RootDirectory());
+			std::filesystem::relative(std::filesystem::path(path), s_field_file_dialog->RootDirectory());
 		*target = relative_path.string();
 		s_field_file_dialog_modified = true;
 	});
@@ -445,7 +445,7 @@ bool RenderFieldWidget(const engine::ecs::FieldInfo& field, void* data, engine::
 						s_audio_playing = false;
 					}
 					if (auto sound_asset =
-								engine::assets::AssetCache::Instance().FindTyped<engine::assets::SoundAssetInfo>(*str);
+							engine::assets::AssetCache::Instance().FindTyped<engine::assets::SoundAssetInfo>(*str);
 						sound_asset && !sound_asset->file_path.empty()) {
 						if (!audio.IsInitialized()) {
 							audio.Initialize();
@@ -526,7 +526,7 @@ bool RenderFieldWidget(const engine::ecs::FieldInfo& field, void* data, engine::
 
 		bool modified = false;
 		const char* preview =
-				ref->IsEmpty() ? "(None)" : (current_name.empty() ? "(Unresolved)" : current_name.c_str());
+			ref->IsEmpty() ? "(None)" : (current_name.empty() ? "(Unresolved)" : current_name.c_str());
 		if (ImGui::BeginCombo(label, preview)) {
 			if (ImGui::Selectable("(None)", ref->IsEmpty())) {
 				*ref = engine::assets::AssetRef{};

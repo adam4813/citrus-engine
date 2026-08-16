@@ -105,9 +105,7 @@ protected:
 	TooltipComponent* tooltip = nullptr;
 };
 
-TEST_F(TooltipIntegrationTest, ComponentAttachesToElement) {
-	EXPECT_TRUE(panel->HasComponent<TooltipComponent>());
-}
+TEST_F(TooltipIntegrationTest, ComponentAttachesToElement) { EXPECT_TRUE(panel->HasComponent<TooltipComponent>()); }
 
 TEST_F(TooltipIntegrationTest, GetComponent_ReturnsSameInstance) {
 	auto* retrieved = panel->GetComponent<TooltipComponent>();

@@ -65,7 +65,7 @@ struct CollisionEvents {
 };
 
 // Tag components
-struct IsTrigger {}; // Trigger volume (no collision response)
+struct IsTrigger {};  // Trigger volume (no collision response)
 struct IsSleeping {}; // Body is sleeping
 
 // Singleton component for world-level physics config

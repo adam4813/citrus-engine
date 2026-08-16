@@ -93,7 +93,8 @@ public:
 
 	// === Layout Component ===
 
-	template <typename LayoutType, typename... Args> ContainerBuilder& Layout(Args&&... args) {
+	template<typename LayoutType, typename... Args>
+	ContainerBuilder& Layout(Args&&... args) {
 		layout_ = std::make_unique<LayoutType>(std::forward<Args>(args)...);
 		return *this;
 	}

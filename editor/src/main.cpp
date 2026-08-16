@@ -1,7 +1,7 @@
-#include "debug-ui.h"
-#include "editor_scene.h"
 #include "asset_preview_registry.h"
+#include "debug-ui.h"
 #include "editor_asset_scanner.h"
+#include "editor_scene.h"
 
 #include <iostream>
 #include <string>
@@ -66,7 +66,7 @@ void main_loop() {
 
 	// Update engine systems with appropriate mode
 	const auto update_mode =
-			g_app_state->editor_scene.IsRunning() ? engine::UpdateMode::Full : engine::UpdateMode::EditMode;
+		g_app_state->editor_scene.IsRunning() ? engine::UpdateMode::Full : engine::UpdateMode::EditMode;
 	g_app_state->engine.Update(delta_time, update_mode);
 
 	// Render
@@ -128,9 +128,17 @@ int main(int argc, char* argv[]) {
 	glfwSetWindowTitle(app_state.engine.window, "Citrus Scene Editor");
 
 	// Scan project assets directory (editor concern, not engine)
-	editor::ScanAssetsDirectory("assets/",
-			{".shader.json", ".mesh.json", ".material.json", ".texture.json",
-			 ".sound.json", ".anim.json", ".data.json", ".prefab.json"});
+	editor::ScanAssetsDirectory(
+		"assets/",
+		{".shader.json",
+		 ".mesh.json",
+		 ".material.json",
+		 ".texture.json",
+		 ".sound.json",
+		 ".anim.json",
+		 ".data.json",
+		 ".prefab.json"}
+	);
 
 	// Initialize debug UI (ImGui)
 	app_state.debug_ui.Init(app_state.engine.window);

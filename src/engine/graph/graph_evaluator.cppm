@@ -48,19 +48,25 @@ public:
 	/// @param graph The graph to evaluate
 	/// @param evaluators Map of node type names to their evaluator instances
 	/// @return Map of node IDs to their output values
-	std::map<int, std::any> Evaluate(const NodeGraph& graph,
-									 const std::map<std::string, INodeEvaluator*>& evaluators);
+	std::map<int, std::any> Evaluate(const NodeGraph& graph, const std::map<std::string, INodeEvaluator*>& evaluators);
 
 private:
 	/// Helper for topological sort - depth-first search
 	enum class VisitState { Unvisited, Visiting, Visited };
 
-	bool TopologicalSortDFS(int node_id, const NodeGraph& graph,
-							std::map<int, VisitState>& visit_state, std::vector<int>& sorted) const;
+	bool TopologicalSortDFS(
+		int node_id,
+		const NodeGraph& graph,
+		std::map<int, VisitState>& visit_state,
+		std::vector<int>& sorted
+	) const;
 
 	/// Get input values for a node from evaluated results
-	std::map<int, std::any> GetNodeInputs(const Node& node, const NodeGraph& graph,
-										  const std::map<int, std::map<int, std::any>>& evaluated_outputs) const;
+	std::map<int, std::any> GetNodeInputs(
+		const Node& node,
+		const NodeGraph& graph,
+		const std::map<int, std::map<int, std::any>>& evaluated_outputs
+	) const;
 };
 
 } // namespace engine::graph

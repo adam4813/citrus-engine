@@ -379,7 +379,7 @@ private:
 	 */
 	struct TabInfo {
 		std::string label;
-		Button* button{nullptr}; // Raw pointer - tab_bar_panel_ owns
+		Button* button{nullptr};     // Raw pointer - tab_bar_panel_ owns
 		UIElement* content{nullptr}; // Raw pointer - content_panel_ owns
 	};
 

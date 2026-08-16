@@ -172,7 +172,7 @@ TEST_F(TabContainerTest, SetActiveTab_IgnoresSameTabWithoutForce) {
 	// Reset counter after setup
 	callback_count = 0;
 
-	tab_container->SetActiveTab(0);  // Already active, should not trigger
+	tab_container->SetActiveTab(0); // Already active, should not trigger
 
 	EXPECT_EQ(callback_count, 0);
 }
@@ -187,7 +187,7 @@ TEST_F(TabContainerTest, SetActiveTab_TriggersCallbackWithForce) {
 	// Reset counter after setup
 	callback_count = 0;
 
-	tab_container->SetActiveTab(0, true);  // Force trigger even though already active
+	tab_container->SetActiveTab(0, true); // Force trigger even though already active
 
 	EXPECT_EQ(callback_count, 1);
 }

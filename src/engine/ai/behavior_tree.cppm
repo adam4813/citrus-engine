@@ -16,9 +16,9 @@ export namespace engine::ai {
  * @brief Result status of a behavior tree node execution
  */
 enum class NodeStatus {
-	Running,  // Node is still executing
-	Success,  // Node completed successfully
-	Failure   // Node failed
+	Running, // Node is still executing
+	Success, // Node completed successfully
+	Failure  // Node failed
 };
 
 // === BASE BEHAVIOR TREE NODE ===

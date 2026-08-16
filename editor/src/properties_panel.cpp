@@ -21,9 +21,10 @@ namespace {
 /// Check if a field should be visible given the current component/asset data.
 /// Returns false if a visibility predicate is set and the controlling field's value doesn't match.
 bool IsFieldVisible(
-		const engine::ecs::FieldInfo& field,
-		const std::vector<engine::ecs::FieldInfo>& all_fields,
-		const void* base_ptr) {
+	const engine::ecs::FieldInfo& field,
+	const std::vector<engine::ecs::FieldInfo>& all_fields,
+	const void* base_ptr
+) {
 	if (field.visible_when_field.empty()) {
 		return true;
 	}
@@ -40,7 +41,6 @@ bool IsFieldVisible(
 	}
 	return true; // Controlling field not found — show by default
 }
-
 
 /// Shape type labels for compound child shape combo
 static constexpr const char* kChildShapeTypeLabels[] = {"Box", "Sphere", "Capsule", "Cylinder"};
@@ -63,10 +63,10 @@ bool RenderCompoundChildren(engine::physics::CollisionShape& shape) {
 		// Collapsible header per child with remove button
 		int type_idx = static_cast<int>(child.type);
 		const char* type_label =
-				(type_idx >= 0 && type_idx < kChildShapeTypeCount) ? kChildShapeTypeLabels[type_idx] : "Unknown";
+			(type_idx >= 0 && type_idx < kChildShapeTypeCount) ? kChildShapeTypeLabels[type_idx] : "Unknown";
 		std::string header = "Child " + std::to_string(i) + " (" + type_label + ")";
-		bool child_open = ImGui::CollapsingHeader(
-				header.c_str(), ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_AllowOverlap);
+		bool child_open =
+			ImGui::CollapsingHeader(header.c_str(), ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_AllowOverlap);
 		ImGui::SameLine(ImGui::GetContentRegionAvail().x + ImGui::GetCursorPosX() - 20.0f);
 		if (ImGui::SmallButton("X")) {
 			remove_index = static_cast<int>(i);
@@ -151,13 +151,13 @@ std::string_view PropertiesPanel::GetPanelName() const { return "Properties"; }
 void PropertiesPanel::SetCallbacks(const EditorCallbacks& callbacks) { callbacks_ = callbacks; }
 
 void PropertiesPanel::Render(
-		const engine::ecs::Entity selected_entity,
-		engine::ecs::ECSWorld& world,
-		engine::scene::Scene* scene,
-		const AssetSelection& selected_asset,
-		const engine::ecs::Entity scene_active_camera) {
-	if (!IsVisible())
-		return;
+	const engine::ecs::Entity selected_entity,
+	engine::ecs::ECSWorld& world,
+	engine::scene::Scene* scene,
+	const AssetSelection& selected_asset,
+	const engine::ecs::Entity scene_active_camera
+) {
+	if (!IsVisible()) return;
 
 	if (scene != last_scene_) {
 		last_scene_ = scene;
@@ -165,8 +165,10 @@ void PropertiesPanel::Render(
 	}
 
 	ImGuiWindowClass win_class;
-	win_class.DockNodeFlagsOverrideSet = ImGuiDockNodeFlags_NoWindowMenuButton | ImGuiDockNodeFlags_NoCloseButton
-										 | ImGuiDockNodeFlags_NoDockingOverMe | ImGuiDockNodeFlags_NoDockingOverOther
+	win_class.DockNodeFlagsOverrideSet = ImGuiDockNodeFlags_NoWindowMenuButton
+										 | ImGuiDockNodeFlags_NoCloseButton
+										 | ImGuiDockNodeFlags_NoDockingOverMe
+										 | ImGuiDockNodeFlags_NoDockingOverOther
 										 | ImGuiDockNodeFlags_NoDockingOverEmpty;
 	ImGui::SetNextWindowClass(&win_class);
 
@@ -228,7 +230,9 @@ void PropertiesPanel::RenderComponentSections(const engine::ecs::Entity entity, 
 
 		if (removable) {
 			header_open = ImGui::CollapsingHeader(
-					comp.name.c_str(), ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_AllowOverlap);
+				comp.name.c_str(),
+				ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_AllowOverlap
+			);
 			ImGui::SameLine(ImGui::GetContentRegionAvail().x + ImGui::GetCursorPosX() - 20.0f);
 			if (ImGui::SmallButton("X")) {
 				pending_remove_id = comp.id;
@@ -296,12 +300,16 @@ void PropertiesPanel::RenderComponentSections(const engine::ecs::Entity entity, 
 	// Execute pending remove outside the iteration loop
 	if (pending_remove_id != 0 && callbacks_.on_execute_command) {
 		callbacks_.on_execute_command(
-				std::make_unique<RemoveComponentCommand>(entity, pending_remove_id, pending_remove_name));
+			std::make_unique<RemoveComponentCommand>(entity, pending_remove_id, pending_remove_name)
+		);
 	}
 }
 
 void PropertiesPanel::RenderComponentFields(
-		const engine::ecs::Entity entity, const engine::ecs::ComponentInfo& comp, engine::scene::Scene* scene) const {
+	const engine::ecs::Entity entity,
+	const engine::ecs::ComponentInfo& comp,
+	engine::scene::Scene* scene
+) const {
 	// Get raw pointer to component data
 	void* comp_ptr = entity.try_get_mut(comp.id);
 	if (!comp_ptr) {
@@ -364,7 +372,8 @@ void PropertiesPanel::RenderAddComponentButton(const engine::ecs::Entity entity)
 					}
 					else if (ImGui::MenuItem(comp->name.c_str()) && callbacks_.on_execute_command) {
 						callbacks_.on_execute_command(
-								std::make_unique<AddComponentCommand>(entity, comp->id, comp->name));
+							std::make_unique<AddComponentCommand>(entity, comp->id, comp->name)
+						);
 					}
 				}
 				ImGui::EndMenu();
@@ -376,7 +385,9 @@ void PropertiesPanel::RenderAddComponentButton(const engine::ecs::Entity entity)
 }
 
 void PropertiesPanel::RenderSceneProperties(
-		engine::ecs::ECSWorld& world, const engine::ecs::Entity scene_active_camera) const {
+	engine::ecs::ECSWorld& world,
+	const engine::ecs::Entity scene_active_camera
+) const {
 	ImGui::Text("Scene Properties");
 	ImGui::Separator();
 
@@ -477,7 +488,7 @@ void PropertiesPanel::RenderSceneProperties(
 
 		if (const flecs::world& fw = world.GetWorld(); fw.has<engine::physics::PhysicsWorldConfig>()) {
 			auto& [gravity, fixed_timestep, max_substeps, enable_sleeping, show_debug_physics] =
-					fw.get_mut<engine::physics::PhysicsWorldConfig>();
+				fw.get_mut<engine::physics::PhysicsWorldConfig>();
 			if (ImGui::InputFloat3("Gravity", &gravity[0])) {
 				if (callbacks_.on_scene_modified) {
 					callbacks_.on_scene_modified();
@@ -506,14 +517,14 @@ void PropertiesPanel::RenderSceneProperties(
 	std::vector<flecs::entity> camera_entities;
 	const flecs::world& flecs_world = world.GetWorld();
 
-	flecs_world.query<engine::components::Camera>().each(
-			[&](const flecs::entity entity, const engine::components::Camera&) {
-				// HACK: Filter out EditorCamera - it's not part of the scene
-				if (const char* name = entity.name().c_str(); name && std::string(name) == "EditorCamera") {
-					return;
-				}
-				camera_entities.push_back(entity);
-			});
+	flecs_world.query<engine::components::Camera>().each([&](const flecs::entity entity,
+															 const engine::components::Camera&) {
+		// HACK: Filter out EditorCamera - it's not part of the scene
+		if (const char* name = entity.name().c_str(); name && std::string(name) == "EditorCamera") {
+			return;
+		}
+		camera_entities.push_back(entity);
+	});
 
 	// Active Camera selection (uses scene_active_camera, not ECS active camera which is the editor camera)
 	if (ImGui::CollapsingHeader("Camera", ImGuiTreeNodeFlags_DefaultOpen)) {

@@ -35,7 +35,7 @@ JoltPhysicsModule::JoltPhysicsModule(const flecs::world& world) {
 	// Get default config from PhysicsWorldConfig singleton
 	PhysicsConfig config;
 	const auto& [gravity, fixed_timestep, max_substeps, enable_sleeping, show_debug_physics] =
-			world.get<PhysicsWorldConfig>();
+		world.get<PhysicsWorldConfig>();
 	config.gravity = gravity;
 	config.fixed_timestep = fixed_timestep;
 	config.max_substeps = max_substeps;
@@ -59,46 +59,47 @@ JoltPhysicsModule::JoltPhysicsModule(const flecs::world& world) {
 
 	// Observer: When RigidBody + CollisionShape are set on an entity, sync to backend
 	world.observer<const components::WorldTransform, const RigidBody, const CollisionShape>("JoltSyncToBackend")
-			.event(flecs::OnSet)
-			.each([backend](
-						  const flecs::entity e,
-						  const components::WorldTransform& wt,
-						  const RigidBody& rb,
-						  const CollisionShape& cs) {
-				backend->SyncBodyToBackend(e.id(), PhysicsTransform::FromMatrix(wt.matrix), rb, cs);
+		.event(flecs::OnSet)
+		.each([backend](
+				  const flecs::entity e,
+				  const components::WorldTransform& wt,
+				  const RigidBody& rb,
+				  const CollisionShape& cs
+			  ) {
+			backend->SyncBodyToBackend(e.id(), PhysicsTransform::FromMatrix(wt.matrix), rb, cs);
 
-				// Add PhysicsVelocity if not present (for dynamic bodies)
-				if (rb.motion_type == MotionType::Dynamic && !e.has<PhysicsVelocity>()) {
-					e.set<PhysicsVelocity>({});
-				}
-			});
+			// Add PhysicsVelocity if not present (for dynamic bodies)
+			if (rb.motion_type == MotionType::Dynamic && !e.has<PhysicsVelocity>()) {
+				e.set<PhysicsVelocity>({});
+			}
+		});
 
 	// Observer: When RigidBody is removed, remove from backend
 	world.observer<const RigidBody>("JoltRemoveBody")
-			.event(flecs::OnRemove)
-			.each([backend](const flecs::entity e, const RigidBody&) { backend->RemoveBody(e.id()); });
+		.event(flecs::OnRemove)
+		.each([backend](const flecs::entity e, const RigidBody&) { backend->RemoveBody(e.id()); });
 
 	// System: Apply forces from PhysicsForce components
 	world.system<const PhysicsForce>("JoltApplyForces")
-			.kind(simulation_phase)
-			.each([backend](const flecs::entity e, const PhysicsForce& force) {
-				if (backend->HasBody(e.id())) {
-					backend->ApplyForce(e.id(), force.force, force.torque);
-				}
-				if (force.clear_after_apply) {
-					e.remove<PhysicsForce>();
-				}
-			});
+		.kind(simulation_phase)
+		.each([backend](const flecs::entity e, const PhysicsForce& force) {
+			if (backend->HasBody(e.id())) {
+				backend->ApplyForce(e.id(), force.force, force.torque);
+			}
+			if (force.clear_after_apply) {
+				e.remove<PhysicsForce>();
+			}
+		});
 
 	// System: Apply impulses from PhysicsImpulse components (consumed immediately)
 	world.system<const PhysicsImpulse>("JoltApplyImpulses")
-			.kind(simulation_phase)
-			.each([backend](const flecs::entity e, const PhysicsImpulse& impulse) {
-				if (backend->HasBody(e.id())) {
-					backend->ApplyImpulse(e.id(), impulse.impulse, impulse.point);
-				}
-				e.remove<PhysicsImpulse>();
-			});
+		.kind(simulation_phase)
+		.each([backend](const flecs::entity e, const PhysicsImpulse& impulse) {
+			if (backend->HasBody(e.id())) {
+				backend->ApplyImpulse(e.id(), impulse.impulse, impulse.point);
+			}
+			e.remove<PhysicsImpulse>();
+		});
 
 	// Fixed timestep accumulator stored as a singleton
 	world.set<PhysicsAccumulator>({});
@@ -128,14 +129,15 @@ JoltPhysicsModule::JoltPhysicsModule(const flecs::world& world) {
 
 	// System: Sync results from backend back to ECS components
 	world.system<components::WorldTransform, PhysicsVelocity, const RigidBody>("JoltSyncFromBackend")
-			.kind(simulation_phase)
-			.each([backend](const flecs::entity e, components::WorldTransform& wt, PhysicsVelocity& v, const RigidBody& rb) {
+		.kind(simulation_phase)
+		.each(
+			[backend](const flecs::entity e, components::WorldTransform& wt, PhysicsVelocity& v, const RigidBody& rb) {
 				if (rb.motion_type != MotionType::Dynamic || !backend->HasBody(e.id())) {
 					return;
 				}
 
 				const auto [position, rotation, linear_velocity, angular_velocity] =
-						backend->SyncBodyFromBackend(e.id());
+					backend->SyncBodyFromBackend(e.id());
 
 				// Physics owns WorldTransform — write world-space values directly.
 				// Transform stays local-space (initial offset from parent).
@@ -153,7 +155,8 @@ JoltPhysicsModule::JoltPhysicsModule(const flecs::world& world) {
 						child.modified<components::Transform>();
 					}
 				});
-			});
+			}
+		);
 
 	// System: Clear old collision events, then distribute new ones
 	world.system("JoltCollisionEvents").kind(simulation_phase).run([backend](const flecs::iter& it) {

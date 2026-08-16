@@ -32,15 +32,16 @@ public:
 	 * @param description Human-readable description
 	 */
 	PropertyChangeCommand(
-			engine::ecs::Entity entity,
-			flecs::id_t component_id,
-			size_t field_offset,
-			size_t field_size,
-			const void* old_value,
-			const void* new_value,
-			std::string description)
-		: entity_(entity), component_id_(component_id), field_offset_(field_offset), field_size_(field_size),
-		  description_(std::move(description)) {
+		engine::ecs::Entity entity,
+		flecs::id_t component_id,
+		size_t field_offset,
+		size_t field_size,
+		const void* old_value,
+		const void* new_value,
+		std::string description
+	) :
+			entity_(entity), component_id_(component_id), field_offset_(field_offset), field_size_(field_size),
+			description_(std::move(description)) {
 		// Store old and new values as raw bytes
 		old_value_.resize(field_size);
 		new_value_.resize(field_size);

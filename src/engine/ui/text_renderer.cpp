@@ -116,9 +116,9 @@ FontAtlas::FontAtlas(const std::string& font_path, int font_size_px) : font_size
 	std::vector<uint8_t> rgba_bitmap;
 	rgba_bitmap.reserve(atlas_bitmap.size() * 4);
 	for (uint8_t gray : atlas_bitmap) {
-		rgba_bitmap.push_back(255); // R
-		rgba_bitmap.push_back(255); // G
-		rgba_bitmap.push_back(255); // B
+		rgba_bitmap.push_back(255);  // R
+		rgba_bitmap.push_back(255);  // G
+		rgba_bitmap.push_back(255);  // B
 		rgba_bitmap.push_back(gray); // A (coverage)
 	}
 
@@ -128,11 +128,12 @@ FontAtlas::FontAtlas(const std::string& font_path, int font_size_px) : font_size
 	tex_info.format = rendering::TextureFormat::RGBA8;
 	tex_info.data = rgba_bitmap.data();
 	tex_info.parameters = {
-			.min_filter = rendering::TextureFilter::Linear,
-			.mag_filter = rendering::TextureFilter::Linear,
-			.wrap_s = rendering::TextureWrap::ClampToEdge,
-			.wrap_t = rendering::TextureWrap::ClampToEdge,
-			.generate_mipmaps = false};
+		.min_filter = rendering::TextureFilter::Linear,
+		.mag_filter = rendering::TextureFilter::Linear,
+		.wrap_s = rendering::TextureWrap::ClampToEdge,
+		.wrap_t = rendering::TextureWrap::ClampToEdge,
+		.generate_mipmaps = false
+	};
 
 	atlas_texture_id_ = texture_mgr.CreateTexture(font_path + "_atlas_" + std::to_string(font_size_px), tex_info);
 }
@@ -183,9 +184,11 @@ std::vector<uint32_t> Decode(const std::string& utf8_string) {
 		}
 		else if ((byte & 0xF0) == 0xE0) {
 			// 3-byte character
-			if (i + 2 < utf8_string.size() && (static_cast<uint8_t>(utf8_string[i + 1]) & 0xC0) == 0x80
+			if (i + 2 < utf8_string.size()
+				&& (static_cast<uint8_t>(utf8_string[i + 1]) & 0xC0) == 0x80
 				&& (static_cast<uint8_t>(utf8_string[i + 2]) & 0xC0) == 0x80) {
-				codepoint = ((byte & 0x0F) << 12) | ((static_cast<uint8_t>(utf8_string[i + 1]) & 0x3F) << 6)
+				codepoint = ((byte & 0x0F) << 12)
+							| ((static_cast<uint8_t>(utf8_string[i + 1]) & 0x3F) << 6)
 							| (static_cast<uint8_t>(utf8_string[i + 2]) & 0x3F);
 				i += 3;
 				valid = true;
@@ -196,10 +199,12 @@ std::vector<uint32_t> Decode(const std::string& utf8_string) {
 		}
 		else if ((byte & 0xF8) == 0xF0) {
 			// 4-byte character
-			if (i + 3 < utf8_string.size() && (static_cast<uint8_t>(utf8_string[i + 1]) & 0xC0) == 0x80
+			if (i + 3 < utf8_string.size()
+				&& (static_cast<uint8_t>(utf8_string[i + 1]) & 0xC0) == 0x80
 				&& (static_cast<uint8_t>(utf8_string[i + 2]) & 0xC0) == 0x80
 				&& (static_cast<uint8_t>(utf8_string[i + 3]) & 0xC0) == 0x80) {
-				codepoint = ((byte & 0x07) << 18) | ((static_cast<uint8_t>(utf8_string[i + 1]) & 0x3F) << 12)
+				codepoint = ((byte & 0x07) << 18)
+							| ((static_cast<uint8_t>(utf8_string[i + 1]) & 0x3F) << 12)
 							| ((static_cast<uint8_t>(utf8_string[i + 2]) & 0x3F) << 6)
 							| (static_cast<uint8_t>(utf8_string[i + 3]) & 0x3F);
 				i += 4;

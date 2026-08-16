@@ -89,7 +89,10 @@ private:
 	FileDialogPopup open_dialog_{"Open Sprite Atlas", FileDialogMode::Open, {".json"}};
 	FileDialogPopup save_dialog_{"Save Sprite Atlas As", FileDialogMode::Save, {".json"}};
 	FileDialogPopup image_dialog_{
-			"Select Source Image", FileDialogMode::Open, {".png", ".jpg", ".jpeg", ".tga", ".bmp"}};
+		"Select Source Image",
+		FileDialogMode::Open,
+		{".png", ".jpg", ".jpeg", ".tga", ".bmp"}
+	};
 
 	// Deferred image loading after OpenAtlas
 	bool pending_image_load_ = false;

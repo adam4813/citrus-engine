@@ -29,14 +29,14 @@ enum class FieldType {
 	ListInt,
 	ListFloat,
 	ListString,
-	ReadOnly, // Display-only string
-	AssetRef, // Reference to a scene asset by name (string, cache-only dropdown)
-	UintAssetRef, // Reference to a scene asset by GUID (uint32_t, cache-only dropdown)
+	ReadOnly,       // Display-only string
+	AssetRef,       // Reference to a scene asset by name (string, cache-only dropdown)
+	UintAssetRef,   // Reference to a scene asset by GUID (uint32_t, cache-only dropdown)
 	AssetReference, // Unified asset reference (engine::assets::AssetRef value: guid + path)
-	Enum, // Integer-backed enum displayed as combo box
-	FilePath, // String displayed with file browser hint
-	Selection, // String-backed dropdown with fixed options
-	Slider // Float displayed as slider with configurable min/max
+	Enum,           // Integer-backed enum displayed as combo box
+	FilePath,       // String displayed with file browser hint
+	Selection,      // String-backed dropdown with fixed options
+	Slider          // Float displayed as slider with configurable min/max
 };
 
 /**
@@ -46,16 +46,17 @@ struct FieldInfo {
 	std::string name;
 	std::string display_name; // Human-readable label (defaults to name if empty)
 	FieldType type{FieldType::ReadOnly};
-	size_t offset{}; // Byte offset into component struct
-	size_t size{}; // Size of the field in bytes
-	std::string asset_type; // For AssetRef: the asset type key (e.g., "shader", "mesh")
-	std::vector<std::string> enum_labels; // For Enum: display labels (index = integer value)
-	std::vector<std::string> enum_tooltips; // For Enum: tooltips for each option (index = integer value)
-	std::vector<std::string> options; // For Selection: valid string choices
+	size_t offset{};                          // Byte offset into component struct
+	size_t size{};                            // Size of the field in bytes
+	std::string asset_type;                   // For AssetRef: the asset type key (e.g., "shader", "mesh")
+	std::vector<std::string> enum_labels;     // For Enum: display labels (index = integer value)
+	std::vector<std::string> enum_tooltips;   // For Enum: tooltips for each option (index = integer value)
+	std::vector<std::string> options;         // For Selection: valid string choices
 	std::vector<std::string> file_extensions; // For FilePath/AssetRef: file extension filters (e.g., ".json", ".png")
-	float slider_min{0.0f}; // For Slider: minimum value
-	float slider_max{1.0f}; // For Slider: maximum value
-	std::string visible_when_field; // If non-empty, this field is only visible when the named field has a matching value
+	float slider_min{0.0f};                   // For Slider: minimum value
+	float slider_max{1.0f};                   // For Slider: maximum value
+	std::string
+		visible_when_field; // If non-empty, this field is only visible when the named field has a matching value
 	std::vector<int> visible_when_values; // Enum values of the controlling field that make this field visible
 };
 
@@ -72,59 +73,73 @@ struct ComponentInfo {
 
 // === TYPE DEDUCTION TRAITS ===
 
-template <typename T> struct FieldTypeTraits {
+template<typename T>
+struct FieldTypeTraits {
 	static constexpr auto type = FieldType::ReadOnly; // Default fallback
 };
 
-template <> struct FieldTypeTraits<bool> {
+template<>
+struct FieldTypeTraits<bool> {
 	static constexpr auto type = FieldType::Bool;
 };
 
-template <> struct FieldTypeTraits<int> {
+template<>
+struct FieldTypeTraits<int> {
 	static constexpr auto type = FieldType::Int;
 };
 
-template <> struct FieldTypeTraits<uint32_t> {
+template<>
+struct FieldTypeTraits<uint32_t> {
 	static constexpr auto type = FieldType::Int;
 };
 
-template <> struct FieldTypeTraits<size_t> {
+template<>
+struct FieldTypeTraits<size_t> {
 	static constexpr auto type = FieldType::Int;
 };
 
-template <> struct FieldTypeTraits<float> {
+template<>
+struct FieldTypeTraits<float> {
 	static constexpr auto type = FieldType::Float;
 };
 
-template <> struct FieldTypeTraits<double> {
+template<>
+struct FieldTypeTraits<double> {
 	static constexpr auto type = FieldType::Float;
 };
 
-template <> struct FieldTypeTraits<std::string> {
+template<>
+struct FieldTypeTraits<std::string> {
 	static constexpr auto type = FieldType::String;
 };
 
-template <> struct FieldTypeTraits<glm::vec2> {
+template<>
+struct FieldTypeTraits<glm::vec2> {
 	static constexpr auto type = FieldType::Vec2;
 };
 
-template <> struct FieldTypeTraits<glm::vec3> {
+template<>
+struct FieldTypeTraits<glm::vec3> {
 	static constexpr auto type = FieldType::Vec3;
 };
 
-template <> struct FieldTypeTraits<glm::vec4> {
+template<>
+struct FieldTypeTraits<glm::vec4> {
 	static constexpr auto type = FieldType::Vec4;
 };
 
-template <> struct FieldTypeTraits<std::vector<int>> {
+template<>
+struct FieldTypeTraits<std::vector<int>> {
 	static constexpr auto type = FieldType::ListInt;
 };
 
-template <> struct FieldTypeTraits<std::vector<float>> {
+template<>
+struct FieldTypeTraits<std::vector<float>> {
 	static constexpr auto type = FieldType::ListFloat;
 };
 
-template <> struct FieldTypeTraits<std::vector<std::string>> {
+template<>
+struct FieldTypeTraits<std::vector<std::string>> {
 	static constexpr auto type = FieldType::ListString;
 };
 
@@ -141,7 +156,8 @@ class ComponentRegistry;
  *       .Field("color", &Light::color, FieldType::Color)  // Override type
  *       .Build();
  */
-template <typename T> class ComponentRegistration {
+template<typename T>
+class ComponentRegistration {
 public:
 	ComponentRegistration(ComponentRegistry& registry, const std::string& name, const flecs::world& world);
 
@@ -156,10 +172,11 @@ public:
 	}
 
 	/**
-     * @brief Register a field with automatic type deduction
-     * Also registers the field with flecs reflection for JSON serialization
-     */
-	template <typename FieldT> ComponentRegistration& Field(const std::string& field_name, FieldT T::* member_ptr) {
+	 * @brief Register a field with automatic type deduction
+	 * Also registers the field with flecs reflection for JSON serialization
+	 */
+	template<typename FieldT>
+	ComponentRegistration& Field(const std::string& field_name, FieldT T::* member_ptr) {
 		FieldInfo field;
 		field.name = field_name;
 		field.type = FieldTypeTraits<FieldT>::type;
@@ -173,10 +190,10 @@ public:
 	}
 
 	/**
-     * @brief Register a field with explicit type override
-     * Also registers the field with flecs reflection for JSON serialization
-     */
-	template <typename FieldT>
+	 * @brief Register a field with explicit type override
+	 * Also registers the field with flecs reflection for JSON serialization
+	 */
+	template<typename FieldT>
 	ComponentRegistration& Field(const std::string& field_name, FieldT T::* member_ptr, const FieldType type_override) {
 		FieldInfo field;
 		field.name = field_name;
@@ -199,8 +216,10 @@ public:
 			auto& f = info_.fields.back();
 			// For list types, only set the asset_type hint (elements rendered as asset pickers).
 			// Preserve UintAssetRef (GUID-backed) fields rather than forcing string-by-name AssetRef.
-			if (f.type != FieldType::ListInt && f.type != FieldType::ListFloat
-				&& f.type != FieldType::ListString && f.type != FieldType::UintAssetRef
+			if (f.type != FieldType::ListInt
+				&& f.type != FieldType::ListFloat
+				&& f.type != FieldType::ListString
+				&& f.type != FieldType::UintAssetRef
 				&& f.type != FieldType::AssetReference) {
 				f.type = FieldType::AssetRef;
 			}
@@ -284,12 +303,13 @@ public:
 	 * @param asset_type_key Asset type hint for asset-reference widgets (may be empty)
 	 */
 	ComponentRegistration& StructField(
-			const std::string& field_name,
-			const size_t offset,
-			const size_t size,
-			const flecs::entity_t member_type_id,
-			const FieldType field_type,
-			const std::string& asset_type_key = {}) {
+		const std::string& field_name,
+		const size_t offset,
+		const size_t size,
+		const flecs::entity_t member_type_id,
+		const FieldType field_type,
+		const std::string& asset_type_key = {}
+	) {
 		FieldInfo field;
 		field.name = field_name;
 		field.type = field_type;
@@ -303,7 +323,8 @@ public:
 	}
 
 	void Build();
-	template <typename FieldT> void RegisterFlecsMember(const std::string& field_name) {
+	template<typename FieldT>
+	void RegisterFlecsMember(const std::string& field_name) {
 		if constexpr (std::is_same_v<FieldT, bool>) {
 			component_.member<bool>(field_name.c_str());
 		}
@@ -361,36 +382,37 @@ public:
 class ComponentRegistry {
 public:
 	/**
-     * @brief Get the singleton instance
-     */
+	 * @brief Get the singleton instance
+	 */
 	static ComponentRegistry& Instance();
 
 	/**
-     * @brief Start registering a component with builder pattern
-     */
-	template <typename T> ComponentRegistration<T> Register(const std::string& name, flecs::world& world) {
+	 * @brief Start registering a component with builder pattern
+	 */
+	template<typename T>
+	ComponentRegistration<T> Register(const std::string& name, flecs::world& world) {
 		return ComponentRegistration<T>(*this, name, world);
 	}
 
 	/**
-     * @brief Get list of all registered components
-     */
+	 * @brief Get list of all registered components
+	 */
 	[[nodiscard]] const std::vector<ComponentInfo>& GetComponents() const { return components_; }
 
 	/**
-     * @brief Get unique category names (sorted)
-     */
+	 * @brief Get unique category names (sorted)
+	 */
 	[[nodiscard]] std::vector<std::string> GetCategories() const;
 
 	/**
-     * @brief Get components filtered by category
-     */
+	 * @brief Get components filtered by category
+	 */
 	[[nodiscard]] std::vector<const ComponentInfo*> GetComponentsByCategory(const std::string& category) const;
 
 	/**
-     * @brief Find component by name
-     * @return nullptr if not found
-     */
+	 * @brief Find component by name
+	 * @return nullptr if not found
+	 */
 	[[nodiscard]] const ComponentInfo* FindComponent(const std::string& name) const;
 
 	// Called by ComponentRegistration::Build()
@@ -406,15 +428,20 @@ private:
 };
 
 // Template implementation
-template <typename T>
+template<typename T>
 ComponentRegistration<T>::ComponentRegistration(
-		ComponentRegistry& registry, const std::string& name, const flecs::world& world) :
-		registry_(registry), component_(world.component<T>()) {
+	ComponentRegistry& registry,
+	const std::string& name,
+	const flecs::world& world
+) : registry_(registry), component_(world.component<T>()) {
 	info_.name = name;
 	info_.category = "Other"; // Default category
 	info_.id = component_.id();
 }
 
-template <typename T> void ComponentRegistration<T>::Build() { registry_.AddComponent(std::move(info_)); }
+template<typename T>
+void ComponentRegistration<T>::Build() {
+	registry_.AddComponent(std::move(info_));
+}
 
 } // namespace engine::ecs

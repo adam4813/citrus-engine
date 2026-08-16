@@ -47,40 +47,35 @@ static void to_json(json& j, const PinValue& value) {
 				j = arg;
 			}
 		},
-		value);
+		value
+	);
 }
 
 // Helper to convert JSON to PinValue based on type
 static PinValue from_json_value(const json& j, PinType type) {
 	switch (type) {
-		case PinType::Bool:
-			return j.get<bool>();
-		case PinType::Int:
-		case PinType::Texture:
-			return j.get<int>();
-		case PinType::Float:
-			return j.get<float>();
-		case PinType::Vec2:
-			if (j.is_array() && j.size() >= 2) {
-				return glm::vec2(j[0].get<float>(), j[1].get<float>());
-			}
-			return glm::vec2(0.0f);
-		case PinType::Vec3:
-			if (j.is_array() && j.size() >= 3) {
-				return glm::vec3(j[0].get<float>(), j[1].get<float>(), j[2].get<float>());
-			}
-			return glm::vec3(0.0f);
-		case PinType::Vec4:
-		case PinType::Color:
-			if (j.is_array() && j.size() >= 4) {
-				return glm::vec4(j[0].get<float>(), j[1].get<float>(), j[2].get<float>(),
-								 j[3].get<float>());
-			}
-			return glm::vec4(0.0f);
-		case PinType::String:
-			return j.get<std::string>();
-		default:
-			return 0.0f;
+	case PinType::Bool: return j.get<bool>();
+	case PinType::Int:
+	case PinType::Texture: return j.get<int>();
+	case PinType::Float: return j.get<float>();
+	case PinType::Vec2:
+		if (j.is_array() && j.size() >= 2) {
+			return glm::vec2(j[0].get<float>(), j[1].get<float>());
+		}
+		return glm::vec2(0.0f);
+	case PinType::Vec3:
+		if (j.is_array() && j.size() >= 3) {
+			return glm::vec3(j[0].get<float>(), j[1].get<float>(), j[2].get<float>());
+		}
+		return glm::vec3(0.0f);
+	case PinType::Vec4:
+	case PinType::Color:
+		if (j.is_array() && j.size() >= 4) {
+			return glm::vec4(j[0].get<float>(), j[1].get<float>(), j[2].get<float>(), j[3].get<float>());
+		}
+		return glm::vec4(0.0f);
+	case PinType::String: return j.get<std::string>();
+	default: return 0.0f;
 	}
 }
 
@@ -170,7 +165,7 @@ bool GraphSerializer::Deserialize(const std::string& json_str, NodeGraph& graph)
 				Node node;
 				node.id = node_json["id"].get<int>();
 				max_id = std::max(max_id, node.id);
-				
+
 				node.type_name = node_json["type"].get<std::string>();
 
 				if (node_json.contains("position") && node_json["position"].is_array()) {
@@ -186,7 +181,7 @@ bool GraphSerializer::Deserialize(const std::string& json_str, NodeGraph& graph)
 						Pin pin;
 						pin.id = pin_json["id"].get<int>();
 						max_id = std::max(max_id, pin.id);
-						
+
 						pin.name = pin_json["name"].get<std::string>();
 						pin.type = static_cast<PinType>(pin_json["type"].get<int>());
 						pin.direction = PinDirection::Input;
@@ -205,7 +200,7 @@ bool GraphSerializer::Deserialize(const std::string& json_str, NodeGraph& graph)
 						Pin pin;
 						pin.id = pin_json["id"].get<int>();
 						max_id = std::max(max_id, pin.id);
-						
+
 						pin.name = pin_json["name"].get<std::string>();
 						pin.type = static_cast<PinType>(pin_json["type"].get<int>());
 						pin.direction = PinDirection::Output;
@@ -235,7 +230,7 @@ bool GraphSerializer::Deserialize(const std::string& json_str, NodeGraph& graph)
 				Link link;
 				link.id = link_json["id"].get<int>();
 				max_id = std::max(max_id, link.id);
-				
+
 				link.from_node_id = link_json["from_node"].get<int>();
 				link.from_pin_index = link_json["from_pin"].get<int>();
 				link.to_node_id = link_json["to_node"].get<int>();

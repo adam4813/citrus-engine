@@ -27,10 +27,11 @@ void ViewportPanel::HandleGizmoInput() {
 }
 
 void ViewportPanel::RenderTransformGizmo(
-		const flecs::entity selected_entity,
-		const flecs::entity editor_camera,
-		const ImVec2& viewport_min,
-		const ImVec2& viewport_size) {
+	const flecs::entity selected_entity,
+	const flecs::entity editor_camera,
+	const ImVec2& viewport_min,
+	const ImVec2& viewport_size
+) {
 	// Dispatch to appropriate gizmo based on current mode
 	switch (gizmo_mode_) {
 	case GizmoMode::Translate: RenderTranslateGizmo(selected_entity, editor_camera, viewport_min, viewport_size); break;
@@ -40,10 +41,11 @@ void ViewportPanel::RenderTransformGizmo(
 }
 
 void ViewportPanel::RenderTranslateGizmo(
-		const flecs::entity selected_entity,
-		const flecs::entity editor_camera,
-		const ImVec2& viewport_min,
-		const ImVec2& viewport_size) {
+	const flecs::entity selected_entity,
+	const flecs::entity editor_camera,
+	const ImVec2& viewport_min,
+	const ImVec2& viewport_size
+) {
 	if (!editor_camera.is_valid() || !editor_camera.has<engine::components::Camera>()) {
 		return;
 	}
@@ -59,8 +61,10 @@ void ViewportPanel::RenderTranslateGizmo(
 			return {-1.0f, -1.0f};
 		}
 		const glm::vec3 ndc = glm::vec3(clip) / clip.w;
-		return {viewport_min.x + (ndc.x * 0.5f + 0.5f) * viewport_size.x,
-				viewport_min.y + (1.0f - (ndc.y * 0.5f + 0.5f)) * viewport_size.y};
+		return {
+			viewport_min.x + (ndc.x * 0.5f + 0.5f) * viewport_size.x,
+			viewport_min.y + (1.0f - (ndc.y * 0.5f + 0.5f)) * viewport_size.y
+		};
 	};
 
 	const glm::vec3 origin = entity_transform.position;
@@ -191,12 +195,13 @@ void ViewportPanel::RenderTranslateGizmo(
 		}
 		const bool highlight = (i == dragging_axis_ || i == hovered_axis);
 		DrawAxisLine(
-				draw_list,
-				{.origin = origin_2d,
-				 .end = axis_ends_2d[i],
-				 .color = highlight ? kAxisHoverColors[i] : kAxisColors[i],
-				 .thickness = highlight ? kGizmoThickness + 1.5f : kGizmoThickness,
-				 .arrow_size = kArrowHeadSize});
+			draw_list,
+			{.origin = origin_2d,
+			 .end = axis_ends_2d[i],
+			 .color = highlight ? kAxisHoverColors[i] : kAxisColors[i],
+			 .thickness = highlight ? kGizmoThickness + 1.5f : kGizmoThickness,
+			 .arrow_size = kArrowHeadSize}
+		);
 	}
 
 	// Draw origin circle
@@ -204,10 +209,11 @@ void ViewportPanel::RenderTranslateGizmo(
 }
 
 void ViewportPanel::RenderRotationGizmo(
-		const flecs::entity selected_entity,
-		const flecs::entity editor_camera,
-		const ImVec2& viewport_min,
-		const ImVec2& viewport_size) {
+	const flecs::entity selected_entity,
+	const flecs::entity editor_camera,
+	const ImVec2& viewport_min,
+	const ImVec2& viewport_size
+) {
 	if (!editor_camera.is_valid() || !editor_camera.has<engine::components::Camera>()) {
 		return;
 	}
@@ -223,8 +229,10 @@ void ViewportPanel::RenderRotationGizmo(
 			return {-1.0f, -1.0f};
 		}
 		const glm::vec3 ndc = glm::vec3(clip) / clip.w;
-		return {viewport_min.x + (ndc.x * 0.5f + 0.5f) * viewport_size.x,
-				viewport_min.y + (1.0f - (ndc.y * 0.5f + 0.5f)) * viewport_size.y};
+		return {
+			viewport_min.x + (ndc.x * 0.5f + 0.5f) * viewport_size.x,
+			viewport_min.y + (1.0f - (ndc.y * 0.5f + 0.5f)) * viewport_size.y
+		};
 	};
 
 	const glm::vec3 origin = entity_transform.position;
@@ -272,8 +280,8 @@ void ViewportPanel::RenderRotationGizmo(
 
 			// Build two perpendicular vectors in the rotation plane
 			glm::vec3 tangent1 = glm::abs(axis_normal.y) < 0.9f
-										 ? glm::normalize(glm::cross(axis_normal, glm::vec3(0.0f, 1.0f, 0.0f)))
-										 : glm::normalize(glm::cross(axis_normal, glm::vec3(1.0f, 0.0f, 0.0f)));
+									 ? glm::normalize(glm::cross(axis_normal, glm::vec3(0.0f, 1.0f, 0.0f)))
+									 : glm::normalize(glm::cross(axis_normal, glm::vec3(1.0f, 0.0f, 0.0f)));
 			glm::vec3 tangent2 = glm::normalize(glm::cross(axis_normal, tangent1));
 
 			// Check distance from mouse to ring arc
@@ -282,9 +290,9 @@ void ViewportPanel::RenderRotationGizmo(
 				const float angle2 = ((seg + 1) * 2.0f * glm::pi<float>()) / kNumSegments;
 
 				const glm::vec3 p1_world =
-						origin + ring_world_radius * (std::cos(angle1) * tangent1 + std::sin(angle1) * tangent2);
+					origin + ring_world_radius * (std::cos(angle1) * tangent1 + std::sin(angle1) * tangent2);
 				const glm::vec3 p2_world =
-						origin + ring_world_radius * (std::cos(angle2) * tangent1 + std::sin(angle2) * tangent2);
+					origin + ring_world_radius * (std::cos(angle2) * tangent1 + std::sin(angle2) * tangent2);
 
 				const ImVec2 p1_2d = project(p1_world);
 				const ImVec2 p2_2d = project(p2_world);
@@ -295,8 +303,8 @@ void ViewportPanel::RenderRotationGizmo(
 					const ImVec2 mouse_dir = {mouse_pos.x - p1_2d.x, mouse_pos.y - p1_2d.y};
 					const float seg_len_sq = seg_dir.x * seg_dir.x + seg_dir.y * seg_dir.y;
 					if (seg_len_sq > 1e-6f) {
-						const float t = std::clamp(
-								(mouse_dir.x * seg_dir.x + mouse_dir.y * seg_dir.y) / seg_len_sq, 0.0f, 1.0f);
+						const float t =
+							std::clamp((mouse_dir.x * seg_dir.x + mouse_dir.y * seg_dir.y) / seg_len_sq, 0.0f, 1.0f);
 						const float dx = mouse_dir.x - seg_dir.x * t;
 						const float dy = mouse_dir.y - seg_dir.y * t;
 						const float d = std::sqrt(dx * dx + dy * dy);
@@ -369,8 +377,8 @@ void ViewportPanel::RenderRotationGizmo(
 
 		// Build two perpendicular vectors in the rotation plane
 		glm::vec3 tangent1 = glm::abs(axis_normal.y) < 0.9f
-									 ? glm::normalize(glm::cross(axis_normal, glm::vec3(0.0f, 1.0f, 0.0f)))
-									 : glm::normalize(glm::cross(axis_normal, glm::vec3(1.0f, 0.0f, 0.0f)));
+								 ? glm::normalize(glm::cross(axis_normal, glm::vec3(0.0f, 1.0f, 0.0f)))
+								 : glm::normalize(glm::cross(axis_normal, glm::vec3(1.0f, 0.0f, 0.0f)));
 		glm::vec3 tangent2 = glm::normalize(glm::cross(axis_normal, tangent1));
 
 		// Draw ring as line segments
@@ -379,9 +387,9 @@ void ViewportPanel::RenderRotationGizmo(
 			const float angle2 = ((seg + 1) * 2.0f * glm::pi<float>()) / kNumSegments;
 
 			const glm::vec3 p1_world =
-					origin + ring_world_radius * (std::cos(angle1) * tangent1 + std::sin(angle1) * tangent2);
+				origin + ring_world_radius * (std::cos(angle1) * tangent1 + std::sin(angle1) * tangent2);
 			const glm::vec3 p2_world =
-					origin + ring_world_radius * (std::cos(angle2) * tangent1 + std::sin(angle2) * tangent2);
+				origin + ring_world_radius * (std::cos(angle2) * tangent1 + std::sin(angle2) * tangent2);
 
 			const ImVec2 p1_2d = project(p1_world);
 			const ImVec2 p2_2d = project(p2_world);
@@ -397,10 +405,11 @@ void ViewportPanel::RenderRotationGizmo(
 }
 
 void ViewportPanel::RenderScaleGizmo(
-		const flecs::entity selected_entity,
-		const flecs::entity editor_camera,
-		const ImVec2& viewport_min,
-		const ImVec2& viewport_size) {
+	const flecs::entity selected_entity,
+	const flecs::entity editor_camera,
+	const ImVec2& viewport_min,
+	const ImVec2& viewport_size
+) {
 	if (!editor_camera.is_valid() || !editor_camera.has<engine::components::Camera>()) {
 		return;
 	}
@@ -416,8 +425,10 @@ void ViewportPanel::RenderScaleGizmo(
 			return {-1.0f, -1.0f};
 		}
 		const glm::vec3 ndc = glm::vec3(clip) / clip.w;
-		return {viewport_min.x + (ndc.x * 0.5f + 0.5f) * viewport_size.x,
-				viewport_min.y + (1.0f - (ndc.y * 0.5f + 0.5f)) * viewport_size.y};
+		return {
+			viewport_min.x + (ndc.x * 0.5f + 0.5f) * viewport_size.x,
+			viewport_min.y + (1.0f - (ndc.y * 0.5f + 0.5f)) * viewport_size.y
+		};
 	};
 
 	const glm::vec3 origin = entity_transform.position;
@@ -473,8 +484,9 @@ void ViewportPanel::RenderScaleGizmo(
 
 	// Check for center cube hover (for uniform scale)
 	const float center_dist = std::sqrt(
-			(mouse_pos.x - origin_2d.x) * (mouse_pos.x - origin_2d.x)
-			+ (mouse_pos.y - origin_2d.y) * (mouse_pos.y - origin_2d.y));
+		(mouse_pos.x - origin_2d.x) * (mouse_pos.x - origin_2d.x)
+		+ (mouse_pos.y - origin_2d.y) * (mouse_pos.y - origin_2d.y)
+	);
 	const bool center_hovered = (center_dist < 10.0f) && dragging_axis_ < 0 && !right_down;
 
 	// Determine hovered axis
@@ -539,7 +551,7 @@ void ViewportPanel::RenderScaleGizmo(
 				// Single axis scale
 				const ImVec2 mouse_delta = {mouse_pos.x - drag_start_mouse_.x, mouse_pos.y - drag_start_mouse_.y};
 				const float projected =
-						mouse_delta.x * drag_axis_screen_dir_.x + mouse_delta.y * drag_axis_screen_dir_.y;
+					mouse_delta.x * drag_axis_screen_dir_.x + mouse_delta.y * drag_axis_screen_dir_.y;
 
 				float scale_delta = projected * 0.01f; // Scale sensitivity
 
@@ -580,9 +592,10 @@ void ViewportPanel::RenderScaleGizmo(
 		// Draw cube at endpoint
 		const ImVec2& cube_center = axis_ends_2d[i];
 		draw_list->AddRectFilled(
-				ImVec2(cube_center.x - kCubeSize * 0.5f, cube_center.y - kCubeSize * 0.5f),
-				ImVec2(cube_center.x + kCubeSize * 0.5f, cube_center.y + kCubeSize * 0.5f),
-				color);
+			ImVec2(cube_center.x - kCubeSize * 0.5f, cube_center.y - kCubeSize * 0.5f),
+			ImVec2(cube_center.x + kCubeSize * 0.5f, cube_center.y + kCubeSize * 0.5f),
+			color
+		);
 	}
 
 	// Draw center cube for uniform scale
@@ -590,15 +603,17 @@ void ViewportPanel::RenderScaleGizmo(
 	const ImU32 center_color = center_highlight ? IM_COL32(255, 255, 255, 255) : IM_COL32(200, 200, 200, 200);
 	const float center_cube_size = center_highlight ? 10.0f : 8.0f;
 	draw_list->AddRectFilled(
-			ImVec2(origin_2d.x - center_cube_size * 0.5f, origin_2d.y - center_cube_size * 0.5f),
-			ImVec2(origin_2d.x + center_cube_size * 0.5f, origin_2d.y + center_cube_size * 0.5f),
-			center_color);
+		ImVec2(origin_2d.x - center_cube_size * 0.5f, origin_2d.y - center_cube_size * 0.5f),
+		ImVec2(origin_2d.x + center_cube_size * 0.5f, origin_2d.y + center_cube_size * 0.5f),
+		center_color
+	);
 }
 
 void ViewportPanel::RenderOrientationGizmo(const ImVec2& viewport_min, const ImVec2& viewport_size) {
 	const ImVec2 center = {
-			viewport_min.x + viewport_size.x - kOrientationGizmoSize - kOrientationGizmoMargin,
-			viewport_min.y + kOrientationGizmoSize + kOrientationGizmoMargin};
+		viewport_min.x + viewport_size.x - kOrientationGizmoSize - kOrientationGizmoMargin,
+		viewport_min.y + kOrientationGizmoSize + kOrientationGizmoMargin
+	};
 
 	// Rotate world axes by inverse camera orientation to get screen-space directions
 	const glm::quat inv = glm::inverse(camera_orientation_);
@@ -616,10 +631,11 @@ void ViewportPanel::RenderOrientationGizmo(const ImVec2& viewport_min, const ImV
 		const ImVec2 end = {center.x + rotated.x * kOrientationGizmoSize, center.y - rotated.y * kOrientationGizmoSize};
 		// Dim axes pointing away from camera (negative Z)
 		const ImU32 color = rotated.z < 0.0f ? IM_COL32(
-													   (kAxisColors[i] >> 0) & 0xFF,
-													   (kAxisColors[i] >> 8) & 0xFF,
-													   (kAxisColors[i] >> 16) & 0xFF,
-													   100)
+												   (kAxisColors[i] >> 0) & 0xFF,
+												   (kAxisColors[i] >> 8) & 0xFF,
+												   (kAxisColors[i] >> 16) & 0xFF,
+												   100
+											   )
 											 : kAxisColors[i];
 		DrawAxisLine(draw_list, {.origin = center, .end = end, .color = color, .thickness = 2.0f, .arrow_size = 7.0f});
 		DrawAxisLabel(draw_list, end, kAxisLabels[i], color);
@@ -646,7 +662,10 @@ void ViewportPanel::DrawAxisLine(ImDrawList* draw_list, const AxisDrawParams& pa
 void ViewportPanel::DrawAxisLabel(ImDrawList* draw_list, const ImVec2& pos, const char* label, const ImU32 color) {
 	const ImVec2 text_size = ImGui::CalcTextSize(label);
 	draw_list->AddText(
-			{pos.x - text_size.x * 0.5f + 1.0f, pos.y - text_size.y * 0.5f + 1.0f}, IM_COL32(0, 0, 0, 180), label);
+		{pos.x - text_size.x * 0.5f + 1.0f, pos.y - text_size.y * 0.5f + 1.0f},
+		IM_COL32(0, 0, 0, 180),
+		label
+	);
 	draw_list->AddText({pos.x - text_size.x * 0.5f, pos.y - text_size.y * 0.5f}, color, label);
 }
 

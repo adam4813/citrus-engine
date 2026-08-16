@@ -35,10 +35,14 @@ float AnimationTrack::GetDuration() const {
 
 // Helper to interpolate between two values based on type
 namespace {
-template <typename T> T Lerp(const T& a, const T& b, float t) { return a + (b - a) * t; }
+template<typename T>
+T Lerp(const T& a, const T& b, float t) {
+	return a + (b - a) * t;
+}
 
 // Cubic interpolation (Hermite spline)
-template <typename T> T CubicInterpolate(const T& p0, const T& p1, const T& p2, const T& p3, float t) {
+template<typename T>
+T CubicInterpolate(const T& p0, const T& p1, const T& p2, const T& p3, float t) {
 	const float t2 = t * t;
 	const float t3 = t2 * t;
 
@@ -59,27 +63,28 @@ AnimatedValue InterpolateValues(const AnimatedValue& v1, const AnimatedValue& v2
 
 	// Linear interpolation for all types
 	return std::visit(
-			[t](auto&& a, auto&& b) -> AnimatedValue {
-				using T1 = std::decay_t<decltype(a)>;
-				using T2 = std::decay_t<decltype(b)>;
+		[t](auto&& a, auto&& b) -> AnimatedValue {
+			using T1 = std::decay_t<decltype(a)>;
+			using T2 = std::decay_t<decltype(b)>;
 
-				if constexpr (std::is_same_v<T1, T2>) {
-					if constexpr (std::is_same_v<T1, glm::quat>) {
-						// Use slerp for quaternions
-						return glm::slerp(a, b, t);
-					}
-					else {
-						// Linear interpolation for scalars and vectors
-						return Lerp(a, b, t);
-					}
+			if constexpr (std::is_same_v<T1, T2>) {
+				if constexpr (std::is_same_v<T1, glm::quat>) {
+					// Use slerp for quaternions
+					return glm::slerp(a, b, t);
 				}
 				else {
-					// Type mismatch, return first value
-					return a;
+					// Linear interpolation for scalars and vectors
+					return Lerp(a, b, t);
 				}
-			},
-			v1,
-			v2);
+			}
+			else {
+				// Type mismatch, return first value
+				return a;
+			}
+		},
+		v1,
+		v2
+	);
 }
 } // namespace
 

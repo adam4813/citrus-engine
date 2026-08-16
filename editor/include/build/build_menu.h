@@ -37,10 +37,11 @@ private:
 	void StartBuild(const BuildTarget& target);
 	void RenderNewProjectModal();
 	bool CreateProjectFromTemplate(
-			const std::filesystem::path& parent_dir,
-			const std::string& project_name,
-			std::string& out_error,
-			std::filesystem::path& out_scene);
+		const std::filesystem::path& parent_dir,
+		const std::string& project_name,
+		std::string& out_error,
+		std::filesystem::path& out_scene
+	);
 
 	std::optional<ProjectModel> project_;
 	BuildDialog dialog_;

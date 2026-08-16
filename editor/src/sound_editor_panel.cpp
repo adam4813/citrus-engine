@@ -125,55 +125,40 @@ void SoundEditorPanel::RenderWaveformSelector() {
 void SoundEditorPanel::RenderFrequencyControls() {
 	ImGui::Text("Frequency");
 
-	if (ImGui::SliderFloat("Base Frequency (Hz)", &preset_.base_frequency, 20.0f, 2000.0f, "%.1f"))
-		SetDirty(true);
-	if (ImGui::SliderFloat("Min Frequency (Hz)", &preset_.frequency_min, 20.0f, 2000.0f, "%.1f"))
-		SetDirty(true);
-	if (ImGui::SliderFloat("Max Frequency (Hz)", &preset_.frequency_max, 20.0f, 2000.0f, "%.1f"))
-		SetDirty(true);
-	if (ImGui::SliderFloat("Frequency Slide", &preset_.frequency_slide, -1.0f, 1.0f, "%.3f"))
-		SetDirty(true);
+	if (ImGui::SliderFloat("Base Frequency (Hz)", &preset_.base_frequency, 20.0f, 2000.0f, "%.1f")) SetDirty(true);
+	if (ImGui::SliderFloat("Min Frequency (Hz)", &preset_.frequency_min, 20.0f, 2000.0f, "%.1f")) SetDirty(true);
+	if (ImGui::SliderFloat("Max Frequency (Hz)", &preset_.frequency_max, 20.0f, 2000.0f, "%.1f")) SetDirty(true);
+	if (ImGui::SliderFloat("Frequency Slide", &preset_.frequency_slide, -1.0f, 1.0f, "%.3f")) SetDirty(true);
 }
 
 void SoundEditorPanel::RenderEnvelopeControls() {
 	ImGui::Text("Envelope");
 
-	if (ImGui::SliderFloat("Attack Time (s)", &preset_.attack_time, 0.0f, 1.0f, "%.3f"))
-		SetDirty(true);
-	if (ImGui::SliderFloat("Sustain Time (s)", &preset_.sustain_time, 0.0f, 2.0f, "%.3f"))
-		SetDirty(true);
-	if (ImGui::SliderFloat("Sustain Level", &preset_.sustain_level, 0.0f, 1.0f, "%.3f"))
-		SetDirty(true);
-	if (ImGui::SliderFloat("Decay Time (s)", &preset_.decay_time, 0.0f, 2.0f, "%.3f"))
-		SetDirty(true);
+	if (ImGui::SliderFloat("Attack Time (s)", &preset_.attack_time, 0.0f, 1.0f, "%.3f")) SetDirty(true);
+	if (ImGui::SliderFloat("Sustain Time (s)", &preset_.sustain_time, 0.0f, 2.0f, "%.3f")) SetDirty(true);
+	if (ImGui::SliderFloat("Sustain Level", &preset_.sustain_level, 0.0f, 1.0f, "%.3f")) SetDirty(true);
+	if (ImGui::SliderFloat("Decay Time (s)", &preset_.decay_time, 0.0f, 2.0f, "%.3f")) SetDirty(true);
 }
 
 void SoundEditorPanel::RenderEffectControls() {
 	ImGui::Text("Effects");
 
 	if (ImGui::TreeNode("Vibrato")) {
-		if (ImGui::SliderFloat("Depth##Vibrato", &preset_.vibrato_depth, 0.0f, 1.0f, "%.3f"))
-			SetDirty(true);
-		if (ImGui::SliderFloat("Speed (Hz)##Vibrato", &preset_.vibrato_speed, 0.0f, 20.0f, "%.1f"))
-			SetDirty(true);
+		if (ImGui::SliderFloat("Depth##Vibrato", &preset_.vibrato_depth, 0.0f, 1.0f, "%.3f")) SetDirty(true);
+		if (ImGui::SliderFloat("Speed (Hz)##Vibrato", &preset_.vibrato_speed, 0.0f, 20.0f, "%.1f")) SetDirty(true);
 		ImGui::TreePop();
 	}
 
 	if (ImGui::TreeNode("Phaser")) {
-		if (ImGui::SliderFloat("Offset##Phaser", &preset_.phaser_offset, 0.0f, 1.0f, "%.3f"))
-			SetDirty(true);
-		if (ImGui::SliderFloat("Sweep##Phaser", &preset_.phaser_sweep, -1.0f, 1.0f, "%.3f"))
-			SetDirty(true);
+		if (ImGui::SliderFloat("Offset##Phaser", &preset_.phaser_offset, 0.0f, 1.0f, "%.3f")) SetDirty(true);
+		if (ImGui::SliderFloat("Sweep##Phaser", &preset_.phaser_sweep, -1.0f, 1.0f, "%.3f")) SetDirty(true);
 		ImGui::TreePop();
 	}
 
 	if (ImGui::TreeNode("Filter")) {
-		if (ImGui::SliderFloat("Low-pass Cutoff", &preset_.lowpass_cutoff, 0.0f, 1.0f, "%.3f"))
-			SetDirty(true);
-		if (ImGui::SliderFloat("Low-pass Sweep", &preset_.lowpass_sweep, -1.0f, 1.0f, "%.3f"))
-			SetDirty(true);
-		if (ImGui::SliderFloat("High-pass Cutoff", &preset_.highpass_cutoff, 0.0f, 1.0f, "%.3f"))
-			SetDirty(true);
+		if (ImGui::SliderFloat("Low-pass Cutoff", &preset_.lowpass_cutoff, 0.0f, 1.0f, "%.3f")) SetDirty(true);
+		if (ImGui::SliderFloat("Low-pass Sweep", &preset_.lowpass_sweep, -1.0f, 1.0f, "%.3f")) SetDirty(true);
+		if (ImGui::SliderFloat("High-pass Cutoff", &preset_.highpass_cutoff, 0.0f, 1.0f, "%.3f")) SetDirty(true);
 		ImGui::TreePop();
 	}
 }
@@ -181,10 +166,8 @@ void SoundEditorPanel::RenderEffectControls() {
 void SoundEditorPanel::RenderVolumeControls() {
 	ImGui::Text("Volume");
 
-	if (ImGui::SliderFloat("Master Volume", &preset_.master_volume, 0.0f, 1.0f, "%.3f"))
-		SetDirty(true);
-	if (ImGui::SliderFloat("Gain", &preset_.gain, 0.0f, 2.0f, "%.3f"))
-		SetDirty(true);
+	if (ImGui::SliderFloat("Master Volume", &preset_.master_volume, 0.0f, 1.0f, "%.3f")) SetDirty(true);
+	if (ImGui::SliderFloat("Gain", &preset_.gain, 0.0f, 2.0f, "%.3f")) SetDirty(true);
 }
 
 void SoundEditorPanel::RenderPresetButtons() {
@@ -389,7 +372,7 @@ void SoundEditorPanel::RandomizeHit() {
 	static std::mt19937 gen(rd());
 
 	preset_.waveform =
-			static_cast<WaveformType>(std::uniform_int_distribution<int>(1, 3)(gen)); // Square, Saw, Triangle
+		static_cast<WaveformType>(std::uniform_int_distribution<int>(1, 3)(gen)); // Square, Saw, Triangle
 	preset_.base_frequency = std::uniform_real_distribution<float>(200.0f, 500.0f)(gen);
 	preset_.frequency_slide = std::uniform_real_distribution<float>(-0.4f, 0.1f)(gen);
 	preset_.attack_time = 0.0f;
@@ -517,7 +500,7 @@ std::vector<float> SoundEditorPanel::SynthesizeFullAudio(const int sample_rate) 
 			// Decay: ramp from sustain_level to 0
 			const float decay_t = t - preset_.attack_time - preset_.sustain_time;
 			envelope =
-					(preset_.decay_time > 0.0f) ? preset_.sustain_level * (1.0f - decay_t / preset_.decay_time) : 0.0f;
+				(preset_.decay_time > 0.0f) ? preset_.sustain_level * (1.0f - decay_t / preset_.decay_time) : 0.0f;
 		}
 		envelope = std::clamp(envelope, 0.0f, 1.0f);
 
@@ -633,7 +616,7 @@ std::vector<uint8_t> SoundEditorPanel::BuildWavFile(const std::vector<float>& sa
 	// fmt chunk
 	write_tag("fmt ");
 	write_u32(16); // chunk size
-	write_u16(1); // PCM format
+	write_u16(1);  // PCM format
 	write_u16(num_channels);
 	write_u32(static_cast<uint32_t>(sample_rate));
 	write_u32(byte_rate);
@@ -672,8 +655,8 @@ void SoundEditorPanel::PlayPreview() {
 	auto wav_data = BuildWavFile(samples, sample_rate);
 	// Use a unique filename each time to bypass miniaudio's resource manager cache
 	playback_temp_path_ =
-			(std::filesystem::temp_directory_path() / ("citrus_sfx_preview_" + std::to_string(preview_counter_++) + ".wav"))
-					.string();
+		(std::filesystem::temp_directory_path() / ("citrus_sfx_preview_" + std::to_string(preview_counter_++) + ".wav"))
+			.string();
 
 	if (!engine::assets::AssetManager::SaveBinaryFile(std::filesystem::path(playback_temp_path_), wav_data)) {
 		return;

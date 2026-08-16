@@ -26,9 +26,7 @@ bool BuildJob::Start(ProjectModel project, BuildTarget target, std::unique_ptr<I
 	return true;
 }
 
-void BuildJob::Cancel() {
-	cancel_.store(true);
-}
+void BuildJob::Cancel() { cancel_.store(true); }
 
 void BuildJob::Join() {
 	if (worker_.joinable()) worker_.join();
@@ -45,7 +43,8 @@ float ExtractProgressPercent(const std::string& line) {
 			int v = std::stoi(m[1].str());
 			if (v >= 0 && v <= 100) return static_cast<float>(v);
 		}
-		catch (...) {}
+		catch (...) {
+		}
 	}
 	return -1.0f;
 }
@@ -166,7 +165,10 @@ void BuildJob::Run(ProjectModel project, BuildTarget target, std::unique_ptr<IAs
 	configure_argv.push_back(proj_arg);
 
 	int rc = RunProcess(configure_argv, project.project_root, env, cancel_, on_line);
-	if (rc == -2) { reporter_.Finish(BuildPhase::Cancelled); return; }
+	if (rc == -2) {
+		reporter_.Finish(BuildPhase::Cancelled);
+		return;
+	}
 	if (rc != 0) {
 		reporter_.AppendLine("[build] CMake configure failed (exit " + std::to_string(rc) + ")");
 		reporter_.Finish(BuildPhase::Failed);
@@ -185,7 +187,10 @@ void BuildJob::Run(ProjectModel project, BuildTarget target, std::unique_ptr<IAs
 	build_argv.push_back("--parallel");
 
 	rc = RunProcess(build_argv, project.project_root, env, cancel_, on_line);
-	if (rc == -2) { reporter_.Finish(BuildPhase::Cancelled); return; }
+	if (rc == -2) {
+		reporter_.Finish(BuildPhase::Cancelled);
+		return;
+	}
 	if (rc != 0) {
 		reporter_.AppendLine("[build] CMake build failed (exit " + std::to_string(rc) + ")");
 		reporter_.Finish(BuildPhase::Failed);
@@ -204,7 +209,10 @@ void BuildJob::Run(ProjectModel project, BuildTarget target, std::unique_ptr<IAs
 	install_argv.push_back(target.configuration);
 
 	rc = RunProcess(install_argv, project.project_root, env, cancel_, on_line);
-	if (rc == -2) { reporter_.Finish(BuildPhase::Cancelled); return; }
+	if (rc == -2) {
+		reporter_.Finish(BuildPhase::Cancelled);
+		return;
+	}
 	if (rc != 0) {
 		reporter_.AppendLine("[build] Install failed (exit " + std::to_string(rc) + ")");
 		reporter_.Finish(BuildPhase::Failed);

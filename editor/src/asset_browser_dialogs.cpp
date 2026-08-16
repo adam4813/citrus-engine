@@ -62,7 +62,13 @@ void AssetBrowserPanel::ShowItemContextMenu(const FileSystemItem& item) {
 	if (ImGui::MenuItem("Show in Explorer")) {
 		const std::wstring wide_path = item.path.wstring();
 		ShellExecuteW(
-				nullptr, L"open", L"explorer.exe", (L"/select,\"" + wide_path + L"\"").c_str(), nullptr, SW_SHOWNORMAL);
+			nullptr,
+			L"open",
+			L"explorer.exe",
+			(L"/select,\"" + wide_path + L"\"").c_str(),
+			nullptr,
+			SW_SHOWNORMAL
+		);
 	}
 #elif defined(__linux__)
 	if (ImGui::MenuItem("Show in File Manager")) {
@@ -152,7 +158,11 @@ void AssetBrowserPanel::RenderRenameDialog() {
 		ImGui::Text("New name:");
 		ImGui::SetNextItemWidth(-1);
 		const bool enter_pressed = ImGui::InputText(
-				"##rename_input", rename_buffer_, sizeof(rename_buffer_), ImGuiInputTextFlags_EnterReturnsTrue);
+			"##rename_input",
+			rename_buffer_,
+			sizeof(rename_buffer_),
+			ImGuiInputTextFlags_EnterReturnsTrue
+		);
 
 		ImGui::Separator();
 
@@ -324,7 +334,7 @@ void AssetBrowserPanel::CreateNewMaterialFile() {
 
 		// Use the asset registry to create a default material and serialize it
 		auto default_asset =
-				engine::assets::AssetCache::Instance().Create(engine::assets::AssetType::MATERIAL, "NewMaterial");
+			engine::assets::AssetCache::Instance().Create(engine::assets::AssetType::MATERIAL, "NewMaterial");
 		if (!default_asset) {
 			std::cerr << "Failed to create default material from registry" << std::endl;
 			return;
@@ -365,7 +375,7 @@ void AssetBrowserPanel::CreateNewShaderFile() {
 
 		// Use the asset registry to create a default shader and serialize it
 		auto default_asset =
-				engine::assets::AssetCache::Instance().Create(engine::assets::AssetType::SHADER, "NewShader");
+			engine::assets::AssetCache::Instance().Create(engine::assets::AssetType::SHADER, "NewShader");
 		if (!default_asset) {
 			std::cerr << "Failed to create default shader from registry" << std::endl;
 			return;

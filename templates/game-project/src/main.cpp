@@ -50,17 +50,16 @@ std::filesystem::path ExecutableDirectory(const char* argv0) {
 #endif
 	std::error_code ec;
 	auto p = std::filesystem::weakly_canonical(std::filesystem::path(argv0 ? argv0 : "."), ec);
-	if (!ec && !p.empty())
-		return p.parent_path();
+	if (!ec && !p.empty()) return p.parent_path();
 	return std::filesystem::current_path();
 }
 
 bool LoadProjectConfig(const std::filesystem::path& exe_dir, ProjectConfig& out) {
 	// Search exe dir, then ./assets/, then parent (dev/install layouts).
 	const std::array<std::filesystem::path, 3> candidates = {
-			exe_dir / "project.json",
-			exe_dir / "assets" / "project.json",
-			exe_dir.parent_path() / "project.json",
+		exe_dir / "project.json",
+		exe_dir / "assets" / "project.json",
+		exe_dir.parent_path() / "project.json",
 	};
 	std::filesystem::path found;
 	for (const auto& c : candidates) {
@@ -92,8 +91,7 @@ bool LoadProjectConfig(const std::filesystem::path& exe_dir, ProjectConfig& out)
 			out.assets_base = a.value("base_path", out.assets_base);
 			if (a.contains("directories") && a["directories"].is_array()) {
 				for (const auto& d : a["directories"]) {
-					if (d.is_string())
-						out.asset_directories.push_back(d.get<std::string>());
+					if (d.is_string()) out.asset_directories.push_back(d.get<std::string>());
 				}
 			}
 		}
@@ -123,8 +121,7 @@ size_t ScanAssetsDirectory(const std::filesystem::path& directory) {
 	auto& registry = engine::assets::AssetTypeRegistry::Instance();
 
 	for (const auto& entry : std::filesystem::recursive_directory_iterator(directory, ec)) {
-		if (!entry.is_regular_file())
-			continue;
+		if (!entry.is_regular_file()) continue;
 
 		const auto filename = entry.path().filename().string();
 		const auto path_str = entry.path().string();
@@ -137,18 +134,15 @@ size_t ScanAssetsDirectory(const std::filesystem::path& directory) {
 		}
 
 		// JSON-defined assets must carry a "type" field that maps to a registered type.
-		if (filename.size() < 5 || filename.substr(filename.size() - 5) != ".json")
-			continue;
+		if (filename.size() < 5 || filename.substr(filename.size() - 5) != ".json") continue;
 
 		std::ifstream file(entry.path());
-		if (!file.is_open())
-			continue;
+		if (!file.is_open()) continue;
 		std::ostringstream ss;
 		ss << file.rdbuf();
 
 		const auto j = nlohmann::json::parse(ss.str(), nullptr, false);
-		if (j.is_discarded())
-			continue;
+		if (j.is_discarded()) continue;
 
 		// Identity (including type) lives under "_metadata"; fall back to legacy top-level "type".
 		std::string type_str;
@@ -158,16 +152,13 @@ size_t ScanAssetsDirectory(const std::filesystem::path& directory) {
 		else {
 			type_str = j.value("type", std::string{});
 		}
-		if (type_str.empty())
-			continue;
+		if (type_str.empty()) continue;
 
 		const auto* type_info = registry.GetTypeInfo(type_str);
-		if (!type_info || !type_info->create_default_factory)
-			continue;
+		if (!type_info || !type_info->create_default_factory) continue;
 
 		auto asset = type_info->create_default_factory();
-		if (!asset)
-			continue;
+		if (!asset) continue;
 
 		asset->FromJson(j);
 		cache.Add(asset);
@@ -300,12 +291,12 @@ int main(int argc, char* argv[]) {
 
 		app_state.camera_entity.set<engine::components::Transform>({{0.0f, 0.0f, -1.0f}});
 		app_state.camera_entity.set<engine::components::Camera>({
-				.target = {0.0f, 0.0f, 0.0f},
-				.up = {0.0f, 1.0f, 0.0f},
-				.fov = 60.0f,
-				.aspect_ratio = static_cast<float>(fb_width) / static_cast<float>(fb_height),
-				.near_plane = 0.1f,
-				.far_plane = 100.0f,
+			.target = {0.0f, 0.0f, 0.0f},
+			.up = {0.0f, 1.0f, 0.0f},
+			.fov = 60.0f,
+			.aspect_ratio = static_cast<float>(fb_width) / static_cast<float>(fb_height),
+			.near_plane = 0.1f,
+			.far_plane = 100.0f,
 		});
 		app_state.engine.ecs.SetActiveCamera(app_state.camera_entity);
 	}

@@ -93,13 +93,17 @@ public:
 
 	/// Create and compile a shader in one step
 	ShaderId LoadShaderFromString(
-			const std::string& name, const std::string& vertex_source, const std::string& fragment_source) const;
+		const std::string& name,
+		const std::string& vertex_source,
+		const std::string& fragment_source
+	) const;
 
 	/// Create and compile a shader in one step
 	ShaderId LoadShader(
-			const std::string& name,
-			const platform::fs::Path& vertex_path,
-			const platform::fs::Path& fragment_path) const;
+		const std::string& name,
+		const platform::fs::Path& vertex_path,
+		const platform::fs::Path& fragment_path
+	) const;
 
 	// Shader access
 	Shader& GetShader(ShaderId id);

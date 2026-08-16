@@ -41,8 +41,8 @@ bool GraphEvaluator::HasCycles(const NodeGraph& graph) const {
 	return TopologicalSort(graph).empty() && !graph.GetNodes().empty();
 }
 
-std::map<int, std::any> GraphEvaluator::Evaluate(const NodeGraph& graph,
-												 const std::map<std::string, INodeEvaluator*>& evaluators) {
+std::map<int, std::any>
+GraphEvaluator::Evaluate(const NodeGraph& graph, const std::map<std::string, INodeEvaluator*>& evaluators) {
 	// Get evaluation order
 	std::vector<int> sorted = TopologicalSort(graph);
 	if (sorted.empty() && !graph.GetNodes().empty()) {
@@ -93,9 +93,12 @@ std::map<int, std::any> GraphEvaluator::Evaluate(const NodeGraph& graph,
 	return results;
 }
 
-bool GraphEvaluator::TopologicalSortDFS(int node_id, const NodeGraph& graph,
-										std::map<int, VisitState>& visit_state,
-										std::vector<int>& sorted) const {
+bool GraphEvaluator::TopologicalSortDFS(
+	int node_id,
+	const NodeGraph& graph,
+	std::map<int, VisitState>& visit_state,
+	std::vector<int>& sorted
+) const {
 	// Mark as visiting
 	visit_state[node_id] = VisitState::Visiting;
 
@@ -131,8 +134,10 @@ bool GraphEvaluator::TopologicalSortDFS(int node_id, const NodeGraph& graph,
 }
 
 std::map<int, std::any> GraphEvaluator::GetNodeInputs(
-	const Node& node, const NodeGraph& graph,
-	const std::map<int, std::map<int, std::any>>& evaluated_outputs) const {
+	const Node& node,
+	const NodeGraph& graph,
+	const std::map<int, std::map<int, std::any>>& evaluated_outputs
+) const {
 
 	std::map<int, std::any> inputs;
 

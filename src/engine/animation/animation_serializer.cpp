@@ -19,27 +19,28 @@ using json = nlohmann::json;
 
 json AnimationSerializer::AnimatedValueToJson(const AnimatedValue& value) {
 	return std::visit(
-			[](auto&& val) -> json {
-				using T = std::decay_t<decltype(val)>;
+		[](auto&& val) -> json {
+			using T = std::decay_t<decltype(val)>;
 
-				if constexpr (std::is_same_v<T, float>) {
-					return json{{"type", "float"}, {"value", val}};
-				}
-				else if constexpr (std::is_same_v<T, glm::vec2>) {
-					return json{{"type", "vec2"}, {"value", {val.x, val.y}}};
-				}
-				else if constexpr (std::is_same_v<T, glm::vec3>) {
-					return json{{"type", "vec3"}, {"value", {val.x, val.y, val.z}}};
-				}
-				else if constexpr (std::is_same_v<T, glm::vec4>) {
-					return json{{"type", "vec4"}, {"value", {val.x, val.y, val.z, val.w}}};
-				}
-				else if constexpr (std::is_same_v<T, glm::quat>) {
-					return json{{"type", "quat"}, {"value", {val.w, val.x, val.y, val.z}}};
-				}
-				return json{};
-			},
-			value);
+			if constexpr (std::is_same_v<T, float>) {
+				return json{{"type", "float"}, {"value", val}};
+			}
+			else if constexpr (std::is_same_v<T, glm::vec2>) {
+				return json{{"type", "vec2"}, {"value", {val.x, val.y}}};
+			}
+			else if constexpr (std::is_same_v<T, glm::vec3>) {
+				return json{{"type", "vec3"}, {"value", {val.x, val.y, val.z}}};
+			}
+			else if constexpr (std::is_same_v<T, glm::vec4>) {
+				return json{{"type", "vec4"}, {"value", {val.x, val.y, val.z, val.w}}};
+			}
+			else if constexpr (std::is_same_v<T, glm::quat>) {
+				return json{{"type", "quat"}, {"value", {val.w, val.x, val.y, val.z}}};
+			}
+			return json{};
+		},
+		value
+	);
 }
 
 AnimatedValue AnimationSerializer::AnimatedValueFromJson(const json& j) {

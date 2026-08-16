@@ -34,7 +34,7 @@ Bullet3PhysicsModule::Bullet3PhysicsModule(const flecs::world& world) {
 	// Get config from PhysicsWorldConfig singleton
 	PhysicsConfig config;
 	const auto& [gravity, fixed_timestep, max_substeps, enable_sleeping, show_debug_physics] =
-			world.get<PhysicsWorldConfig>();
+		world.get<PhysicsWorldConfig>();
 	config.gravity = gravity;
 	config.fixed_timestep = fixed_timestep;
 	config.max_substeps = max_substeps;
@@ -56,45 +56,46 @@ Bullet3PhysicsModule::Bullet3PhysicsModule(const flecs::world& world) {
 
 	// Observer: When RigidBody + CollisionShape are set, sync to backend
 	world.observer<const components::WorldTransform, const RigidBody, const CollisionShape>("Bullet3SyncToBackend")
-			.event(flecs::OnSet)
-			.each([backend](
-						  const flecs::entity e,
-						  const components::WorldTransform& wt,
-						  const RigidBody& rb,
-						  const CollisionShape& cs) {
-				backend->SyncBodyToBackend(e.id(), PhysicsTransform::FromMatrix(wt.matrix), rb, cs);
+		.event(flecs::OnSet)
+		.each([backend](
+				  const flecs::entity e,
+				  const components::WorldTransform& wt,
+				  const RigidBody& rb,
+				  const CollisionShape& cs
+			  ) {
+			backend->SyncBodyToBackend(e.id(), PhysicsTransform::FromMatrix(wt.matrix), rb, cs);
 
-				if (rb.motion_type == MotionType::Dynamic && !e.has<PhysicsVelocity>()) {
-					e.set<PhysicsVelocity>({});
-				}
-			});
+			if (rb.motion_type == MotionType::Dynamic && !e.has<PhysicsVelocity>()) {
+				e.set<PhysicsVelocity>({});
+			}
+		});
 
 	// Observer: Remove body when RigidBody component is removed
 	world.observer<const RigidBody>("Bullet3RemoveBody")
-			.event(flecs::OnRemove)
-			.each([backend](const flecs::entity e, const RigidBody&) { backend->RemoveBody(e.id()); });
+		.event(flecs::OnRemove)
+		.each([backend](const flecs::entity e, const RigidBody&) { backend->RemoveBody(e.id()); });
 
 	// System: Apply forces
 	world.system<const PhysicsForce>("Bullet3ApplyForces")
-			.kind(simulation_phase)
-			.each([backend](const flecs::entity e, const PhysicsForce& force) {
-				if (backend->HasBody(e.id())) {
-					backend->ApplyForce(e.id(), force.force, force.torque);
-				}
-				if (force.clear_after_apply) {
-					e.remove<PhysicsForce>();
-				}
-			});
+		.kind(simulation_phase)
+		.each([backend](const flecs::entity e, const PhysicsForce& force) {
+			if (backend->HasBody(e.id())) {
+				backend->ApplyForce(e.id(), force.force, force.torque);
+			}
+			if (force.clear_after_apply) {
+				e.remove<PhysicsForce>();
+			}
+		});
 
 	// System: Apply impulses (consumed immediately)
 	world.system<const PhysicsImpulse>("Bullet3ApplyImpulses")
-			.kind(simulation_phase)
-			.each([backend](const flecs::entity e, const PhysicsImpulse& impulse) {
-				if (backend->HasBody(e.id())) {
-					backend->ApplyImpulse(e.id(), impulse.impulse, impulse.point);
-				}
-				e.remove<PhysicsImpulse>();
-			});
+		.kind(simulation_phase)
+		.each([backend](const flecs::entity e, const PhysicsImpulse& impulse) {
+			if (backend->HasBody(e.id())) {
+				backend->ApplyImpulse(e.id(), impulse.impulse, impulse.point);
+			}
+			e.remove<PhysicsImpulse>();
+		});
 
 	// Accumulator singleton
 	world.set<Bullet3Accumulator>({});
@@ -123,14 +124,15 @@ Bullet3PhysicsModule::Bullet3PhysicsModule(const flecs::world& world) {
 
 	// System: Sync results back to ECS
 	world.system<components::WorldTransform, PhysicsVelocity, const RigidBody>("Bullet3SyncFromBackend")
-			.kind(simulation_phase)
-			.each([backend](const flecs::entity e, components::WorldTransform& wt, PhysicsVelocity& v, const RigidBody& rb) {
+		.kind(simulation_phase)
+		.each(
+			[backend](const flecs::entity e, components::WorldTransform& wt, PhysicsVelocity& v, const RigidBody& rb) {
 				if (rb.motion_type != MotionType::Dynamic || !backend->HasBody(e.id())) {
 					return;
 				}
 
 				const auto [position, rotation, linear_velocity, angular_velocity] =
-						backend->SyncBodyFromBackend(e.id());
+					backend->SyncBodyFromBackend(e.id());
 
 				// Physics owns WorldTransform — write world-space values directly.
 				// Transform stays local-space (initial offset from parent).
@@ -148,7 +150,8 @@ Bullet3PhysicsModule::Bullet3PhysicsModule(const flecs::world& world) {
 						child.modified<components::Transform>();
 					}
 				});
-			});
+			}
+		);
 
 	// System: Clear old collision events, then distribute new ones
 	world.system("Bullet3CollisionEvents").kind(simulation_phase).run([backend](const flecs::iter& it) {

@@ -14,8 +14,8 @@ module;
 
 module engine.rendering;
 
-import :types; // Need this for TextureId, TextureCreateInfo, etc.
-import :texture; // Import own interface
+import :types;          // Need this for TextureId, TextureCreateInfo, etc.
+import :texture;        // Import own interface
 import engine.platform; // Need this for fs::Path
 import engine.assets;
 
@@ -93,20 +93,20 @@ struct TextureManager::Impl {
 TextureManager::TextureManager() : pimpl_(std::make_unique<Impl>()) {
 	// Create default 1x1 white texture
 	constexpr uint32_t white_pixel = 0xFFFFFFFF; // RGBA white
-	TextureCreateInfo white_info{
-			.width = 1, .height = 1, .format = TextureFormat::RGBA8, .parameters = {}, .data = &white_pixel};
+	TextureCreateInfo
+		white_info{.width = 1, .height = 1, .format = TextureFormat::RGBA8, .parameters = {}, .data = &white_pixel};
 	pimpl_->white_texture = CreateTexture("__white_texture", white_info);
 
 	// Create default 1x1 black texture
 	constexpr uint32_t black_pixel = 0x000000FF; // RGBA black with full alpha
-	TextureCreateInfo black_info{
-			.width = 1, .height = 1, .format = TextureFormat::RGBA8, .parameters = {}, .data = &black_pixel};
+	TextureCreateInfo
+		black_info{.width = 1, .height = 1, .format = TextureFormat::RGBA8, .parameters = {}, .data = &black_pixel};
 	pimpl_->black_texture = CreateTexture("__black_texture", black_info);
 
 	// Create default 1x1 normal map (pointing up: RGB = 128, 128, 255)
 	constexpr uint32_t normal_pixel = 0xFF8080FF; // RGBA: 128, 128, 255, 255
-	TextureCreateInfo normal_info{
-			.width = 1, .height = 1, .format = TextureFormat::RGBA8, .parameters = {}, .data = &normal_pixel};
+	TextureCreateInfo
+		normal_info{.width = 1, .height = 1, .format = TextureFormat::RGBA8, .parameters = {}, .data = &normal_pixel};
 	pimpl_->default_normal_texture = CreateTexture("__default_normal", normal_info);
 }
 
@@ -137,29 +137,31 @@ TextureId TextureManager::CreateTexture(const std::string& name, const TextureCr
 	}
 
 	glTexImage2D(
-			GL_TEXTURE_2D,
-			0,
-			gl_internal_format,
-			gl_tex.width,
-			gl_tex.height,
-			0,
-			gl_format,
-			GL_UNSIGNED_BYTE,
-			info.data);
+		GL_TEXTURE_2D,
+		0,
+		gl_internal_format,
+		gl_tex.width,
+		gl_tex.height,
+		0,
+		gl_format,
+		GL_UNSIGNED_BYTE,
+		info.data
+	);
 
 	// Check for errors after texture upload
 	err = glGetError();
 	if (err != GL_NO_ERROR) {
 		spdlog::error(
-				"[Texture] Error creating texture '{}': format={}, gl_internal={}, gl_format={}, size={}x{}, "
-				"error=0x{:x}",
-				name,
-				static_cast<int>(info.format),
-				gl_internal_format,
-				gl_format,
-				info.width,
-				info.height,
-				err);
+			"[Texture] Error creating texture '{}': format={}, gl_internal={}, gl_format={}, size={}x{}, "
+			"error=0x{:x}",
+			name,
+			static_cast<int>(info.format),
+			gl_internal_format,
+			gl_format,
+			info.width,
+			info.height,
+			err
+		);
 	}
 
 	glBindTexture(GL_TEXTURE_2D, 0);
@@ -191,12 +193,13 @@ TextureId TextureManager::LoadTexture(const platform::fs::Path& path, const Text
 }
 
 void TextureManager::UpdateTexture(
-		const TextureId id,
-		const void* data,
-		const uint32_t x,
-		const uint32_t y,
-		const uint32_t width,
-		const uint32_t height) {
+	const TextureId id,
+	const void* data,
+	const uint32_t x,
+	const uint32_t y,
+	const uint32_t width,
+	const uint32_t height
+) {
 	const auto* gl_tex = GetGLTexture(id);
 	if (!gl_tex) {
 		return;

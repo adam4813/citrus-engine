@@ -36,17 +36,21 @@ public:
 	 * @param selected_asset Currently selected asset (if any)
 	 * @param scene_active_camera The scene's intended active camera (not editor camera)
 	 */
-	void
-	Render(engine::ecs::Entity selected_entity,
-		   engine::ecs::ECSWorld& world,
-		   engine::scene::Scene* scene,
-		   const AssetSelection& selected_asset,
-		   engine::ecs::Entity scene_active_camera);
+	void Render(
+		engine::ecs::Entity selected_entity,
+		engine::ecs::ECSWorld& world,
+		engine::scene::Scene* scene,
+		const AssetSelection& selected_asset,
+		engine::ecs::Entity scene_active_camera
+	);
 
 private:
 	void RenderComponentSections(engine::ecs::Entity entity, engine::scene::Scene* scene) const;
 	void RenderComponentFields(
-			engine::ecs::Entity entity, const engine::ecs::ComponentInfo& comp, engine::scene::Scene* scene) const;
+		engine::ecs::Entity entity,
+		const engine::ecs::ComponentInfo& comp,
+		engine::scene::Scene* scene
+	) const;
 	void RenderAddComponentButton(engine::ecs::Entity entity) const;
 	void RenderSceneProperties(engine::ecs::ECSWorld& world, engine::ecs::Entity scene_active_camera) const;
 	void RenderAssetProperties(engine::scene::Scene* scene, const AssetSelection& selected_asset) const;

@@ -58,7 +58,12 @@ static void JoltTraceImpl(const char* inFMT, ...) {
 // Jolt callback for asserts
 static bool JoltAssertFailedImpl(const char* inExpression, const char* inMessage, const char* inFile, uint32_t inLine) {
 	spdlog::error(
-			"[JoltPhysics] Assert failed: {} - {} ({}:{})", inExpression, inMessage ? inMessage : "", inFile, inLine);
+		"[JoltPhysics] Assert failed: {} - {} ({}:{})",
+		inExpression,
+		inMessage ? inMessage : "",
+		inFile,
+		inLine
+	);
 	return true; // Break into debugger
 }
 #endif
@@ -140,18 +145,20 @@ public:
 	const std::vector<CollisionInfo>& GetEvents() const { return collision_events_; }
 
 	JPH::ValidateResult OnContactValidate(
-			const JPH::Body& /*inBody1*/,
-			const JPH::Body& /*inBody2*/,
-			JPH::RVec3Arg /*inBaseOffset*/,
-			const JPH::CollideShapeResult& /*inCollisionResult*/) override {
+		const JPH::Body& /*inBody1*/,
+		const JPH::Body& /*inBody2*/,
+		JPH::RVec3Arg /*inBaseOffset*/,
+		const JPH::CollideShapeResult& /*inCollisionResult*/
+	) override {
 		return JPH::ValidateResult::AcceptAllContactsForThisBodyPair;
 	}
 
 	void OnContactAdded(
-			const JPH::Body& inBody1,
-			const JPH::Body& inBody2,
-			const JPH::ContactManifold& inManifold,
-			JPH::ContactSettings& /*ioSettings*/) override {
+		const JPH::Body& inBody1,
+		const JPH::Body& inBody2,
+		const JPH::ContactManifold& inManifold,
+		JPH::ContactSettings& /*ioSettings*/
+	) override {
 		CollisionInfo info;
 		info.entity_a = inBody1.GetUserData();
 		info.entity_b = inBody2.GetUserData();
@@ -162,9 +169,10 @@ public:
 			JPH::Vec3 worldPoint = inManifold.GetWorldSpaceContactPointOn1(i);
 			point.position = glm::vec3(worldPoint.GetX(), worldPoint.GetY(), worldPoint.GetZ());
 			point.normal = glm::vec3(
-					inManifold.mWorldSpaceNormal.GetX(),
-					inManifold.mWorldSpaceNormal.GetY(),
-					inManifold.mWorldSpaceNormal.GetZ());
+				inManifold.mWorldSpaceNormal.GetX(),
+				inManifold.mWorldSpaceNormal.GetY(),
+				inManifold.mWorldSpaceNormal.GetZ()
+			);
 			point.penetration_depth = inManifold.mPenetrationDepth;
 			info.contacts.push_back(point);
 		}
@@ -217,10 +225,10 @@ private:
 		const auto max_scale = std::max({scale.x, scale.y, scale.z});
 		ShapeConfig config;
 		config.type = shape.type;
-		config.box_half_extents = shape.box_half_extents * scale; // Apply world scale to box half-extents
-		config.sphere_radius = shape.sphere_radius * max_scale; // Use max scale for sphere radius
-		config.capsule_radius = shape.capsule_radius * max_scale; // Use max scale for capsule radius
-		config.capsule_height = shape.capsule_height * max_scale; // Use max scale for capsule height
+		config.box_half_extents = shape.box_half_extents * scale;   // Apply world scale to box half-extents
+		config.sphere_radius = shape.sphere_radius * max_scale;     // Use max scale for sphere radius
+		config.capsule_radius = shape.capsule_radius * max_scale;   // Use max scale for capsule radius
+		config.capsule_height = shape.capsule_height * max_scale;   // Use max scale for capsule height
 		config.cylinder_radius = shape.cylinder_radius * max_scale; // Use max scale for cylinder radius
 		config.cylinder_height = shape.cylinder_height * max_scale; // Use max scale for cylinder height
 		config.offset = shape.offset;
@@ -250,7 +258,8 @@ private:
 		case ShapeType::Box:
 		{
 			JPH::BoxShapeSettings settings(
-					JPH::Vec3(config.box_half_extents.x, config.box_half_extents.y, config.box_half_extents.z));
+				JPH::Vec3(config.box_half_extents.x, config.box_half_extents.y, config.box_half_extents.z)
+			);
 			result = settings.Create();
 			break;
 		}
@@ -295,10 +304,12 @@ private:
 					const auto& v1 = config.vertices[config.indices[i + 1]];
 					const auto& v2 = config.vertices[config.indices[i + 2]];
 					triangles.push_back(
-							JPH::Triangle(
-									JPH::Float3(v0.x, v0.y, v0.z),
-									JPH::Float3(v1.x, v1.y, v1.z),
-									JPH::Float3(v2.x, v2.y, v2.z)));
+						JPH::Triangle(
+							JPH::Float3(v0.x, v0.y, v0.z),
+							JPH::Float3(v1.x, v1.y, v1.z),
+							JPH::Float3(v2.x, v2.y, v2.z)
+						)
+					);
 				}
 				JPH::MeshShapeSettings settings(triangles);
 				result = settings.Create();
@@ -314,7 +325,10 @@ private:
 					glm::quat rot = i < config.child_rotations.size() ? config.child_rotations[i]
 																	  : glm::quat(1.0F, 0.0F, 0.0F, 0.0F);
 					settings.AddShape(
-							JPH::Vec3(pos.x, pos.y, pos.z), JPH::Quat(rot.x, rot.y, rot.z, rot.w), childShape);
+						JPH::Vec3(pos.x, pos.y, pos.z),
+						JPH::Quat(rot.x, rot.y, rot.z, rot.w),
+						childShape
+					);
 				}
 			}
 			result = settings.Create();
@@ -364,7 +378,10 @@ public:
 		// Create job system (use hardware thread count - 1, min 1)
 		auto numThreads = std::max(1u, std::thread::hardware_concurrency() - 1);
 		job_system_ = std::make_unique<JPH::JobSystemThreadPool>(
-				JPH::cMaxPhysicsJobs, JPH::cMaxPhysicsBarriers, static_cast<int>(numThreads));
+			JPH::cMaxPhysicsJobs,
+			JPH::cMaxPhysicsBarriers,
+			static_cast<int>(numThreads)
+		);
 
 		// Create broad phase layer interface
 		broad_phase_layer_interface_ = std::make_unique<BPLayerInterfaceImpl>();
@@ -379,13 +396,14 @@ public:
 
 		physics_system_ = std::make_unique<JPH::PhysicsSystem>();
 		physics_system_->Init(
-				cMaxBodies,
-				cNumBodyMutexes,
-				cMaxBodyPairs,
-				cMaxContactConstraints,
-				*broad_phase_layer_interface_,
-				*object_vs_broad_phase_layer_filter_,
-				*object_layer_pair_filter_);
+			cMaxBodies,
+			cNumBodyMutexes,
+			cMaxBodyPairs,
+			cMaxContactConstraints,
+			*broad_phase_layer_interface_,
+			*object_vs_broad_phase_layer_filter_,
+			*object_layer_pair_filter_
+		);
 
 		// Set gravity
 		physics_system_->SetGravity(JPH::Vec3(config.gravity.x, config.gravity.y, config.gravity.z));
@@ -458,10 +476,11 @@ public:
 	}
 
 	void SyncBodyToBackend(
-			EntityId entity,
-			const PhysicsTransform& transform,
-			const RigidBody& body,
-			const CollisionShape& shape) override {
+		EntityId entity,
+		const PhysicsTransform& transform,
+		const RigidBody& body,
+		const CollisionShape& shape
+	) override {
 		if (!initialized_) {
 			spdlog::error("[JoltPhysics] Cannot sync body - not initialized");
 			return;
@@ -487,10 +506,11 @@ public:
 
 			// Update transform
 			bodyInterface.SetPositionAndRotation(
-					bodyId,
-					JPH::RVec3(transform.position.x, transform.position.y, transform.position.z),
-					JPH::Quat(transform.rotation.x, transform.rotation.y, transform.rotation.z, transform.rotation.w),
-					JPH::EActivation::Activate);
+				bodyId,
+				JPH::RVec3(transform.position.x, transform.position.y, transform.position.z),
+				JPH::Quat(transform.rotation.x, transform.rotation.y, transform.rotation.z, transform.rotation.w),
+				JPH::EActivation::Activate
+			);
 
 			// Update physics properties
 			bodyInterface.SetFriction(bodyId, body.friction);
@@ -499,16 +519,19 @@ public:
 
 			// Update CCD
 			bodyInterface.SetMotionQuality(
-					bodyId, body.enable_ccd ? JPH::EMotionQuality::LinearCast : JPH::EMotionQuality::Discrete);
+				bodyId,
+				body.enable_ccd ? JPH::EMotionQuality::LinearCast : JPH::EMotionQuality::Discrete
+			);
 		}
 		else {
 			// Create new body
 			JPH::BodyCreationSettings bodySettings(
-					joltShape,
-					JPH::RVec3(transform.position.x, transform.position.y, transform.position.z),
-					JPH::Quat(transform.rotation.x, transform.rotation.y, transform.rotation.z, transform.rotation.w),
-					ToJoltMotionType(body.motion_type),
-					GetObjectLayer(body.motion_type));
+				joltShape,
+				JPH::RVec3(transform.position.x, transform.position.y, transform.position.z),
+				JPH::Quat(transform.rotation.x, transform.rotation.y, transform.rotation.z, transform.rotation.w),
+				ToJoltMotionType(body.motion_type),
+				GetObjectLayer(body.motion_type)
+			);
 
 			// Set physics properties
 			bodySettings.mFriction = body.friction;
@@ -598,7 +621,10 @@ public:
 			if (glm::length(point) > 0.0F) {
 				// Apply at specific point
 				bodyInterface.AddImpulse(
-						it->second, JPH::Vec3(impulse.x, impulse.y, impulse.z), JPH::RVec3(point.x, point.y, point.z));
+					it->second,
+					JPH::Vec3(impulse.x, impulse.y, impulse.z),
+					JPH::RVec3(point.x, point.y, point.z)
+				);
 			}
 			else {
 				// Apply at center of mass
@@ -620,11 +646,13 @@ public:
 		}
 
 		JPH::RRayCast joltRay(
-				JPH::RVec3(ray.origin.x, ray.origin.y, ray.origin.z),
-				JPH::Vec3(
-						ray.direction.x * ray.max_distance,
-						ray.direction.y * ray.max_distance,
-						ray.direction.z * ray.max_distance));
+			JPH::RVec3(ray.origin.x, ray.origin.y, ray.origin.z),
+			JPH::Vec3(
+				ray.direction.x * ray.max_distance,
+				ray.direction.y * ray.max_distance,
+				ray.direction.z * ray.max_distance
+			)
+		);
 
 		if (JPH::RayCastResult hit; physics_system_->GetNarrowPhaseQuery().CastRay(joltRay, hit)) {
 			RaycastResult result;
@@ -675,24 +703,25 @@ public:
 
 			void DrawLine(JPH::RVec3Arg from, JPH::RVec3Arg to, JPH::ColorArg c) override {
 				target_.DrawLine(
-						{float(from.GetX()), float(from.GetY()), float(from.GetZ())},
-						{float(to.GetX()), float(to.GetY()), float(to.GetZ())},
-						{c.r / 255.0F, c.g / 255.0F, c.b / 255.0F});
+					{float(from.GetX()), float(from.GetY()), float(from.GetZ())},
+					{float(to.GetX()), float(to.GetY()), float(to.GetZ())},
+					{c.r / 255.0F, c.g / 255.0F, c.b / 255.0F}
+				);
 			}
 
-			void DrawTriangle(
-					JPH::RVec3Arg v1, JPH::RVec3Arg v2, JPH::RVec3Arg v3,
-					JPH::ColorArg c, ECastShadow) override {
+			void
+			DrawTriangle(JPH::RVec3Arg v1, JPH::RVec3Arg v2, JPH::RVec3Arg v3, JPH::ColorArg c, ECastShadow) override {
 				const glm::vec3 color{c.r / 255.0F, c.g / 255.0F, c.b / 255.0F};
 				target_.DrawTriangle(
-						{float(v1.GetX()), float(v1.GetY()), float(v1.GetZ())},
-						{float(v2.GetX()), float(v2.GetY()), float(v2.GetZ())},
-						{float(v3.GetX()), float(v3.GetY()), float(v3.GetZ())},
-						color, c.a / 255.0F);
+					{float(v1.GetX()), float(v1.GetY()), float(v1.GetZ())},
+					{float(v2.GetX()), float(v2.GetY()), float(v2.GetZ())},
+					{float(v3.GetX()), float(v3.GetY()), float(v3.GetZ())},
+					color,
+					c.a / 255.0F
+				);
 			}
 
-			void DrawText3D(JPH::RVec3Arg pos, const std::string_view& text,
-					JPH::ColorArg, float) override {
+			void DrawText3D(JPH::RVec3Arg pos, const std::string_view& text, JPH::ColorArg, float) override {
 				target_.DrawText({float(pos.GetX()), float(pos.GetY()), float(pos.GetZ())}, std::string(text));
 			}
 

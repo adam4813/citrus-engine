@@ -13,7 +13,7 @@ namespace editor {
 
 /**
  * @brief Sound effect synthesis editor panel (sfxr/bfxr-style)
- * 
+ *
  * Features:
  * - Waveform synthesis parameters (oscillator, envelope, effects)
  * - Preset randomization buttons (Pickup, Laser, Explosion, etc.)
@@ -111,15 +111,15 @@ private:
 		// Oscillator
 		WaveformType waveform = WaveformType::Square;
 		float base_frequency = 440.0f; // Hz
-		float frequency_min = 100.0f; // Hz (for slide range)
+		float frequency_min = 100.0f;  // Hz (for slide range)
 		float frequency_max = 1000.0f; // Hz (for slide range)
-		float frequency_slide = 0.0f; // -1.0 to 1.0 (slide speed)
+		float frequency_slide = 0.0f;  // -1.0 to 1.0 (slide speed)
 
 		// Envelope
-		float attack_time = 0.0f; // seconds
-		float sustain_time = 0.3f; // seconds
+		float attack_time = 0.0f;   // seconds
+		float sustain_time = 0.3f;  // seconds
 		float sustain_level = 1.0f; // 0.0 to 1.0
-		float decay_time = 0.0f; // seconds
+		float decay_time = 0.0f;    // seconds
 
 		// Vibrato
 		float vibrato_depth = 0.0f; // 0.0 to 1.0
@@ -127,16 +127,16 @@ private:
 
 		// Phaser
 		float phaser_offset = 0.0f; // 0.0 to 1.0
-		float phaser_sweep = 0.0f; // -1.0 to 1.0
+		float phaser_sweep = 0.0f;  // -1.0 to 1.0
 
 		// Filter
-		float lowpass_cutoff = 1.0f; // 0.0 to 1.0 (normalized)
-		float lowpass_sweep = 0.0f; // -1.0 to 1.0
+		float lowpass_cutoff = 1.0f;  // 0.0 to 1.0 (normalized)
+		float lowpass_sweep = 0.0f;   // -1.0 to 1.0
 		float highpass_cutoff = 0.0f; // 0.0 to 1.0 (normalized)
 
 		// Volume
 		float master_volume = 0.5f; // 0.0 to 1.0
-		float gain = 1.0f; // 0.0 to 2.0
+		float gain = 1.0f;          // 0.0 to 2.0
 	};
 
 	// ========================================================================

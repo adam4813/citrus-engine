@@ -63,15 +63,9 @@ NodeStatus ParallelNode::Tick(Blackboard& blackboard) {
 		NodeStatus status = child->Tick(blackboard);
 
 		switch (status) {
-		case NodeStatus::Success:
-			++success_count;
-			break;
-		case NodeStatus::Failure:
-			++failure_count;
-			break;
-		case NodeStatus::Running:
-			++running_count;
-			break;
+		case NodeStatus::Success: ++success_count; break;
+		case NodeStatus::Failure: ++failure_count; break;
+		case NodeStatus::Running: ++running_count; break;
 		}
 	}
 

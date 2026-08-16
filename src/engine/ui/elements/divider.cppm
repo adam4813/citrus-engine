@@ -50,8 +50,12 @@ public:
 	 * @param thickness Line thickness in pixels (default: 2)
 	 */
 	explicit Divider(const Orientation orientation, const float thickness = 2.0f) :
-			UIElement(0, 0, orientation == Orientation::Horizontal ? 0.0f : thickness,
-					  orientation == Orientation::Horizontal ? thickness : 0.0f),
+			UIElement(
+				0,
+				0,
+				orientation == Orientation::Horizontal ? 0.0f : thickness,
+				orientation == Orientation::Horizontal ? thickness : 0.0f
+			),
 			orientation_(orientation), thickness_(thickness) {}
 
 	/**
@@ -80,7 +84,8 @@ public:
 		// Update size based on orientation
 		if (orientation_ == Orientation::Horizontal) {
 			height_ = thickness_;
-		} else {
+		}
+		else {
 			width_ = thickness_;
 		}
 	}
@@ -96,7 +101,8 @@ public:
 		if (orientation == Orientation::Horizontal) {
 			height_ = thickness_;
 			width_ = 0.0f; // Will be stretched by layout
-		} else {
+		}
+		else {
 			width_ = thickness_;
 			height_ = 0.0f; // Will be stretched by layout
 		}
@@ -118,7 +124,8 @@ public:
 			// Draw horizontal line centered in the element's height
 			const float y = bounds.y + bounds.height / 2.0f;
 			BatchRenderer::SubmitLine(bounds.x, y, bounds.x + bounds.width, y, thickness_, color_);
-		} else {
+		}
+		else {
 			// Draw vertical line centered in the element's width
 			const float x = bounds.x + bounds.width / 2.0f;
 			BatchRenderer::SubmitLine(x, bounds.y, x, bounds.y + bounds.height, thickness_, color_);

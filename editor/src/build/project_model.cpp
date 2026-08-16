@@ -16,9 +16,9 @@ TargetPlatform ParsePlatform(const std::string& s) {
 
 const char* PlatformString(TargetPlatform p) {
 	switch (p) {
-		case TargetPlatform::Wasm: return "wasm";
-		case TargetPlatform::Native:
-		default: return "native";
+	case TargetPlatform::Wasm: return "wasm";
+	case TargetPlatform::Native:
+	default: return "native";
 	}
 }
 
@@ -27,18 +27,16 @@ const char* PlatformString(TargetPlatform p) {
 std::string BuildTarget::DisplayName() const {
 	std::string label;
 	switch (platform) {
-		case TargetPlatform::Native:
+	case TargetPlatform::Native:
 #if defined(_WIN32)
-			label = "Windows";
+		label = "Windows";
 #elif defined(__APPLE__)
-			label = "macOS";
+		label = "macOS";
 #else
-			label = "Linux";
+		label = "Linux";
 #endif
-			break;
-		case TargetPlatform::Wasm:
-			label = "Web (WASM)";
-			break;
+		break;
+	case TargetPlatform::Wasm: label = "Web (WASM)"; break;
 	}
 	label += " (";
 	label += configuration;

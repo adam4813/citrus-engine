@@ -22,7 +22,8 @@ void MaterialEditorPanel::RegisterAssetHandlers(AssetEditorRegistry& registry) {
 void MaterialEditorPanel::OpenMaterial(const std::string& path) {
 	try {
 		if (material_ = std::dynamic_pointer_cast<engine::assets::MaterialAssetInfo>(
-					engine::assets::AssetCache::Instance().LoadFromFile(path));
+				engine::assets::AssetCache::Instance().LoadFromFile(path)
+			);
 			!material_) {
 			std::cerr << "MaterialEditor: JSON does not represent a MaterialAssetInfo: " << path << std::endl;
 			return;
@@ -124,9 +125,9 @@ void MaterialEditorPanel::RenderMaterialProperties() {
 
 	// Section headers inserted before the first field of each group
 	static const std::unordered_map<std::string, const char*> kSectionHeaders = {
-			{"base_color", "Colors"},
-			{"albedo_map", "Texture Maps"},
-			{"metallic_factor", "PBR Properties"},
+		{"base_color", "Colors"},
+		{"albedo_map", "Texture Maps"},
+		{"metallic_factor", "PBR Properties"},
 	};
 
 	bool modified = false;

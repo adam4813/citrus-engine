@@ -41,12 +41,12 @@ void EditorScene::Initialize(engine::Engine& engine) {
 	editor_camera_ = engine.ecs.GetWorld().entity("EditorCamera");
 	editor_camera_.set<engine::components::Transform>({{0.0f, 0.0f, 5.0f}}); // Position at z=5
 	editor_camera_.set<engine::components::Camera>({
-			.target = {0.0f, 0.0f, 0.0f},
-			.up = {0.0f, 1.0f, 0.0f},
-			.fov = 60.0f,
-			.aspect_ratio = 16.0f / 9.0f,
-			.near_plane = 0.1f,
-			.far_plane = 100.0f,
+		.target = {0.0f, 0.0f, 0.0f},
+		.up = {0.0f, 1.0f, 0.0f},
+		.fov = 60.0f,
+		.aspect_ratio = 16.0f / 9.0f,
+		.near_plane = 0.1f,
+		.far_plane = 100.0f,
 	});
 	engine.ecs.SetActiveCamera(editor_camera_);
 
@@ -83,7 +83,7 @@ void EditorScene::Initialize(engine::Engine& engine) {
 		auto& scene_manager = engine::scene::GetSceneManager();
 		if (auto* scene = scene_manager.TryGetScene(editor_scene_id_)) {
 			auto command =
-					std::make_unique<InstantiatePrefabCommand>(prefab_path, scene, engine_->ecs, selected_entity_);
+				std::make_unique<InstantiatePrefabCommand>(prefab_path, scene, engine_->ecs, selected_entity_);
 			const auto* cmd_ptr = command.get();
 			command_history_.Execute(std::move(command));
 			if (cmd_ptr->GetInstance().is_valid()) {
@@ -97,21 +97,21 @@ void EditorScene::Initialize(engine::Engine& engine) {
 
 	// Collect all panels for iteration (View menu, asset registration)
 	panels_ = {
-			&hierarchy_panel_,
-			&properties_panel_,
-			&viewport_panel_,
-			&asset_browser_panel_,
-			&graph_editor_panel_,
-			&shader_editor_panel_,
-			&texture_editor_panel_,
-			&animation_editor_panel_,
-			&behavior_tree_editor_panel_,
-			&tileset_editor_panel_,
-			&sprite_editor_panel_,
-			&data_table_editor_panel_,
-			&code_editor_panel_,
-			&sound_editor_panel_,
-			&material_editor_panel_,
+		&hierarchy_panel_,
+		&properties_panel_,
+		&viewport_panel_,
+		&asset_browser_panel_,
+		&graph_editor_panel_,
+		&shader_editor_panel_,
+		&texture_editor_panel_,
+		&animation_editor_panel_,
+		&behavior_tree_editor_panel_,
+		&tileset_editor_panel_,
+		&sprite_editor_panel_,
+		&data_table_editor_panel_,
+		&code_editor_panel_,
+		&sound_editor_panel_,
+		&material_editor_panel_,
 	};
 
 	// Set default visibility for panels that should be visible on startup
@@ -404,8 +404,8 @@ void EditorScene::RegisterExampleGraphNodes() {
 	{
 		NodeTypeDefinition def("Add", "Math", "Add two values");
 		def.default_inputs = {
-				Pin(0, "A", PinType::Float, PinDirection::Input, 0.0f),
-				Pin(0, "B", PinType::Float, PinDirection::Input, 0.0f),
+			Pin(0, "A", PinType::Float, PinDirection::Input, 0.0f),
+			Pin(0, "B", PinType::Float, PinDirection::Input, 0.0f),
 		};
 		def.default_outputs = {Pin(0, "Result", PinType::Float, PinDirection::Output, 0.0f)};
 		registry.Register(def);
@@ -413,8 +413,8 @@ void EditorScene::RegisterExampleGraphNodes() {
 	{
 		NodeTypeDefinition def("Multiply", "Math", "Multiply two values");
 		def.default_inputs = {
-				Pin(0, "A", PinType::Float, PinDirection::Input, 1.0f),
-				Pin(0, "B", PinType::Float, PinDirection::Input, 1.0f),
+			Pin(0, "A", PinType::Float, PinDirection::Input, 1.0f),
+			Pin(0, "B", PinType::Float, PinDirection::Input, 1.0f),
 		};
 		def.default_outputs = {Pin(0, "Result", PinType::Float, PinDirection::Output, 0.0f)};
 		registry.Register(def);
@@ -422,9 +422,9 @@ void EditorScene::RegisterExampleGraphNodes() {
 	{
 		NodeTypeDefinition def("Clamp", "Math", "Clamp value between min and max");
 		def.default_inputs = {
-				Pin(0, "Value", PinType::Float, PinDirection::Input, 0.0f),
-				Pin(0, "Min", PinType::Float, PinDirection::Input, 0.0f),
-				Pin(0, "Max", PinType::Float, PinDirection::Input, 1.0f),
+			Pin(0, "Value", PinType::Float, PinDirection::Input, 0.0f),
+			Pin(0, "Min", PinType::Float, PinDirection::Input, 0.0f),
+			Pin(0, "Max", PinType::Float, PinDirection::Input, 1.0f),
 		};
 		def.default_outputs = {Pin(0, "Result", PinType::Float, PinDirection::Output, 0.0f)};
 		registry.Register(def);

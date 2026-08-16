@@ -14,11 +14,11 @@ namespace editor {
  * @brief A single open file tab in the code editor
  */
 struct CodeFile {
-	std::string path; // Full file path
-	std::string content; // File content
+	std::string path;         // Full file path
+	std::string content;      // File content
 	std::string display_name; // Filename for tab display
 	bool is_modified = false; // Dirty flag
-	int cursor_position = 0; // Cursor position in the text
+	int cursor_position = 0;  // Cursor position in the text
 };
 
 /**

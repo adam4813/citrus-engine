@@ -123,17 +123,18 @@ TEST_F(SceneSerializationTest, SaveAndLoad_EntityWithSprite_PreservesAllFields) 
 
 	// Add and configure sprite
 	entity.set<Sprite>(
-			{.texture = 42,
-			 .position = glm::vec2(100.0f, 200.0f),
-			 .size = glm::vec2(64.0f, 64.0f),
-			 .rotation = 1.5f,
-			 .color = glm::vec4(1.0f, 0.5f, 0.25f, 0.8f),
-			 .texture_offset = glm::vec2(0.1f, 0.2f),
-			 .texture_scale = glm::vec2(2.0f, 2.0f),
-			 .layer = 10,
-			 .pivot = glm::vec2(0.5f, 0.5f),
-			 .flip_x = true,
-			 .flip_y = false});
+		{.texture = 42,
+		 .position = glm::vec2(100.0f, 200.0f),
+		 .size = glm::vec2(64.0f, 64.0f),
+		 .rotation = 1.5f,
+		 .color = glm::vec4(1.0f, 0.5f, 0.25f, 0.8f),
+		 .texture_offset = glm::vec2(0.1f, 0.2f),
+		 .texture_scale = glm::vec2(2.0f, 2.0f),
+		 .layer = 10,
+		 .pivot = glm::vec2(0.5f, 0.5f),
+		 .flip_x = true,
+		 .flip_y = false}
+	);
 
 	// Save
 	platform::fs::Path path(temp_file_.string());
@@ -181,12 +182,13 @@ TEST_F(SceneSerializationTest, SaveAndLoad_EntityWithCamera_PreservesValues) {
 	const auto entity = scene.CreateEntity("CameraEntity");
 
 	entity.set<Camera>(
-			{.target = glm::vec3(5.0f, 10.0f, 15.0f),
-			 .up = glm::vec3(0.0f, 1.0f, 0.0f),
-			 .fov = 75.0f,
-			 .aspect_ratio = 16.0f / 10.0f,
-			 .near_plane = 0.5f,
-			 .far_plane = 500.0f});
+		{.target = glm::vec3(5.0f, 10.0f, 15.0f),
+		 .up = glm::vec3(0.0f, 1.0f, 0.0f),
+		 .fov = 75.0f,
+		 .aspect_ratio = 16.0f / 10.0f,
+		 .near_plane = 0.5f,
+		 .far_plane = 500.0f}
+	);
 
 	const platform::fs::Path path(temp_file_.string());
 	EXPECT_TRUE(scene_manager_->SaveScene(scene_id, path));
@@ -219,12 +221,13 @@ TEST_F(SceneSerializationTest, SaveAndLoad_EntityWithLight_PreservesValues) {
 	const auto entity = scene.CreateEntity("LightEntity");
 
 	entity.set<Light>(
-			{.type = Light::Type::Point,
-			 .color = glm::vec4(1.0f, 0.8f, 0.6f, 1.0f),
-			 .intensity = 2.5f,
-			 .range = 50.0f,
-			 .attenuation = 0.5f,
-			 .spot_angle = 30.0f});
+		{.type = Light::Type::Point,
+		 .color = glm::vec4(1.0f, 0.8f, 0.6f, 1.0f),
+		 .intensity = 2.5f,
+		 .range = 50.0f,
+		 .attenuation = 0.5f,
+		 .spot_angle = 30.0f}
+	);
 
 	const platform::fs::Path path(temp_file_.string());
 	EXPECT_TRUE(scene_manager_->SaveScene(scene_id, path));

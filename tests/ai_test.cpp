@@ -11,8 +11,8 @@ using namespace engine::ai;
 
 class FixedStatusNode : public BTNode {
 public:
-	explicit FixedStatusNode(NodeStatus status, std::string name = "FixedStatus")
-		: BTNode(std::move(name)), status_(status) {}
+	explicit FixedStatusNode(NodeStatus status, std::string name = "FixedStatus") :
+			BTNode(std::move(name)), status_(status) {}
 
 	NodeStatus Tick(Blackboard& /*blackboard*/) override {
 		++tick_count_;
@@ -33,8 +33,8 @@ private:
 
 class CountdownNode : public BTNode {
 public:
-	CountdownNode(int running_ticks, NodeStatus final_status, std::string name = "Countdown")
-		: BTNode(std::move(name)), remaining_(running_ticks), final_status_(final_status) {}
+	CountdownNode(int running_ticks, NodeStatus final_status, std::string name = "Countdown") :
+			BTNode(std::move(name)), remaining_(running_ticks), final_status_(final_status) {}
 
 	NodeStatus Tick(Blackboard& /*blackboard*/) override {
 		if (remaining_ > 0) {

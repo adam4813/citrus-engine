@@ -18,8 +18,8 @@ void NodeTypeRegistry::Register(const NodeTypeDefinition& def) { types_.push_bac
 
 const NodeTypeDefinition* NodeTypeRegistry::Get(const std::string& name) const {
 	// Try exact match first
-	auto it = std::find_if(types_.begin(), types_.end(),
-						   [&name](const NodeTypeDefinition& def) { return def.name == name; });
+	auto it =
+		std::find_if(types_.begin(), types_.end(), [&name](const NodeTypeDefinition& def) { return def.name == name; });
 
 	if (it != types_.end()) {
 		return &(*it);

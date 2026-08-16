@@ -15,22 +15,21 @@ export namespace engine::data {
 /// Field definition in a schema
 struct SchemaField {
 	std::string name;
-	std::string type_name;  // "bool", "int", "float", "vec2", "vec3", "vec4", "string"
+	std::string type_name; // "bool", "int", "float", "vec2", "vec3", "vec4", "string"
 	DataValue default_value;
 
 	SchemaField() = default;
 
-	SchemaField(std::string field_name, std::string field_type, DataValue field_default = 0.0f)
-		: name(std::move(field_name)), type_name(std::move(field_type)),
-		  default_value(std::move(field_default)) {}
+	SchemaField(std::string field_name, std::string field_type, DataValue field_default = 0.0f) :
+			name(std::move(field_name)), type_name(std::move(field_type)), default_value(std::move(field_default)) {}
 };
 
 /// Schema definition - defines structure for data assets
 struct Schema {
 	std::string name;
 	std::vector<SchemaField> fields;
-	std::string category;     // Optional: for organization
-	std::string description;  // Optional: documentation
+	std::string category;    // Optional: for organization
+	std::string description; // Optional: documentation
 
 	Schema() = default;
 
@@ -100,9 +99,7 @@ public:
 	}
 
 	/// Check if a schema exists
-	[[nodiscard]] bool HasSchema(const std::string& name) const {
-		return schemas_.find(name) != schemas_.end();
-	}
+	[[nodiscard]] bool HasSchema(const std::string& name) const { return schemas_.find(name) != schemas_.end(); }
 
 	/// Unregister a schema
 	bool UnregisterSchema(const std::string& name) {
@@ -128,8 +125,8 @@ public:
 	[[nodiscard]] const std::map<std::string, Schema>& GetAllSchemas() const { return schemas_; }
 
 	/// Create a data asset instance from a schema
-	[[nodiscard]] std::optional<DataAsset> CreateAssetFromSchema(const std::string& schema_name,
-																 const std::string& asset_id) const {
+	[[nodiscard]] std::optional<DataAsset>
+	CreateAssetFromSchema(const std::string& schema_name, const std::string& asset_id) const {
 		auto schema_opt = GetSchema(schema_name);
 		if (!schema_opt) {
 			return std::nullopt;

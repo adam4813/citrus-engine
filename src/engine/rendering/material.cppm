@@ -44,7 +44,8 @@ public:
 	void SetTexture(const std::string& name, TextureId texture);
 
 	// Property getters
-	template <typename T> T GetProperty(const std::string& name) const;
+	template<typename T>
+	T GetProperty(const std::string& name) const;
 
 	TextureId GetTexture(const std::string& name) const;
 

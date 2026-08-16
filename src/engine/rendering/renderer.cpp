@@ -35,7 +35,7 @@ static void CheckGLError(const char* context) {
 // Renderer implementation
 struct Renderer::Impl {
 	bool initialized = false;
-	//Camera camera;
+	// Camera camera;
 	Color clear_color = colors::black;
 	uint32_t window_width = 800;
 	uint32_t window_height = 600;
@@ -119,7 +119,7 @@ void main() {
 
 	// Create the sprite shader
 	pimpl_->sprite_shader_id =
-			pimpl_->shader_manager.LoadShaderFromString("sprite_shader", vertex_shader_source, fragment_shader_source);
+		pimpl_->shader_manager.LoadShaderFromString("sprite_shader", vertex_shader_source, fragment_shader_source);
 
 	if (pimpl_->sprite_shader_id == INVALID_SHADER) {
 		// Log error - sprite shader creation failed
@@ -154,7 +154,10 @@ void main() {
 )";
 
 	pimpl_->debug_line_shader_id = pimpl_->shader_manager.LoadShaderFromString(
-			"debug_line_shader", debug_line_vertex_shader, debug_line_fragment_shader);
+		"debug_line_shader",
+		debug_line_vertex_shader,
+		debug_line_fragment_shader
+	);
 
 	if (pimpl_->debug_line_shader_id == INVALID_SHADER) {
 		// Log error - debug line shader creation failed
@@ -170,11 +173,11 @@ void main() {
 
 	// Position attribute (location 0)
 	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 7 * sizeof(float), (void*)0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 7 * sizeof(float), (void*) 0);
 
 	// Color attribute (location 1)
 	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, 7 * sizeof(float), (void*)(3 * sizeof(float)));
+	glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, 7 * sizeof(float), (void*) (3 * sizeof(float)));
 
 	glBindVertexArray(0);
 
@@ -502,10 +505,11 @@ void Renderer::SubmitUIBatch(const UIBatchRenderCommand& command) const {
 		// OpenGL scissor uses bottom-left origin, but UI uses top-left origin
 		glEnable(GL_SCISSOR_TEST);
 		glScissor(
-				command.scissor_x,
-				static_cast<int>(pimpl_->window_height) - command.scissor_y - command.scissor_height, // Flip Y
-				command.scissor_width,
-				command.scissor_height);
+			command.scissor_x,
+			static_cast<int>(pimpl_->window_height) - command.scissor_y - command.scissor_height, // Flip Y
+			command.scissor_width,
+			command.scissor_height
+		);
 		CheckGLError("After setting scissor");
 	}
 
@@ -577,14 +581,14 @@ void Renderer::DrawWireCube(const Vec3& center, const Vec3& size, const Color& c
 
 	// 8 corners of the cube
 	const Vec3 corners[8] = {
-			center + Vec3(-half.x, -half.y, -half.z),
-			center + Vec3(half.x, -half.y, -half.z),
-			center + Vec3(half.x, half.y, -half.z),
-			center + Vec3(-half.x, half.y, -half.z),
-			center + Vec3(-half.x, -half.y, half.z),
-			center + Vec3(half.x, -half.y, half.z),
-			center + Vec3(half.x, half.y, half.z),
-			center + Vec3(-half.x, half.y, half.z),
+		center + Vec3(-half.x, -half.y, -half.z),
+		center + Vec3(half.x, -half.y, -half.z),
+		center + Vec3(half.x, half.y, -half.z),
+		center + Vec3(-half.x, half.y, -half.z),
+		center + Vec3(-half.x, -half.y, half.z),
+		center + Vec3(half.x, -half.y, half.z),
+		center + Vec3(half.x, half.y, half.z),
+		center + Vec3(-half.x, half.y, half.z),
 	};
 
 	// Draw 12 edges
@@ -703,10 +707,11 @@ void Renderer::FlushDebugLines() const {
 	glBindVertexArray(pimpl_->debug_line_vao);
 	glBindBuffer(GL_ARRAY_BUFFER, pimpl_->debug_line_vbo);
 	glBufferData(
-			GL_ARRAY_BUFFER,
-			pimpl_->debug_line_vertices.size() * sizeof(float),
-			pimpl_->debug_line_vertices.data(),
-			GL_DYNAMIC_DRAW);
+		GL_ARRAY_BUFFER,
+		pimpl_->debug_line_vertices.size() * sizeof(float),
+		pimpl_->debug_line_vertices.data(),
+		GL_DYNAMIC_DRAW
+	);
 
 	// Disable depth test so debug lines draw on top
 	glDisable(GL_DEPTH_TEST);

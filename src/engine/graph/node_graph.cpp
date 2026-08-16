@@ -24,11 +24,14 @@ int NodeGraph::AddNode(const std::string& type_name, glm::vec2 position) {
 
 void NodeGraph::RemoveNode(int node_id) {
 	// Remove all links connected to this node
-	links_.erase(std::remove_if(links_.begin(), links_.end(),
-								[node_id](const Link& link) {
-									return link.from_node_id == node_id || link.to_node_id == node_id;
-								}),
-				 links_.end());
+	links_.erase(
+		std::remove_if(
+			links_.begin(),
+			links_.end(),
+			[node_id](const Link& link) { return link.from_node_id == node_id || link.to_node_id == node_id; }
+		),
+		links_.end()
+	);
 
 	// Remove the node
 	auto it = FindNode(node_id);
@@ -56,11 +59,16 @@ int NodeGraph::AddLink(int from_node, int from_pin, int to_node, int to_pin) {
 	// Remove any existing link to the input pin (inputs can only have one connection)
 	const Node* to_node_ptr = GetNode(to_node);
 	if (to_node_ptr && to_pin < static_cast<int>(to_node_ptr->inputs.size())) {
-		links_.erase(std::remove_if(links_.begin(), links_.end(),
-									[to_node, to_pin](const Link& link) {
-										return link.to_node_id == to_node && link.to_pin_index == to_pin;
-									}),
-					 links_.end());
+		links_.erase(
+			std::remove_if(
+				links_.begin(),
+				links_.end(),
+				[to_node, to_pin](const Link& link) {
+					return link.to_node_id == to_node && link.to_pin_index == to_pin;
+				}
+			),
+			links_.end()
+		);
 	}
 
 	int link_id = next_id_++;

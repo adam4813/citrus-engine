@@ -4,8 +4,8 @@
 
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
-#include <windows.h>
 #include <shellapi.h>
+#include <windows.h>
 #endif
 
 #include <cfloat>
@@ -27,7 +27,7 @@ void OpenInFileManager(const std::filesystem::path& path) {
 	// or special characters and can crash on certain shell environments.
 	const std::string p = path.string();
 	HINSTANCE rc = ShellExecuteA(nullptr, "open", p.c_str(), nullptr, nullptr, SW_SHOWNORMAL);
-	(void)rc;
+	(void) rc;
 #elif defined(__APPLE__)
 	std::string cmd = "open \"" + path.string() + "\"";
 	std::system(cmd.c_str());
@@ -95,8 +95,10 @@ void BuildDialog::Render() {
 		}
 
 		if (phase == BuildPhase::Configuring) {
-			ImGui::TextColored(ImVec4(0.85f, 0.75f, 0.2f, 1.0f),
-					"First build may take several minutes (vcpkg installs engine + dependencies).");
+			ImGui::TextColored(
+				ImVec4(0.85f, 0.75f, 0.2f, 1.0f),
+				"First build may take several minutes (vcpkg installs engine + dependencies)."
+			);
 		}
 
 		ImGui::Separator();
@@ -109,8 +111,12 @@ void BuildDialog::Render() {
 			log_cache_.insert(log_cache_.begin(), kTruncatedMarker);
 		}
 
-		if (ImGui::BeginChild("log", ImVec2(0, -ImGui::GetFrameHeightWithSpacing() - 8), true,
-					ImGuiWindowFlags_HorizontalScrollbar)) {
+		if (ImGui::BeginChild(
+				"log",
+				ImVec2(0, -ImGui::GetFrameHeightWithSpacing() - 8),
+				true,
+				ImGuiWindowFlags_HorizontalScrollbar
+			)) {
 			// Decide whether to stick to the bottom BEFORE the new content shifts the
 			// scroll range (otherwise fresh output makes us look "scrolled up").
 			const bool stick_to_bottom = ImGui::GetScrollY() >= ImGui::GetScrollMaxY() - 4.0f;

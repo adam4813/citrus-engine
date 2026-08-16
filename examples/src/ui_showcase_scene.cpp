@@ -105,7 +105,7 @@ public:
 		// ====================================================================
 
 		root_panel_ =
-				std::make_unique<Panel>(UITheme::Spacing::LARGE, UITheme::Spacing::LARGE, panel_width_, panel_height_);
+			std::make_unique<Panel>(UITheme::Spacing::LARGE, UITheme::Spacing::LARGE, panel_width_, panel_height_);
 		root_panel_->SetRelativePosition(25, 50);
 		root_panel_->SetBackgroundColor(UITheme::Background::PANEL);
 		root_panel_->SetBorderColor(UITheme::Border::DEFAULT);
@@ -116,19 +116,21 @@ public:
 		// ====================================================================
 
 		auto title = std::make_unique<Text>(
-				UITheme::Padding::PANEL_HORIZONTAL,
-				UITheme::Padding::PANEL_VERTICAL,
-				"UI Component Showcase",
-				UITheme::FontSize::HEADING_1,
-				UITheme::Text::ACCENT);
+			UITheme::Padding::PANEL_HORIZONTAL,
+			UITheme::Padding::PANEL_VERTICAL,
+			"UI Component Showcase",
+			UITheme::FontSize::HEADING_1,
+			UITheme::Text::ACCENT
+		);
 		root_panel_->AddChild(std::move(title));
 
 		auto subtitle = std::make_unique<Text>(
-				UITheme::Padding::PANEL_HORIZONTAL,
-				UITheme::FontSize::HEADING_1 + UITheme::Spacing::MEDIUM,
-				"Demonstrating all components with UITheme styling",
-				UITheme::FontSize::NORMAL,
-				UITheme::Text::SECONDARY);
+			UITheme::Padding::PANEL_HORIZONTAL,
+			UITheme::FontSize::HEADING_1 + UITheme::Spacing::MEDIUM,
+			"Demonstrating all components with UITheme styling",
+			UITheme::FontSize::NORMAL,
+			UITheme::Text::SECONDARY
+		);
 		root_panel_->AddChild(std::move(subtitle));
 
 		// ====================================================================
@@ -215,7 +217,7 @@ public:
 		// Add tooltip
 		auto tooltip_label = std::make_unique<Label>(8, 8, "Click to increment counter", UITheme::FontSize::SMALL);
 		auto tooltip_content =
-				std::make_unique<Panel>(0, 0, tooltip_label->GetWidth() + 16, tooltip_label->GetHeight() + 16);
+			std::make_unique<Panel>(0, 0, tooltip_label->GetWidth() + 16, tooltip_label->GetHeight() + 16);
 		tooltip_content->SetBackgroundColor(UITheme::Background::PANEL_DARK);
 		tooltip_content->SetBorderWidth(1.0f);
 		tooltip_content->SetBorderColor(UITheme::Border::DEFAULT);
@@ -247,8 +249,8 @@ public:
 		panel->AddChild(std::move(disabled_button));
 
 		// Click counter
-		auto click_label = std::make_unique<Text>(
-				420.0f, y + 8.0f, "Clicks: 0", UITheme::FontSize::NORMAL, UITheme::Text::SECONDARY);
+		auto click_label =
+			std::make_unique<Text>(420.0f, y + 8.0f, "Clicks: 0", UITheme::FontSize::NORMAL, UITheme::Text::SECONDARY);
 		button_click_count_text_ = click_label.get();
 		panel->AddChild(std::move(click_label));
 
@@ -263,26 +265,29 @@ public:
 
 		// === Checkboxes Section ===
 		auto checkbox_title =
-				std::make_unique<Text>(0, y, "Checkboxes", UITheme::FontSize::LARGE, UITheme::Text::ACCENT);
+			std::make_unique<Text>(0, y, "Checkboxes", UITheme::FontSize::LARGE, UITheme::Text::ACCENT);
 		panel->AddChild(std::move(checkbox_title));
 		y += UITheme::FontSize::LARGE + UITheme::Spacing::SMALL;
 
 		auto checkbox1 = std::make_unique<Checkbox>(0.0f, y, "Enable Feature A");
-		checkbox1->SetToggleCallback(
-				[](bool checked) { std::cout << "Feature A: " << (checked ? "Enabled" : "Disabled") << std::endl; });
+		checkbox1->SetToggleCallback([](bool checked) {
+			std::cout << "Feature A: " << (checked ? "Enabled" : "Disabled") << std::endl;
+		});
 		checkbox_1_ = checkbox1.get();
 		panel->AddChild(std::move(checkbox1));
 
 		auto checkbox2 = std::make_unique<Checkbox>(200.0f, y, "Enable Feature B");
 		checkbox2->SetChecked(true);
-		checkbox2->SetToggleCallback(
-				[](bool checked) { std::cout << "Feature B: " << (checked ? "Enabled" : "Disabled") << std::endl; });
+		checkbox2->SetToggleCallback([](bool checked) {
+			std::cout << "Feature B: " << (checked ? "Enabled" : "Disabled") << std::endl;
+		});
 		checkbox_2_ = checkbox2.get();
 		panel->AddChild(std::move(checkbox2));
 
 		auto checkbox3 = std::make_unique<Checkbox>(400.0f, y, "Advanced");
-		checkbox3->SetToggleCallback(
-				[](bool checked) { std::cout << "Advanced: " << (checked ? "Shown" : "Hidden") << std::endl; });
+		checkbox3->SetToggleCallback([](bool checked) {
+			std::cout << "Advanced: " << (checked ? "Shown" : "Hidden") << std::endl;
+		});
 		checkbox_3_ = checkbox3.get();
 		panel->AddChild(std::move(checkbox3));
 
@@ -353,7 +358,7 @@ public:
 		y += UITheme::FontSize::HEADING_2 + UITheme::Spacing::SMALL;
 
 		auto normal =
-				std::make_unique<Text>(0, y, "Normal text (14px)", UITheme::FontSize::NORMAL, UITheme::Text::PRIMARY);
+			std::make_unique<Text>(0, y, "Normal text (14px)", UITheme::FontSize::NORMAL, UITheme::Text::PRIMARY);
 		panel->AddChild(std::move(normal));
 		y += UITheme::FontSize::NORMAL + UITheme::Spacing::LARGE;
 
@@ -375,7 +380,7 @@ public:
 		x += 80.0f;
 
 		auto secondary_text =
-				std::make_unique<Text>(x, y, "Secondary", UITheme::FontSize::NORMAL, UITheme::Text::SECONDARY);
+			std::make_unique<Text>(x, y, "Secondary", UITheme::FontSize::NORMAL, UITheme::Text::SECONDARY);
 		panel->AddChild(std::move(secondary_text));
 		x += 100.0f;
 
@@ -409,7 +414,7 @@ public:
 
 		// === Progress Bar Section ===
 		auto progress_title =
-				std::make_unique<Text>(0, y, "Progress Bar", UITheme::FontSize::LARGE, UITheme::Text::ACCENT);
+			std::make_unique<Text>(0, y, "Progress Bar", UITheme::FontSize::LARGE, UITheme::Text::ACCENT);
 		panel->AddChild(std::move(progress_title));
 		y += UITheme::FontSize::LARGE + UITheme::Spacing::SMALL;
 
@@ -424,8 +429,7 @@ public:
 		auto increment_button = std::make_unique<Button>(470.0f, y - 5.0f, 70.0f, 30.0f, "+10%");
 		increment_button->SetClickCallback([this](const MouseEvent& event) {
 			progress_value_ = std::min(1.0f, progress_value_ + 0.1f);
-			if (progress_bar_)
-				progress_bar_->SetProgress(progress_value_);
+			if (progress_bar_) progress_bar_->SetProgress(progress_value_);
 			return true;
 		});
 		panel->AddChild(std::move(increment_button));
@@ -433,8 +437,7 @@ public:
 		auto reset_button = std::make_unique<Button>(550.0f, y - 5.0f, 60.0f, 30.0f, "Reset");
 		reset_button->SetClickCallback([this](const MouseEvent& event) {
 			progress_value_ = 0.0f;
-			if (progress_bar_)
-				progress_bar_->SetProgress(progress_value_);
+			if (progress_bar_) progress_bar_->SetProgress(progress_value_);
 			return true;
 		});
 		panel->AddChild(std::move(reset_button));
@@ -481,7 +484,7 @@ public:
 
 		// === Nested Panels ===
 		auto nested_title =
-				std::make_unique<Text>(0, y, "Nested Panels", UITheme::FontSize::LARGE, UITheme::Text::ACCENT);
+			std::make_unique<Text>(0, y, "Nested Panels", UITheme::FontSize::LARGE, UITheme::Text::ACCENT);
 		panel->AddChild(std::move(nested_title));
 		y += UITheme::FontSize::LARGE + UITheme::Spacing::SMALL;
 
@@ -517,7 +520,7 @@ public:
 
 		// === Nested Tab Container Demo ===
 		auto tab_title =
-				std::make_unique<Text>(0, y, "Nested Tab Container", UITheme::FontSize::LARGE, UITheme::Text::ACCENT);
+			std::make_unique<Text>(0, y, "Nested Tab Container", UITheme::FontSize::LARGE, UITheme::Text::ACCENT);
 		panel->AddChild(std::move(tab_title));
 		y += UITheme::FontSize::LARGE + UITheme::Spacing::SMALL;
 
@@ -563,11 +566,12 @@ public:
 		if (slider_value_label_) {
 			char buffer[128];
 			snprintf(
-					buffer,
-					sizeof(buffer),
-					"Volume: %.0f%% | Brightness: %.0f%%",
-					volume_value_ * 100.0f,
-					brightness_value_ * 100.0f);
+				buffer,
+				sizeof(buffer),
+				"Volume: %.0f%% | Brightness: %.0f%%",
+				volume_value_ * 100.0f,
+				brightness_value_ * 100.0f
+			);
 			slider_value_label_->SetText(buffer);
 		}
 	}
@@ -586,7 +590,9 @@ public:
 
 		if (root_panel_) {
 			root_panel_->SetRelativePosition(
-					screen_width * 0.5f - panel_width_ / 2.0F, screen_height * 0.5f - panel_height_ / 2.0F);
+				screen_width * 0.5f - panel_width_ / 2.0F,
+				screen_height * 0.5f - panel_height_ / 2.0F
+			);
 			root_panel_->ProcessMouseEvent(mouse_event);
 			root_panel_->UpdateComponentsRecursive(delta_time);
 		}
@@ -672,4 +678,7 @@ public:
 
 // Register scene
 REGISTER_EXAMPLE_SCENE(
-		UIShowcaseScene, "UI Showcase", "Comprehensive demonstration of all UI components with UITheme styling");
+	UIShowcaseScene,
+	"UI Showcase",
+	"Comprehensive demonstration of all UI components with UITheme styling"
+);

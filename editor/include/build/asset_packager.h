@@ -15,19 +15,21 @@ class IAssetPackager {
 public:
 	virtual ~IAssetPackager() = default;
 	virtual bool Package(
-			const ProjectModel& project,
-			const std::filesystem::path& source_assets,
-			const std::filesystem::path& dest_assets,
-			BuildReporter& reporter) = 0;
+		const ProjectModel& project,
+		const std::filesystem::path& source_assets,
+		const std::filesystem::path& dest_assets,
+		BuildReporter& reporter
+	) = 0;
 };
 
 class CopyAssetPackager : public IAssetPackager {
 public:
 	bool Package(
-			const ProjectModel& project,
-			const std::filesystem::path& source_assets,
-			const std::filesystem::path& dest_assets,
-			BuildReporter& reporter) override;
+		const ProjectModel& project,
+		const std::filesystem::path& source_assets,
+		const std::filesystem::path& dest_assets,
+		BuildReporter& reporter
+	) override;
 };
 
 std::unique_ptr<IAssetPackager> MakeDefaultAssetPackager();

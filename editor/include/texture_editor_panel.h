@@ -22,7 +22,7 @@ namespace editor {
 
 /**
  * @brief Procedural texture editor panel
- * 
+ *
  * Features:
  * - Node graph for texture generation
  * - Preview panel with resolution settings
@@ -171,7 +171,11 @@ private:
 	int node_path_dialog_pin_index_ = -1;
 
 	// Sampler cache for Input Image nodes (keyed by file path)
-	struct SamplerEntry { std::vector<uint8_t> pixels; int width = 0; int height = 0; };
+	struct SamplerEntry {
+		std::vector<uint8_t> pixels;
+		int width = 0;
+		int height = 0;
+	};
 	mutable std::unordered_map<std::string, SamplerEntry> sampler_cache_;
 
 	// Per-node evaluation buffers (keyed by node_id)

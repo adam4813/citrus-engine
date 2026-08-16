@@ -17,14 +17,14 @@ using DataValue = std::variant<bool, int, float, glm::vec2, glm::vec3, glm::vec4
 /// Base data asset structure
 /// Represents a single instance of data with type-tagged properties
 struct DataAsset {
-	std::string id;                                // Unique identifier
-	std::string type_name;                         // Schema type name
-	std::map<std::string, DataValue> properties;   // Property values
+	std::string id;                              // Unique identifier
+	std::string type_name;                       // Schema type name
+	std::map<std::string, DataValue> properties; // Property values
 
 	DataAsset() = default;
 
-	DataAsset(std::string asset_id, std::string asset_type)
-		: id(std::move(asset_id)), type_name(std::move(asset_type)) {}
+	DataAsset(std::string asset_id, std::string asset_type) :
+			id(std::move(asset_id)), type_name(std::move(asset_type)) {}
 
 	/// Get a property value by name
 	/// Returns a default-constructed DataValue if not found
@@ -40,9 +40,7 @@ struct DataAsset {
 	void SetProperty(const std::string& name, DataValue value) { properties[name] = std::move(value); }
 
 	/// Check if a property exists
-	[[nodiscard]] bool HasProperty(const std::string& name) const {
-		return properties.find(name) != properties.end();
-	}
+	[[nodiscard]] bool HasProperty(const std::string& name) const { return properties.find(name) != properties.end(); }
 
 	/// Remove a property
 	void RemoveProperty(const std::string& name) { properties.erase(name); }

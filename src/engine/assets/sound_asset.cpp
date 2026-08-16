@@ -56,33 +56,36 @@ void SoundAssetInfo::ToJson(nlohmann::json& j) {
 
 void SoundAssetInfo::RegisterType() {
 	AssetTypeRegistry::Instance()
-			.RegisterType<SoundAssetInfo>(SoundAssetInfo::TYPE_NAME, AssetType::SOUND)
-			.DisplayName("Sound")
-			.Category("Audio")
-			.Field("name", &SoundAssetInfo::name, "Name")
-			.Field("file_path", &SoundAssetInfo::file_path, "File Path", ecs::FieldType::FilePath)
-			.Field("volume", &SoundAssetInfo::volume, "Volume")
-			.Field("loop", &SoundAssetInfo::loop, "Loop")
-			.Build();
+		.RegisterType<SoundAssetInfo>(SoundAssetInfo::TYPE_NAME, AssetType::SOUND)
+		.DisplayName("Sound")
+		.Category("Audio")
+		.Field("name", &SoundAssetInfo::name, "Name")
+		.Field("file_path", &SoundAssetInfo::file_path, "File Path", ecs::FieldType::FilePath)
+		.Field("volume", &SoundAssetInfo::volume, "Volume")
+		.Field("loop", &SoundAssetInfo::loop, "Loop")
+		.Build();
 
 	// Register file importers for raw audio files
-	AssetCache::Instance().RegisterFileImporter({".wav", ".mp3", ".ogg", ".flac"},
-			[](const std::string& name, const std::string& path) -> std::shared_ptr<AssetInfo> {
-				auto asset = std::make_shared<SoundAssetInfo>(name);
-				asset->file_path = path;
-				return asset;
-			});
+	AssetCache::Instance().RegisterFileImporter(
+		{".wav", ".mp3", ".ogg", ".flac"},
+		[](const std::string& name, const std::string& path) -> std::shared_ptr<AssetInfo> {
+			auto asset = std::make_shared<SoundAssetInfo>(name);
+			asset->file_path = path;
+			return asset;
+		}
+	);
 }
 
 void SoundAssetInfo::SetupRefBinding(flecs::world& world) {
 	SetupRefBindingImpl<SoundAssetInfo, SoundRef, audio::AudioSource>(
-			world,
-			"SoundRef",
-			"Audio",
-			"SoundRefResolve",
-			SoundAssetInfo::TYPE_NAME,
-			[](const auto& asset, auto& target) { target.clip_id = asset->clip_id; },
-			[](auto& target) { target.clip_id = 0; });
+		world,
+		"SoundRef",
+		"Audio",
+		"SoundRefResolve",
+		SoundAssetInfo::TYPE_NAME,
+		[](const auto& asset, auto& target) { target.clip_id = asset->clip_id; },
+		[](auto& target) { target.clip_id = 0; }
+	);
 }
 
 } // namespace engine::assets

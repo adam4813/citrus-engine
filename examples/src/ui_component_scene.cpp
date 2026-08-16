@@ -50,7 +50,7 @@ private:
 	// State for ImGui controls
 	int layout_type_ = 0; // 0=Vertical, 1=Horizontal, 2=Grid, 3=Stack, 4=Justify
 	float layout_gap_ = 8.0f;
-	int alignment_ = 1; // 0=Start, 1=Center, 2=End, 3=Stretch
+	int alignment_ = 1;     // 0=Start, 1=Center, 2=End, 3=Stretch
 	int stack_h_align_ = 1; // Horizontal alignment for Stack layout
 	int stack_v_align_ = 1; // Vertical alignment for Stack layout
 	int grid_columns_ = 3;
@@ -111,12 +111,12 @@ public:
 
 		// Build container using builder
 		auto& builder = ContainerBuilder()
-								.Position(container_x_, container_y_)
-								.Size(container_width_, container_height_)
-								.Padding(container_padding_)
-								.Background(UITheme::Background::PANEL)
-								.Border(2.0f, UITheme::Border::FOCUS)
-								.ClipChildren(true);
+							.Position(container_x_, container_y_)
+							.Size(container_width_, container_height_)
+							.Padding(container_padding_)
+							.Background(UITheme::Background::PANEL)
+							.Border(2.0f, UITheme::Border::FOCUS)
+							.ClipChildren(true);
 
 		// Add layout component based on selection
 		Alignment align = static_cast<Alignment>(alignment_);
@@ -158,7 +158,9 @@ public:
 				float parent_w = parent_panel_->GetWidth();
 				float parent_h = parent_panel_->GetHeight();
 				demo_container_->SetRelativePosition(
-						(parent_w - container_width_) / 2, (parent_h - container_height_) / 2);
+					(parent_w - container_width_) / 2,
+					(parent_h - container_height_) / 2
+				);
 				break;
 			}
 			case 3: anchor = Anchor::Fill(anchor_margin_); break;
@@ -229,19 +231,18 @@ public:
 			target = demo_container_.get();
 		}
 
-		if (!target)
-			return;
+		if (!target) return;
 
 		// Create colored child panels with varying sizes for Stack layout
 		const Color colors[] = {
-				{0.8f, 0.2f, 0.2f, 0.9f}, // Red
-				{0.2f, 0.8f, 0.2f, 0.9f}, // Green
-				{0.2f, 0.2f, 0.8f, 0.9f}, // Blue
-				{0.8f, 0.8f, 0.2f, 0.9f}, // Yellow
-				{0.8f, 0.2f, 0.8f, 0.9f}, // Magenta
-				{0.2f, 0.8f, 0.8f, 0.9f}, // Cyan
-				{0.8f, 0.5f, 0.2f, 0.9f}, // Orange
-				{0.5f, 0.2f, 0.8f, 0.9f}, // Purple
+			{0.8f, 0.2f, 0.2f, 0.9f}, // Red
+			{0.2f, 0.8f, 0.2f, 0.9f}, // Green
+			{0.2f, 0.2f, 0.8f, 0.9f}, // Blue
+			{0.8f, 0.8f, 0.2f, 0.9f}, // Yellow
+			{0.8f, 0.2f, 0.8f, 0.9f}, // Magenta
+			{0.2f, 0.8f, 0.8f, 0.9f}, // Cyan
+			{0.8f, 0.5f, 0.2f, 0.9f}, // Orange
+			{0.5f, 0.2f, 0.8f, 0.9f}, // Purple
 		};
 
 		// For Stack layout, use decreasing sizes to visualize layering
@@ -451,8 +452,9 @@ public:
 
 		ImGui::Separator();
 		ImGui::TextWrapped(
-				"This demo shows how layout, constraint, and scroll components "
-				"can be combined to create flexible UI layouts.");
+			"This demo shows how layout, constraint, and scroll components "
+			"can be combined to create flexible UI layouts."
+		);
 
 		ImGui::Separator();
 		ImGui::Text("Debug Visualizer:");
@@ -506,6 +508,7 @@ public:
 };
 
 REGISTER_EXAMPLE_SCENE(
-		UIComponentScene,
-		"UI Components",
-		"Demonstrates layout, constraint, and scroll components with interactive controls");
+	UIComponentScene,
+	"UI Components",
+	"Demonstrates layout, constraint, and scroll components with interactive controls"
+);

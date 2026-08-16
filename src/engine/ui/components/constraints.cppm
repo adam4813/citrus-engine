@@ -262,11 +262,11 @@ private:
  * @brief Size constraint modes
  */
 enum class SizeMode : uint8_t {
-	Fixed, ///< Fixed pixel size
+	Fixed,      ///< Fixed pixel size
 	Percentage, ///< Percentage of parent size
 	MinContent, ///< Use minimum content size
 	MaxContent, ///< Use maximum content size
-	FitContent ///< Fit content with optional min/max bounds
+	FitContent  ///< Fit content with optional min/max bounds
 };
 
 /**

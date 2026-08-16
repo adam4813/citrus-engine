@@ -16,7 +16,7 @@ export namespace engine::data {
 
 /// Data table row - represents one row in a data table
 struct DataRow {
-	std::string key; // Unique row identifier
+	std::string key;                         // Unique row identifier
 	std::map<std::string, DataValue> values; // Column values
 
 	DataRow() = default;
@@ -103,14 +103,15 @@ public:
 				if (row_value.index() == value.index()) {
 					// Both variants hold the same type, compare values
 					bool is_equal = std::visit(
-							[&value](auto&& arg) {
-								using T = std::decay_t<decltype(arg)>;
-								if (const auto* val_ptr = std::get_if<T>(&value)) {
-									return arg == *val_ptr;
-								}
-								return false;
-							},
-							row_value);
+						[&value](auto&& arg) {
+							using T = std::decay_t<decltype(arg)>;
+							if (const auto* val_ptr = std::get_if<T>(&value)) {
+								return arg == *val_ptr;
+							}
+							return false;
+						},
+						row_value
+					);
 					if (is_equal) {
 						results.push_back(row);
 					}

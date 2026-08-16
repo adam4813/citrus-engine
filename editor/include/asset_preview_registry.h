@@ -31,8 +31,8 @@ public:
 
 	/// Returns color + icon label for a file type. Used for non-thumbnail display.
 	struct FileTypeAppearance {
-		std::string icon;   // Short icon label, e.g. "[T]", "[S]"
-		ImVec4 color;       // Tint color for the icon
+		std::string icon; // Short icon label, e.g. "[T]", "[S]"
+		ImVec4 color;     // Tint color for the icon
 		FileTypeAppearance() : color(0.55f, 0.55f, 0.55f, 1.0f) {}
 		FileTypeAppearance(std::string i, ImVec4 c) : icon(std::move(i)), color(c) {}
 	};

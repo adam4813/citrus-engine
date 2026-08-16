@@ -26,9 +26,7 @@ protected:
 	std::unique_ptr<TestElement> element_;
 	Rectangle parent_bounds_{0.0f, 0.0f, 400.0f, 300.0f};
 
-	void SetUp() override {
-		element_ = std::make_unique<TestElement>(0, 0, 100.0f, 50.0f);
-	}
+	void SetUp() override { element_ = std::make_unique<TestElement>(0, 0, 100.0f, 50.0f); }
 };
 
 TEST_F(AnchorTest, FixedFromLeft) {
@@ -189,7 +187,7 @@ TEST_F(SizeConstraintTest, PercentageSize) {
 	auto constraint = SizeConstraint::Percent(0.5f);
 	float result = constraint.Calculate(400.0f, 100.0f);
 
-	EXPECT_FLOAT_EQ(result, 200.0f);  // 50% of 400
+	EXPECT_FLOAT_EQ(result, 200.0f); // 50% of 400
 }
 
 TEST_F(SizeConstraintTest, PercentageClamped) {
@@ -197,34 +195,34 @@ TEST_F(SizeConstraintTest, PercentageClamped) {
 	auto constraint = SizeConstraint::Percent(1.5f);
 	float result = constraint.Calculate(400.0f, 100.0f);
 
-	EXPECT_FLOAT_EQ(result, 400.0f);  // Clamped to 100%
+	EXPECT_FLOAT_EQ(result, 400.0f); // Clamped to 100%
 }
 
 TEST_F(SizeConstraintTest, FitContent) {
 	auto constraint = SizeConstraint::FitContent();
 	float result = constraint.Calculate(400.0f, 150.0f);
 
-	EXPECT_FLOAT_EQ(result, 150.0f);  // Uses content size
+	EXPECT_FLOAT_EQ(result, 150.0f); // Uses content size
 }
 
 TEST_F(SizeConstraintTest, FitContentWithMin) {
 	auto constraint = SizeConstraint::FitContent(200.0f, std::nullopt);
 	float result = constraint.Calculate(400.0f, 100.0f);
 
-	EXPECT_FLOAT_EQ(result, 200.0f);  // Min applied
+	EXPECT_FLOAT_EQ(result, 200.0f); // Min applied
 }
 
 TEST_F(SizeConstraintTest, FitContentWithMax) {
 	auto constraint = SizeConstraint::FitContent(std::nullopt, 80.0f);
 	float result = constraint.Calculate(400.0f, 100.0f);
 
-	EXPECT_FLOAT_EQ(result, 80.0f);  // Max applied
+	EXPECT_FLOAT_EQ(result, 80.0f); // Max applied
 }
 
 TEST_F(SizeConstraintTest, FitContentWithMinAndMax) {
 	auto constraint = SizeConstraint::FitContent(50.0f, 150.0f);
 
-	EXPECT_FLOAT_EQ(constraint.Calculate(400.0f, 100.0f), 100.0f);  // Within range
+	EXPECT_FLOAT_EQ(constraint.Calculate(400.0f, 100.0f), 100.0f); // Within range
 	EXPECT_FLOAT_EQ(constraint.Calculate(400.0f, 30.0f), 50.0f);   // Below min
 	EXPECT_FLOAT_EQ(constraint.Calculate(400.0f, 200.0f), 150.0f); // Above max
 }
@@ -238,9 +236,7 @@ protected:
 	std::unique_ptr<TestElement> element_;
 	Rectangle parent_bounds_{0.0f, 0.0f, 400.0f, 300.0f};
 
-	void SetUp() override {
-		element_ = std::make_unique<TestElement>(0, 0, 100.0f, 50.0f);
-	}
+	void SetUp() override { element_ = std::make_unique<TestElement>(0, 0, 100.0f, 50.0f); }
 };
 
 TEST_F(SizeConstraintsTest, FixedFactory) {
@@ -255,8 +251,8 @@ TEST_F(SizeConstraintsTest, PercentFactory) {
 	auto constraints = SizeConstraints::Percent(0.5f, 0.25f);
 	constraints.Apply(element_.get(), parent_bounds_);
 
-	EXPECT_FLOAT_EQ(element_->GetWidth(), 200.0f);   // 50% of 400
-	EXPECT_FLOAT_EQ(element_->GetHeight(), 75.0f);  // 25% of 300
+	EXPECT_FLOAT_EQ(element_->GetWidth(), 200.0f); // 50% of 400
+	EXPECT_FLOAT_EQ(element_->GetHeight(), 75.0f); // 25% of 300
 }
 
 TEST_F(SizeConstraintsTest, FullFactory) {
@@ -304,7 +300,7 @@ TEST(AnchorIntegrationTest, CombineAnchorAndSizeConstraints) {
 	// First apply size constraint (percentage-based)
 	SizeConstraints size_constraints;
 	size_constraints.width = SizeConstraint::Percent(0.5f);  // 200px
-	size_constraints.height = SizeConstraint::Percent(0.3f);  // 90px
+	size_constraints.height = SizeConstraint::Percent(0.3f); // 90px
 	size_constraints.Apply(element.get(), parent_bounds);
 
 	EXPECT_FLOAT_EQ(element->GetWidth(), 200.0f);

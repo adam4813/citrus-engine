@@ -62,9 +62,9 @@ import engine;
  * @code{.cpp}
  * void RenderUI() {
  *     ImGui::Begin("Debug Panel");
- *     
+ *
  *     ui_debugger.RenderImGuiControls();  // Adds checkboxes and color pickers
- *     
+ *
  *     ImGui::End();
  * }
  * @endcode
@@ -152,10 +152,10 @@ private:
 	const engine::ui::UIElement* selected_element_ = nullptr;
 
 	// Debug colors
-	engine::ui::batch_renderer::Color bounds_color_{1.0f, 0.0f, 1.0f, 1.0f}; // Magenta
-	engine::ui::batch_renderer::Color label_bg_color_{0.0f, 0.0f, 0.0f, 0.7f}; // Semi-transparent black
-	engine::ui::batch_renderer::Color label_text_color_{1.0f, 1.0f, 0.0f, 1.0f}; // Yellow
-	engine::ui::batch_renderer::Color selected_color_{0.0f, 1.0f, 0.0f, 1.0f}; // Green for selected
+	engine::ui::batch_renderer::Color bounds_color_{1.0f, 0.0f, 1.0f, 1.0f};         // Magenta
+	engine::ui::batch_renderer::Color label_bg_color_{0.0f, 0.0f, 0.0f, 0.7f};       // Semi-transparent black
+	engine::ui::batch_renderer::Color label_text_color_{1.0f, 1.0f, 0.0f, 1.0f};     // Yellow
+	engine::ui::batch_renderer::Color selected_color_{0.0f, 1.0f, 0.0f, 1.0f};       // Green for selected
 	engine::ui::batch_renderer::Color selected_fill_color_{0.0f, 1.0f, 0.0f, 0.15f}; // Semi-transparent green fill
 
 	/**
@@ -183,10 +183,10 @@ private:
 			BatchRenderer::SubmitQuad(bounds, selected_fill_color_);
 
 			// Thicker green border
-			BatchRenderer::SubmitLine(x, y, x + w, y, thickness, selected_color_); // Top
+			BatchRenderer::SubmitLine(x, y, x + w, y, thickness, selected_color_);         // Top
 			BatchRenderer::SubmitLine(x + w, y, x + w, y + h, thickness, selected_color_); // Right
 			BatchRenderer::SubmitLine(x + w, y + h, x, y + h, thickness, selected_color_); // Bottom
-			BatchRenderer::SubmitLine(x, y + h, x, y, thickness, selected_color_); // Left
+			BatchRenderer::SubmitLine(x, y + h, x, y, thickness, selected_color_);         // Left
 		}
 
 		// Render bounds as outline (4 lines forming a rectangle)
@@ -200,13 +200,12 @@ private:
 			// Adjust bounds color based on depth for visual hierarchy
 			Color depth_color = bounds_color_;
 			depth_color.a = 1.0f - (depth * 0.1f); // Fade deeper elements
-			if (depth_color.a < 0.3f)
-				depth_color.a = 0.3f;
+			if (depth_color.a < 0.3f) depth_color.a = 0.3f;
 
-			BatchRenderer::SubmitLine(x, y, x + w, y, thickness, depth_color); // Top
+			BatchRenderer::SubmitLine(x, y, x + w, y, thickness, depth_color);         // Top
 			BatchRenderer::SubmitLine(x + w, y, x + w, y + h, thickness, depth_color); // Right
 			BatchRenderer::SubmitLine(x + w, y + h, x, y + h, thickness, depth_color); // Bottom
-			BatchRenderer::SubmitLine(x, y + h, x, y, thickness, depth_color); // Left
+			BatchRenderer::SubmitLine(x, y + h, x, y, thickness, depth_color);         // Left
 		}
 
 		// Render label above bounds
@@ -221,7 +220,9 @@ private:
 			if (font && font->IsValid()) {
 				// Measure text bounds properly
 				auto text_bounds = engine::ui::text_renderer::TextLayout::MeasureText(
-						label, *font, 0.0f // No wrapping
+					label,
+					*font,
+					0.0f // No wrapping
 				);
 
 				label_y = bounds.y - text_bounds.height - 4.0f; // Use measured height with a small offset
@@ -229,10 +230,11 @@ private:
 				// Background for label (with padding)
 				const float padding = 4.0f;
 				const Rectangle label_bg{
-						label_x - padding,
-						label_y - padding,
-						text_bounds.width + padding * 2,
-						text_bounds.height + padding * 2};
+					label_x - padding,
+					label_y - padding,
+					text_bounds.width + padding * 2,
+					text_bounds.height + padding * 2
+				};
 				BatchRenderer::SubmitQuad(label_bg, label_bg_color_);
 
 				// Label text
@@ -240,8 +242,8 @@ private:
 			}
 			else {
 				// Fallback if font not available (crude estimate)
-				const Rectangle label_bg{
-						label_x - 2.0f, label_y - 2.0f, static_cast<float>(label.length() * 8 + 4), 18.0f};
+				const Rectangle
+					label_bg{label_x - 2.0f, label_y - 2.0f, static_cast<float>(label.length() * 8 + 4), 18.0f};
 				BatchRenderer::SubmitQuad(label_bg, label_bg_color_);
 				BatchRenderer::SubmitText(label, label_x, label_y, label_font_size, label_text_color_);
 			}
@@ -359,16 +361,14 @@ public:
 	 * @endcode
 	 */
 	void SetupClickToSelect(engine::ui::UIElement* root) {
-		if (!root)
-			return;
+		if (!root) return;
 
 		SetupClickToSelectRecursive(root);
 	}
 
 private:
 	void SetupClickToSelectRecursive(engine::ui::UIElement* element) {
-		if (!element)
-			return;
+		if (!element) return;
 
 		// Set click callback to select this element
 		element->SetClickCallback([this, element](const engine::ui::MouseEvent&) {
@@ -383,7 +383,6 @@ private:
 	}
 
 public:
-
 	/**
 	 * @brief Render debug overlay for UI element tree
 	 *

@@ -60,10 +60,11 @@ std::filesystem::path FindVcvarsBat() {
 	}
 	std::error_code ec;
 	if (!vswhere.empty() && std::filesystem::is_regular_file(vswhere, ec)) {
-		const std::string cmd = "\"" + vswhere.string() +
-				"\" -latest -prerelease -products * "
-				"-requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 "
-				"-property installationPath";
+		const std::string cmd = "\""
+								+ vswhere.string()
+								+ "\" -latest -prerelease -products * "
+								  "-requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 "
+								  "-property installationPath";
 		FILE* pipe = _popen(cmd.c_str(), "r");
 		if (pipe) {
 			char buf[1024]{};
@@ -93,7 +94,9 @@ std::filesystem::path FindVcvarsBat() {
 		if (!base) continue;
 		for (const char* y : years) {
 			for (const char* e : editions) {
+				// clang-format off
 				auto candidate = std::filesystem::path(base) / "Microsoft Visual Studio" / y / e / "VC" / "Auxiliary" / "Build" / "vcvars64.bat";
+				// clang-format on
 				if (std::filesystem::is_regular_file(candidate, ec)) return candidate;
 			}
 		}
@@ -106,7 +109,10 @@ std::string QuoteWindowsArg(const std::string& arg) {
 	std::string out = "\"";
 	for (size_t i = 0; i < arg.size(); ++i) {
 		size_t backslashes = 0;
-		while (i < arg.size() && arg[i] == '\\') { ++backslashes; ++i; }
+		while (i < arg.size() && arg[i] == '\\') {
+			++backslashes;
+			++i;
+		}
 		if (i == arg.size()) {
 			out.append(backslashes * 2, '\\');
 			break;
@@ -162,14 +168,13 @@ ToolchainStatus DetectToolchain(bool needs_emsdk, bool needs_msvc_env) {
 	if (needs_msvc_env) {
 		status.vcvars_bat = FindVcvarsBat();
 		if (status.vcvars_bat.empty()) {
-			status.error_message =
-					"vcvars64.bat not found. Install Visual Studio 2019/2022 with the C++ build tools "
-					"(component: Microsoft.VisualStudio.Component.VC.Tools.x86.x64).";
+			status.error_message = "vcvars64.bat not found. Install Visual Studio 2019/2022 with the C++ build tools "
+								   "(component: Microsoft.VisualStudio.Component.VC.Tools.x86.x64).";
 			return status;
 		}
 	}
 #else
-	(void)needs_msvc_env;
+	(void) needs_msvc_env;
 #endif
 
 	status.ok = true;
@@ -197,7 +202,7 @@ std::unordered_map<std::string, std::string> CaptureVcvarsEnv(const std::filesys
 	}
 	_pclose(pipe);
 #else
-	(void)vcvars_bat;
+	(void) vcvars_bat;
 #endif
 	return env;
 }
@@ -205,11 +210,12 @@ std::unordered_map<std::string, std::string> CaptureVcvarsEnv(const std::filesys
 #if defined(_WIN32)
 
 int RunProcess(
-		const std::vector<std::string>& argv,
-		const std::filesystem::path& working_dir,
-		const std::unordered_map<std::string, std::string>& env_overrides,
-		const std::atomic<bool>& cancel_flag,
-		const std::function<void(std::string)>& on_line) {
+	const std::vector<std::string>& argv,
+	const std::filesystem::path& working_dir,
+	const std::unordered_map<std::string, std::string>& env_overrides,
+	const std::atomic<bool>& cancel_flag,
+	const std::function<void(std::string)>& on_line
+) {
 	if (argv.empty()) return -1;
 
 	std::string cmdline;
@@ -256,10 +262,17 @@ int RunProcess(
 	std::string mutable_cmdline = cmdline;
 	const std::string wd = working_dir.string();
 	BOOL ok = CreateProcessA(
-			nullptr, mutable_cmdline.data(), nullptr, nullptr, TRUE,
-			CREATE_NO_WINDOW, env_block.data(),
-			wd.empty() ? nullptr : wd.c_str(),
-			&si, &pi);
+		nullptr,
+		mutable_cmdline.data(),
+		nullptr,
+		nullptr,
+		TRUE,
+		CREATE_NO_WINDOW,
+		env_block.data(),
+		wd.empty() ? nullptr : wd.c_str(),
+		&si,
+		&pi
+	);
 	CloseHandle(write_h); // parent doesn't write
 	if (!ok) {
 		CloseHandle(read_h);
@@ -320,11 +333,12 @@ int RunProcess(
 #else
 
 int RunProcess(
-		const std::vector<std::string>& argv,
-		const std::filesystem::path& working_dir,
-		const std::unordered_map<std::string, std::string>& env_overrides,
-		const std::atomic<bool>& cancel_flag,
-		const std::function<void(std::string)>& on_line) {
+	const std::vector<std::string>& argv,
+	const std::filesystem::path& working_dir,
+	const std::unordered_map<std::string, std::string>& env_overrides,
+	const std::atomic<bool>& cancel_flag,
+	const std::function<void(std::string)>& on_line
+) {
 	if (argv.empty()) return -1;
 
 	int pipefd[2];
@@ -344,7 +358,7 @@ int RunProcess(
 		close(pipefd[1]);
 
 		if (!working_dir.empty()) {
-			(void)chdir(working_dir.c_str());
+			(void) chdir(working_dir.c_str());
 		}
 		for (const auto& [k, v] : env_overrides) {
 			setenv(k.c_str(), v.c_str(), 1);

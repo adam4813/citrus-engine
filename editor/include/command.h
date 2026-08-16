@@ -151,7 +151,7 @@ private:
 	std::deque<std::unique_ptr<ICommand>> undo_stack_;
 	std::deque<std::unique_ptr<ICommand>> redo_stack_;
 	size_t max_depth_ = 100;
-	size_t save_position_ = 0; // Position in command history when last saved
+	size_t save_position_ = 0;    // Position in command history when last saved
 	size_t current_position_ = 0; // Current position in command history
 };
 

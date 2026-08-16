@@ -100,22 +100,26 @@ void GraphEditorPanel::RenderCanvas() {
 	const float grid_step = GRID_SIZE * canvas_zoom_;
 	for (float x = fmodf(canvas_offset_.x, grid_step); x < canvas_sz.x; x += grid_step) {
 		draw_list->AddLine(
-				ImVec2(canvas_p0_.x + x, canvas_p0_.y),
-				ImVec2(canvas_p0_.x + x, canvas_p1.y),
-				IM_COL32(50, 50, 50, 255));
+			ImVec2(canvas_p0_.x + x, canvas_p0_.y),
+			ImVec2(canvas_p0_.x + x, canvas_p1.y),
+			IM_COL32(50, 50, 50, 255)
+		);
 	}
 	for (float y = fmodf(canvas_offset_.y, grid_step); y < canvas_sz.y; y += grid_step) {
 		draw_list->AddLine(
-				ImVec2(canvas_p0_.x, canvas_p0_.y + y),
-				ImVec2(canvas_p1.x, canvas_p0_.y + y),
-				IM_COL32(50, 50, 50, 255));
+			ImVec2(canvas_p0_.x, canvas_p0_.y + y),
+			ImVec2(canvas_p1.x, canvas_p0_.y + y),
+			IM_COL32(50, 50, 50, 255)
+		);
 	}
 
 	// Clip rendering to canvas
 	draw_list->PushClipRect(canvas_p0_, canvas_p1, true);
 
 	// Handle pin click for link creation (checked before nodes so it works on first click)
-	if (!is_creating_link_ && !is_dragging_node_ && ImGui::IsMouseClicked(ImGuiMouseButton_Left)
+	if (!is_creating_link_
+		&& !is_dragging_node_
+		&& ImGui::IsMouseClicked(ImGuiMouseButton_Left)
 		&& ImGui::IsWindowHovered()) {
 		const ImVec2 mouse_pos = ImGui::GetMousePos();
 		int pin_node_id = -1, pin_index = -1;
@@ -179,8 +183,11 @@ void GraphEditorPanel::RenderCanvas() {
 	}
 
 	// Handle link selection (click near a link, but not on a pin or node)
-	if (!is_creating_link_ && !is_dragging_node_ && ImGui::IsMouseClicked(ImGuiMouseButton_Left)
-		&& ImGui::IsWindowHovered() && hovered_node_id_ < 0) {
+	if (!is_creating_link_
+		&& !is_dragging_node_
+		&& ImGui::IsMouseClicked(ImGuiMouseButton_Left)
+		&& ImGui::IsWindowHovered()
+		&& hovered_node_id_ < 0) {
 		const ImVec2 mouse_pos = ImGui::GetMousePos();
 		int dummy_node = -1, dummy_pin = -1;
 		bool dummy_output = false;
@@ -280,7 +287,7 @@ void GraphEditorPanel::RenderNode(const engine::graph::Node& node) {
 
 	const ImVec2 node_rect_min = node_pos;
 	const ImVec2 node_rect_max =
-			ImVec2(node_pos.x + NODE_WIDTH * canvas_zoom_, node_pos.y + node_height * canvas_zoom_);
+		ImVec2(node_pos.x + NODE_WIDTH * canvas_zoom_, node_pos.y + node_height * canvas_zoom_);
 
 	// Draw node background
 	const bool is_selected = (node.id == selected_node_id_);
@@ -325,8 +332,9 @@ void GraphEditorPanel::RenderNode(const engine::graph::Node& node) {
 	ImGui::SetNextItemAllowOverlap();
 	ImGui::SetCursorScreenPos(node_rect_min);
 	ImGui::InvisibleButton(
-			("node_" + std::to_string(node.id)).c_str(),
-			ImVec2(node_rect_max.x - node_rect_min.x, node_rect_max.y - node_rect_min.y));
+		("node_" + std::to_string(node.id)).c_str(),
+		ImVec2(node_rect_max.x - node_rect_min.x, node_rect_max.y - node_rect_min.y)
+	);
 	const bool node_active = ImGui::IsItemActive();
 	const bool node_clicked = ImGui::IsItemClicked(ImGuiMouseButton_Left);
 
@@ -342,30 +350,40 @@ void GraphEditorPanel::RenderNode(const engine::graph::Node& node) {
 			bool changed = false;
 			using engine::graph::PinType;
 			switch (pin.type) {
-			case PinType::Float: {
+			case PinType::Float:
+			{
 				const auto* p = std::get_if<float>(&pin.default_value);
 				float val = p ? *p : 0.0f;
 				ImGui::PushItemWidth((NODE_WIDTH - 25.0f) * canvas_zoom_);
-				if (ImGui::DragFloat(eid.c_str(), &val, 0.01f, 0.0f, 0.0f, "%.3f")) { pin.default_value = val; changed = true; }
+				if (ImGui::DragFloat(eid.c_str(), &val, 0.01f, 0.0f, 0.0f, "%.3f")) {
+					pin.default_value = val;
+					changed = true;
+				}
 				ImGui::PopItemWidth();
 				break;
 			}
 			case PinType::Color:
-			case PinType::Vec4: {
+			case PinType::Vec4:
+			{
 				const auto* p = std::get_if<glm::vec4>(&pin.default_value);
 				glm::vec4 col = p ? *p : glm::vec4(1.0f);
 				float arr[4] = {col.x, col.y, col.z, col.w};
 				if (ImGui::ColorEdit4(eid.c_str(), arr, ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoLabel)) {
-					pin.default_value = glm::vec4(arr[0], arr[1], arr[2], arr[3]); changed = true;
+					pin.default_value = glm::vec4(arr[0], arr[1], arr[2], arr[3]);
+					changed = true;
 				}
 				break;
 			}
-			case PinType::Vec2: {
+			case PinType::Vec2:
+			{
 				const auto* p = std::get_if<glm::vec2>(&pin.default_value);
 				glm::vec2 val = p ? *p : glm::vec2(0.0f);
 				float arr[2] = {val.x, val.y};
 				ImGui::PushItemWidth((NODE_WIDTH - 25.0f) * canvas_zoom_);
-				if (ImGui::DragFloat2(eid.c_str(), arr, 0.01f)) { pin.default_value = glm::vec2(arr[0], arr[1]); changed = true; }
+				if (ImGui::DragFloat2(eid.c_str(), arr, 0.01f)) {
+					pin.default_value = glm::vec2(arr[0], arr[1]);
+					changed = true;
+				}
 				ImGui::PopItemWidth();
 				break;
 			}
@@ -433,7 +451,7 @@ void GraphEditorPanel::RenderLink(const engine::graph::Link& link) {
 	const ImVec2 cp2 = ImVec2(p2.x - offset, p2.y);
 
 	const ImU32 link_color =
-			(link.id == selected_link_id_) ? IM_COL32(255, 255, 100, 255) : IM_COL32(200, 200, 100, 255);
+		(link.id == selected_link_id_) ? IM_COL32(255, 255, 100, 255) : IM_COL32(200, 200, 100, 255);
 	const float link_thickness = (link.id == selected_link_id_) ? 3.0f * canvas_zoom_ : 2.0f * canvas_zoom_;
 	draw_list->AddBezierCubic(p1, cp1, cp2, p2, link_color, link_thickness);
 }
@@ -506,8 +524,9 @@ void GraphEditorPanel::RenderAddNodeMenu() {
 
 ImVec2 GraphEditorPanel::GetNodeScreenPos(const engine::graph::Node& node) const {
 	return ImVec2(
-			canvas_p0_.x + canvas_offset_.x + node.position.x * canvas_zoom_,
-			canvas_p0_.y + canvas_offset_.y + node.position.y * canvas_zoom_);
+		canvas_p0_.x + canvas_offset_.x + node.position.x * canvas_zoom_,
+		canvas_p0_.y + canvas_offset_.y + node.position.y * canvas_zoom_
+	);
 }
 
 ImVec2 GraphEditorPanel::GetPinScreenPos(const engine::graph::Node& node, int pin_index, bool is_output) const {
@@ -530,7 +549,11 @@ bool GraphEditorPanel::HitTestPin(const ImVec2& point, const ImVec2& pin_pos) co
 }
 
 bool GraphEditorPanel::FindPinUnderMouse(
-		const ImVec2& mouse_pos, int& out_node_id, int& out_pin_index, bool& out_is_output) const {
+	const ImVec2& mouse_pos,
+	int& out_node_id,
+	int& out_pin_index,
+	bool& out_is_output
+) const {
 	for (const auto& node : graph_->GetNodes()) {
 		for (int i = 0; i < static_cast<int>(node.outputs.size()); ++i) {
 			if (HitTestPin(mouse_pos, GetPinScreenPos(node, i, true))) {

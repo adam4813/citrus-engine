@@ -164,7 +164,7 @@ struct TilemapLayer {
 // Main tilemap component containing multiple layers
 struct Tilemap {
 	std::vector<std::shared_ptr<TilemapLayer>> layers;
-	glm::ivec2 tile_size{32, 32}; // Size of each tile in pixels
+	glm::ivec2 tile_size{32, 32};      // Size of each tile in pixels
 	glm::vec2 grid_offset{0.0f, 0.0f}; // Offset for the entire tilemap
 
 	// Add a new layer and return its index
@@ -181,7 +181,8 @@ struct Tilemap {
 		return (index < layers.size()) ? layers[index] : nullptr;
 	}
 
-	template <typename Func> bool WithLayer(const size_t index, Func&& func) {
+	template<typename Func>
+	bool WithLayer(const size_t index, Func&& func) {
 		if (index < layers.size() && layers[index]) {
 			func(*layers[index]);
 			return true;
@@ -189,7 +190,8 @@ struct Tilemap {
 		return false;
 	}
 
-	template <typename Func> bool WithLayer(const size_t index, Func&& func) const {
+	template<typename Func>
+	bool WithLayer(const size_t index, Func&& func) const {
 		if (index < layers.size() && layers[index]) {
 			func(*layers[index]);
 			return true;
@@ -207,8 +209,9 @@ struct Tilemap {
 	glm::ivec2 WorldToGrid(const glm::vec2& world_pos) const {
 		const glm::vec2 adjusted_pos = world_pos - grid_offset;
 		return glm::ivec2(
-				static_cast<std::int32_t>(std::floor(adjusted_pos.x / tile_size.x)),
-				static_cast<std::int32_t>(std::floor(adjusted_pos.y / tile_size.y)));
+			static_cast<std::int32_t>(std::floor(adjusted_pos.x / tile_size.x)),
+			static_cast<std::int32_t>(std::floor(adjusted_pos.y / tile_size.y))
+		);
 	}
 
 	// Convert grid coordinates to world position (center of tile)
@@ -227,8 +230,8 @@ struct Tilemap {
  */
 struct BehaviorTreeComponent {
 	std::string behavior_tree_asset; // Path to .bt.json file
-	// Note: The actual BehaviorTree and Blackboard are managed by the AI system
-	// to avoid circular dependencies and keep components simple POD structures
+									 // Note: The actual BehaviorTree and Blackboard are managed by the AI system
+									 // to avoid circular dependencies and keep components simple POD structures
 };
 
 } // namespace engine::components

@@ -31,20 +31,19 @@ public:
 	}
 
 	void drawContactPoint(
-			const btVector3& point_on_b,
-			const btVector3& normal_on_b,
-			btScalar distance,
-			int /*life_time*/,
-			const btVector3& color) override {
+		const btVector3& point_on_b,
+		const btVector3& normal_on_b,
+		btScalar distance,
+		int /*life_time*/,
+		const btVector3& color
+	) override {
 		if (renderer_) {
 			const btVector3 to = point_on_b + normal_on_b * distance;
 			renderer_->DrawLine(ToGlm(point_on_b), ToGlm(to), ToGlm(color));
 		}
 	}
 
-	void reportErrorWarning(const char* warning_string) override {
-		spdlog::warn("[Bullet3 Debug] {}", warning_string);
-	}
+	void reportErrorWarning(const char* warning_string) override { spdlog::warn("[Bullet3 Debug] {}", warning_string); }
 
 	void draw3dText(const btVector3& location, const char* text_string) override {
 		if (renderer_) {

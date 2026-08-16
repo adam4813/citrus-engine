@@ -29,9 +29,7 @@ inline glm::vec3 ToGlm(JPH::RVec3Arg v) {
 	return {static_cast<float>(v.GetX()), static_cast<float>(v.GetY()), static_cast<float>(v.GetZ())};
 }
 
-inline glm::vec3 ToGlmColor(JPH::ColorArg c) {
-	return {c.r / 255.0F, c.g / 255.0F, c.b / 255.0F};
-}
+inline glm::vec3 ToGlmColor(JPH::ColorArg c) { return {c.r / 255.0F, c.g / 255.0F, c.b / 255.0F}; }
 
 inline float ToGlmAlpha(JPH::ColorArg c) { return c.a / 255.0F; }
 
@@ -48,19 +46,21 @@ public:
 	}
 
 	void DrawTriangle(
-			JPH::RVec3Arg inV1,
-			JPH::RVec3Arg inV2,
-			JPH::RVec3Arg inV3,
-			JPH::ColorArg inColor,
-			ECastShadow /*inCastShadow*/) override {
+		JPH::RVec3Arg inV1,
+		JPH::RVec3Arg inV2,
+		JPH::RVec3Arg inV3,
+		JPH::ColorArg inColor,
+		ECastShadow /*inCastShadow*/
+	) override {
 		renderer_.DrawTriangle(ToGlm(inV1), ToGlm(inV2), ToGlm(inV3), ToGlmColor(inColor), ToGlmAlpha(inColor));
 	}
 
 	void DrawText3D(
-			JPH::RVec3Arg inPosition,
-			const std::string_view& inString,
-			JPH::ColorArg /*inColor*/,
-			float /*inHeight*/) override {
+		JPH::RVec3Arg inPosition,
+		const std::string_view& inString,
+		JPH::ColorArg /*inColor*/,
+		float /*inHeight*/
+	) override {
 		renderer_.DrawText(ToGlm(inPosition), std::string(inString));
 	}
 

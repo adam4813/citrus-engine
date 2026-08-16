@@ -161,8 +161,12 @@ void DataTableEditorPanel::RenderSpreadsheet() {
 	}
 
 	// Create table with scrolling
-	ImGuiTableFlags flags = ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollX
-							| ImGuiTableFlags_ScrollY | ImGuiTableFlags_Resizable | ImGuiTableFlags_Sortable
+	ImGuiTableFlags flags = ImGuiTableFlags_Borders
+							| ImGuiTableFlags_RowBg
+							| ImGuiTableFlags_ScrollX
+							| ImGuiTableFlags_ScrollY
+							| ImGuiTableFlags_Resizable
+							| ImGuiTableFlags_Sortable
 							| ImGuiTableFlags_SizingFixedFit;
 
 	// +1 for row number column, +1 for key column, +1 for actions column
@@ -313,7 +317,10 @@ void DataTableEditorPanel::RenderSchemaEditor() {
 }
 
 void DataTableEditorPanel::RenderCell(
-		const std::string& column_name, engine::data::DataValue& value, size_t row_index) {
+	const std::string& column_name,
+	engine::data::DataValue& value,
+	size_t row_index
+) {
 	ImGui::PushID(static_cast<int>(row_index * 1000 + std::hash<std::string>{}(column_name)));
 	ImGui::SetNextItemWidth(-FLT_MIN);
 	if (RenderValueEditor("##cell", value, "")) {
@@ -323,43 +330,47 @@ void DataTableEditorPanel::RenderCell(
 }
 
 bool DataTableEditorPanel::RenderValueEditor(
-		const std::string& label, engine::data::DataValue& value, const std::string& type_hint) {
+	const std::string& label,
+	engine::data::DataValue& value,
+	const std::string& type_hint
+) {
 	bool changed = false;
 
 	// Use visitor to handle different types
 	std::visit(
-			[&](auto&& arg) {
-				using T = std::decay_t<decltype(arg)>;
+		[&](auto&& arg) {
+			using T = std::decay_t<decltype(arg)>;
 
-				if constexpr (std::is_same_v<T, bool>) {
-					changed = ImGui::Checkbox(label.c_str(), &arg);
+			if constexpr (std::is_same_v<T, bool>) {
+				changed = ImGui::Checkbox(label.c_str(), &arg);
+			}
+			else if constexpr (std::is_same_v<T, int>) {
+				changed = ImGui::InputInt(label.c_str(), &arg);
+			}
+			else if constexpr (std::is_same_v<T, float>) {
+				changed = ImGui::InputFloat(label.c_str(), &arg);
+			}
+			else if constexpr (std::is_same_v<T, glm::vec2>) {
+				changed = ImGui::InputFloat2(label.c_str(), &arg.x);
+			}
+			else if constexpr (std::is_same_v<T, glm::vec3>) {
+				changed = ImGui::InputFloat3(label.c_str(), &arg.x);
+			}
+			else if constexpr (std::is_same_v<T, glm::vec4>) {
+				changed = ImGui::InputFloat4(label.c_str(), &arg.x);
+			}
+			else if constexpr (std::is_same_v<T, std::string>) {
+				char buffer[256];
+				std::strncpy(buffer, arg.c_str(), sizeof(buffer) - 1);
+				buffer[sizeof(buffer) - 1] = '\0';
+				if (ImGui::InputText(label.c_str(), buffer, sizeof(buffer))) {
+					arg = buffer;
+					changed = true;
 				}
-				else if constexpr (std::is_same_v<T, int>) {
-					changed = ImGui::InputInt(label.c_str(), &arg);
-				}
-				else if constexpr (std::is_same_v<T, float>) {
-					changed = ImGui::InputFloat(label.c_str(), &arg);
-				}
-				else if constexpr (std::is_same_v<T, glm::vec2>) {
-					changed = ImGui::InputFloat2(label.c_str(), &arg.x);
-				}
-				else if constexpr (std::is_same_v<T, glm::vec3>) {
-					changed = ImGui::InputFloat3(label.c_str(), &arg.x);
-				}
-				else if constexpr (std::is_same_v<T, glm::vec4>) {
-					changed = ImGui::InputFloat4(label.c_str(), &arg.x);
-				}
-				else if constexpr (std::is_same_v<T, std::string>) {
-					char buffer[256];
-					std::strncpy(buffer, arg.c_str(), sizeof(buffer) - 1);
-					buffer[sizeof(buffer) - 1] = '\0';
-					if (ImGui::InputText(label.c_str(), buffer, sizeof(buffer))) {
-						arg = buffer;
-						changed = true;
-					}
-				}
-			},
-			value);
+			}
+		},
+		value
+	);
 
 	return changed;
 }
@@ -489,15 +500,16 @@ void DataTableEditorPanel::SortByColumn(const std::string& column_name) {
 		// Compare based on the type (only for types that support operator<)
 		bool result = false;
 		std::visit(
-				[&](auto&& arg_a) {
-					using T = std::decay_t<decltype(arg_a)>;
-					if constexpr (requires(T x, T y) { x < y; }) {
-						if (const auto* arg_b = std::get_if<T>(&val_b)) {
-							result = arg_a < *arg_b;
-						}
+			[&](auto&& arg_a) {
+				using T = std::decay_t<decltype(arg_a)>;
+				if constexpr (requires(T x, T y) { x < y; }) {
+					if (const auto* arg_b = std::get_if<T>(&val_b)) {
+						result = arg_a < *arg_b;
 					}
-				},
-				val_a);
+				}
+			},
+			val_a
+		);
 
 		return sort_ascending_ ? result : !result;
 	});
@@ -510,41 +522,28 @@ void DataTableEditorPanel::ApplyFilter() {
 
 std::string DataTableEditorPanel::GetTypeName(const engine::data::DataValue& value) {
 	return std::visit(
-			[](auto&& arg) -> std::string {
-				using T = std::decay_t<decltype(arg)>;
-				if constexpr (std::is_same_v<T, bool>)
-					return "Bool";
-				else if constexpr (std::is_same_v<T, int>)
-					return "Int";
-				else if constexpr (std::is_same_v<T, float>)
-					return "Float";
-				else if constexpr (std::is_same_v<T, glm::vec2>)
-					return "Vec2";
-				else if constexpr (std::is_same_v<T, glm::vec3>)
-					return "Vec3";
-				else if constexpr (std::is_same_v<T, glm::vec4>)
-					return "Vec4";
-				else if constexpr (std::is_same_v<T, std::string>)
-					return "String";
-				else
-					return "Unknown";
-			},
-			value);
+		[](auto&& arg) -> std::string {
+			using T = std::decay_t<decltype(arg)>;
+			if constexpr (std::is_same_v<T, bool>) return "Bool";
+			else if constexpr (std::is_same_v<T, int>) return "Int";
+			else if constexpr (std::is_same_v<T, float>) return "Float";
+			else if constexpr (std::is_same_v<T, glm::vec2>) return "Vec2";
+			else if constexpr (std::is_same_v<T, glm::vec3>) return "Vec3";
+			else if constexpr (std::is_same_v<T, glm::vec4>) return "Vec4";
+			else if constexpr (std::is_same_v<T, std::string>) return "String";
+			else return "Unknown";
+		},
+		value
+	);
 }
 
 engine::data::DataValue DataTableEditorPanel::CreateDefaultValue(const std::string& type_name) {
-	if (type_name == "Bool")
-		return false;
-	if (type_name == "Int")
-		return 0;
-	if (type_name == "Float")
-		return 0.0f;
-	if (type_name == "Vec2")
-		return glm::vec2(0.0f);
-	if (type_name == "Vec3")
-		return glm::vec3(0.0f);
-	if (type_name == "Vec4")
-		return glm::vec4(0.0f);
+	if (type_name == "Bool") return false;
+	if (type_name == "Int") return 0;
+	if (type_name == "Float") return 0.0f;
+	if (type_name == "Vec2") return glm::vec2(0.0f);
+	if (type_name == "Vec3") return glm::vec3(0.0f);
+	if (type_name == "Vec4") return glm::vec4(0.0f);
 	return std::string(""); // Default to string
 }
 

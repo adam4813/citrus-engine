@@ -56,13 +56,13 @@ void ShaderAssetInfo::ToJson(nlohmann::json& j) {
 
 void ShaderAssetInfo::RegisterType() {
 	AssetTypeRegistry::Instance()
-			.RegisterType<ShaderAssetInfo>(ShaderAssetInfo::TYPE_NAME, AssetType::SHADER)
-			.DisplayName("Shader")
-			.Category("Rendering")
-			.Field("name", &ShaderAssetInfo::name, "Name")
-			.Field("vertex_path", &ShaderAssetInfo::vertex_path, "Vertex Shader", ecs::FieldType::FilePath)
-			.Field("fragment_path", &ShaderAssetInfo::fragment_path, "Fragment Shader", ecs::FieldType::FilePath)
-			.Build();
+		.RegisterType<ShaderAssetInfo>(ShaderAssetInfo::TYPE_NAME, AssetType::SHADER)
+		.DisplayName("Shader")
+		.Category("Rendering")
+		.Field("name", &ShaderAssetInfo::name, "Name")
+		.Field("vertex_path", &ShaderAssetInfo::vertex_path, "Vertex Shader", ecs::FieldType::FilePath)
+		.Field("fragment_path", &ShaderAssetInfo::fragment_path, "Fragment Shader", ecs::FieldType::FilePath)
+		.Build();
 }
 
 void ShaderAssetInfo::RegisterBuiltins() {
@@ -89,13 +89,14 @@ void ShaderAssetInfo::RegisterBuiltins() {
 
 void ShaderAssetInfo::SetupRefBinding(flecs::world& world) {
 	SetupRefBindingImpl<ShaderAssetInfo, ShaderRef, rendering::Renderable>(
-			world,
-			"ShaderRef",
-			"Rendering",
-			"ShaderRefResolve",
-			ShaderAssetInfo::TYPE_NAME,
-			[](const auto& asset, auto& target) { target.shader = asset->id; },
-			[](auto& target) { target.shader = rendering::INVALID_SHADER; });
+		world,
+		"ShaderRef",
+		"Rendering",
+		"ShaderRefResolve",
+		ShaderAssetInfo::TYPE_NAME,
+		[](const auto& asset, auto& target) { target.shader = asset->id; },
+		[](auto& target) { target.shader = rendering::INVALID_SHADER; }
+	);
 }
 
 } // namespace engine::assets

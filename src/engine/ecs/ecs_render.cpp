@@ -24,7 +24,7 @@ void ECSWorld::SubmitRenderCommands(const Renderer& renderer) {
 		constexpr glm::vec3 default_position(0.0f, 0.0f, 10.0f);
 		cam.view_matrix = glm::lookAt(default_position, cam.target, cam.up);
 		cam.projection_matrix =
-				glm::perspective(glm::radians(cam.fov), cam.aspect_ratio, cam.near_plane, cam.far_plane);
+			glm::perspective(glm::radians(cam.fov), cam.aspect_ratio, cam.near_plane, cam.far_plane);
 		return cam;
 	}();
 
@@ -45,12 +45,13 @@ void ECSWorld::SubmitRenderCommands(const Renderer& renderer) {
 
 	// Query all entities with Light component and Transform
 	world_.query<const Light, const Transform>().each(
-			[&scene_lights, &light_positions](flecs::entity e, const Light& light, const Transform& transform) {
-				if (scene_lights.size() < MAX_LIGHTS) {
-					scene_lights.push_back(light);
-					light_positions.push_back(transform.position);
-				}
-			});
+		[&scene_lights, &light_positions](flecs::entity e, const Light& light, const Transform& transform) {
+			if (scene_lights.size() < MAX_LIGHTS) {
+				scene_lights.push_back(light);
+				light_positions.push_back(transform.position);
+			}
+		}
+	);
 
 	// TEMP: Hold the first light for backward compatability
 	glm::vec3 light_dir{0.2f, -1.0f, -0.3f}; // Default fallback
@@ -75,11 +76,12 @@ void ECSWorld::SubmitRenderCommands(const Renderer& renderer) {
 			return;
 		}
 		RenderCommand cmd{
-				.mesh = renderable.mesh,
-				.shader = renderable.shader,
-				.material = renderable.material,
-				.render_state_stack = renderable.render_state_stack,
-				.camera_view = active_camera->view_matrix};
+			.mesh = renderable.mesh,
+			.shader = renderable.shader,
+			.material = renderable.material,
+			.render_state_stack = renderable.render_state_stack,
+			.camera_view = active_camera->view_matrix
+		};
 
 		cmd.transform = transform.matrix;
 

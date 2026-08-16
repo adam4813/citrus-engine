@@ -41,12 +41,12 @@ private:
 		// Position camera at (0, 0, -1) looking towards the origin for the example scenes
 		camera_entity.set<engine::components::Transform>({{0.0f, 0.0f, -1.0f}});
 		camera_entity.set<engine::components::Camera>({
-				.target = {0.0f, 0.0f, 0.0f}, // Look at the origin
-				.up = {0.0f, 1.0f, 0.0f},
-				.fov = 60.0f,
-				.aspect_ratio = static_cast<float>(fb_width) / static_cast<float>(fb_height),
-				.near_plane = 0.1f,
-				.far_plane = 100.0f,
+			.target = {0.0f, 0.0f, 0.0f}, // Look at the origin
+			.up = {0.0f, 1.0f, 0.0f},
+			.fov = 60.0f,
+			.aspect_ratio = static_cast<float>(fb_width) / static_cast<float>(fb_height),
+			.near_plane = 0.1f,
+			.far_plane = 100.0f,
 		});
 		eng.ecs.SetActiveCamera(camera_entity);
 	}

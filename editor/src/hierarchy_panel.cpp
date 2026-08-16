@@ -21,7 +21,8 @@ void HierarchyPanel::Render(const engine::scene::SceneId scene_id, const engine:
 	}
 
 	ImGuiWindowClass win_class;
-	win_class.DockNodeFlagsOverrideSet = ImGuiDockNodeFlags_NoWindowMenuButton | ImGuiDockNodeFlags_NoDockingOverMe
+	win_class.DockNodeFlagsOverrideSet = ImGuiDockNodeFlags_NoWindowMenuButton
+										 | ImGuiDockNodeFlags_NoDockingOverMe
 										 | ImGuiDockNodeFlags_NoDockingOverOther
 										 | ImGuiDockNodeFlags_NoDockingOverEmpty;
 	ImGui::SetNextWindowClass(&win_class);
@@ -96,7 +97,10 @@ std::vector<engine::ecs::Entity> HierarchyPanel::GetChildren(const engine::ecs::
 }
 
 void HierarchyPanel::RenderEntityNode(
-		const engine::ecs::Entity entity, engine::scene::Scene* scene, const engine::ecs::Entity selected_entity) {
+	const engine::ecs::Entity entity,
+	engine::scene::Scene* scene,
+	const engine::ecs::Entity selected_entity
+) {
 	// Check if entity matches filter
 	const bool is_filtering = !search_query_.empty();
 	const bool matches = MatchesFilter(entity);
@@ -114,7 +118,7 @@ void HierarchyPanel::RenderEntityNode(
 
 	// Check if this is a prefab instance (has IsA relationship to a prefab)
 	const bool is_prefab_instance =
-			entity.has<engine::components::PrefabInstance>() || entity.target(flecs::IsA).is_valid();
+		entity.has<engine::components::PrefabInstance>() || entity.target(flecs::IsA).is_valid();
 	if (is_prefab_instance) {
 		name = "[P] " + name; // Prefix with prefab icon
 	}
@@ -154,11 +158,13 @@ void HierarchyPanel::RenderEntityNode(
 	else {
 		// Visibility indicator
 		ImGui::PushStyleColor(
-				ImGuiCol_Text, node_state.is_visible ? ImVec4(1, 1, 1, 1) : ImVec4(0.5f, 0.5f, 0.5f, 0.5f));
+			ImGuiCol_Text,
+			node_state.is_visible ? ImVec4(1, 1, 1, 1) : ImVec4(0.5f, 0.5f, 0.5f, 0.5f)
+		);
 	}
 
 	const bool node_open =
-			ImGui::TreeNodeEx(reinterpret_cast<void*>(static_cast<intptr_t>(entity.id())), flags, "%s", name.c_str());
+		ImGui::TreeNodeEx(reinterpret_cast<void*>(static_cast<intptr_t>(entity.id())), flags, "%s", name.c_str());
 
 	// Track expanded state
 	if (has_children) {
@@ -200,15 +206,20 @@ void HierarchyPanel::RenderEntityNode(
 		if (parent.is_valid() && parent != scene_root && ImGui::MenuItem("Unparent") && callbacks_.on_execute_command) {
 			const auto parent_parent = parent.parent();
 			callbacks_.on_execute_command(
-					std::make_unique<ReparentEntityCommand>(
-							scene, entity, parent_parent.is_valid() ? parent_parent : scene_root));
+				std::make_unique<ReparentEntityCommand>(
+					scene,
+					entity,
+					parent_parent.is_valid() ? parent_parent : scene_root
+				)
+			);
 		}
 
 		// Add Empty Parent: wrap entity in a new parent entity
 		if (ImGui::MenuItem("Add Empty Parent")) {
 			if (callbacks_.on_execute_command) {
 				callbacks_.on_execute_command(
-						std::make_unique<WrapEntityCommand>(scene, entity, parent.is_valid() ? parent : scene_root));
+					std::make_unique<WrapEntityCommand>(scene, entity, parent.is_valid() ? parent : scene_root)
+				);
 			}
 		}
 
@@ -257,7 +268,8 @@ void HierarchyPanel::RenderEntityNode(
 						}
 						else if (ImGui::MenuItem(comp->name.c_str()) && callbacks_.on_execute_command) {
 							callbacks_.on_execute_command(
-									std::make_unique<AddComponentCommand>(entity, comp->id, comp->name));
+								std::make_unique<AddComponentCommand>(entity, comp->id, comp->name)
+							);
 						}
 					}
 					ImGui::EndMenu();

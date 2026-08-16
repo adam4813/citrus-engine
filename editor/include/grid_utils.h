@@ -38,14 +38,13 @@ struct GridConfig {
 	[[nodiscard]] ImVec2 CellOrigin(int col, int row) const {
 		return {
 			static_cast<float>(padding_x + col * (cell_width + gap_x)),
-			static_cast<float>(padding_y + row * (cell_height + gap_y))};
+			static_cast<float>(padding_y + row * (cell_height + gap_y))
+		};
 	}
 
 	/// Pixel position scaled for display.
 	[[nodiscard]] ImVec2 CellOriginScaled(int col, int row, float scale) const {
-		return {
-			(padding_x + col * (cell_width + gap_x)) * scale,
-			(padding_y + row * (cell_height + gap_y)) * scale};
+		return {(padding_x + col * (cell_width + gap_x)) * scale, (padding_y + row * (cell_height + gap_y)) * scale};
 	}
 
 	/// Clamp all fields to valid ranges.
@@ -60,8 +59,7 @@ struct GridConfig {
 
 	/// Convert a pixel position (relative to image origin) to grid cell coords.
 	/// Returns false if the position falls in a gap rather than a cell.
-	[[nodiscard]] bool PixelToCell(float px, float py, float scale, int& out_col,
-		int& out_row) const {
+	[[nodiscard]] bool PixelToCell(float px, float py, float scale, int& out_col, int& out_row) const {
 		const float rel_x = px - padding_x * scale;
 		const float rel_y = py - padding_y * scale;
 		const float cell_w = (cell_width + gap_x) * scale;
@@ -78,9 +76,14 @@ struct GridConfig {
 	}
 
 	/// Render an ImGui grid overlay on the draw list.
-	void DrawGridOverlay(ImDrawList* draw_list, ImVec2 origin, int image_width,
-		int image_height, float scale,
-		ImU32 color = IM_COL32(255, 255, 255, 40)) const {
+	void DrawGridOverlay(
+		ImDrawList* draw_list,
+		ImVec2 origin,
+		int image_width,
+		int image_height,
+		float scale,
+		ImU32 color = IM_COL32(255, 255, 255, 40)
+	) const {
 		const int cols = GetColumns(image_width);
 		const int rows = GetRows(image_height);
 		if (cols <= 0 || rows <= 0) return;
@@ -99,11 +102,15 @@ struct GridConfig {
 			const float gx = pad_x + c * (cw + gw);
 			draw_list->AddLine(
 				ImVec2(origin.x + gx, origin.y + pad_y),
-				ImVec2(origin.x + gx, origin.y + pad_y + total_h), color);
+				ImVec2(origin.x + gx, origin.y + pad_y + total_h),
+				color
+			);
 			if (c < cols && gap_x > 0) {
 				draw_list->AddLine(
 					ImVec2(origin.x + gx + cw, origin.y + pad_y),
-					ImVec2(origin.x + gx + cw, origin.y + pad_y + total_h), color);
+					ImVec2(origin.x + gx + cw, origin.y + pad_y + total_h),
+					color
+				);
 			}
 		}
 		// Horizontal lines
@@ -111,11 +118,15 @@ struct GridConfig {
 			const float gy = pad_y + r * (ch + gh);
 			draw_list->AddLine(
 				ImVec2(origin.x + pad_x, origin.y + gy),
-				ImVec2(origin.x + pad_x + total_w, origin.y + gy), color);
+				ImVec2(origin.x + pad_x + total_w, origin.y + gy),
+				color
+			);
 			if (r < rows && gap_y > 0) {
 				draw_list->AddLine(
 					ImVec2(origin.x + pad_x, origin.y + gy + ch),
-					ImVec2(origin.x + pad_x + total_w, origin.y + gy + ch), color);
+					ImVec2(origin.x + pad_x + total_w, origin.y + gy + ch),
+					color
+				);
 			}
 		}
 	}

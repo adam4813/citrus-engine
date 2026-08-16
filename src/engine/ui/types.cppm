@@ -4,5 +4,4 @@ import engine.rendering;
 import glm;
 
 export namespace engine::ui {
-
 }

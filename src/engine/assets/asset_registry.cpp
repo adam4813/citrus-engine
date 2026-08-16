@@ -324,9 +324,7 @@ bool AssetCache::SaveToFile(const AssetPtr& asset, const std::string& path) {
 	return AssetManager::SaveTextFile(platform::fs::Path(path), j.dump(2));
 }
 
-nlohmann::json AssetRefToJson(const AssetRef& ref) {
-	return nlohmann::json{{"guid", ref.guid}, {"path", ref.path}};
-}
+nlohmann::json AssetRefToJson(const AssetRef& ref) { return nlohmann::json{{"guid", ref.guid}, {"path", ref.path}}; }
 
 AssetRef AssetRefFromJson(const nlohmann::json& j) {
 	if (j.is_object()) {
@@ -535,8 +533,7 @@ std::string ReadAssetMetadataType(const nlohmann::json& j) {
 	return j.value("type", std::string{});
 }
 
-void StampAssetMetadata(
-		nlohmann::json& j, const std::string& type, const std::string& path, const std::string& name) {
+void StampAssetMetadata(nlohmann::json& j, const std::string& type, const std::string& path, const std::string& name) {
 	uint32_t guid = 0;
 	if (const auto text = AssetManager::LoadTextFile(platform::fs::Path(path))) {
 		if (const auto existing = nlohmann::json::parse(*text, nullptr, false); !existing.is_discarded()) {

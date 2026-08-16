@@ -35,7 +35,10 @@ public:
 	 * @param key The key to store the value under
 	 * @param value The value to store
 	 */
-	template <typename T> void Set(const std::string& key, T value) { data_[key] = std::make_any<T>(std::move(value)); }
+	template<typename T>
+	void Set(const std::string& key, T value) {
+		data_[key] = std::make_any<T>(std::move(value));
+	}
 
 	/**
 	 * @brief Get a value from the blackboard
@@ -43,7 +46,8 @@ public:
 	 * @param key The key to retrieve
 	 * @return Optional containing the value if found and type matches, empty otherwise
 	 */
-	template <typename T> [[nodiscard]] std::optional<T> Get(const std::string& key) const {
+	template<typename T>
+	[[nodiscard]] std::optional<T> Get(const std::string& key) const {
 		auto it = data_.find(key);
 		if (it == data_.end()) {
 			return std::nullopt;

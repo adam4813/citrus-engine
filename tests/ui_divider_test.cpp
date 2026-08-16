@@ -121,9 +121,7 @@ TEST_F(DividerTest, SetOrientation_ToHorizontal_SwapsDimensions) {
 // Visibility Tests
 // ============================================================================
 
-TEST_F(DividerTest, IsVisible_DefaultTrue) {
-	EXPECT_TRUE(divider->IsVisible());
-}
+TEST_F(DividerTest, IsVisible_DefaultTrue) { EXPECT_TRUE(divider->IsVisible()); }
 
 TEST_F(DividerTest, SetVisible_UpdatesVisibility) {
 	divider->SetVisible(false);

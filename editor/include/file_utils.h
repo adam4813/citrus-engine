@@ -73,12 +73,12 @@ ListDirectory(const std::filesystem::path& dir, const std::vector<std::string>& 
 /// @param new_dir      [out] Set to the clicked directory if selection changed
 /// @param default_open Whether the root node starts open
 inline bool RenderDirectoryTree(
-		const std::filesystem::path& dir,
-		const std::filesystem::path& current_dir,
-		std::filesystem::path& new_dir,
-		const bool default_open = false) {
-	if (!std::filesystem::exists(dir) || !std::filesystem::is_directory(dir))
-		return false;
+	const std::filesystem::path& dir,
+	const std::filesystem::path& current_dir,
+	std::filesystem::path& new_dir,
+	const bool default_open = false
+) {
+	if (!std::filesystem::exists(dir) || !std::filesystem::is_directory(dir)) return false;
 
 	bool changed = false;
 	const std::string name = dir.filename().string();
@@ -104,8 +104,7 @@ inline bool RenderDirectoryTree(
 	catch (...) {
 	}
 
-	if (!has_subdirs)
-		flags |= ImGuiTreeNodeFlags_Leaf;
+	if (!has_subdirs) flags |= ImGuiTreeNodeFlags_Leaf;
 
 	const bool open = ImGui::TreeNodeEx(name.c_str(), flags);
 	if (ImGui::IsItemClicked()) {

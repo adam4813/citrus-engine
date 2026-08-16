@@ -15,7 +15,7 @@ namespace editor {
 
 /**
  * @brief Timeline-based animation editor panel
- * 
+ *
  * Provides a UI for creating and editing animation clips with:
  * - Timeline ruler with frame numbers
  * - Draggable playhead scrubber
@@ -102,10 +102,10 @@ private:
 	engine::animation::AnimationClip clip_;
 
 	// Timeline state
-	float timeline_zoom_ = 1.0f; // Pixels per frame
+	float timeline_zoom_ = 1.0f;   // Pixels per frame
 	float timeline_scroll_ = 0.0f; // Horizontal scroll offset
-	float current_time_ = 0.0f; // Current playhead position
-	float fps_ = 30.0f; // Frames per second
+	float current_time_ = 0.0f;    // Current playhead position
+	float fps_ = 30.0f;            // Frames per second
 
 	// Playback state
 	bool is_playing_ = false;

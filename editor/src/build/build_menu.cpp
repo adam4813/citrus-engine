@@ -34,9 +34,7 @@ bool WriteAll(const std::filesystem::path& p, const std::string& content) {
 
 } // namespace
 
-void BuildMenu::SetProject(std::optional<ProjectModel> project) {
-	project_ = std::move(project);
-}
+void BuildMenu::SetProject(std::optional<ProjectModel> project) { project_ = std::move(project); }
 
 void BuildMenu::RenderFileMenuItems() {
 	if (ImGui::MenuItem("New Project...")) {
@@ -93,8 +91,10 @@ void BuildMenu::RenderNewProjectModal() {
 	ImGui::SetNextWindowSize(ImVec2(560, 0), ImGuiCond_Appearing);
 
 	if (ImGui::BeginPopupModal(kPopupId, nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
-		ImGui::TextWrapped("Creates a new project from the bundled game-project template. "
-				"A new folder named after the project will be created inside the parent directory.");
+		ImGui::TextWrapped(
+			"Creates a new project from the bundled game-project template. "
+			"A new folder named after the project will be created inside the parent directory."
+		);
 		ImGui::Separator();
 
 		ImGui::InputText("Project name", new_project_name_, sizeof(new_project_name_));
@@ -127,10 +127,11 @@ void BuildMenu::RenderNewProjectModal() {
 }
 
 bool BuildMenu::CreateProjectFromTemplate(
-		const std::filesystem::path& parent_dir,
-		const std::string& project_name,
-		std::string& out_error,
-		std::filesystem::path& out_scene) {
+	const std::filesystem::path& parent_dir,
+	const std::string& project_name,
+	std::string& out_error,
+	std::filesystem::path& out_scene
+) {
 	namespace fs = std::filesystem;
 	std::error_code ec;
 
@@ -191,19 +192,19 @@ bool BuildMenu::CreateProjectFromTemplate(
 	// Seed a ProjectModel + default BuildTarget for substitution. The real values are
 	// loaded back at the end of this function.
 	ProjectModel seed;
-	seed.name = sanitized_name;             // -> @PROJECT_NAME@  (CMake/vcpkg identifier)
+	seed.name = sanitized_name; // -> @PROJECT_NAME@  (CMake/vcpkg identifier)
 	seed.version = "0.1.0";
 	seed.description = "A game built with Citrus Engine";
-	seed.window.title = project_name;       // -> @WINDOW_TITLE@  (human-readable)
-	BuildTarget seed_target;  // defaults are fine; per-build targets override later
+	seed.window.title = project_name; // -> @WINDOW_TITLE@  (human-readable)
+	BuildTarget seed_target;          // defaults are fine; per-build targets override later
 
 	// Files that contain @TOKEN@ placeholders. Anything else copies verbatim.
 	const std::array<std::string, 5> substitutable = {
-			"CMakeLists.txt",
-			"vcpkg.json",
-			"vcpkg-configuration.json",
-			"src/main.cpp",
-			"project.json",
+		"CMakeLists.txt",
+		"vcpkg.json",
+		"vcpkg-configuration.json",
+		"src/main.cpp",
+		"project.json",
 	};
 	auto is_substitutable = [&](const fs::path& rel) {
 		const auto rel_str = rel.generic_string();
@@ -228,8 +229,8 @@ bool BuildMenu::CreateProjectFromTemplate(
 		else if (entry.is_regular_file()) {
 			fs::create_directories(dst.parent_path(), ec);
 			if (is_substitutable(rel)) {
-				const auto content = BuildStager::SubstituteTokens(
-						ReadAll(entry.path()), seed, seed_target, template_dir);
+				const auto content =
+					BuildStager::SubstituteTokens(ReadAll(entry.path()), seed, seed_target, template_dir);
 				if (!WriteAll(dst, content)) {
 					out_error = "Failed to write: " + dst.string();
 					return false;

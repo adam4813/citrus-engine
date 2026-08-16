@@ -81,8 +81,7 @@ private:
 
 		registry.RegisterSchema(item_schema);
 
-		std::cout << "  Schema 'ItemData' registered with " << item_schema.fields.size()
-				  << " fields" << std::endl;
+		std::cout << "  Schema 'ItemData' registered with " << item_schema.fields.size() << " fields" << std::endl;
 	}
 
 	void CreateItemAssets() {
@@ -95,15 +94,13 @@ private:
 		if (health_potion_opt) {
 			auto& health_potion = health_potion_opt.value();
 			health_potion.SetProperty("name", std::string("Health Potion"));
-			health_potion.SetProperty("description",
-									  std::string("Restores 50 HP when consumed"));
+			health_potion.SetProperty("description", std::string("Restores 50 HP when consumed"));
 			health_potion.SetProperty("stack_size", 10);
 			health_potion.SetProperty("sell_price", 15.0f);
 			health_potion.SetProperty("rarity", 0); // common
 			health_potion.SetProperty("consumable", true);
 
-			std::cout << "  Created: "
-					  << std::get<std::string>(health_potion.GetProperty("name")) << std::endl;
+			std::cout << "  Created: " << std::get<std::string>(health_potion.GetProperty("name")) << std::endl;
 		}
 
 		// Create Magic Sword
@@ -117,8 +114,7 @@ private:
 			sword.SetProperty("rarity", 2); // epic
 			sword.SetProperty("consumable", false);
 
-			std::cout << "  Created: " << std::get<std::string>(sword.GetProperty("name"))
-					  << std::endl;
+			std::cout << "  Created: " << std::get<std::string>(sword.GetProperty("name")) << std::endl;
 		}
 
 		// Create Gold Coins
@@ -132,8 +128,7 @@ private:
 			gold.SetProperty("rarity", 0);
 			gold.SetProperty("consumable", false);
 
-			std::cout << "  Created: " << std::get<std::string>(gold.GetProperty("name"))
-					  << std::endl;
+			std::cout << "  Created: " << std::get<std::string>(gold.GetProperty("name")) << std::endl;
 		}
 	}
 
@@ -170,15 +165,13 @@ private:
 		sword_row.SetValue("max_quantity", 1);
 		loot_table.AddRow(sword_row);
 
-		std::cout << "  Loot table created with " << loot_table.GetRowCount() << " entries:"
-				  << std::endl;
+		std::cout << "  Loot table created with " << loot_table.GetRowCount() << " entries:" << std::endl;
 
 		// Display the loot table
 		for (const auto& row : loot_table.GetAllRows()) {
 			std::string item_id = std::get<std::string>(row.GetValue("item_id"));
 			float chance = std::get<float>(row.GetValue("drop_chance"));
-			std::cout << "    - " << item_id << " (" << (chance * 100.0f) << "% drop chance)"
-					  << std::endl;
+			std::cout << "    - " << item_id << " (" << (chance * 100.0f) << "% drop chance)" << std::endl;
 		}
 	}
 
@@ -218,7 +211,10 @@ private:
 };
 
 // Register the scene with the registry
-REGISTER_EXAMPLE_SCENE(DataAssetScene, "Data Assets",
-						"Demonstrates the data asset system with schemas, assets, and tables");
+REGISTER_EXAMPLE_SCENE(
+	DataAssetScene,
+	"Data Assets",
+	"Demonstrates the data asset system with schemas, assets, and tables"
+);
 
 } // namespace examples

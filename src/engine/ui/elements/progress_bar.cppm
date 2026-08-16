@@ -84,11 +84,13 @@ public:
 	 * auto progress = std::make_unique<ProgressBar>(10, 10, 200, 20, 0.5f);
 	 * @endcode
 	 */
-	ProgressBar(const float x,
-				const float y,
-				const float width,
-				const float height,
-				const float initial_progress = 0.0f) :
+	ProgressBar(
+		const float x,
+		const float y,
+		const float width,
+		const float height,
+		const float initial_progress = 0.0f
+	) :
 			UIElement(x, y, width, height), progress_(std::clamp(initial_progress, 0.0f, 1.0f)), bar_width_(width),
 			bar_x_offset_(0.0f) {}
 

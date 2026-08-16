@@ -17,9 +17,9 @@ export namespace engine::ui::components {
  * @brief Scroll direction options
  */
 enum class ScrollDirection : uint8_t {
-	Vertical, ///< Scroll up/down only
+	Vertical,   ///< Scroll up/down only
 	Horizontal, ///< Scroll left/right only
-	Both ///< Scroll in both directions
+	Both        ///< Scroll in both directions
 };
 
 /**
@@ -304,7 +304,10 @@ public:
 	 * @return Rectangle for the scrollbar thumb
 	 */
 	static batch_renderer::Rectangle CalculateVerticalThumb(
-			const ScrollState& scroll, const batch_renderer::Rectangle& viewport_bounds, const ScrollbarStyle& style) {
+		const ScrollState& scroll,
+		const batch_renderer::Rectangle& viewport_bounds,
+		const ScrollbarStyle& style
+	) {
 		if (!scroll.CanScrollY()) {
 			return {};
 		}
@@ -316,17 +319,21 @@ public:
 		const float thumb_y = scroll.GetScrollYNormalized() * available_height;
 
 		return batch_renderer::Rectangle{
-				viewport_bounds.x + viewport_bounds.width - style.width,
-				viewport_bounds.y + thumb_y,
-				style.width,
-				thumb_height};
+			viewport_bounds.x + viewport_bounds.width - style.width,
+			viewport_bounds.y + thumb_y,
+			style.width,
+			thumb_height
+		};
 	}
 
 	/**
 	 * @brief Calculate horizontal scrollbar geometry
 	 */
 	static batch_renderer::Rectangle CalculateHorizontalThumb(
-			const ScrollState& scroll, const batch_renderer::Rectangle& viewport_bounds, const ScrollbarStyle& style) {
+		const ScrollState& scroll,
+		const batch_renderer::Rectangle& viewport_bounds,
+		const ScrollbarStyle& style
+	) {
 		if (!scroll.CanScrollX()) {
 			return {};
 		}
@@ -338,10 +345,11 @@ public:
 		const float thumb_x = scroll.GetScrollXNormalized() * available_width;
 
 		return batch_renderer::Rectangle{
-				viewport_bounds.x + thumb_x,
-				viewport_bounds.y + viewport_bounds.height - style.width,
-				thumb_width,
-				style.width};
+			viewport_bounds.x + thumb_x,
+			viewport_bounds.y + viewport_bounds.height - style.width,
+			thumb_width,
+			style.width
+		};
 	}
 
 	/**
@@ -350,10 +358,11 @@ public:
 	static batch_renderer::Rectangle
 	CalculateVerticalTrack(const batch_renderer::Rectangle& viewport_bounds, const ScrollbarStyle& style) {
 		return batch_renderer::Rectangle{
-				viewport_bounds.x + viewport_bounds.width - style.width,
-				viewport_bounds.y,
-				style.width,
-				viewport_bounds.height};
+			viewport_bounds.x + viewport_bounds.width - style.width,
+			viewport_bounds.y,
+			style.width,
+			viewport_bounds.height
+		};
 	}
 
 	/**
@@ -362,10 +371,11 @@ public:
 	static batch_renderer::Rectangle
 	CalculateHorizontalTrack(const batch_renderer::Rectangle& viewport_bounds, const ScrollbarStyle& style) {
 		return batch_renderer::Rectangle{
-				viewport_bounds.x,
-				viewport_bounds.y + viewport_bounds.height - style.width,
-				viewport_bounds.width,
-				style.width};
+			viewport_bounds.x,
+			viewport_bounds.y + viewport_bounds.height - style.width,
+			viewport_bounds.width,
+			style.width
+		};
 	}
 };
 
@@ -493,18 +503,26 @@ public:
 		if (state_.CanScrollY()) {
 			if (style_.show_track) {
 				BatchRenderer::SubmitQuad(
-						ScrollbarGeometry::CalculateVerticalTrack(viewport, style_), style_.track_color);
+					ScrollbarGeometry::CalculateVerticalTrack(viewport, style_),
+					style_.track_color
+				);
 			}
 			BatchRenderer::SubmitQuad(
-					ScrollbarGeometry::CalculateVerticalThumb(state_, viewport, style_), style_.thumb_color);
+				ScrollbarGeometry::CalculateVerticalThumb(state_, viewport, style_),
+				style_.thumb_color
+			);
 		}
 		if (state_.CanScrollX()) {
 			if (style_.show_track) {
 				BatchRenderer::SubmitQuad(
-						ScrollbarGeometry::CalculateHorizontalTrack(viewport, style_), style_.track_color);
+					ScrollbarGeometry::CalculateHorizontalTrack(viewport, style_),
+					style_.track_color
+				);
 			}
 			BatchRenderer::SubmitQuad(
-					ScrollbarGeometry::CalculateHorizontalThumb(state_, viewport, style_), style_.thumb_color);
+				ScrollbarGeometry::CalculateHorizontalThumb(state_, viewport, style_),
+				style_.thumb_color
+			);
 		}
 	}
 

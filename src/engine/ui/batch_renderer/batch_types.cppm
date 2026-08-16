@@ -8,8 +8,8 @@ export module engine.ui.batch_renderer:batch_types;
 
 export namespace engine::ui::batch_renderer {
 /**
-     * @brief Color type for batch renderer (RGBA, 0.0-1.0 range)
-     */
+ * @brief Color type for batch renderer (RGBA, 0.0-1.0 range)
+ */
 struct Color {
 	float r, g, b, a;
 
@@ -18,27 +18,28 @@ struct Color {
 	constexpr Color(const float r, const float g, const float b, const float a = 1.0f) : r(r), g(g), b(b), a(a) {}
 
 	/**
-         * @brief Create a color with modified alpha channel
-         * @param color Base color
-         * @param alpha New alpha value (0.0-1.0)
-         * @return Color with new alpha, preserving RGB
-         */
+	 * @brief Create a color with modified alpha channel
+	 * @param color Base color
+	 * @param alpha New alpha value (0.0-1.0)
+	 * @return Color with new alpha, preserving RGB
+	 */
 	static constexpr Color Alpha(const Color& color, const float alpha) {
 		return Color(color.r, color.g, color.b, std::clamp(alpha, 0.0f, 1.0f));
 	}
 
 	/**
-         * @brief Create a color with adjusted brightness
-         * @param color Base color
-         * @param factor Brightness adjustment (-1.0 to 1.0, where 0 = no change)
-         * @return Color with adjusted RGB values, clamped to [0, 1]
-         */
+	 * @brief Create a color with adjusted brightness
+	 * @param color Base color
+	 * @param factor Brightness adjustment (-1.0 to 1.0, where 0 = no change)
+	 * @return Color with adjusted RGB values, clamped to [0, 1]
+	 */
 	static constexpr Color Brightness(const Color& color, const float factor) {
 		return Color(
-				std::clamp(color.r + factor, 0.0f, 1.0f),
-				std::clamp(color.g + factor, 0.0f, 1.0f),
-				std::clamp(color.b + factor, 0.0f, 1.0f),
-				color.a);
+			std::clamp(color.r + factor, 0.0f, 1.0f),
+			std::clamp(color.g + factor, 0.0f, 1.0f),
+			std::clamp(color.b + factor, 0.0f, 1.0f),
+			color.a
+		);
 	}
 };
 
@@ -64,11 +65,11 @@ constexpr Color PURPLE{0.5f, 0.0f, 0.5f, 1.0f};
 } // namespace Colors
 
 /**
-     * @brief UI Theme constants for consistent styling across components
-     *
-     * Provides centralized theme values for colors, spacing, fonts, and borders.
-     * Components should use these constants to maintain visual consistency.
-     */
+ * @brief UI Theme constants for consistent styling across components
+ *
+ * Provides centralized theme values for colors, spacing, fonts, and borders.
+ * Components should use these constants to maintain visual consistency.
+ */
 namespace UITheme {
 // ============================================================================
 // Color Palette
@@ -235,9 +236,9 @@ constexpr float DEFAULT_HEIGHT = 32.0f;
 // ============================================================================
 
 namespace Animation {
-constexpr float FAST = 0.1f; // 100ms
+constexpr float FAST = 0.1f;   // 100ms
 constexpr float NORMAL = 0.2f; // 200ms
-constexpr float SLOW = 0.3f; // 300ms
+constexpr float SLOW = 0.3f;   // 300ms
 } // namespace Animation
 
 // ============================================================================
@@ -255,26 +256,27 @@ constexpr int NOTIFICATION = 50;
 } // namespace UITheme
 
 /**
-     * @brief Vertex layout for batched rendering
-     *
-     * Packed vertex format for efficient GPU upload.
-     * Compatible with standard 2D shaders.
-     */
+ * @brief Vertex layout for batched rendering
+ *
+ * Packed vertex format for efficient GPU upload.
+ * Compatible with standard 2D shaders.
+ */
 struct Vertex {
-	float x, y; // Position (screen-space)
-	float u, v; // Texture coordinates (0.0-1.0)
+	float x, y;       // Position (screen-space)
+	float u, v;       // Texture coordinates (0.0-1.0)
 	float r, g, b, a; // Color components (0.0-1.0)
-	float tex_index; // Texture slot index (0-7)
+	float tex_index;  // Texture slot index (0-7)
 
 	Vertex() = default;
 
-	Vertex(const float x,
-		   const float y,
-		   const float u,
-		   const float v,
-		   const Color& color,
-		   const float tex_index = 0.0f) :
-			x(x), y(y), u(u), v(v), r(color.r), g(color.g), b(color.b), a(color.a), tex_index(tex_index) {}
+	Vertex(
+		const float x,
+		const float y,
+		const float u,
+		const float v,
+		const Color& color,
+		const float tex_index = 0.0f
+	) : x(x), y(y), u(u), v(v), r(color.r), g(color.g), b(color.b), a(color.a), tex_index(tex_index) {}
 };
 
 struct Vector2 {
@@ -286,8 +288,8 @@ struct Vector2 {
 };
 
 /**
-     * @brief Scissor rectangle for clipping (screen-space, top-left origin)
-     */
+ * @brief Scissor rectangle for clipping (screen-space, top-left origin)
+ */
 struct ScissorRect {
 	float x, y, width, height;
 
@@ -296,9 +298,9 @@ struct ScissorRect {
 	ScissorRect(const float x, const float y, const float w, const float h) : x(x), y(y), width(w), height(h) {}
 
 	/**
-         * @brief Intersect this scissor with another
-         * @return Intersection rectangle; may have zero width/height if no overlap
-         */
+	 * @brief Intersect this scissor with another
+	 * @return Intersection rectangle; may have zero width/height if no overlap
+	 */
 	ScissorRect Intersect(const ScissorRect& other) const {
 		const float left = std::max(x, other.x);
 		const float top = std::max(y, other.y);
@@ -309,13 +311,13 @@ struct ScissorRect {
 	}
 
 	/**
-         * @brief Check if scissor has non-zero area
-         */
+	 * @brief Check if scissor has non-zero area
+	 */
 	bool IsValid() const { return width > 0.0f && height > 0.0f; }
 
 	/**
-         * @brief Equality comparison for batch key matching
-         */
+	 * @brief Equality comparison for batch key matching
+	 */
 	bool operator==(const ScissorRect& other) const {
 		return x == other.x && y == other.y && width == other.width && height == other.height;
 	}
@@ -324,8 +326,8 @@ struct ScissorRect {
 };
 
 /**
-     * @brief Rectangle type for batch renderer
-     */
+ * @brief Rectangle type for batch renderer
+ */
 struct Rectangle {
 	float x, y, width, height;
 
@@ -335,23 +337,26 @@ struct Rectangle {
 };
 
 /**
-     * @brief Convert Color to packed RGBA uint32_t
-     *
-     * Format: 0xRRGGBBAA (straight alpha, not premultiplied)
-     */
+ * @brief Convert Color to packed RGBA uint32_t
+ *
+ * Format: 0xRRGGBBAA (straight alpha, not premultiplied)
+ */
 inline uint32_t ColorToRGBA(const Color& c) {
-	return (static_cast<uint32_t>(c.r * 255.0f) << 24) | (static_cast<uint32_t>(c.g * 255.0f) << 16)
-		   | (static_cast<uint32_t>(c.b * 255.0f) << 8) | static_cast<uint32_t>(c.a * 255.0f);
+	return (static_cast<uint32_t>(c.r * 255.0f) << 24)
+		   | (static_cast<uint32_t>(c.g * 255.0f) << 16)
+		   | (static_cast<uint32_t>(c.b * 255.0f) << 8)
+		   | static_cast<uint32_t>(c.a * 255.0f);
 }
 
 /**
-     * @brief Convert packed RGBA to Color
-     */
+ * @brief Convert packed RGBA to Color
+ */
 inline Color RGBAToColor(const uint32_t rgba) {
 	return Color{
-			static_cast<float>((rgba >> 24) & 0xFF) / 255.0f,
-			static_cast<float>((rgba >> 16) & 0xFF) / 255.0f,
-			static_cast<float>((rgba >> 8) & 0xFF) / 255.0f,
-			static_cast<float>(rgba & 0xFF) / 255.0f};
+		static_cast<float>((rgba >> 24) & 0xFF) / 255.0f,
+		static_cast<float>((rgba >> 16) & 0xFF) / 255.0f,
+		static_cast<float>((rgba >> 8) & 0xFF) / 255.0f,
+		static_cast<float>(rgba & 0xFF) / 255.0f
+	};
 }
 } // namespace engine::ui::batch_renderer

@@ -1,5 +1,5 @@
-#include "editor_scene.h"
 #include "commands/clipboard_commands.h"
+#include "editor_scene.h"
 
 #include <functional>
 #include <imgui.h>

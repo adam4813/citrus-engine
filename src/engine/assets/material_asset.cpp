@@ -59,21 +59,22 @@ void TextureAssetInfo::ToJson(nlohmann::json& j) {
 
 void TextureAssetInfo::RegisterType() {
 	AssetTypeRegistry::Instance()
-			.RegisterType<TextureAssetInfo>(TextureAssetInfo::TYPE_NAME, AssetType::TEXTURE)
-			.DisplayName("Texture")
-			.Category("Rendering")
-			.Field("name", &TextureAssetInfo::name, "Name")
-			.Field("file_path", &TextureAssetInfo::file_path, "File Path", ecs::FieldType::FilePath)
-			.Build();
+		.RegisterType<TextureAssetInfo>(TextureAssetInfo::TYPE_NAME, AssetType::TEXTURE)
+		.DisplayName("Texture")
+		.Category("Rendering")
+		.Field("name", &TextureAssetInfo::name, "Name")
+		.Field("file_path", &TextureAssetInfo::file_path, "File Path", ecs::FieldType::FilePath)
+		.Build();
 
 	// Register file importers for raw image files
 	AssetCache::Instance().RegisterFileImporter(
-			{".png", ".jpg", ".jpeg", ".tga", ".bmp"},
-			[](const std::string& name, const std::string& path) -> std::shared_ptr<AssetInfo> {
-				auto asset = std::make_shared<TextureAssetInfo>(name);
-				asset->file_path = path;
-				return asset;
-			});
+		{".png", ".jpg", ".jpeg", ".tga", ".bmp"},
+		[](const std::string& name, const std::string& path) -> std::shared_ptr<AssetInfo> {
+			auto asset = std::make_shared<TextureAssetInfo>(name);
+			asset->file_path = path;
+			return asset;
+		}
+	);
 }
 
 void TextureAssetInfo::SetupRefBinding(flecs::world& world) {
@@ -92,8 +93,15 @@ void MaterialAssetInfo::DoInitialize() {
 	}
 
 	id = mat_mgr.CreateMaterial(name, shader_id);
-	std::cout << "MaterialAssetInfo: Created material '" << name << "' (id=" << id << ", shader=" << shader.guid
-			  << ")" << '\n';
+	std::cout
+		<< "MaterialAssetInfo: Created material '"
+		<< name
+		<< "' (id="
+		<< id
+		<< ", shader="
+		<< shader.guid
+		<< ")"
+		<< '\n';
 }
 
 namespace {
@@ -209,56 +217,57 @@ void MaterialAssetInfo::ToJson(nlohmann::json& j) {
 
 void MaterialAssetInfo::RegisterType() {
 	AssetTypeRegistry::Instance()
-			.RegisterType<MaterialAssetInfo>(MaterialAssetInfo::TYPE_NAME, AssetType::MATERIAL)
-			.DisplayName("Material")
-			.Category("Rendering")
-			.Field("name", &MaterialAssetInfo::name, "Name")
-			.Field("shader", &MaterialAssetInfo::shader, "Shader", ecs::FieldType::AssetReference)
-			.AssetRef(ShaderAssetInfo::TYPE_NAME)
-			// PBR colors
-			.Field("base_color", &MaterialAssetInfo::base_color, "Base Color", ecs::FieldType::Color)
-			.Field("emissive_color", &MaterialAssetInfo::emissive_color, "Emissive Color", ecs::FieldType::Color)
-			// PBR textures (asset references to TextureAssetInfo)
-			.Field("albedo_map", &MaterialAssetInfo::albedo_map, "Albedo Map", ecs::FieldType::AssetReference)
-			.AssetRef(TextureAssetInfo::TYPE_NAME)
-			.Field("normal_map", &MaterialAssetInfo::normal_map, "Normal Map", ecs::FieldType::AssetReference)
-			.AssetRef(TextureAssetInfo::TYPE_NAME)
-			.Field("metallic_map", &MaterialAssetInfo::metallic_map, "Metallic Map", ecs::FieldType::AssetReference)
-			.AssetRef(TextureAssetInfo::TYPE_NAME)
-			.Field("roughness_map", &MaterialAssetInfo::roughness_map, "Roughness Map", ecs::FieldType::AssetReference)
-			.AssetRef(TextureAssetInfo::TYPE_NAME)
-			.Field("ao_map", &MaterialAssetInfo::ao_map, "AO Map", ecs::FieldType::AssetReference)
-			.AssetRef(TextureAssetInfo::TYPE_NAME)
-			.Field("emissive_map", &MaterialAssetInfo::emissive_map, "Emissive Map", ecs::FieldType::AssetReference)
-			.AssetRef(TextureAssetInfo::TYPE_NAME)
-			.Field("height_map", &MaterialAssetInfo::height_map, "Height Map", ecs::FieldType::AssetReference)
-			.AssetRef(TextureAssetInfo::TYPE_NAME)
-			// PBR scalars
-			.Field("metallic_factor", &MaterialAssetInfo::metallic_factor, "Metallic")
-			.SliderRange(0.0f, 1.0f)
-			.Field("roughness_factor", &MaterialAssetInfo::roughness_factor, "Roughness")
-			.SliderRange(0.0f, 1.0f)
-			.Field("ao_strength", &MaterialAssetInfo::ao_strength, "AO Strength")
-			.SliderRange(0.0f, 1.0f)
-			.Field("emissive_intensity", &MaterialAssetInfo::emissive_intensity, "Emissive Intensity")
-			.SliderRange(0.0f, 10.0f)
-			.Field("normal_strength", &MaterialAssetInfo::normal_strength, "Normal Strength")
-			.SliderRange(0.0f, 2.0f)
-			.Field("alpha_cutoff", &MaterialAssetInfo::alpha_cutoff, "Alpha Cutoff")
-			.SliderRange(0.0f, 1.0f)
-			.Build();
+		.RegisterType<MaterialAssetInfo>(MaterialAssetInfo::TYPE_NAME, AssetType::MATERIAL)
+		.DisplayName("Material")
+		.Category("Rendering")
+		.Field("name", &MaterialAssetInfo::name, "Name")
+		.Field("shader", &MaterialAssetInfo::shader, "Shader", ecs::FieldType::AssetReference)
+		.AssetRef(ShaderAssetInfo::TYPE_NAME)
+		// PBR colors
+		.Field("base_color", &MaterialAssetInfo::base_color, "Base Color", ecs::FieldType::Color)
+		.Field("emissive_color", &MaterialAssetInfo::emissive_color, "Emissive Color", ecs::FieldType::Color)
+		// PBR textures (asset references to TextureAssetInfo)
+		.Field("albedo_map", &MaterialAssetInfo::albedo_map, "Albedo Map", ecs::FieldType::AssetReference)
+		.AssetRef(TextureAssetInfo::TYPE_NAME)
+		.Field("normal_map", &MaterialAssetInfo::normal_map, "Normal Map", ecs::FieldType::AssetReference)
+		.AssetRef(TextureAssetInfo::TYPE_NAME)
+		.Field("metallic_map", &MaterialAssetInfo::metallic_map, "Metallic Map", ecs::FieldType::AssetReference)
+		.AssetRef(TextureAssetInfo::TYPE_NAME)
+		.Field("roughness_map", &MaterialAssetInfo::roughness_map, "Roughness Map", ecs::FieldType::AssetReference)
+		.AssetRef(TextureAssetInfo::TYPE_NAME)
+		.Field("ao_map", &MaterialAssetInfo::ao_map, "AO Map", ecs::FieldType::AssetReference)
+		.AssetRef(TextureAssetInfo::TYPE_NAME)
+		.Field("emissive_map", &MaterialAssetInfo::emissive_map, "Emissive Map", ecs::FieldType::AssetReference)
+		.AssetRef(TextureAssetInfo::TYPE_NAME)
+		.Field("height_map", &MaterialAssetInfo::height_map, "Height Map", ecs::FieldType::AssetReference)
+		.AssetRef(TextureAssetInfo::TYPE_NAME)
+		// PBR scalars
+		.Field("metallic_factor", &MaterialAssetInfo::metallic_factor, "Metallic")
+		.SliderRange(0.0f, 1.0f)
+		.Field("roughness_factor", &MaterialAssetInfo::roughness_factor, "Roughness")
+		.SliderRange(0.0f, 1.0f)
+		.Field("ao_strength", &MaterialAssetInfo::ao_strength, "AO Strength")
+		.SliderRange(0.0f, 1.0f)
+		.Field("emissive_intensity", &MaterialAssetInfo::emissive_intensity, "Emissive Intensity")
+		.SliderRange(0.0f, 10.0f)
+		.Field("normal_strength", &MaterialAssetInfo::normal_strength, "Normal Strength")
+		.SliderRange(0.0f, 2.0f)
+		.Field("alpha_cutoff", &MaterialAssetInfo::alpha_cutoff, "Alpha Cutoff")
+		.SliderRange(0.0f, 1.0f)
+		.Build();
 }
 
 void MaterialAssetInfo::SetupRefBinding(flecs::world& world) {
 	SetupRefBindingImpl<MaterialAssetInfo, MaterialRef, rendering::Renderable>(
-			world,
-			"MaterialRef",
-			"Rendering",
-			"MaterialRefResolve",
-			MaterialAssetInfo::TYPE_NAME,
-			[](const auto& asset, auto& target) { target.material = asset->id; },
-			[](auto& target) { target.material = rendering::INVALID_MATERIAL; },
-			{".material.json"});
+		world,
+		"MaterialRef",
+		"Rendering",
+		"MaterialRefResolve",
+		MaterialAssetInfo::TYPE_NAME,
+		[](const auto& asset, auto& target) { target.material = asset->id; },
+		[](auto& target) { target.material = rendering::INVALID_MATERIAL; },
+		{".material.json"}
+	);
 }
 
 } // namespace engine::assets

@@ -40,7 +40,7 @@ private:
 		std::unique_ptr<btRigidBody> body;
 		std::unique_ptr<btCollisionShape> shape;
 		std::unique_ptr<btDefaultMotionState> motion_state;
-		std::vector<std::unique_ptr<btTriangleMesh>> mesh_data; // Owned mesh data for btBvhTriangleMeshShape
+		std::vector<std::unique_ptr<btTriangleMesh>> mesh_data;      // Owned mesh data for btBvhTriangleMeshShape
 		std::vector<std::unique_ptr<btCollisionShape>> child_shapes; // Owned child shapes for btCompoundShape
 	};
 	std::unordered_map<EntityId, RigidBodyData> rigid_bodies_;
@@ -66,10 +66,10 @@ private:
 		const auto max_scale = std::max({scale.x, scale.y, scale.z});
 		ShapeConfig config;
 		config.type = shape.type;
-		config.box_half_extents = shape.box_half_extents * scale; // Apply world scale to box half-extents
-		config.sphere_radius = shape.sphere_radius * max_scale; // Use max scale for sphere radius
-		config.capsule_radius = shape.capsule_radius * max_scale; // Use max scale for capsule radius
-		config.capsule_height = shape.capsule_height * max_scale; // Use max scale for capsule height
+		config.box_half_extents = shape.box_half_extents * scale;   // Apply world scale to box half-extents
+		config.sphere_radius = shape.sphere_radius * max_scale;     // Use max scale for sphere radius
+		config.capsule_radius = shape.capsule_radius * max_scale;   // Use max scale for capsule radius
+		config.capsule_height = shape.capsule_height * max_scale;   // Use max scale for capsule height
 		config.cylinder_radius = shape.cylinder_radius * max_scale; // Use max scale for cylinder radius
 		config.cylinder_height = shape.cylinder_height * max_scale; // Use max scale for cylinder height
 		config.offset = shape.offset;
@@ -98,7 +98,8 @@ private:
 		switch (config.type) {
 		case ShapeType::Box:
 			result.shape = std::make_unique<btBoxShape>(
-					btVector3(config.box_half_extents.x, config.box_half_extents.y, config.box_half_extents.z));
+				btVector3(config.box_half_extents.x, config.box_half_extents.y, config.box_half_extents.z)
+			);
 			return result;
 
 		case ShapeType::Sphere: result.shape = std::make_unique<btSphereShape>(config.sphere_radius); return result;
@@ -109,7 +110,8 @@ private:
 
 		case ShapeType::Cylinder:
 			result.shape = std::make_unique<btCylinderShape>(
-					btVector3(config.cylinder_radius, config.cylinder_height * 0.5F, config.cylinder_radius));
+				btVector3(config.cylinder_radius, config.cylinder_height * 0.5F, config.cylinder_radius)
+			);
 			return result;
 
 		case ShapeType::ConvexHull:
@@ -132,7 +134,10 @@ private:
 					const auto& v1 = config.vertices[config.indices[i + 1]];
 					const auto& v2 = config.vertices[config.indices[i + 2]];
 					meshData->addTriangle(
-							btVector3(v0.x, v0.y, v0.z), btVector3(v1.x, v1.y, v1.z), btVector3(v2.x, v2.y, v2.z));
+						btVector3(v0.x, v0.y, v0.z),
+						btVector3(v1.x, v1.y, v1.z),
+						btVector3(v2.x, v2.y, v2.z)
+					);
 				}
 				// btBvhTriangleMeshShape does NOT take ownership - we keep mesh_data alive
 				result.shape = std::make_unique<btBvhTriangleMeshShape>(meshData.get(), true);
@@ -201,7 +206,11 @@ public:
 		solver_ = std::make_unique<btSequentialImpulseConstraintSolver>();
 
 		dynamics_world_ = std::make_unique<btDiscreteDynamicsWorld>(
-				dispatcher_.get(), broadphase_.get(), solver_.get(), collision_config_.get());
+			dispatcher_.get(),
+			broadphase_.get(),
+			solver_.get(),
+			collision_config_.get()
+		);
 
 		dynamics_world_->setGravity(btVector3(config.gravity.x, config.gravity.y, config.gravity.z));
 
@@ -289,10 +298,11 @@ public:
 	}
 
 	void SyncBodyToBackend(
-			EntityId entity,
-			const PhysicsTransform& transform,
-			const RigidBody& body,
-			const CollisionShape& shape) override {
+		EntityId entity,
+		const PhysicsTransform& transform,
+		const RigidBody& body,
+		const CollisionShape& shape
+	) override {
 		if (!initialized_) {
 			spdlog::error("[Bullet3] Cannot sync body - not initialized");
 			return;
@@ -328,8 +338,9 @@ public:
 			// Update transform
 			btTransform btTrans;
 			btTrans.setOrigin(btVector3(transform.position.x, transform.position.y, transform.position.z));
-			btTrans.setRotation(btQuaternion(
-					transform.rotation.x, transform.rotation.y, transform.rotation.z, transform.rotation.w));
+			btTrans.setRotation(
+				btQuaternion(transform.rotation.x, transform.rotation.y, transform.rotation.z, transform.rotation.w)
+			);
 			data.body->setWorldTransform(btTrans);
 			data.body->getMotionState()->setWorldTransform(btTrans);
 
@@ -378,8 +389,9 @@ public:
 			// Create motion state with transform
 			btTransform btTrans;
 			btTrans.setOrigin(btVector3(transform.position.x, transform.position.y, transform.position.z));
-			btTrans.setRotation(btQuaternion(
-					transform.rotation.x, transform.rotation.y, transform.rotation.z, transform.rotation.w));
+			btTrans.setRotation(
+				btQuaternion(transform.rotation.x, transform.rotation.y, transform.rotation.z, transform.rotation.w)
+			);
 			data.motion_state = std::make_unique<btDefaultMotionState>(btTrans);
 
 			// Create rigid body
@@ -494,9 +506,10 @@ public:
 
 		btVector3 from(ray.origin.x, ray.origin.y, ray.origin.z);
 		btVector3 to(
-				ray.origin.x + ray.direction.x * ray.max_distance,
-				ray.origin.y + ray.direction.y * ray.max_distance,
-				ray.origin.z + ray.direction.z * ray.max_distance);
+			ray.origin.x + ray.direction.x * ray.max_distance,
+			ray.origin.y + ray.direction.y * ray.max_distance,
+			ray.origin.z + ray.direction.z * ray.max_distance
+		);
 
 		btCollisionWorld::ClosestRayResultCallback callback(from, to);
 		dynamics_world_->rayTest(from, to, callback);
@@ -504,11 +517,11 @@ public:
 		if (callback.hasHit()) {
 			RaycastResult result;
 			result.entity =
-					static_cast<EntityId>(reinterpret_cast<uintptr_t>(callback.m_collisionObject->getUserPointer()));
+				static_cast<EntityId>(reinterpret_cast<uintptr_t>(callback.m_collisionObject->getUserPointer()));
 			result.hit_point =
-					glm::vec3(callback.m_hitPointWorld.x(), callback.m_hitPointWorld.y(), callback.m_hitPointWorld.z());
-			result.hit_normal = glm::vec3(
-					callback.m_hitNormalWorld.x(), callback.m_hitNormalWorld.y(), callback.m_hitNormalWorld.z());
+				glm::vec3(callback.m_hitPointWorld.x(), callback.m_hitPointWorld.y(), callback.m_hitPointWorld.z());
+			result.hit_normal =
+				glm::vec3(callback.m_hitNormalWorld.x(), callback.m_hitNormalWorld.y(), callback.m_hitNormalWorld.z());
 			result.distance = callback.m_closestHitFraction * ray.max_distance;
 			return result;
 		}
@@ -523,9 +536,10 @@ public:
 
 		btVector3 from(ray.origin.x, ray.origin.y, ray.origin.z);
 		btVector3 to(
-				ray.origin.x + ray.direction.x * ray.max_distance,
-				ray.origin.y + ray.direction.y * ray.max_distance,
-				ray.origin.z + ray.direction.z * ray.max_distance);
+			ray.origin.x + ray.direction.x * ray.max_distance,
+			ray.origin.y + ray.direction.y * ray.max_distance,
+			ray.origin.z + ray.direction.z * ray.max_distance
+		);
 
 		btCollisionWorld::AllHitsRayResultCallback callback(from, to);
 		dynamics_world_->rayTest(from, to, callback);
@@ -533,14 +547,18 @@ public:
 		std::vector<RaycastResult> results;
 		for (int i = 0; i < callback.m_collisionObjects.size(); ++i) {
 			RaycastResult result;
-			result.entity = static_cast<EntityId>(
-					reinterpret_cast<uintptr_t>(callback.m_collisionObjects[i]->getUserPointer()));
+			result.entity =
+				static_cast<EntityId>(reinterpret_cast<uintptr_t>(callback.m_collisionObjects[i]->getUserPointer()));
 			result.hit_point = glm::vec3(
-					callback.m_hitPointWorld[i].x(), callback.m_hitPointWorld[i].y(), callback.m_hitPointWorld[i].z());
+				callback.m_hitPointWorld[i].x(),
+				callback.m_hitPointWorld[i].y(),
+				callback.m_hitPointWorld[i].z()
+			);
 			result.hit_normal = glm::vec3(
-					callback.m_hitNormalWorld[i].x(),
-					callback.m_hitNormalWorld[i].y(),
-					callback.m_hitNormalWorld[i].z());
+				callback.m_hitNormalWorld[i].x(),
+				callback.m_hitNormalWorld[i].y(),
+				callback.m_hitNormalWorld[i].z()
+			);
 			result.distance = callback.m_hitFractions[i] * ray.max_distance;
 			results.push_back(result);
 		}
@@ -567,20 +585,24 @@ public:
 
 			void drawLine(const btVector3& from, const btVector3& to, const btVector3& color) override {
 				target_.DrawLine(
-						{from.getX(), from.getY(), from.getZ()},
-						{to.getX(), to.getY(), to.getZ()},
-						{color.getX(), color.getY(), color.getZ()});
+					{from.getX(), from.getY(), from.getZ()},
+					{to.getX(), to.getY(), to.getZ()},
+					{color.getX(), color.getY(), color.getZ()}
+				);
 			}
 
-			void drawContactPoint(const btVector3& point, const btVector3& normal,
-					btScalar distance, int, const btVector3& color) override {
+			void drawContactPoint(
+				const btVector3& point,
+				const btVector3& normal,
+				btScalar distance,
+				int,
+				const btVector3& color
+			) override {
 				const btVector3 to = point + normal * distance;
 				drawLine(point, to, color);
 			}
 
-			void reportErrorWarning(const char* warning) override {
-				spdlog::warn("[Bullet3 Debug] {}", warning);
-			}
+			void reportErrorWarning(const char* warning) override { spdlog::warn("[Bullet3 Debug] {}", warning); }
 
 			void draw3dText(const btVector3& loc, const char* text) override {
 				target_.DrawText({loc.getX(), loc.getY(), loc.getZ()}, std::string(text));

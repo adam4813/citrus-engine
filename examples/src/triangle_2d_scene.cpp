@@ -45,7 +45,10 @@ public:
 
 		// Load the colored 2D shader
 		triangle_shader_ = engine.renderer->GetShaderManager().LoadShader(
-				"colored_2d", "assets/shaders/colored_2d.vert", "assets/shaders/colored_2d.frag");
+			"colored_2d",
+			"assets/shaders/colored_2d.vert",
+			"assets/shaders/colored_2d.frag"
+		);
 
 		// Initialize transform
 		position_ = glm::vec2(0.0f, 0.0f);
@@ -107,8 +110,8 @@ public:
 		float ortho_height = 400.0f;
 		float ortho_width = ortho_height * aspect;
 
-		glm::mat4 projection = glm::ortho(
-				-ortho_width / 2.0f, ortho_width / 2.0f, -ortho_height / 2.0f, ortho_height / 2.0f, -1.0f, 1.0f);
+		glm::mat4 projection =
+			glm::ortho(-ortho_width / 2.0f, ortho_width / 2.0f, -ortho_height / 2.0f, ortho_height / 2.0f, -1.0f, 1.0f);
 
 		// Create model transform
 		glm::mat4 model = glm::mat4(1.0f);
@@ -170,4 +173,7 @@ private:
 
 // Register the scene
 REGISTER_EXAMPLE_SCENE(
-		Triangle2DScene, "2D Triangle", "Basic 2D triangle with input controls (orthographic projection)");
+	Triangle2DScene,
+	"2D Triangle",
+	"Basic 2D triangle with input controls (orthographic projection)"
+);

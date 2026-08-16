@@ -57,10 +57,10 @@ class AssetTypeRegistry;
  * @brief Information about a registered asset type
  */
 struct AssetTypeInfo {
-	std::string type_name; // JSON type string (e.g., "shader")
+	std::string type_name;    // JSON type string (e.g., "shader")
 	std::string display_name; // UI display name (e.g., "Shader")
-	std::string category; // Grouping category (e.g., "Rendering")
-	AssetType asset_type{}; // Enum value
+	std::string category;     // Grouping category (e.g., "Rendering")
+	AssetType asset_type{};   // Enum value
 	std::function<std::shared_ptr<AssetInfo>()> create_default_factory;
 	std::vector<ecs::FieldInfo> fields;
 };
@@ -77,7 +77,8 @@ struct AssetTypeInfo {
  *       .CreateDefault([]() { return std::make_shared<ShaderAssetInfo>(); })
  *       .Build();
  */
-template <typename T> class AssetTypeRegistration {
+template<typename T>
+class AssetTypeRegistration {
 public:
 	AssetTypeRegistration(AssetTypeRegistry& registry, const std::string& type_name, AssetType asset_type);
 
@@ -91,15 +92,17 @@ public:
 		return *this;
 	}
 
-	template <typename FieldT, typename ClassT>
-	AssetTypeRegistration&
-	Field(const std::string& field_name,
-		  FieldT ClassT::* member_ptr,
-		  const std::string& display_name,
-		  const ecs::FieldType type_override = DeduceFieldType<FieldT>()) {
+	template<typename FieldT, typename ClassT>
+	AssetTypeRegistration& Field(
+		const std::string& field_name,
+		FieldT ClassT::* member_ptr,
+		const std::string& display_name,
+		const ecs::FieldType type_override = DeduceFieldType<FieldT>()
+	) {
 		static_assert(
-				std::is_base_of_v<ClassT, T> || std::is_same_v<ClassT, T>,
-				"Member pointer must be from T or a base class of T");
+			std::is_base_of_v<ClassT, T> || std::is_same_v<ClassT, T>,
+			"Member pointer must be from T or a base class of T"
+		);
 		ecs::FieldInfo field;
 		field.name = field_name;
 		field.display_name = display_name;
@@ -141,8 +144,10 @@ public:
 	AssetTypeRegistration& AssetRef(const std::string& asset_type_key) {
 		if (!info_.fields.empty()) {
 			auto& field_info = info_.fields.back();
-			if (field_info.type != ecs::FieldType::ListInt && field_info.type != ecs::FieldType::ListFloat
-				&& field_info.type != ecs::FieldType::ListString && field_info.type != ecs::FieldType::UintAssetRef
+			if (field_info.type != ecs::FieldType::ListInt
+				&& field_info.type != ecs::FieldType::ListFloat
+				&& field_info.type != ecs::FieldType::ListString
+				&& field_info.type != ecs::FieldType::UintAssetRef
 				&& field_info.type != ecs::FieldType::AssetReference) {
 				field_info.type = ecs::FieldType::AssetRef;
 			}
@@ -157,7 +162,8 @@ public:
 	void Build();
 
 private:
-	template <typename FieldT> static constexpr ecs::FieldType DeduceFieldType() {
+	template<typename FieldT>
+	static constexpr ecs::FieldType DeduceFieldType() {
 		if constexpr (std::is_same_v<FieldT, std::string>) {
 			return ecs::FieldType::String;
 		}
@@ -191,11 +197,12 @@ public:
 	static void Initialize(flecs::world& world);
 
 	/// Start registering an asset type with builder pattern
-	template <typename T> AssetTypeRegistration<T> RegisterType(const std::string& type_name, AssetType asset_type) {
+	template<typename T>
+	AssetTypeRegistration<T> RegisterType(const std::string& type_name, AssetType asset_type) {
 		return AssetTypeRegistration<T>(*this, type_name, asset_type);
 	}
 
-	template <typename T>
+	template<typename T>
 	AssetTypeRegistration<T> RegisterType(const std::string_view type_name, const AssetType asset_type) {
 		return RegisterType<T>(std::string(type_name), asset_type);
 	}
@@ -218,9 +225,12 @@ private:
 };
 
 // Template implementation
-template <typename T>
+template<typename T>
 AssetTypeRegistration<T>::AssetTypeRegistration(
-		AssetTypeRegistry& registry, const std::string& type_name, const AssetType asset_type) : registry_(registry) {
+	AssetTypeRegistry& registry,
+	const std::string& type_name,
+	const AssetType asset_type
+) : registry_(registry) {
 	info_.type_name = type_name;
 	info_.display_name = type_name; // Default, override with DisplayName()
 	info_.category = "Other";
@@ -228,7 +238,10 @@ AssetTypeRegistration<T>::AssetTypeRegistration(
 	info_.create_default_factory = [type_name] { return std::make_shared<T>("New " + type_name); };
 }
 
-template <typename T> void AssetTypeRegistration<T>::Build() { registry_.AddTypeInfo(std::move(info_)); }
+template<typename T>
+void AssetTypeRegistration<T>::Build() {
+	registry_.AddTypeInfo(std::move(info_));
+}
 
 /// Base asset definition - common fields for all asset types
 ///
@@ -264,8 +277,8 @@ struct AssetInfo {
 
 protected:
 	bool loaded_{false};
-	bool loading_{false}; // Re-entrancy guard: prevents infinite recursion when
-						  // resolving nested asset refs (e.g. material -> texture).
+	bool loading_{false};     // Re-entrancy guard: prevents infinite recursion when
+							  // resolving nested asset refs (e.g. material -> texture).
 	bool initialized_{false}; // Internal: tracks DoInitialize() for two-phase loading
 
 	/// Reserve lightweight system resources (e.g., shader ID slot) before DoLoad
@@ -358,9 +371,9 @@ constexpr auto FILE = "file";
 struct MeshAssetInfo : AssetInfo {
 	static constexpr std::string_view TYPE_NAME = "mesh";
 
-	std::string mesh_type = mesh_types::QUAD; // "quad", "cube", "sphere", "capsule", "file"
-	float params[3]{1.0F, 1.0F, 1.0F}; // Interpreted based on mesh_type
-	std::string file_path; // Only used when mesh_type == "file"
+	std::string mesh_type = mesh_types::QUAD;      // "quad", "cube", "sphere", "capsule", "file"
+	float params[3]{1.0F, 1.0F, 1.0F};             // Interpreted based on mesh_type
+	std::string file_path;                         // Only used when mesh_type == "file"
 	rendering::MeshId id{rendering::INVALID_MESH}; // Populated in DoInitialize, geometry in DoLoad
 
 	MeshAssetInfo() : AssetInfo("", AssetType::MESH) {}
@@ -581,7 +594,8 @@ public:
 
 	/// Creates a new default asset of the specified type, adds it to the cache, and returns it.
 	AssetPtr Create(AssetType type, const std::string& name);
-	template <typename T> std::shared_ptr<T> Create(AssetType type, const std::string& name);
+	template<typename T>
+	std::shared_ptr<T> Create(AssetType type, const std::string& name);
 
 	/// Add an asset to the cache as "registered" (metadata only, not loaded).
 	/// Assigns a GUID if the asset doesn't have one (guid == 0).
@@ -600,7 +614,8 @@ public:
 	[[nodiscard]] std::shared_ptr<const AssetInfo> Find(const std::string& name, AssetType type) const;
 
 	/// Find typed asset by name.
-	template <typename T> std::shared_ptr<T> FindTyped(const uint32_t guid) {
+	template<typename T>
+	std::shared_ptr<T> FindTyped(const uint32_t guid) {
 		if (const auto cached = cache_.find(guid); cached != cache_.end()) {
 			if (auto typed = std::dynamic_pointer_cast<T>(cached->second)) {
 				return typed;
@@ -616,7 +631,8 @@ public:
 	AssetPtr Resolve(const AssetRef& ref);
 
 	/// Resolve an AssetRef and cast to the requested concrete asset type.
-	template <typename T> std::shared_ptr<T> ResolveTyped(const AssetRef& ref) {
+	template<typename T>
+	std::shared_ptr<T> ResolveTyped(const AssetRef& ref) {
 		if (auto asset = Resolve(ref)) {
 			return std::dynamic_pointer_cast<T>(asset);
 		}
@@ -630,7 +646,8 @@ public:
 	/// empty string for built-in/procedural assets that have no backing file.
 	[[nodiscard]] std::string GetSourcePath(uint32_t guid) const;
 	/// Find typed asset by name.
-	template <typename T> std::shared_ptr<T> FindTyped(const std::string& name) {
+	template<typename T>
+	std::shared_ptr<T> FindTyped(const std::string& name) {
 		if (const auto it = name_index_.find(name); it != name_index_.end()) {
 			if (auto typed = FindTyped<T>(it->second)) {
 				return typed;
@@ -639,7 +656,8 @@ public:
 		return nullptr;
 	}
 
-	template <typename T> std::shared_ptr<const T> FindTyped(const std::string& name) const {
+	template<typename T>
+	std::shared_ptr<const T> FindTyped(const std::string& name) const {
 		if (const auto it = name_index_.find(name); it != name_index_.end()) {
 			if (const auto cached = cache_.find(it->second); cached != cache_.end()) {
 				if (auto typed = std::dynamic_pointer_cast<const T>(cached->second)) {
@@ -656,7 +674,8 @@ public:
 	/// Get all cached assets of a specific type.
 	[[nodiscard]] std::vector<AssetPtr> GetByType(AssetType type) const;
 
-	template <typename T> std::vector<std::shared_ptr<T>> GetAllOfType() {
+	template<typename T>
+	std::vector<std::shared_ptr<T>> GetAllOfType() {
 		std::vector<std::shared_ptr<T>> result;
 		for (auto& asset : cache_ | std::views::values) {
 			if (auto typed = std::dynamic_pointer_cast<T>(asset)) {
@@ -726,10 +745,10 @@ private:
 	/// deterministic name-hash and probing for a free slot on the rare collision.
 	void AssignGuidIfNeeded(const AssetPtr& asset);
 
-	std::unordered_map<uint32_t, AssetPtr> cache_; // guid → asset (primary)
-	std::unordered_map<std::string, uint32_t> name_index_; // name → guid (secondary)
+	std::unordered_map<uint32_t, AssetPtr> cache_;           // guid → asset (primary)
+	std::unordered_map<std::string, uint32_t> name_index_;   // name → guid (secondary)
 	std::unordered_map<std::string, uint32_t> path_to_guid_; // file/source path → guid
-	uint32_t next_guid_{1}; // Counter for GUID generation
+	uint32_t next_guid_{1};                                  // Counter for GUID generation
 
 	/// Registered file importers: extension → factory
 	std::unordered_map<std::string, FileImportFactory> file_importers_;
@@ -751,9 +770,14 @@ std::string ReadAssetMetadataType(const nlohmann::json& j);
 /// asset's identity; otherwise a fresh GUID is generated. Any legacy top-level
 /// "asset_type" key is removed.
 void StampAssetMetadata(
-		nlohmann::json& j, const std::string& type, const std::string& path, const std::string& name = {});
+	nlohmann::json& j,
+	const std::string& type,
+	const std::string& path,
+	const std::string& name = {}
+);
 
-template <typename T> std::shared_ptr<T> AssetCache::Create(const AssetType type, const std::string& name) {
+template<typename T>
+std::shared_ptr<T> AssetCache::Create(const AssetType type, const std::string& name) {
 	if (const auto assetPtr = Create(type, name)) {
 		if (auto asset = std::dynamic_pointer_cast<T>(assetPtr)) {
 			return asset;
@@ -768,31 +792,33 @@ template <typename T> std::shared_ptr<T> AssetCache::Create(const AssetType type
 // Eliminates per-asset-type copy-paste for ref component registration + observer wiring.
 // Defined in the module interface so all implementation units can instantiate it.
 
-template <typename AssetInfoT, typename RefT, typename TargetT, typename AssignFn, typename ClearFn>
+template<typename AssetInfoT, typename RefT, typename TargetT, typename AssignFn, typename ClearFn>
 void SetupRefBindingImpl(
-		flecs::world& world,
-		const char* ref_name,
-		const char* category,
-		const char* observer_name,
-		std::string_view asset_type_name,
-		AssignFn assign_fn,
-		ClearFn clear_fn,
-		std::vector<std::string> file_extensions = {}) {
+	flecs::world& world,
+	const char* ref_name,
+	const char* category,
+	const char* observer_name,
+	std::string_view asset_type_name,
+	AssignFn assign_fn,
+	ClearFn clear_fn,
+	std::vector<std::string> file_extensions = {}
+) {
 	auto& registry = ecs::ComponentRegistry::Instance();
 	// Each ref component holds a single nested AssetRef member. Register it by the
 	// AssetRef flecs component id (registered in AssetTypeRegistry::Initialize) so the
 	// component_registry module need not depend on the asset_registry module.
 	const size_t ref_offset = reinterpret_cast<size_t>(&(static_cast<RefT*>(nullptr)->ref));
 	auto reg = registry.Register<RefT>(ref_name, world)
-					   .Category(category)
-					   .Hidden()
-					   .StructField(
-							   "ref",
-							   ref_offset,
-							   sizeof(AssetRef),
-							   world.component<AssetRef>().id(),
-							   ecs::FieldType::AssetReference,
-							   std::string(asset_type_name));
+				   .Category(category)
+				   .Hidden()
+				   .StructField(
+					   "ref",
+					   ref_offset,
+					   sizeof(AssetRef),
+					   world.component<AssetRef>().id(),
+					   ecs::FieldType::AssetReference,
+					   std::string(asset_type_name)
+				   );
 	if (!file_extensions.empty()) {
 		reg.FileExtensions(std::move(file_extensions));
 	}
@@ -801,41 +827,41 @@ void SetupRefBindingImpl(
 	world.component<TargetT>().add(flecs::With, world.component<RefT>());
 
 	world.observer<RefT, TargetT>(observer_name)
-			.event(flecs::OnSet)
-			.each([assign_fn, clear_fn](flecs::entity, const RefT& ref, TargetT& target) {
-				if (ref.ref.IsEmpty()) {
-					clear_fn(target);
-					return;
-				}
-				if (auto asset = AssetCache::Instance().ResolveTyped<AssetInfoT>(ref.ref)) {
-					asset->Load();
-					assign_fn(asset, target);
-				}
-				else {
-					// Reference points at an asset that can't be resolved: clear the target
-					// so stale/broken references don't keep using a previously assigned asset.
-					clear_fn(target);
-				}
-			});
+		.event(flecs::OnSet)
+		.each([assign_fn, clear_fn](flecs::entity, const RefT& ref, TargetT& target) {
+			if (ref.ref.IsEmpty()) {
+				clear_fn(target);
+				return;
+			}
+			if (auto asset = AssetCache::Instance().ResolveTyped<AssetInfoT>(ref.ref)) {
+				asset->Load();
+				assign_fn(asset, target);
+			}
+			else {
+				// Reference points at an asset that can't be resolved: clear the target
+				// so stale/broken references don't keep using a previously assigned asset.
+				clear_fn(target);
+			}
+		});
 
 	// Prevent removing the ref component if the target still has it, to ensure the binding stays consistent.
 	// The ref can only be removed if the target component is removed
 	world.observer<RefT>((std::string(observer_name) + "_ReAdd").c_str())
-			.event(flecs::OnRemove)
-			.each([clear_fn](flecs::entity e, RefT ref) {
-				if (e.has<TargetT>()) {
-					// Cleanup since we cannot re-add the same component
-					if (ref.ref.IsEmpty()) {
-						clear_fn(e.get_mut<TargetT>());
-					}
-					e.add<RefT>();
+		.event(flecs::OnRemove)
+		.each([clear_fn](flecs::entity e, RefT ref) {
+			if (e.has<TargetT>()) {
+				// Cleanup since we cannot re-add the same component
+				if (ref.ref.IsEmpty()) {
+					clear_fn(e.get_mut<TargetT>());
 				}
-			});
+				e.add<RefT>();
+			}
+		});
 
 	// Remove refs if the target component is removed, to prevent dangling references
 	world.observer<TargetT>((std::string(observer_name) + "_Clear").c_str())
-			.event(flecs::OnRemove)
-			.each([](flecs::entity e, TargetT) { e.remove<RefT>(); });
+		.event(flecs::OnRemove)
+		.each([](flecs::entity e, TargetT) { e.remove<RefT>(); });
 }
 
 } // namespace engine::assets

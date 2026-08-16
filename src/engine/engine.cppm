@@ -44,8 +44,8 @@ constexpr int VERSION_PATCH = 0;
 
 // Update modes for ECS simulation
 enum class UpdateMode {
-	Full,     // Run all phases (simulation + post-simulation + pre-render)
-	EditMode  // Skip simulation, run only post-simulation + pre-render
+	Full,    // Run all phases (simulation + post-simulation + pre-render)
+	EditMode // Skip simulation, run only post-simulation + pre-render
 };
 
 class Engine {
@@ -57,7 +57,7 @@ public:
 	bool Init(std::uint32_t window_width, uint32_t window_height);
 
 	void Update(float dt);
-	
+
 	// Update with specific mode (full or edit mode)
 	void Update(float dt, UpdateMode mode);
 
@@ -68,7 +68,7 @@ public:
 	// Rendering system: Renderer instance
 	rendering::Renderer* renderer{nullptr};
 	// OS/Platform system
-	//platform::PlatformSystem *platform;
+	// platform::PlatformSystem *platform;
 	GLFWwindow* window{nullptr};
 	// Input system: managed via input::Input namespace (no instance needed)
 	// Scene system: add if you have a SceneSystem class

@@ -82,7 +82,11 @@ void SetupGLMesh(const MeshId id, const MeshCreateInfo& info) {
 		glBufferData(GL_ARRAY_BUFFER, info.vertices.size() * sizeof(Vertex), info.vertices.data(), GL_STATIC_DRAW);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
 		glBufferData(
-				GL_ELEMENT_ARRAY_BUFFER, info.indices.size() * sizeof(uint32_t), info.indices.data(), GL_STATIC_DRAW);
+			GL_ELEMENT_ARRAY_BUFFER,
+			info.indices.size() * sizeof(uint32_t),
+			info.indices.data(),
+			GL_STATIC_DRAW
+		);
 		glBindVertexArray(0);
 		return;
 	}
@@ -101,16 +105,16 @@ void SetupGLMesh(const MeshId id, const MeshCreateInfo& info) {
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, info.indices.size() * sizeof(uint32_t), info.indices.data(), GL_STATIC_DRAW);
 
 	// Position
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, position));
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*) offsetof(Vertex, position));
 	glEnableVertexAttribArray(0);
 	// Normal
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, normal));
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*) offsetof(Vertex, normal));
 	glEnableVertexAttribArray(1);
 	// TexCoords
-	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, tex_coords));
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*) offsetof(Vertex, tex_coords));
 	glEnableVertexAttribArray(2);
 	// color
-	glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, color));
+	glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*) offsetof(Vertex, color));
 	glEnableVertexAttribArray(3);
 
 	glBindVertexArray(0);
@@ -148,10 +152,11 @@ bool MeshManager::GenerateQuad(const MeshId id, const float width, const float h
 	}
 
 	const std::vector<Vertex> vertices = {
-			{{-width / 2, -height / 2, 0}, {0, 0, 1}, {0, 0}},
-			{{width / 2, -height / 2, 0}, {0, 0, 1}, {1, 0}},
-			{{width / 2, height / 2, 0}, {0, 0, 1}, {1, 1}},
-			{{-width / 2, height / 2, 0}, {0, 0, 1}, {0, 1}}};
+		{{-width / 2, -height / 2, 0}, {0, 0, 1}, {0, 0}},
+		{{width / 2, -height / 2, 0}, {0, 0, 1}, {1, 0}},
+		{{width / 2, height / 2, 0}, {0, 0, 1}, {1, 1}},
+		{{-width / 2, height / 2, 0}, {0, 0, 1}, {0, 1}}
+	};
 
 	const std::vector<uint32_t> indices = {0, 1, 2, 0, 2, 3};
 
@@ -179,8 +184,8 @@ bool MeshManager::GenerateCube(const MeshId id, const float width, const float h
 	const float hw = width * 0.5f;
 	const float hh = height * 0.5f;
 	const float hd = depth * 0.5f;
-	const Color face_colors[6] = {
-			colors::red, colors::green, colors::blue, colors::yellow, colors::magenta, colors::cyan};
+	const Color face_colors[6] =
+		{colors::red, colors::green, colors::blue, colors::yellow, colors::magenta, colors::cyan};
 
 	// clang-format off
 	const std::vector<Vertex> vertices = {
@@ -274,9 +279,10 @@ bool MeshManager::GenerateSphere(MeshId id, float radius, uint32_t segments) {
 			Vertex vertex;
 			vertex.position = Vec3(x, y, z);
 			vertex.normal = glm::normalize(Vec3(x, y, z));
-			vertex.tex_coords =
-					Vec2(static_cast<float>(sector) / static_cast<float>(sectors),
-						 static_cast<float>(ring) / static_cast<float>(rings));
+			vertex.tex_coords = Vec2(
+				static_cast<float>(sector) / static_cast<float>(sectors),
+				static_cast<float>(ring) / static_cast<float>(rings)
+			);
 
 			vertices.push_back(vertex);
 		}

@@ -245,8 +245,8 @@ struct ShaderManager::Impl {
 	void PopulateDefaultShaders() {
 		// The shaders are loaded via the ShaderAssetInfo entries in the asset registry, which are populated from the embedded default shaders in assets.cpp. We just need to look them up by their known names and store their IDs here for easy access.
 		auto& cache = assets::AssetCache::Instance();
-		const auto default_2d_shader = std::dynamic_pointer_cast<assets::ShaderAssetInfo>(
-				cache.Find("__default_2d", assets::AssetType::SHADER));
+		const auto default_2d_shader =
+			std::dynamic_pointer_cast<assets::ShaderAssetInfo>(cache.Find("__default_2d", assets::AssetType::SHADER));
 		default_2d_shader->Load(); // They asset may not be loaded into the shader manager yet
 		default_2d_shader_id = default_2d_shader->id;
 
@@ -255,7 +255,8 @@ struct ShaderManager::Impl {
 		}
 
 		const auto default_3d_shader = std::dynamic_pointer_cast<assets::ShaderAssetInfo>(
-				cache.Find("__default_3d_lit", assets::AssetType::SHADER));
+			cache.Find("__default_3d_lit", assets::AssetType::SHADER)
+		);
 		default_3d_shader->Load(); // They asset may not be loaded into the shader manager yet
 		default_3d_shader_id = default_3d_shader->id;
 
@@ -264,7 +265,7 @@ struct ShaderManager::Impl {
 		}
 
 		const auto unlit_shader =
-				std::dynamic_pointer_cast<assets::ShaderAssetInfo>(cache.Find("__unlit", assets::AssetType::SHADER));
+			std::dynamic_pointer_cast<assets::ShaderAssetInfo>(cache.Find("__unlit", assets::AssetType::SHADER));
 		unlit_shader->Load(); // They asset may not be loaded into the shader manager yet
 		unlit_shader_id = unlit_shader->id;
 
@@ -295,7 +296,10 @@ ShaderId ShaderManager::CreateShader(const std::string& name) const {
 void ShaderManager::Initialize() const { pimpl_->PopulateDefaultShaders(); }
 
 bool ShaderManager::CompileShader(
-		const ShaderId id, const platform::fs::Path& vertex_path, const platform::fs::Path& fragment_path) const {
+	const ShaderId id,
+	const platform::fs::Path& vertex_path,
+	const platform::fs::Path& fragment_path
+) const {
 	// Load shader source files
 	auto& asset_manager = assets::AssetManager::Instance();
 	const auto vertex_src_opt = asset_manager.LoadTextFile(vertex_path);
@@ -308,7 +312,10 @@ bool ShaderManager::CompileShader(
 }
 
 bool ShaderManager::CompileShader(
-		const ShaderId id, const std::string& vertex_source, const std::string& fragment_source) const {
+	const ShaderId id,
+	const std::string& vertex_source,
+	const std::string& fragment_source
+) const {
 	const auto it = pimpl_->shaders.find(id);
 	if (it == pimpl_->shaders.end()) {
 		spdlog::error("Cannot compile shader: invalid id {}", id);
@@ -322,7 +329,10 @@ bool ShaderManager::CompileShader(
 }
 
 ShaderId ShaderManager::LoadShaderFromString(
-		const std::string& name, const std::string& vertex_source, const std::string& fragment_source) const {
+	const std::string& name,
+	const std::string& vertex_source,
+	const std::string& fragment_source
+) const {
 	if (const auto shader_id = CreateShader(name); CompileShader(shader_id, vertex_source, fragment_source)) {
 		return shader_id;
 	}
@@ -330,7 +340,10 @@ ShaderId ShaderManager::LoadShaderFromString(
 }
 
 ShaderId ShaderManager::LoadShader(
-		const std::string& name, const platform::fs::Path& vertex_path, const platform::fs::Path& fragment_path) const {
+	const std::string& name,
+	const platform::fs::Path& vertex_path,
+	const platform::fs::Path& fragment_path
+) const {
 	if (const auto shader_id = CreateShader(name); CompileShader(shader_id, vertex_path, fragment_path)) {
 		return shader_id;
 	}

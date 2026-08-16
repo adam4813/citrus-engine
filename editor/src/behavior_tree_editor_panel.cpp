@@ -113,7 +113,7 @@ void BehaviorTreeEditorPanel::RenderNodeTree(engine::ai::BTNode* node, int depth
 
 	bool is_selected = (node == selected_node_);
 	ImGuiTreeNodeFlags flags =
-			ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick | ImGuiTreeNodeFlags_SpanAvailWidth;
+		ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick | ImGuiTreeNodeFlags_SpanAvailWidth;
 
 	if (is_selected) {
 		flags |= ImGuiTreeNodeFlags_Selected;
@@ -271,8 +271,9 @@ void BehaviorTreeEditorPanel::RenderPropertiesPanel() {
 			const char* policies[] = {"Require All", "Require One"};
 			if (ImGui::Combo("Policy", &policy_index, policies, 2)) {
 				parallel_node->SetPolicy(
-						policy_index == 0 ? engine::ai::ParallelNode::Policy::RequireAll
-										  : engine::ai::ParallelNode::Policy::RequireOne);
+					policy_index == 0 ? engine::ai::ParallelNode::Policy::RequireAll
+									  : engine::ai::ParallelNode::Policy::RequireOne
+				);
 			}
 		}
 		else {
@@ -287,20 +288,22 @@ void BehaviorTreeEditorPanel::RenderPropertiesPanel() {
 void BehaviorTreeEditorPanel::RenderContextMenu() {
 	// Right-click in empty space to add root node
 	if (ImGui::BeginPopupContextWindow(
-				"TreeContextMenu", ImGuiPopupFlags_MouseButtonRight | ImGuiPopupFlags_NoOpenOverItems)) {
+			"TreeContextMenu",
+			ImGuiPopupFlags_MouseButtonRight | ImGuiPopupFlags_NoOpenOverItems
+		)) {
 		if (!root_node_) {
 			if (ImGui::BeginMenu("Add Root Node")) {
 				if (ImGui::MenuItem("Selector")) {
 					root_node_ = std::make_unique<engine::ai::SelectorNode>("Root Selector");
-				SetDirty(true);
+					SetDirty(true);
 				}
 				if (ImGui::MenuItem("Sequence")) {
 					root_node_ = std::make_unique<engine::ai::SequenceNode>("Root Sequence");
-				SetDirty(true);
+					SetDirty(true);
 				}
 				if (ImGui::MenuItem("Parallel")) {
 					root_node_ = std::make_unique<engine::ai::ParallelNode>("Root Parallel");
-				SetDirty(true);
+					SetDirty(true);
 				}
 				ImGui::EndMenu();
 			}
@@ -322,8 +325,7 @@ bool BehaviorTreeEditorPanel::SaveTree(const std::string& path) {
 	nlohmann::json j;
 	j["version"] = "1.0";
 	if (root_node_) {
-		j["root"] = {
-				{"type", std::string(root_node_->GetTypeName())}, {"name", std::string(root_node_->GetName())}};
+		j["root"] = {{"type", std::string(root_node_->GetTypeName())}, {"name", std::string(root_node_->GetName())}};
 	}
 
 	engine::assets::StampAssetMetadata(j, "behavior_tree", path);

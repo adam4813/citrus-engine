@@ -30,7 +30,7 @@ import engine;
  * @code{.cpp}
  * UIDebugVisualizer visualizer;
  * UIElementInspector inspector;
- * 
+ *
  * // Setup click-to-select via visualizer
  * visualizer.SetupClickToSelect(root_element.get());
  *
@@ -141,8 +141,7 @@ private:
 	float CalculateEdgeDistance(engine::ui::UIElement* element, Edge edge) {
 		auto bounds = element->GetRelativeBounds();
 		auto* parent = element->GetParent();
-		if (!parent)
-			return 0.0f;
+		if (!parent) return 0.0f;
 
 		float parent_w = parent->GetWidth();
 		float parent_h = parent->GetHeight();
@@ -178,8 +177,8 @@ private:
 		ImVec2 canvas_size(box_width, box_height);
 
 		// Colors matching Chrome DevTools
-		ImU32 margin_color = IM_COL32(251, 181, 121, 180); // Orange
-		ImU32 border_color = IM_COL32(253, 221, 155, 180); // Yellow
+		ImU32 margin_color = IM_COL32(251, 181, 121, 180);  // Orange
+		ImU32 border_color = IM_COL32(253, 221, 155, 180);  // Yellow
 		ImU32 padding_color = IM_COL32(196, 223, 173, 180); // Green
 		ImU32 content_color = IM_COL32(173, 196, 223, 180); // Blue
 
@@ -188,17 +187,20 @@ private:
 		// Draw nested boxes from outside in
 		draw_list->AddRectFilled(canvas_pos, ImVec2(canvas_pos.x + box_width, canvas_pos.y + box_height), margin_color);
 		draw_list->AddRectFilled(
-				ImVec2(canvas_pos.x + margin_inset, canvas_pos.y + margin_inset),
-				ImVec2(canvas_pos.x + box_width - margin_inset, canvas_pos.y + box_height - margin_inset),
-				border_color);
+			ImVec2(canvas_pos.x + margin_inset, canvas_pos.y + margin_inset),
+			ImVec2(canvas_pos.x + box_width - margin_inset, canvas_pos.y + box_height - margin_inset),
+			border_color
+		);
 		draw_list->AddRectFilled(
-				ImVec2(canvas_pos.x + border_inset, canvas_pos.y + border_inset),
-				ImVec2(canvas_pos.x + box_width - border_inset, canvas_pos.y + box_height - border_inset),
-				padding_color);
+			ImVec2(canvas_pos.x + border_inset, canvas_pos.y + border_inset),
+			ImVec2(canvas_pos.x + box_width - border_inset, canvas_pos.y + box_height - border_inset),
+			padding_color
+		);
 		draw_list->AddRectFilled(
-				ImVec2(canvas_pos.x + padding_inset, canvas_pos.y + padding_inset),
-				ImVec2(canvas_pos.x + box_width - padding_inset, canvas_pos.y + box_height - padding_inset),
-				content_color);
+			ImVec2(canvas_pos.x + padding_inset, canvas_pos.y + padding_inset),
+			ImVec2(canvas_pos.x + box_width - padding_inset, canvas_pos.y + box_height - padding_inset),
+			content_color
+		);
 
 		// Reserve space for the box diagram
 		ImGui::Dummy(canvas_size);
@@ -262,7 +264,8 @@ private:
 					ApplyAnchorState(element);
 					modified = true;
 				}
-			} else {
+			}
+			else {
 				float pos_y = element->GetRelativeBounds().y;
 				if (ImGui::DragFloat("##posy", &pos_y, 1.0f, -10000.0f, 10000.0f, "%.0f")) {
 					element->SetRelativePosition(element->GetRelativeBounds().x, pos_y);
@@ -321,7 +324,8 @@ private:
 					ApplyAnchorState(element);
 					modified = true;
 				}
-			} else {
+			}
+			else {
 				float pos_x = element->GetRelativeBounds().x;
 				if (ImGui::DragFloat("##posx", &pos_x, 1.0f, -10000.0f, 10000.0f, "%.0f")) {
 					element->SetRelativePosition(pos_x, element->GetRelativeBounds().y);
@@ -347,7 +351,8 @@ private:
 
 			if (anchor_state_.right) {
 				ImGui::SetCursorScreenPos(
-						ImVec2(right_col_x - input_width + checkbox_size + 3, checkbox_y + checkbox_size + 2));
+					ImVec2(right_col_x - input_width + checkbox_size + 3, checkbox_y + checkbox_size + 2)
+				);
 				ImGui::SetNextItemWidth(input_width);
 				if (ImGui::DragFloat("##anchor_r", &anchor_state_.right_value, 0.5f, 0.0f, 1000.0f, "%.0f")) {
 					ApplyAnchorState(element);
@@ -405,7 +410,7 @@ private:
 		AnchorPreset current_preset = GetCurrentPreset();
 
 		const float btn_size = 28.0f;
-		const float stretch_btn_width = btn_size * 3 + 4; // 3 buttons wide
+		const float stretch_btn_width = btn_size * 3 + 4;  // 3 buttons wide
 		const float stretch_btn_height = btn_size * 3 + 4; // 3 buttons tall
 		const float spacing = 2.0f;
 
@@ -471,7 +476,12 @@ private:
 		ImGui::SetCursorScreenPos(stretch_v_pos);
 		// Unicode arrows for stretch: ↕ (U+2195) or just use ASCII
 		if (DrawAnchorButton(
-					"^\n|\n|\nv", AnchorPreset::StretchVertical, current_preset, btn_size, stretch_btn_height)) {
+				"^\n|\n|\nv",
+				AnchorPreset::StretchVertical,
+				current_preset,
+				btn_size,
+				stretch_btn_height
+			)) {
 			SetAnchorPreset(AnchorPreset::StretchVertical);
 			modified = true;
 		}
@@ -527,28 +537,17 @@ private:
 		bool l = anchor_state_.left, r = anchor_state_.right;
 		bool t = anchor_state_.top, b = anchor_state_.bottom;
 
-		if (l && r && t && b)
-			return AnchorPreset::Fill;
-		if (l && r && !t && !b)
-			return AnchorPreset::StretchHorizontal;
-		if (!l && !r && t && b)
-			return AnchorPreset::StretchVertical;
-		if (l && t && !r && !b)
-			return AnchorPreset::TopLeft;
-		if (!l && t && !r && !b)
-			return AnchorPreset::TopCenter;
-		if (r && t && !l && !b)
-			return AnchorPreset::TopRight;
-		if (l && !t && !r && !b)
-			return AnchorPreset::MiddleLeft;
-		if (r && !t && !l && !b)
-			return AnchorPreset::MiddleRight;
-		if (l && b && !r && !t)
-			return AnchorPreset::BottomLeft;
-		if (!l && b && !r && !t)
-			return AnchorPreset::BottomCenter;
-		if (r && b && !l && !t)
-			return AnchorPreset::BottomRight;
+		if (l && r && t && b) return AnchorPreset::Fill;
+		if (l && r && !t && !b) return AnchorPreset::StretchHorizontal;
+		if (!l && !r && t && b) return AnchorPreset::StretchVertical;
+		if (l && t && !r && !b) return AnchorPreset::TopLeft;
+		if (!l && t && !r && !b) return AnchorPreset::TopCenter;
+		if (r && t && !l && !b) return AnchorPreset::TopRight;
+		if (l && !t && !r && !b) return AnchorPreset::MiddleLeft;
+		if (r && !t && !l && !b) return AnchorPreset::MiddleRight;
+		if (l && b && !r && !t) return AnchorPreset::BottomLeft;
+		if (!l && b && !r && !t) return AnchorPreset::BottomCenter;
+		if (r && b && !l && !t) return AnchorPreset::BottomRight;
 
 		return AnchorPreset::Center; // Default: no anchors
 	}
@@ -649,8 +648,7 @@ private:
 
 		// Get existing ConstraintComponent (now available on any UIElement)
 		auto* constraint = element->GetComponent<engine::ui::components::ConstraintComponent>();
-		if (!constraint)
-			return;
+		if (!constraint) return;
 
 		const auto& anchor = constraint->GetAnchor();
 		auto [left, right, top, bottom] = anchor.GetValues();
@@ -660,27 +658,19 @@ private:
 		anchor_state_.top = top.has_value();
 		anchor_state_.bottom = bottom.has_value();
 
-		if (left)
-			anchor_state_.left_value = *left;
-		if (right)
-			anchor_state_.right_value = *right;
-		if (top)
-			anchor_state_.top_value = *top;
-		if (bottom)
-			anchor_state_.bottom_value = *bottom;
+		if (left) anchor_state_.left_value = *left;
+		if (right) anchor_state_.right_value = *right;
+		if (top) anchor_state_.top_value = *top;
+		if (bottom) anchor_state_.bottom_value = *bottom;
 	}
 
 	void ApplyAnchorState(engine::ui::UIElement* element) {
 		// Build anchor from state
 		engine::ui::components::Anchor anchor;
-		if (anchor_state_.left)
-			anchor.SetLeft(anchor_state_.left_value);
-		if (anchor_state_.right)
-			anchor.SetRight(anchor_state_.right_value);
-		if (anchor_state_.top)
-			anchor.SetTop(anchor_state_.top_value);
-		if (anchor_state_.bottom)
-			anchor.SetBottom(anchor_state_.bottom_value);
+		if (anchor_state_.left) anchor.SetLeft(anchor_state_.left_value);
+		if (anchor_state_.right) anchor.SetRight(anchor_state_.right_value);
+		if (anchor_state_.top) anchor.SetTop(anchor_state_.top_value);
+		if (anchor_state_.bottom) anchor.SetBottom(anchor_state_.bottom_value);
 
 		// Get or create ConstraintComponent (now available on any UIElement)
 		auto* constraint = element->GetComponent<engine::ui::components::ConstraintComponent>();

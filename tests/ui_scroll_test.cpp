@@ -74,8 +74,8 @@ TEST_F(ScrollStateTest, ScrollClampsToMinimum) {
 TEST_F(ScrollStateTest, ScrollClampsToMaximum) {
 	scroll_.SetScroll(1000.0f, 2000.0f);
 
-	EXPECT_FLOAT_EQ(scroll_.GetScrollX(), 300.0f);   // Max X
-	EXPECT_FLOAT_EQ(scroll_.GetScrollY(), 700.0f);  // Max Y
+	EXPECT_FLOAT_EQ(scroll_.GetScrollY(), 700.0f); // Max Y
+	EXPECT_FLOAT_EQ(scroll_.GetScrollX(), 300.0f); // Max X
 }
 
 TEST_F(ScrollStateTest, ScrollToStartResetsToZero) {
@@ -106,7 +106,7 @@ TEST_F(ScrollStateTest, NormalizedScrollIsOneAtEnd) {
 }
 
 TEST_F(ScrollStateTest, NormalizedScrollIsMiddle) {
-	scroll_.SetScroll(150.0f, 350.0f);  // Half of max
+	scroll_.SetScroll(150.0f, 350.0f); // Half of max
 
 	EXPECT_FLOAT_EQ(scroll_.GetScrollXNormalized(), 0.5f);
 	EXPECT_FLOAT_EQ(scroll_.GetScrollYNormalized(), 0.5f);
@@ -131,7 +131,7 @@ TEST_F(ScrollStateTest, HandleScrollVertical) {
 	scroll_.SetDirection(ScrollDirection::Vertical);
 
 	MouseEvent event;
-	event.scroll_delta_y = -2.0f;  // Scroll down
+	event.scroll_delta_y = -2.0f; // Scroll down
 
 	bool handled = scroll_.HandleScroll(event);
 
@@ -166,7 +166,7 @@ TEST_F(ScrollStateTest, HorizontalScrollSpeedAffectsAmount) {
 
 TEST_F(ScrollStateTest, HorizontalScrollClampsToMax) {
 	scroll_.SetDirection(ScrollDirection::Horizontal);
-	scroll_.SetScrollSpeed(1000.0f);  // Large speed to exceed max
+	scroll_.SetScrollSpeed(1000.0f); // Large speed to exceed max
 
 	MouseEvent event;
 	event.scroll_delta_x = -1.0f;
@@ -179,7 +179,7 @@ TEST_F(ScrollStateTest, HorizontalScrollClampsToMax) {
 
 TEST_F(ScrollStateTest, HorizontalScrollNoContentReturnsFalse) {
 	ScrollState s;
-	s.SetContentSize(100.0f, 100.0f);  // Content fits horizontally
+	s.SetContentSize(100.0f, 100.0f); // Content fits horizontally
 	s.SetViewportSize(200.0f, 200.0f);
 	s.SetDirection(ScrollDirection::Horizontal);
 
@@ -188,13 +188,13 @@ TEST_F(ScrollStateTest, HorizontalScrollNoContentReturnsFalse) {
 
 	bool handled = s.HandleScroll(event);
 
-	EXPECT_FALSE(handled);  // Can't scroll when content fits
+	EXPECT_FALSE(handled); // Can't scroll when content fits
 }
 
 TEST_F(ScrollStateTest, HandleScrollNoContentReturnsFalse) {
 	ScrollState s;
 	s.SetContentSize(100.0f, 100.0f);
-	s.SetViewportSize(200.0f, 200.0f);  // Content fits
+	s.SetViewportSize(200.0f, 200.0f); // Content fits
 	s.SetDirection(ScrollDirection::Vertical);
 
 	MouseEvent event;
@@ -237,7 +237,7 @@ TEST_F(ScrollStateTest, HorizontalScrollIgnoresYDelta) {
 
 	MouseEvent event;
 	event.scroll_delta_x = 0.0f;
-	event.scroll_delta_y = -2.0f;  // Only Y delta
+	event.scroll_delta_y = -2.0f; // Only Y delta
 
 	bool handled = scroll_.HandleScroll(event);
 
@@ -250,7 +250,7 @@ TEST_F(ScrollStateTest, VerticalScrollIgnoresXDelta) {
 	scroll_.SetDirection(ScrollDirection::Vertical);
 
 	MouseEvent event;
-	event.scroll_delta_x = -2.0f;  // Only X delta
+	event.scroll_delta_x = -2.0f; // Only X delta
 	event.scroll_delta_y = 0.0f;
 
 	bool handled = scroll_.HandleScroll(event);
@@ -302,8 +302,8 @@ TEST_F(ScrollbarGeometryTest, VerticalThumbAtTop) {
 	scroll_.SetScroll(0.0f, 0.0f);
 	auto thumb = ScrollbarGeometry::CalculateVerticalThumb(scroll_, viewport_, style_);
 
-	EXPECT_FLOAT_EQ(thumb.x, viewport_.x + viewport_.width - style_.width);  // 50 + 200 - 8 = 242
-	EXPECT_FLOAT_EQ(thumb.y, viewport_.y);  // At top
+	EXPECT_FLOAT_EQ(thumb.x, viewport_.x + viewport_.width - style_.width); // 50 + 200 - 8 = 242
+	EXPECT_FLOAT_EQ(thumb.y, viewport_.y);                                  // At top
 }
 
 TEST_F(ScrollbarGeometryTest, VerticalThumbAtBottom) {
@@ -341,14 +341,14 @@ TEST_F(ScrollbarGeometryTest, HorizontalScrollbarWhenNeeded) {
 
 	auto thumb = ScrollbarGeometry::CalculateHorizontalThumb(h_scroll, viewport_, style_);
 
-	EXPECT_FLOAT_EQ(thumb.y, viewport_.y + viewport_.height - style_.width);  // At bottom
+	EXPECT_FLOAT_EQ(thumb.y, viewport_.y + viewport_.height - style_.width); // At bottom
 	EXPECT_GT(thumb.width, 0.0f);
 }
 
 TEST_F(ScrollbarGeometryTest, MinThumbLength) {
 	// Very small content ratio
 	ScrollState small;
-	small.SetContentSize(200.0f, 10000.0f);  // Huge content
+	small.SetContentSize(200.0f, 10000.0f); // Huge content
 	small.SetViewportSize(200.0f, 300.0f);
 
 	auto thumb = ScrollbarGeometry::CalculateVerticalThumb(small, viewport_, style_);

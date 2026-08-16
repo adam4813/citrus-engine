@@ -20,28 +20,38 @@ public:
 	// Core drawing primitives
 	virtual void DrawLine(const glm::vec3& from, const glm::vec3& to, const glm::vec3& color) = 0;
 	virtual void DrawTriangle(
-			const glm::vec3& v1, const glm::vec3& v2, const glm::vec3& v3, const glm::vec3& color,
-			float alpha = 1.0F) = 0;
+		const glm::vec3& v1,
+		const glm::vec3& v2,
+		const glm::vec3& v3,
+		const glm::vec3& color,
+		float alpha = 1.0F
+	) = 0;
 
 	// Convenience shapes (default implementations using DrawLine)
 	virtual void DrawWireBox(const glm::mat4& transform, const glm::vec3& half_extents, const glm::vec3& color);
 	virtual void DrawWireSphere(const glm::vec3& center, float radius, const glm::vec3& color);
-	virtual void DrawText(const glm::vec3& position, const std::string& text) { (void)position; (void)text; }
+	virtual void DrawText(const glm::vec3& position, const std::string& text) {
+		(void) position;
+		(void) text;
+	}
 };
 
 // Concrete adapter that forwards IPhysicsDebugRenderer calls to engine::rendering::Renderer
 class RendererDebugAdapter : public IPhysicsDebugRenderer {
 public:
-	explicit RendererDebugAdapter(const engine::rendering::Renderer& renderer)
-			: renderer_(renderer) {}
+	explicit RendererDebugAdapter(const engine::rendering::Renderer& renderer) : renderer_(renderer) {}
 
 	void DrawLine(const glm::vec3& from, const glm::vec3& to, const glm::vec3& color) override {
 		renderer_.DrawLine(from, to, {color.r, color.g, color.b, 1.0F});
 	}
 
 	void DrawTriangle(
-			const glm::vec3& v1, const glm::vec3& v2, const glm::vec3& v3, const glm::vec3& color,
-			float alpha) override {
+		const glm::vec3& v1,
+		const glm::vec3& v2,
+		const glm::vec3& v3,
+		const glm::vec3& color,
+		float alpha
+	) override {
 		// Wireframe triangle via three line segments
 		const engine::rendering::Color line_color{color.r, color.g, color.b, alpha};
 		renderer_.DrawLine(v1, v2, line_color);
@@ -49,8 +59,7 @@ public:
 		renderer_.DrawLine(v3, v1, line_color);
 	}
 
-	void DrawWireBox(
-			const glm::mat4& transform, const glm::vec3& half_extents, const glm::vec3& color) override {
+	void DrawWireBox(const glm::mat4& transform, const glm::vec3& half_extents, const glm::vec3& color) override {
 		const glm::vec3 center{transform[3]};
 		const glm::vec3 size = half_extents * 2.0F;
 		renderer_.DrawWireCube(center, size, {color.r, color.g, color.b, 1.0F});
@@ -66,15 +75,19 @@ private:
 
 // Default implementations for convenience shapes
 
-inline void IPhysicsDebugRenderer::DrawWireBox(
-		const glm::mat4& transform, const glm::vec3& half_extents, const glm::vec3& color) {
+inline void
+IPhysicsDebugRenderer::DrawWireBox(const glm::mat4& transform, const glm::vec3& half_extents, const glm::vec3& color) {
 	// 8 corners of the box in local space
 	const glm::vec3 h = half_extents;
 	const glm::vec3 corners[8] = {
-			{-h.x, -h.y, -h.z}, { h.x, -h.y, -h.z},
-			{ h.x,  h.y, -h.z}, {-h.x,  h.y, -h.z},
-			{-h.x, -h.y,  h.z}, { h.x, -h.y,  h.z},
-			{ h.x,  h.y,  h.z}, {-h.x,  h.y,  h.z},
+		{-h.x, -h.y, -h.z},
+		{h.x, -h.y, -h.z},
+		{h.x, h.y, -h.z},
+		{-h.x, h.y, -h.z},
+		{-h.x, -h.y, h.z},
+		{h.x, -h.y, h.z},
+		{h.x, h.y, h.z},
+		{-h.x, h.y, h.z},
 	};
 
 	// Transform corners to world space
@@ -99,8 +112,7 @@ inline void IPhysicsDebugRenderer::DrawWireBox(
 	DrawLine(world[3], world[7], color);
 }
 
-inline void IPhysicsDebugRenderer::DrawWireSphere(
-		const glm::vec3& center, float radius, const glm::vec3& color) {
+inline void IPhysicsDebugRenderer::DrawWireSphere(const glm::vec3& center, float radius, const glm::vec3& color) {
 	constexpr int kSegments = 16;
 	constexpr float kStep = 2.0F * 3.14159265358979F / static_cast<float>(kSegments);
 

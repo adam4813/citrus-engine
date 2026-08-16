@@ -28,9 +28,10 @@ void RegisterTextureGraphNodes(engine::graph::NodeTypeRegistry& registry) {
 		perlin.category = "Generators";
 		perlin.default_outputs = {Pin(0, "Value", PinType::Float, PinDirection::Output, 0.0f)};
 		perlin.default_inputs = {
-				Pin(0, "UV", PinType::Vec2, PinDirection::Input, glm::vec2(0.0f)),
-				Pin(0, "Scale", PinType::Float, PinDirection::Input, 0.0f),
-				Pin(0, "Octaves", PinType::Float, PinDirection::Input, 0.0f)};
+			Pin(0, "UV", PinType::Vec2, PinDirection::Input, glm::vec2(0.0f)),
+			Pin(0, "Scale", PinType::Float, PinDirection::Input, 0.0f),
+			Pin(0, "Octaves", PinType::Float, PinDirection::Input, 0.0f)
+		};
 		registry.Register(perlin);
 
 		engine::graph::NodeTypeDefinition checkerboard;
@@ -38,8 +39,9 @@ void RegisterTextureGraphNodes(engine::graph::NodeTypeRegistry& registry) {
 		checkerboard.category = "Generators";
 		checkerboard.default_outputs = {Pin(0, "Pattern", PinType::Float, PinDirection::Output, 0.0f)};
 		checkerboard.default_inputs = {
-				Pin(0, "UV", PinType::Vec2, PinDirection::Input, glm::vec2(0.0f)),
-				Pin(0, "Scale", PinType::Float, PinDirection::Input, 0.0f)};
+			Pin(0, "UV", PinType::Vec2, PinDirection::Input, glm::vec2(0.0f)),
+			Pin(0, "Scale", PinType::Float, PinDirection::Input, 0.0f)
+		};
 		registry.Register(checkerboard);
 
 		engine::graph::NodeTypeDefinition gradient;
@@ -47,9 +49,10 @@ void RegisterTextureGraphNodes(engine::graph::NodeTypeRegistry& registry) {
 		gradient.category = "Generators";
 		gradient.default_outputs = {Pin(0, "Color", PinType::Color, PinDirection::Output, glm::vec4(1.0f))};
 		gradient.default_inputs = {
-				Pin(0, "UV", PinType::Vec2, PinDirection::Input, glm::vec2(0.0f)),
-				Pin(0, "ColorA", PinType::Color, PinDirection::Input, glm::vec4(1.0f)),
-				Pin(0, "ColorB", PinType::Color, PinDirection::Input, glm::vec4(1.0f))};
+			Pin(0, "UV", PinType::Vec2, PinDirection::Input, glm::vec2(0.0f)),
+			Pin(0, "ColorA", PinType::Color, PinDirection::Input, glm::vec4(1.0f)),
+			Pin(0, "ColorB", PinType::Color, PinDirection::Input, glm::vec4(1.0f))
+		};
 		registry.Register(gradient);
 
 		engine::graph::NodeTypeDefinition solid_color;
@@ -64,9 +67,10 @@ void RegisterTextureGraphNodes(engine::graph::NodeTypeRegistry& registry) {
 		voronoi.category = "Generators";
 		voronoi.default_outputs = {Pin(0, "Value", PinType::Float, PinDirection::Output, 0.0f)};
 		voronoi.default_inputs = {
-				Pin(0, "UV", PinType::Vec2, PinDirection::Input, glm::vec2(0.0f)),
-				Pin(0, "Scale", PinType::Float, PinDirection::Input, 0.0f),
-				Pin(0, "Randomness", PinType::Float, PinDirection::Input, 0.0f)};
+			Pin(0, "UV", PinType::Vec2, PinDirection::Input, glm::vec2(0.0f)),
+			Pin(0, "Scale", PinType::Float, PinDirection::Input, 0.0f),
+			Pin(0, "Randomness", PinType::Float, PinDirection::Input, 0.0f)
+		};
 		registry.Register(voronoi);
 	}
 
@@ -77,8 +81,9 @@ void RegisterTextureGraphNodes(engine::graph::NodeTypeRegistry& registry) {
 		add.category = "Math";
 		add.default_outputs = {Pin(0, "Result", PinType::Float, PinDirection::Output, 0.0f)};
 		add.default_inputs = {
-				Pin(0, "A", PinType::Float, PinDirection::Input, 0.0f),
-				Pin(0, "B", PinType::Float, PinDirection::Input, 0.0f)};
+			Pin(0, "A", PinType::Float, PinDirection::Input, 0.0f),
+			Pin(0, "B", PinType::Float, PinDirection::Input, 0.0f)
+		};
 		registry.Register(add);
 
 		engine::graph::NodeTypeDefinition multiply;
@@ -86,8 +91,9 @@ void RegisterTextureGraphNodes(engine::graph::NodeTypeRegistry& registry) {
 		multiply.category = "Math";
 		multiply.default_outputs = {Pin(0, "Result", PinType::Float, PinDirection::Output, 0.0f)};
 		multiply.default_inputs = {
-				Pin(0, "A", PinType::Float, PinDirection::Input, 0.0f),
-				Pin(0, "B", PinType::Float, PinDirection::Input, 0.0f)};
+			Pin(0, "A", PinType::Float, PinDirection::Input, 0.0f),
+			Pin(0, "B", PinType::Float, PinDirection::Input, 0.0f)
+		};
 		registry.Register(multiply);
 
 		engine::graph::NodeTypeDefinition lerp;
@@ -95,9 +101,10 @@ void RegisterTextureGraphNodes(engine::graph::NodeTypeRegistry& registry) {
 		lerp.category = "Math";
 		lerp.default_outputs = {Pin(0, "Result", PinType::Float, PinDirection::Output, 0.0f)};
 		lerp.default_inputs = {
-				Pin(0, "A", PinType::Float, PinDirection::Input, 0.0f),
-				Pin(0, "B", PinType::Float, PinDirection::Input, 0.0f),
-				Pin(0, "T", PinType::Float, PinDirection::Input, 0.0f)};
+			Pin(0, "A", PinType::Float, PinDirection::Input, 0.0f),
+			Pin(0, "B", PinType::Float, PinDirection::Input, 0.0f),
+			Pin(0, "T", PinType::Float, PinDirection::Input, 0.0f)
+		};
 		registry.Register(lerp);
 
 		engine::graph::NodeTypeDefinition clamp;
@@ -105,9 +112,10 @@ void RegisterTextureGraphNodes(engine::graph::NodeTypeRegistry& registry) {
 		clamp.category = "Math";
 		clamp.default_outputs = {Pin(0, "Result", PinType::Float, PinDirection::Output, 0.0f)};
 		clamp.default_inputs = {
-				Pin(0, "Value", PinType::Float, PinDirection::Input, 0.0f),
-				Pin(0, "Min", PinType::Float, PinDirection::Input, 0.0f),
-				Pin(0, "Max", PinType::Float, PinDirection::Input, 0.0f)};
+			Pin(0, "Value", PinType::Float, PinDirection::Input, 0.0f),
+			Pin(0, "Min", PinType::Float, PinDirection::Input, 0.0f),
+			Pin(0, "Max", PinType::Float, PinDirection::Input, 0.0f)
+		};
 		registry.Register(clamp);
 
 		engine::graph::NodeTypeDefinition remap;
@@ -115,11 +123,12 @@ void RegisterTextureGraphNodes(engine::graph::NodeTypeRegistry& registry) {
 		remap.category = "Math";
 		remap.default_outputs = {Pin(0, "Result", PinType::Float, PinDirection::Output, 0.0f)};
 		remap.default_inputs = {
-				Pin(0, "Value", PinType::Float, PinDirection::Input, 0.0f),
-				Pin(0, "InMin", PinType::Float, PinDirection::Input, 0.0f),
-				Pin(0, "InMax", PinType::Float, PinDirection::Input, 0.0f),
-				Pin(0, "OutMin", PinType::Float, PinDirection::Input, 0.0f),
-				Pin(0, "OutMax", PinType::Float, PinDirection::Input, 0.0f)};
+			Pin(0, "Value", PinType::Float, PinDirection::Input, 0.0f),
+			Pin(0, "InMin", PinType::Float, PinDirection::Input, 0.0f),
+			Pin(0, "InMax", PinType::Float, PinDirection::Input, 0.0f),
+			Pin(0, "OutMin", PinType::Float, PinDirection::Input, 0.0f),
+			Pin(0, "OutMax", PinType::Float, PinDirection::Input, 0.0f)
+		};
 		registry.Register(remap);
 
 		engine::graph::NodeTypeDefinition power;
@@ -127,8 +136,9 @@ void RegisterTextureGraphNodes(engine::graph::NodeTypeRegistry& registry) {
 		power.category = "Math";
 		power.default_outputs = {Pin(0, "Result", PinType::Float, PinDirection::Output, 0.0f)};
 		power.default_inputs = {
-				Pin(0, "Base", PinType::Float, PinDirection::Input, 0.0f),
-				Pin(0, "Exponent", PinType::Float, PinDirection::Input, 0.0f)};
+			Pin(0, "Base", PinType::Float, PinDirection::Input, 0.0f),
+			Pin(0, "Exponent", PinType::Float, PinDirection::Input, 0.0f)
+		};
 		registry.Register(power);
 	}
 
@@ -139,8 +149,9 @@ void RegisterTextureGraphNodes(engine::graph::NodeTypeRegistry& registry) {
 		blur.category = "Filters";
 		blur.default_outputs = {Pin(0, "Color", PinType::Color, PinDirection::Output, glm::vec4(1.0f))};
 		blur.default_inputs = {
-				Pin(0, "Input", PinType::Color, PinDirection::Input, glm::vec4(1.0f)),
-				Pin(0, "Radius", PinType::Float, PinDirection::Input, 0.0f)};
+			Pin(0, "Input", PinType::Color, PinDirection::Input, glm::vec4(1.0f)),
+			Pin(0, "Radius", PinType::Float, PinDirection::Input, 0.0f)
+		};
 		registry.Register(blur);
 
 		engine::graph::NodeTypeDefinition levels;
@@ -148,10 +159,11 @@ void RegisterTextureGraphNodes(engine::graph::NodeTypeRegistry& registry) {
 		levels.category = "Filters";
 		levels.default_outputs = {Pin(0, "Color", PinType::Color, PinDirection::Output, glm::vec4(1.0f))};
 		levels.default_inputs = {
-				Pin(0, "Input", PinType::Color, PinDirection::Input, glm::vec4(1.0f)),
-				Pin(0, "Min", PinType::Float, PinDirection::Input, 0.0f),
-				Pin(0, "Max", PinType::Float, PinDirection::Input, 0.0f),
-				Pin(0, "Gamma", PinType::Float, PinDirection::Input, 0.0f)};
+			Pin(0, "Input", PinType::Color, PinDirection::Input, glm::vec4(1.0f)),
+			Pin(0, "Min", PinType::Float, PinDirection::Input, 0.0f),
+			Pin(0, "Max", PinType::Float, PinDirection::Input, 0.0f),
+			Pin(0, "Gamma", PinType::Float, PinDirection::Input, 0.0f)
+		};
 		registry.Register(levels);
 
 		engine::graph::NodeTypeDefinition invert;
@@ -169,20 +181,22 @@ void RegisterTextureGraphNodes(engine::graph::NodeTypeRegistry& registry) {
 		hsv_adjust.category = "Color";
 		hsv_adjust.default_outputs = {Pin(0, "Color", PinType::Color, PinDirection::Output, glm::vec4(1.0f))};
 		hsv_adjust.default_inputs = {
-				Pin(0, "Input", PinType::Color, PinDirection::Input, glm::vec4(1.0f)),
-				Pin(0, "H", PinType::Float, PinDirection::Input, 0.0f),
-				Pin(0, "S", PinType::Float, PinDirection::Input, 0.0f),
-				Pin(0, "V", PinType::Float, PinDirection::Input, 0.0f)};
+			Pin(0, "Input", PinType::Color, PinDirection::Input, glm::vec4(1.0f)),
+			Pin(0, "H", PinType::Float, PinDirection::Input, 0.0f),
+			Pin(0, "S", PinType::Float, PinDirection::Input, 0.0f),
+			Pin(0, "V", PinType::Float, PinDirection::Input, 0.0f)
+		};
 		registry.Register(hsv_adjust);
 
 		engine::graph::NodeTypeDefinition channel_split;
 		channel_split.name = "Channel Split";
 		channel_split.category = "Color";
 		channel_split.default_outputs = {
-				Pin(0, "R", PinType::Float, PinDirection::Output, 0.0f),
-				Pin(0, "G", PinType::Float, PinDirection::Output, 0.0f),
-				Pin(0, "B", PinType::Float, PinDirection::Output, 0.0f),
-				Pin(0, "A", PinType::Float, PinDirection::Output, 0.0f)};
+			Pin(0, "R", PinType::Float, PinDirection::Output, 0.0f),
+			Pin(0, "G", PinType::Float, PinDirection::Output, 0.0f),
+			Pin(0, "B", PinType::Float, PinDirection::Output, 0.0f),
+			Pin(0, "A", PinType::Float, PinDirection::Output, 0.0f)
+		};
 		channel_split.default_inputs = {Pin(0, "Color", PinType::Color, PinDirection::Input, glm::vec4(1.0f))};
 		registry.Register(channel_split);
 
@@ -191,10 +205,11 @@ void RegisterTextureGraphNodes(engine::graph::NodeTypeRegistry& registry) {
 		channel_merge.category = "Color";
 		channel_merge.default_outputs = {Pin(0, "Color", PinType::Color, PinDirection::Output, glm::vec4(1.0f))};
 		channel_merge.default_inputs = {
-				Pin(0, "R", PinType::Float, PinDirection::Input, 0.0f),
-				Pin(0, "G", PinType::Float, PinDirection::Input, 0.0f),
-				Pin(0, "B", PinType::Float, PinDirection::Input, 0.0f),
-				Pin(0, "A", PinType::Float, PinDirection::Input, 0.0f)};
+			Pin(0, "R", PinType::Float, PinDirection::Input, 0.0f),
+			Pin(0, "G", PinType::Float, PinDirection::Input, 0.0f),
+			Pin(0, "B", PinType::Float, PinDirection::Input, 0.0f),
+			Pin(0, "A", PinType::Float, PinDirection::Input, 0.0f)
+		};
 		registry.Register(channel_merge);
 
 		engine::graph::NodeTypeDefinition colorize;
@@ -202,8 +217,9 @@ void RegisterTextureGraphNodes(engine::graph::NodeTypeRegistry& registry) {
 		colorize.category = "Color";
 		colorize.default_outputs = {Pin(0, "Color", PinType::Color, PinDirection::Output, glm::vec4(1.0f))};
 		colorize.default_inputs = {
-				Pin(0, "Value", PinType::Float, PinDirection::Input, 0.0f),
-				Pin(0, "Color", PinType::Color, PinDirection::Input, glm::vec4(1.0f))};
+			Pin(0, "Value", PinType::Float, PinDirection::Input, 0.0f),
+			Pin(0, "Color", PinType::Color, PinDirection::Input, glm::vec4(1.0f))
+		};
 		registry.Register(colorize);
 	}
 
@@ -214,8 +230,9 @@ void RegisterTextureGraphNodes(engine::graph::NodeTypeRegistry& registry) {
 		blend_multiply.category = "Blend";
 		blend_multiply.default_outputs = {Pin(0, "Color", PinType::Color, PinDirection::Output, glm::vec4(1.0f))};
 		blend_multiply.default_inputs = {
-				Pin(0, "A", PinType::Color, PinDirection::Input, glm::vec4(1.0f)),
-				Pin(0, "B", PinType::Color, PinDirection::Input, glm::vec4(1.0f))};
+			Pin(0, "A", PinType::Color, PinDirection::Input, glm::vec4(1.0f)),
+			Pin(0, "B", PinType::Color, PinDirection::Input, glm::vec4(1.0f))
+		};
 		registry.Register(blend_multiply);
 
 		engine::graph::NodeTypeDefinition blend_overlay;
@@ -223,8 +240,9 @@ void RegisterTextureGraphNodes(engine::graph::NodeTypeRegistry& registry) {
 		blend_overlay.category = "Blend";
 		blend_overlay.default_outputs = {Pin(0, "Color", PinType::Color, PinDirection::Output, glm::vec4(1.0f))};
 		blend_overlay.default_inputs = {
-				Pin(0, "A", PinType::Color, PinDirection::Input, glm::vec4(1.0f)),
-				Pin(0, "B", PinType::Color, PinDirection::Input, glm::vec4(1.0f))};
+			Pin(0, "A", PinType::Color, PinDirection::Input, glm::vec4(1.0f)),
+			Pin(0, "B", PinType::Color, PinDirection::Input, glm::vec4(1.0f))
+		};
 		registry.Register(blend_overlay);
 
 		engine::graph::NodeTypeDefinition blend_screen;
@@ -232,8 +250,9 @@ void RegisterTextureGraphNodes(engine::graph::NodeTypeRegistry& registry) {
 		blend_screen.category = "Blend";
 		blend_screen.default_outputs = {Pin(0, "Color", PinType::Color, PinDirection::Output, glm::vec4(1.0f))};
 		blend_screen.default_inputs = {
-				Pin(0, "A", PinType::Color, PinDirection::Input, glm::vec4(1.0f)),
-				Pin(0, "B", PinType::Color, PinDirection::Input, glm::vec4(1.0f))};
+			Pin(0, "A", PinType::Color, PinDirection::Input, glm::vec4(1.0f)),
+			Pin(0, "B", PinType::Color, PinDirection::Input, glm::vec4(1.0f))
+		};
 		registry.Register(blend_screen);
 
 		engine::graph::NodeTypeDefinition blend_add;
@@ -241,8 +260,9 @@ void RegisterTextureGraphNodes(engine::graph::NodeTypeRegistry& registry) {
 		blend_add.category = "Blend";
 		blend_add.default_outputs = {Pin(0, "Color", PinType::Color, PinDirection::Output, glm::vec4(1.0f))};
 		blend_add.default_inputs = {
-				Pin(0, "A", PinType::Color, PinDirection::Input, glm::vec4(1.0f)),
-				Pin(0, "B", PinType::Color, PinDirection::Input, glm::vec4(1.0f))};
+			Pin(0, "A", PinType::Color, PinDirection::Input, glm::vec4(1.0f)),
+			Pin(0, "B", PinType::Color, PinDirection::Input, glm::vec4(1.0f))
+		};
 		registry.Register(blend_add);
 	}
 
@@ -253,8 +273,8 @@ void RegisterTextureGraphNodes(engine::graph::NodeTypeRegistry& registry) {
 		input_image.category = "Generators";
 		input_image.default_outputs = {Pin(0, "Color", PinType::Color, PinDirection::Output, glm::vec4(1.0f))};
 		input_image.default_inputs = {
-				Pin(0, "UV", PinType::Vec2, PinDirection::Input, glm::vec2(0.0f)),
-				Pin(0, "Path", PinType::String, PinDirection::Input, std::string("")),
+			Pin(0, "UV", PinType::Vec2, PinDirection::Input, glm::vec2(0.0f)),
+			Pin(0, "Path", PinType::String, PinDirection::Input, std::string("")),
 		};
 		registry.Register(input_image);
 	}
@@ -266,11 +286,12 @@ void RegisterTextureGraphNodes(engine::graph::NodeTypeRegistry& registry) {
 		rect.category = "Filters";
 		rect.default_outputs = {Pin(0, "Color", PinType::Color, PinDirection::Output, glm::vec4(1.0f))};
 		rect.default_inputs = {
-				Pin(0, "Image", PinType::Color, PinDirection::Input, glm::vec4(1.0f)),
-				Pin(0, "X", PinType::Float, PinDirection::Input, 0.0f),
-				Pin(0, "Y", PinType::Float, PinDirection::Input, 0.0f),
-				Pin(0, "Width", PinType::Float, PinDirection::Input, 1.0f),
-				Pin(0, "Height", PinType::Float, PinDirection::Input, 1.0f)};
+			Pin(0, "Image", PinType::Color, PinDirection::Input, glm::vec4(1.0f)),
+			Pin(0, "X", PinType::Float, PinDirection::Input, 0.0f),
+			Pin(0, "Y", PinType::Float, PinDirection::Input, 0.0f),
+			Pin(0, "Width", PinType::Float, PinDirection::Input, 1.0f),
+			Pin(0, "Height", PinType::Float, PinDirection::Input, 1.0f)
+		};
 		registry.Register(rect);
 	}
 
@@ -337,10 +358,11 @@ void TextureEditorPanel::Render() {
 
 	// Split layout: graph on left, preview on right
 	ImGui::BeginChild(
-			"GraphArea",
-			ImVec2(ImGui::GetContentRegionAvail().x * 0.7f, 0),
-			true,
-			ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoMove);
+		"GraphArea",
+		ImVec2(ImGui::GetContentRegionAvail().x * 0.7f, 0),
+		true,
+		ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoMove
+	);
 	RenderGraphCanvas();
 	ImGui::EndChild();
 
@@ -411,22 +433,26 @@ void TextureEditorPanel::RenderGraphCanvas() {
 	const float grid_step = GRID_SIZE * canvas_zoom_;
 	for (float x = fmodf(canvas_offset_.x, grid_step); x < canvas_sz.x; x += grid_step) {
 		draw_list->AddLine(
-				ImVec2(canvas_p0_.x + x, canvas_p0_.y),
-				ImVec2(canvas_p0_.x + x, canvas_p1.y),
-				IM_COL32(50, 50, 50, 255));
+			ImVec2(canvas_p0_.x + x, canvas_p0_.y),
+			ImVec2(canvas_p0_.x + x, canvas_p1.y),
+			IM_COL32(50, 50, 50, 255)
+		);
 	}
 	for (float y = fmodf(canvas_offset_.y, grid_step); y < canvas_sz.y; y += grid_step) {
 		draw_list->AddLine(
-				ImVec2(canvas_p0_.x, canvas_p0_.y + y),
-				ImVec2(canvas_p1.x, canvas_p0_.y + y),
-				IM_COL32(50, 50, 50, 255));
+			ImVec2(canvas_p0_.x, canvas_p0_.y + y),
+			ImVec2(canvas_p1.x, canvas_p0_.y + y),
+			IM_COL32(50, 50, 50, 255)
+		);
 	}
 
 	// Clip rendering to canvas
 	draw_list->PushClipRect(canvas_p0_, canvas_p1, true);
 
 	// Handle pin click for link creation
-	if (!is_creating_link_ && !is_dragging_node_ && ImGui::IsMouseClicked(ImGuiMouseButton_Left)
+	if (!is_creating_link_
+		&& !is_dragging_node_
+		&& ImGui::IsMouseClicked(ImGuiMouseButton_Left)
 		&& ImGui::IsWindowHovered()) {
 		const ImVec2 mouse_pos = ImGui::GetMousePos();
 		int pin_node_id = -1, pin_index = -1;
@@ -490,8 +516,11 @@ void TextureEditorPanel::RenderGraphCanvas() {
 	}
 
 	// Handle link selection
-	if (!is_creating_link_ && !is_dragging_node_ && ImGui::IsMouseClicked(ImGuiMouseButton_Left)
-		&& ImGui::IsWindowHovered() && hovered_node_id_ < 0) {
+	if (!is_creating_link_
+		&& !is_dragging_node_
+		&& ImGui::IsMouseClicked(ImGuiMouseButton_Left)
+		&& ImGui::IsWindowHovered()
+		&& hovered_node_id_ < 0) {
 		const ImVec2 mouse_pos = ImGui::GetMousePos();
 		int dummy_node = -1, dummy_pin = -1;
 		bool dummy_output = false;
@@ -628,25 +657,29 @@ void TextureEditorPanel::RenderPreviewPanel() {
 			const bool is_dark = ((x / checker_size) + (y / checker_size)) % 2 == 0;
 			const ImU32 color = is_dark ? IM_COL32(100, 100, 100, 255) : IM_COL32(150, 150, 150, 255);
 			draw_list->AddRectFilled(
-					ImVec2(preview_pos.x + x, preview_pos.y + y),
-					ImVec2(preview_pos.x + std::min(x + checker_size, static_cast<int>(preview_size.x)),
-						   preview_pos.y + std::min(y + checker_size, static_cast<int>(preview_size.y))),
-					color);
+				ImVec2(preview_pos.x + x, preview_pos.y + y),
+				ImVec2(
+					preview_pos.x + std::min(x + checker_size, static_cast<int>(preview_size.x)),
+					preview_pos.y + std::min(y + checker_size, static_cast<int>(preview_size.y))
+				),
+				color
+			);
 		}
 	}
 
 	// Draw generated texture if available
 	if (preview_texture_id_ != 0) {
 		ImGui::SetCursorScreenPos(preview_pos);
-		ImGui::Image((ImTextureID)(uintptr_t)preview_texture_id_, preview_size);
+		ImGui::Image((ImTextureID) (uintptr_t) preview_texture_id_, preview_size);
 	}
 	else {
 		// Fallback: flat color
 		const ImU32 preview_color = IM_COL32(
-				static_cast<int>(preview_color_.r * 255),
-				static_cast<int>(preview_color_.g * 255),
-				static_cast<int>(preview_color_.b * 255),
-				static_cast<int>(preview_color_.a * 255));
+			static_cast<int>(preview_color_.r * 255),
+			static_cast<int>(preview_color_.g * 255),
+			static_cast<int>(preview_color_.b * 255),
+			static_cast<int>(preview_color_.a * 255)
+		);
 		draw_list->AddRectFilled(preview_pos, preview_max, preview_color);
 		ImGui::Dummy(preview_size);
 	}
@@ -698,8 +731,9 @@ void TextureEditorPanel::RenderGraphNode(const engine::graph::Node& node) {
 	ImGui::SetNextItemAllowOverlap();
 	ImGui::SetCursorScreenPos(node_rect_min);
 	ImGui::InvisibleButton(
-			("node_" + std::to_string(node.id)).c_str(),
-			ImVec2(node_rect_max.x - node_rect_min.x, node_rect_max.y - node_rect_min.y));
+		("node_" + std::to_string(node.id)).c_str(),
+		ImVec2(node_rect_max.x - node_rect_min.x, node_rect_max.y - node_rect_min.y)
+	);
 	const bool node_active = ImGui::IsItemActive();
 	const bool node_clicked = ImGui::IsItemClicked(ImGuiMouseButton_Left);
 
@@ -725,7 +759,8 @@ void TextureEditorPanel::RenderGraphNode(const engine::graph::Node& node) {
 
 			using engine::graph::PinType;
 			switch (pin.type) {
-			case PinType::Float: {
+			case PinType::Float:
+			{
 				const auto* p = std::get_if<float>(&pin.default_value);
 				float val = p ? *p : 0.0f;
 				ImGui::PushItemWidth(90.0f * canvas_zoom_);
@@ -736,7 +771,8 @@ void TextureEditorPanel::RenderGraphNode(const engine::graph::Node& node) {
 				ImGui::PopItemWidth();
 				break;
 			}
-			case PinType::Int: {
+			case PinType::Int:
+			{
 				const auto* p = std::get_if<int>(&pin.default_value);
 				int val = p ? *p : 0;
 				ImGui::PushItemWidth(90.0f * canvas_zoom_);
@@ -747,7 +783,8 @@ void TextureEditorPanel::RenderGraphNode(const engine::graph::Node& node) {
 				ImGui::PopItemWidth();
 				break;
 			}
-			case PinType::Bool: {
+			case PinType::Bool:
+			{
 				const auto* p = std::get_if<bool>(&pin.default_value);
 				bool val = p ? *p : false;
 				if (ImGui::Checkbox(pin_id.c_str(), &val)) {
@@ -757,17 +794,23 @@ void TextureEditorPanel::RenderGraphNode(const engine::graph::Node& node) {
 				break;
 			}
 			case PinType::Color:
-			case PinType::Vec4: {
+			case PinType::Vec4:
+			{
 				const auto* p = std::get_if<glm::vec4>(&pin.default_value);
 				glm::vec4 col = p ? *p : glm::vec4(1.0f);
 				float arr[4] = {col.x, col.y, col.z, col.w};
-				if (ImGui::ColorEdit4(pin_id.c_str(), arr, ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoLabel)) {
+				if (ImGui::ColorEdit4(
+						pin_id.c_str(),
+						arr,
+						ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoLabel
+					)) {
 					pin.default_value = glm::vec4(arr[0], arr[1], arr[2], arr[3]);
 					changed = true;
 				}
 				break;
 			}
-			case PinType::Vec2: {
+			case PinType::Vec2:
+			{
 				const auto* p = std::get_if<glm::vec2>(&pin.default_value);
 				glm::vec2 val = p ? *p : glm::vec2(0.0f);
 				float arr[2] = {val.x, val.y};
@@ -779,7 +822,8 @@ void TextureEditorPanel::RenderGraphNode(const engine::graph::Node& node) {
 				ImGui::PopItemWidth();
 				break;
 			}
-			case PinType::Vec3: {
+			case PinType::Vec3:
+			{
 				const auto* p = std::get_if<glm::vec3>(&pin.default_value);
 				glm::vec3 val = p ? *p : glm::vec3(0.0f);
 				float arr[3] = {val.x, val.y, val.z};
@@ -791,7 +835,8 @@ void TextureEditorPanel::RenderGraphNode(const engine::graph::Node& node) {
 				ImGui::PopItemWidth();
 				break;
 			}
-			case PinType::String: {
+			case PinType::String:
+			{
 				const auto* p = std::get_if<std::string>(&pin.default_value);
 				char buf[256];
 				strncpy_s(buf, p ? p->c_str() : "", sizeof(buf) - 1);
@@ -803,8 +848,10 @@ void TextureEditorPanel::RenderGraphNode(const engine::graph::Node& node) {
 				}
 				ImGui::PopItemWidth();
 				ImGui::SetCursorScreenPos(ImVec2(node_pos.x + (100.0f + 65.0f) * canvas_zoom_, pin_pos.y - 9.0f));
-				if (ImGui::Button(("...##br_" + std::to_string(node.id) + "_" + std::to_string(i)).c_str(),
-						ImVec2(22.0f * canvas_zoom_, 0))) {
+				if (ImGui::Button(
+						("...##br_" + std::to_string(node.id) + "_" + std::to_string(i)).c_str(),
+						ImVec2(22.0f * canvas_zoom_, 0)
+					)) {
 					node_path_dialog_node_id_ = node.id;
 					node_path_dialog_pin_index_ = static_cast<int>(i);
 					node_path_dialog_.Open();
@@ -853,9 +900,10 @@ void TextureEditorPanel::RenderGraphNode(const engine::graph::Node& node) {
 		const float thumb_x = node_pos.x + (NODE_WIDTH * canvas_zoom_ - thumb_s) * 0.5f;
 		const float thumb_y = node_pos.y + pin_area_height * canvas_zoom_ + 2.0f * canvas_zoom_;
 		draw_list->AddImage(
-				(ImTextureID)(uintptr_t)buf.thumbnail_tex,
-				ImVec2(thumb_x, thumb_y),
-				ImVec2(thumb_x + thumb_s, thumb_y + thumb_s));
+			(ImTextureID) (uintptr_t) buf.thumbnail_tex,
+			ImVec2(thumb_x, thumb_y),
+			ImVec2(thumb_x + thumb_s, thumb_y + thumb_s)
+		);
 	}
 
 	// Hover detection via rect (reliable when node contains multiple widgets)
@@ -916,7 +964,7 @@ void TextureEditorPanel::RenderGraphLink(const engine::graph::Link& link) {
 	const auto cp2 = ImVec2(p2.x - offset, p2.y);
 
 	const ImU32 link_color =
-			(link.id == selected_link_id_) ? IM_COL32(255, 255, 100, 255) : IM_COL32(200, 200, 100, 255);
+		(link.id == selected_link_id_) ? IM_COL32(255, 255, 100, 255) : IM_COL32(200, 200, 100, 255);
 	const float link_thickness = (link.id == selected_link_id_) ? 3.0f * canvas_zoom_ : 2.0f * canvas_zoom_;
 	draw_list->AddBezierCubic(p1, cp1, cp2, p2, link_color, link_thickness);
 }
@@ -994,8 +1042,9 @@ void TextureEditorPanel::RenderAddNodeMenu() {
 
 ImVec2 TextureEditorPanel::GetNodeScreenPos(const engine::graph::Node& node) const {
 	return ImVec2(
-			canvas_p0_.x + canvas_offset_.x + node.position.x * canvas_zoom_,
-			canvas_p0_.y + canvas_offset_.y + node.position.y * canvas_zoom_);
+		canvas_p0_.x + canvas_offset_.x + node.position.x * canvas_zoom_,
+		canvas_p0_.y + canvas_offset_.y + node.position.y * canvas_zoom_
+	);
 }
 
 ImVec2 TextureEditorPanel::GetPinScreenPos(const engine::graph::Node& node, int pin_index, bool is_output) const {
@@ -1003,7 +1052,9 @@ ImVec2 TextureEditorPanel::GetPinScreenPos(const engine::graph::Node& node, int 
 	const float y_offset = 30.0f + pin_index * 20.0f;
 
 	return ImVec2(
-			is_output ? node_pos.x + NODE_WIDTH * canvas_zoom_ : node_pos.x, node_pos.y + y_offset * canvas_zoom_);
+		is_output ? node_pos.x + NODE_WIDTH * canvas_zoom_ : node_pos.x,
+		node_pos.y + y_offset * canvas_zoom_
+	);
 }
 
 bool TextureEditorPanel::HitTestPin(const ImVec2& point, const ImVec2& pin_pos) const {
@@ -1014,7 +1065,11 @@ bool TextureEditorPanel::HitTestPin(const ImVec2& point, const ImVec2& pin_pos) 
 }
 
 bool TextureEditorPanel::FindPinUnderMouse(
-		const ImVec2& mouse_pos, int& out_node_id, int& out_pin_index, bool& out_is_output) const {
+	const ImVec2& mouse_pos,
+	int& out_node_id,
+	int& out_pin_index,
+	bool& out_is_output
+) const {
 	for (const auto& node : texture_graph_->GetNodes()) {
 		for (int i = 0; i < static_cast<int>(node.outputs.size()); ++i) {
 			if (HitTestPin(mouse_pos, GetPinScreenPos(node, i, true))) {
@@ -1109,7 +1164,7 @@ void TextureEditorPanel::NewTexture() {
 	// Connect Solid Color output to Output input
 	texture_graph_->AddLink(color_node_id, 0, output_node_id, 0);
 
-	//UpdatePreview();  -- called by OnInitialized() after GL is ready; OpenTexture() calls it directly
+	// UpdatePreview();  -- called by OnInitialized() after GL is ready; OpenTexture() calls it directly
 	SetDirty(false);
 }
 

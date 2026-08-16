@@ -22,10 +22,10 @@ namespace {
 void ImportPhysicsModule(const std::string& backend, ecs::ECSWorld& world) {
 	auto& ecs = world.GetWorld();
 	if (backend == "jolt") {
-		ecs.import <physics::JoltPhysicsModule>();
+		ecs.import<physics::JoltPhysicsModule>();
 	}
 	else if (backend == "bullet3") {
-		ecs.import <physics::Bullet3PhysicsModule>();
+		ecs.import<physics::Bullet3PhysicsModule>();
 	}
 	// "none" or empty = no physics module imported
 }

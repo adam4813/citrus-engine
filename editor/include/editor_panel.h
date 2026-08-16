@@ -68,9 +68,7 @@ public:
 	 *
 	 * Call from EditorScene::RenderMenuBar() inside the View menu block.
 	 */
-	void RenderViewMenuItem() {
-		ImGui::MenuItem(std::string(GetPanelName()).c_str(), nullptr, &is_visible_);
-	}
+	void RenderViewMenuItem() { ImGui::MenuItem(std::string(GetPanelName()).c_str(), nullptr, &is_visible_); }
 
 protected:
 	EditorPanel() = default;
@@ -95,9 +93,7 @@ protected:
 	/**
 	 * @brief End the ImGui window for this panel
 	 */
-	static void EndPanel() {
-		ImGui::End();
-	}
+	static void EndPanel() { ImGui::End(); }
 
 private:
 	bool is_visible_ = false;

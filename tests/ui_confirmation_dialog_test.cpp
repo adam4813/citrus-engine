@@ -14,8 +14,8 @@ using namespace engine::ui::batch_renderer;
 class ConfirmationDialogTest : public ::testing::Test {
 protected:
 	void SetUp() override {
-		dialog = std::make_unique<ConfirmationDialog>(
-				"Confirm Action", "Are you sure you want to proceed?", "Yes", "No");
+		dialog =
+			std::make_unique<ConfirmationDialog>("Confirm Action", "Are you sure you want to proceed?", "Yes", "No");
 	}
 
 	void TearDown() override { dialog.reset(); }
@@ -93,11 +93,11 @@ TEST_F(ConfirmationDialogTest, ProcessMouseEvent_Visible_BlocksLowerLayers) {
 
 TEST_F(ConfirmationDialogTest, Constructor_WithCustomSize_SetsSize) {
 	auto custom_dialog = std::make_unique<ConfirmationDialog>(
-			"Title",
-			"Message",
-			"OK",
-			"Cancel",
-			500.0f // Custom width
+		"Title",
+		"Message",
+		"OK",
+		"Cancel",
+		500.0f // Custom width
 	);
 
 	EXPECT_EQ(custom_dialog->GetWidth(), 500.0f);
@@ -105,13 +105,13 @@ TEST_F(ConfirmationDialogTest, Constructor_WithCustomSize_SetsSize) {
 
 TEST_F(ConfirmationDialogTest, Constructor_WithCustomFontSizes_DoesNotCrash) {
 	auto custom_dialog = std::make_unique<ConfirmationDialog>(
-			"Title",
-			"Message",
-			"OK",
-			"Cancel",
-			400.0f, // width
-			24.0f, // title font size
-			16.0f // message font size
+		"Title",
+		"Message",
+		"OK",
+		"Cancel",
+		400.0f, // width
+		24.0f,  // title font size
+		16.0f   // message font size
 	);
 
 	EXPECT_NE(custom_dialog, nullptr);
@@ -185,5 +185,5 @@ TEST_F(ConfirmationDialogTest, HidingDialog_AllowsUnderlyingUI) {
 	}
 
 	EXPECT_FALSE(dialog_consumed); // Dialog should NOT consume when hidden
-	EXPECT_TRUE(button_clicked); // Button should receive event
+	EXPECT_TRUE(button_clicked);   // Button should receive event
 }

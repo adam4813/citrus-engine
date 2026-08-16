@@ -42,7 +42,11 @@ public:
 	// === Body Sync (ECS ↔ Backend) ===
 	// Create or update a body in the backend from ECS component data
 	virtual void SyncBodyToBackend(
-			EntityId entity, const PhysicsTransform& transform, const RigidBody& body, const CollisionShape& shape) = 0;
+		EntityId entity,
+		const PhysicsTransform& transform,
+		const RigidBody& body,
+		const CollisionShape& shape
+	) = 0;
 	// Read back body state after simulation step
 	[[nodiscard]] virtual PhysicsSyncResult SyncBodyFromBackend(EntityId entity) const = 0;
 	// Remove a body from the backend

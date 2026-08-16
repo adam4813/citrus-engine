@@ -113,8 +113,13 @@ PrefabUtility::SaveAsPrefab(const ecs::Entity& entity, ecs::ECSWorld& world, con
 		// 4. Cache it
 		loaded_prefabs[path_str] = prefab_entity;
 
-		std::cout << "PrefabUtility: Created prefab '" << prefab_name << "' and converted '" << entity_name
-				  << "' to instance" << std::endl;
+		std::cout
+			<< "PrefabUtility: Created prefab '"
+			<< prefab_name
+			<< "' and converted '"
+			<< entity_name
+			<< "' to instance"
+			<< std::endl;
 		return prefab_entity;
 	}
 	catch (const std::exception& e) {
@@ -179,7 +184,11 @@ ecs::Entity PrefabUtility::LoadPrefab(const platform::fs::Path& prefab_path, ecs
 }
 
 ecs::Entity PrefabUtility::InstantiatePrefab(
-		const platform::fs::Path& prefab_path, const Scene* scene, ecs::ECSWorld& world, const ecs::Entity& parent) {
+	const platform::fs::Path& prefab_path,
+	const Scene* scene,
+	ecs::ECSWorld& world,
+	const ecs::Entity& parent
+) {
 	if (!scene) {
 		std::cerr << "PrefabUtility: Invalid scene" << std::endl;
 		return ecs::Entity();

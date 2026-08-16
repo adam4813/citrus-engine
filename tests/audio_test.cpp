@@ -11,9 +11,7 @@ protected:
 		AudioSystem::Get().Shutdown();
 	}
 
-	void TearDown() override {
-		AudioSystem::Get().Shutdown();
-	}
+	void TearDown() override { AudioSystem::Get().Shutdown(); }
 };
 
 TEST_F(AudioSystemTest, singleton_get_returns_same_instance) {
@@ -22,9 +20,7 @@ TEST_F(AudioSystemTest, singleton_get_returns_same_instance) {
 	EXPECT_EQ(&a, &b);
 }
 
-TEST_F(AudioSystemTest, not_initialized_by_default) {
-	EXPECT_FALSE(AudioSystem::Get().IsInitialized());
-}
+TEST_F(AudioSystemTest, not_initialized_by_default) { EXPECT_FALSE(AudioSystem::Get().IsInitialized()); }
 
 TEST_F(AudioSystemTest, initialize_and_shutdown_lifecycle) {
 	auto& audio = AudioSystem::Get();
@@ -34,7 +30,8 @@ TEST_F(AudioSystemTest, initialize_and_shutdown_lifecycle) {
 		EXPECT_TRUE(audio.IsInitialized());
 		audio.Shutdown();
 		EXPECT_FALSE(audio.IsInitialized());
-	} else {
+	}
+	else {
 		EXPECT_FALSE(audio.IsInitialized());
 	}
 }

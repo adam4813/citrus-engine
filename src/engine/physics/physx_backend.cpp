@@ -105,10 +105,11 @@ public:
 	// === Body Sync (ECS ↔ Backend) ===
 
 	void SyncBodyToBackend(
-			const EntityId entity,
-			const PhysicsTransform& transform,
-			const RigidBody& body,
-			const CollisionShape& /*shape*/) override {
+		const EntityId entity,
+		const PhysicsTransform& transform,
+		const RigidBody& body,
+		const CollisionShape& /*shape*/
+	) override {
 		if (!initialized_) {
 			spdlog::error("[PhysX] Cannot sync body - not initialized");
 			return;

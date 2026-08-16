@@ -226,9 +226,11 @@ protected:
 TEST_F(AssetManagerTest, import_source_matches_importer_and_writes_metadata) {
 	auto& cache = AssetCache::Instance();
 	cache.RegisterFileImporter(
-			{".citrustest"}, [](const std::string& name, const std::string&) -> std::shared_ptr<AssetInfo> {
-				return std::make_shared<TestRawAsset>(name);
-			});
+		{".citrustest"},
+		[](const std::string& name, const std::string&) -> std::shared_ptr<AssetInfo> {
+			return std::make_shared<TestRawAsset>(name);
+		}
+	);
 
 	const auto raw = temp_dir_ / "widget.citrustest";
 	const std::vector<uint8_t> bytes = {1, 2, 3, 4, 5};
@@ -263,9 +265,11 @@ TEST_F(AssetManagerTest, import_source_matches_importer_and_writes_metadata) {
 TEST_F(AssetManagerTest, import_source_recovers_guid_from_metadata) {
 	auto& cache = AssetCache::Instance();
 	cache.RegisterFileImporter(
-			{".citrustest"}, [](const std::string& name, const std::string&) -> std::shared_ptr<AssetInfo> {
-				return std::make_shared<TestRawAsset>(name);
-			});
+		{".citrustest"},
+		[](const std::string& name, const std::string&) -> std::shared_ptr<AssetInfo> {
+			return std::make_shared<TestRawAsset>(name);
+		}
+	);
 	// Register the type so meta-recovery can reconstruct the asset via "_metadata.type".
 	AssetTypeRegistry::Instance().RegisterType<TestRawAsset>(std::string_view{"test_raw"}, AssetType{}).Build();
 

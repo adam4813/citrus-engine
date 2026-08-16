@@ -122,16 +122,17 @@ bool AssetBrowserPanel::PassesFilter(const FileSystemItem& item) const {
 }
 
 void AssetBrowserPanel::Render(engine::scene::Scene* scene, const AssetSelection& selected_asset) {
-	if (!IsVisible())
-		return;
+	if (!IsVisible()) return;
 
 	if (needs_refresh_) {
 		RefreshCurrentDirectory();
 	}
 
 	ImGuiWindowClass win_class;
-	win_class.DockNodeFlagsOverrideSet = ImGuiDockNodeFlags_NoWindowMenuButton | ImGuiDockNodeFlags_NoCloseButton
-										 | ImGuiDockNodeFlags_NoDockingOverMe | ImGuiDockNodeFlags_NoDockingOverOther
+	win_class.DockNodeFlagsOverrideSet = ImGuiDockNodeFlags_NoWindowMenuButton
+										 | ImGuiDockNodeFlags_NoCloseButton
+										 | ImGuiDockNodeFlags_NoDockingOverMe
+										 | ImGuiDockNodeFlags_NoDockingOverOther
 										 | ImGuiDockNodeFlags_NoDockingOverEmpty;
 	ImGui::SetNextWindowClass(&win_class);
 
@@ -200,8 +201,7 @@ void AssetBrowserPanel::RenderBreadcrumbBar() {
 	// Build segments from assets root
 	for (auto it = current_directory_; it != assets_root_.parent_path(); it = it.parent_path()) {
 		segments.push_back(it);
-		if (it == assets_root_)
-			break;
+		if (it == assets_root_) break;
 	}
 	std::reverse(segments.begin(), segments.end());
 
@@ -371,8 +371,11 @@ void AssetBrowserPanel::RenderAssetItemList(const FileSystemItem& item) {
 
 	ImGui::TableNextColumn();
 	const auto list_appearance = AssetPreviewRegistry::Instance().GetAppearance(item.path);
-	ImGui::TextColored(list_appearance.color, "%s",
-			item.type_icon.empty() ? list_appearance.icon.c_str() : item.type_icon.c_str());
+	ImGui::TextColored(
+		list_appearance.color,
+		"%s",
+		item.type_icon.empty() ? list_appearance.icon.c_str() : item.type_icon.c_str()
+	);
 }
 
 void AssetBrowserPanel::RenderAssetItemGrid(const FileSystemItem& item) {
@@ -392,8 +395,7 @@ void AssetBrowserPanel::RenderAssetItemGrid(const FileSystemItem& item) {
 	bool clicked = false;
 
 	// Try to show a thumbnail if a preview generator is registered
-	const uint32_t thumb_id =
-			!item.is_directory ? preview_registry.GetOrGeneratePreview(item.path) : 0;
+	const uint32_t thumb_id = !item.is_directory ? preview_registry.GetOrGeneratePreview(item.path) : 0;
 	if (thumb_id != 0) {
 		if (is_selected) {
 			ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetStyleColorVec4(ImGuiCol_ButtonActive));
@@ -408,13 +410,13 @@ void AssetBrowserPanel::RenderAssetItemGrid(const FileSystemItem& item) {
 		// Colored icon button from appearance registry
 		const ImVec4& tc = appearance.color;
 		ImGui::PushStyleColor(
-				ImGuiCol_Button,
-				is_selected ? ImGui::GetStyleColorVec4(ImGuiCol_ButtonActive)
-							: ImVec4(tc.x * 0.25f, tc.y * 0.25f, tc.z * 0.25f, 1.0f));
+			ImGuiCol_Button,
+			is_selected ? ImGui::GetStyleColorVec4(ImGuiCol_ButtonActive)
+						: ImVec4(tc.x * 0.25f, tc.y * 0.25f, tc.z * 0.25f, 1.0f)
+		);
 		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(tc.x * 0.4f, tc.y * 0.4f, tc.z * 0.4f, 1.0f));
 		ImGui::PushStyleColor(ImGuiCol_Text, tc);
-		const std::string& icon =
-				item.type_icon.empty() ? appearance.icon : item.type_icon;
+		const std::string& icon = item.type_icon.empty() ? appearance.icon : item.type_icon;
 		clicked = ImGui::Button(icon.c_str(), ImVec2(icon_size, icon_size));
 		ImGui::PopStyleColor(3);
 	}
@@ -484,7 +486,9 @@ void AssetBrowserPanel::RenderPrefabSection() {
 	const std::string header_label = "Prefabs (" + std::to_string(prefab_files_.size()) + ")";
 
 	const bool is_open = ImGui::CollapsingHeader(
-			header_label.c_str(), ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_AllowItemOverlap);
+		header_label.c_str(),
+		ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_AllowItemOverlap
+	);
 
 	// Refresh button
 	ImGui::SameLine(ImGui::GetWindowWidth() - 30);
@@ -516,7 +520,7 @@ void AssetBrowserPanel::RenderPrefabSection() {
 			}
 
 			const ImGuiTreeNodeFlags node_flags =
-					ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen | ImGuiTreeNodeFlags_SpanAvailWidth;
+				ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen | ImGuiTreeNodeFlags_SpanAvailWidth;
 
 			ImGui::PushID(prefab_path.c_str());
 			ImGui::TreeNodeEx("##prefab_node", node_flags, "[P] %s", display_name.c_str());

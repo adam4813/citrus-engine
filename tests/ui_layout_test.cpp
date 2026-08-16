@@ -60,8 +60,8 @@ TEST_F(VerticalLayoutTest, AppliesGap) {
 	layout.Apply(children_, container_.get());
 
 	EXPECT_FLOAT_EQ(children_[0]->GetRelativeBounds().y, 0.0f);
-	EXPECT_FLOAT_EQ(children_[1]->GetRelativeBounds().y, 40.0f);  // 30 + 10
-	EXPECT_FLOAT_EQ(children_[2]->GetRelativeBounds().y, 80.0f);  // 30 + 10 + 30 + 10
+	EXPECT_FLOAT_EQ(children_[1]->GetRelativeBounds().y, 40.0f); // 30 + 10
+	EXPECT_FLOAT_EQ(children_[2]->GetRelativeBounds().y, 80.0f); // 30 + 10 + 30 + 10
 }
 
 TEST_F(VerticalLayoutTest, CentersHorizontally) {
@@ -198,22 +198,22 @@ TEST_F(GridLayoutTest, ArrangesInColumns) {
 	// Row 0
 	EXPECT_FLOAT_EQ(children_[0]->GetRelativeBounds().x, 0.0f);
 	EXPECT_FLOAT_EQ(children_[0]->GetRelativeBounds().y, 0.0f);
-	EXPECT_FLOAT_EQ(children_[1]->GetRelativeBounds().x, 100.0f);  // 300/3 = 100
+	EXPECT_FLOAT_EQ(children_[1]->GetRelativeBounds().x, 100.0f); // 300/3 = 100
 	EXPECT_FLOAT_EQ(children_[2]->GetRelativeBounds().x, 200.0f);
 
 	// Row 1
-	EXPECT_FLOAT_EQ(children_[3]->GetRelativeBounds().y, 40.0f);  // Next row
+	EXPECT_FLOAT_EQ(children_[3]->GetRelativeBounds().y, 40.0f); // Next row
 	EXPECT_FLOAT_EQ(children_[4]->GetRelativeBounds().x, 100.0f);
 	EXPECT_FLOAT_EQ(children_[5]->GetRelativeBounds().x, 200.0f);
 }
 
 TEST_F(GridLayoutTest, AppliesGaps) {
 	CreateChildren(6);
-	GridLayout layout(3, 10.0f, 15.0f);  // 10px horizontal, 15px vertical gap
+	GridLayout layout(3, 10.0f, 15.0f); // 10px horizontal, 15px vertical gap
 	layout.Apply(children_, container_.get());
 
 	// Cell width = (300 - 2*10) / 3 = 93.33...
-	EXPECT_FLOAT_EQ(children_[3]->GetRelativeBounds().y, 55.0f);  // 40 + 15
+	EXPECT_FLOAT_EQ(children_[3]->GetRelativeBounds().y, 55.0f); // 40 + 15
 }
 
 // ========================================
@@ -246,7 +246,7 @@ TEST_F(StackLayoutCenterTest, CentersMultipleChildren) {
 
 	// Both centered
 	EXPECT_FLOAT_EQ(children_[0]->GetRelativeBounds().x, 50.0f);
-	EXPECT_FLOAT_EQ(children_[1]->GetRelativeBounds().x, 70.0f);  // (200 - 60) / 2
+	EXPECT_FLOAT_EQ(children_[1]->GetRelativeBounds().x, 70.0f); // (200 - 60) / 2
 }
 
 // ========================================
@@ -272,7 +272,7 @@ TEST_F(JustifyLayoutTest, DistributesHorizontally) {
 	// 3 children, 50px each = 150px total
 	// 300 - 150 = 150px to distribute between 2 gaps = 75px each
 	EXPECT_FLOAT_EQ(children_[0]->GetRelativeBounds().x, 0.0f);
-	EXPECT_FLOAT_EQ(children_[1]->GetRelativeBounds().x, 125.0f);  // 50 + 75
+	EXPECT_FLOAT_EQ(children_[1]->GetRelativeBounds().x, 125.0f); // 50 + 75
 	EXPECT_FLOAT_EQ(children_[2]->GetRelativeBounds().x, 250.0f); // 50 + 75 + 50 + 75
 }
 
@@ -283,7 +283,7 @@ TEST_F(JustifyLayoutTest, SingleChildCenters) {
 	layout.Apply(children_, container_.get());
 
 	// Single child should be centered
-	EXPECT_FLOAT_EQ(children_[0]->GetRelativeBounds().x, 125.0f);  // (300 - 50) / 2
+	EXPECT_FLOAT_EQ(children_[0]->GetRelativeBounds().x, 125.0f); // (300 - 50) / 2
 }
 
 // ========================================
@@ -332,8 +332,8 @@ TEST_F(StackLayoutTest, StacksAtBottomRight) {
 	StackLayout layout(Alignment::End, Alignment::End);
 	layout.Apply(children_, container_.get());
 
-	EXPECT_FLOAT_EQ(children_[0]->GetRelativeBounds().x, 100.0f);  // 200 - 100
-	EXPECT_FLOAT_EQ(children_[0]->GetRelativeBounds().y, 150.0f);  // 200 - 50
+	EXPECT_FLOAT_EQ(children_[0]->GetRelativeBounds().x, 100.0f); // 200 - 100
+	EXPECT_FLOAT_EQ(children_[0]->GetRelativeBounds().y, 150.0f); // 200 - 50
 }
 
 // ========================================
@@ -370,7 +370,7 @@ TEST(PaddingTest, VerticalLayoutAppliesPaddingOnPrimaryAxis) {
 
 	// Primary axis (Y): starts at padding
 	EXPECT_FLOAT_EQ(children[0]->GetRelativeBounds().y, 10.0f);
-	EXPECT_FLOAT_EQ(children[1]->GetRelativeBounds().y, 45.0f);  // 10 + 30 + 5
+	EXPECT_FLOAT_EQ(children[1]->GetRelativeBounds().y, 45.0f); // 10 + 30 + 5
 
 	// Cross axis Start: respects padding
 	EXPECT_FLOAT_EQ(children[0]->GetRelativeBounds().x, 10.0f);
@@ -407,7 +407,7 @@ TEST(PaddingTest, HorizontalLayoutAppliesPaddingOnPrimaryAxis) {
 
 	// Primary axis (X): starts at padding
 	EXPECT_FLOAT_EQ(children[0]->GetRelativeBounds().x, 15.0f);
-	EXPECT_FLOAT_EQ(children[1]->GetRelativeBounds().x, 75.0f);  // 15 + 50 + 10
+	EXPECT_FLOAT_EQ(children[1]->GetRelativeBounds().x, 75.0f); // 15 + 50 + 10
 
 	// Cross axis Start: respects padding
 	EXPECT_FLOAT_EQ(children[0]->GetRelativeBounds().y, 15.0f);
@@ -445,7 +445,7 @@ TEST(BoundsOffsetTest, HorizontalLayoutRespectsOffset) {
 
 	// Primary axis starts at padding
 	EXPECT_FLOAT_EQ(children[0]->GetRelativeBounds().x, 15.0f);
-	EXPECT_FLOAT_EQ(children[1]->GetRelativeBounds().x, 75.0f);  // 15 + 50 + 10
+	EXPECT_FLOAT_EQ(children[1]->GetRelativeBounds().x, 75.0f); // 15 + 50 + 10
 
 	// Cross axis Start: respects padding
 	EXPECT_FLOAT_EQ(children[0]->GetRelativeBounds().y, 15.0f);
@@ -476,7 +476,7 @@ TEST(BoundsOffsetTest, GridLayoutRespectsOffset) {
 
 	// Third child: next row
 	EXPECT_FLOAT_EQ(children[2]->GetRelativeBounds().x, 10.0f);
-	EXPECT_FLOAT_EQ(children[2]->GetRelativeBounds().y, 55.0f);  // 10 + 40 + 5
+	EXPECT_FLOAT_EQ(children[2]->GetRelativeBounds().y, 55.0f); // 10 + 40 + 5
 }
 
 TEST(BoundsOffsetTest, StackLayoutCenterRespectsOffset) {
@@ -508,8 +508,8 @@ TEST(BoundsOffsetTest, StackLayoutRespectsOffset) {
 	StackLayout layout(Alignment::End, Alignment::End);
 	layout.Apply(children, panel.get());
 
-	EXPECT_FLOAT_EQ(children[0]->GetRelativeBounds().x, 140.0f);  // 200 - 10 - 50
-	EXPECT_FLOAT_EQ(children[0]->GetRelativeBounds().y, 140.0f);  // 200 - 10 - 50
+	EXPECT_FLOAT_EQ(children[0]->GetRelativeBounds().x, 140.0f); // 200 - 10 - 50
+	EXPECT_FLOAT_EQ(children[0]->GetRelativeBounds().y, 140.0f); // 200 - 10 - 50
 }
 
 // ========================================

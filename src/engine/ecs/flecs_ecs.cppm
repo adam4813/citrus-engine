@@ -25,7 +25,7 @@ struct SceneEntity {
 	std::string name;
 	bool visible = true;
 	bool static_entity = false; // Static entities don't move (optimization hint)
-	uint32_t scene_layer = 0; // For organizing entities within scenes
+	uint32_t scene_layer = 0;   // For organizing entities within scenes
 };
 
 // Spatial component for entities that need spatial queries (replaces BoundingBoxComponent)
@@ -42,8 +42,12 @@ struct Spatial {
 	}
 
 	[[nodiscard]] bool ContainsPoint(const glm::vec3& point) const {
-		return point.x >= bounding_min.x && point.x <= bounding_max.x && point.y >= bounding_min.y
-			   && point.y <= bounding_max.y && point.z >= bounding_min.z && point.z <= bounding_max.z;
+		return point.x >= bounding_min.x
+			   && point.x <= bounding_max.x
+			   && point.y >= bounding_min.y
+			   && point.y <= bounding_max.y
+			   && point.z >= bounding_min.z
+			   && point.z <= bounding_max.z;
 	}
 
 	[[nodiscard]] float DistanceToPoint(const glm::vec3& point) const {
@@ -52,9 +56,12 @@ struct Spatial {
 	}
 
 	[[nodiscard]] bool IntersectsWith(const Spatial& other) const {
-		return bounding_min.x <= other.bounding_max.x && bounding_max.x >= other.bounding_min.x
-			   && bounding_min.y <= other.bounding_max.y && bounding_max.y >= other.bounding_min.y
-			   && bounding_min.z <= other.bounding_max.z && bounding_max.z >= other.bounding_min.z;
+		return bounding_min.x <= other.bounding_max.x
+			   && bounding_max.x >= other.bounding_min.x
+			   && bounding_min.y <= other.bounding_max.y
+			   && bounding_max.y >= other.bounding_min.y
+			   && bounding_min.z <= other.bounding_max.z
+			   && bounding_max.z >= other.bounding_min.z;
 	}
 };
 
@@ -88,7 +95,7 @@ inline void UpdateCameraViewMatrix(components::Camera& camera, const glm::vec3& 
 // Update camera projection matrix
 inline void UpdateCameraProjectionMatrix(components::Camera& camera) {
 	camera.projection_matrix =
-			glm::perspective(glm::radians(camera.fov), camera.aspect_ratio, camera.near_plane, camera.far_plane);
+		glm::perspective(glm::radians(camera.fov), camera.aspect_ratio, camera.near_plane, camera.far_plane);
 }
 
 // Get view-projection matrix
@@ -99,9 +106,9 @@ inline glm::mat4 GetViewProjectionMatrix(const components::Camera& camera) {
 
 // ECS system phases for selective updates
 enum class SystemPhase {
-	Simulation, // Gameplay systems (physics, AI, scripts, game logic)
+	Simulation,     // Gameplay systems (physics, AI, scripts, game logic)
 	PostSimulation, // Transform propagation, bounds updates
-	PreRender // Render command submission, UI updates
+	PreRender       // Render command submission, UI updates
 };
 
 // Flecs world wrapper with engine-specific functionality
@@ -191,7 +198,10 @@ public:
 	void Progress(float delta_time) const;
 
 	// Query entities with specific components
-	template <typename... Components> auto Query() const { return world_.query<Components...>(); }
+	template<typename... Components>
+	auto Query() const {
+		return world_.query<Components...>();
+	}
 
 	// Submit render commands for all renderable entities
 	void SubmitRenderCommands(const rendering::Renderer& renderer);

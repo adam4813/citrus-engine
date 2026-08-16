@@ -75,7 +75,7 @@ void BatchRenderer::Initialize() {
 		// Load UI batch shader
 		platform::fs::Path shader_dir = "assets/shaders";
 		state_->ui_shader =
-				shader_mgr.LoadShader("ui_batch", shader_dir / "ui_batch.vert", shader_dir / "ui_batch.frag");
+			shader_mgr.LoadShader("ui_batch", shader_dir / "ui_batch.vert", shader_dir / "ui_batch.frag");
 
 		if (state_->ui_shader == rendering::INVALID_SHADER) {
 			spdlog::error("[BatchRenderer] Failed to load UI batch shader!");
@@ -132,7 +132,13 @@ void BatchRenderer::Initialize() {
 		// TexIndex (float)
 		glEnableVertexAttribArray(3);
 		glVertexAttribPointer(
-				3, 1, GL_FLOAT, GL_FALSE, sizeof(Vertex), reinterpret_cast<void*>(offsetof(Vertex, tex_index)));
+			3,
+			1,
+			GL_FLOAT,
+			GL_FALSE,
+			sizeof(Vertex),
+			reinterpret_cast<void*>(offsetof(Vertex, tex_index))
+		);
 
 		glBindVertexArray(0);
 
@@ -192,16 +198,17 @@ void BatchRenderer::BeginFrame() {
 
 	// Setup orthographic projection for screen-space rendering
 	state_->projection = glm::ortho(
-			0.0f,
-			static_cast<float>(state_->screen_width),
-			static_cast<float>(state_->screen_height),
-			0.0f,
-			-1.0f,
-			1.0f);
+		0.0f,
+		static_cast<float>(state_->screen_width),
+		static_cast<float>(state_->screen_height),
+		0.0f,
+		-1.0f,
+		1.0f
+	);
 
 	// Initialize scissor to full screen
 	state_->current_scissor =
-			ScissorRect(0, 0, static_cast<float>(state_->screen_width), static_cast<float>(state_->screen_height));
+		ScissorRect(0, 0, static_cast<float>(state_->screen_width), static_cast<float>(state_->screen_height));
 }
 
 void BatchRenderer::EndFrame() {
@@ -258,7 +265,11 @@ void BatchRenderer::GetViewportSize(uint32_t& width, uint32_t& height) {
 }
 
 void BatchRenderer::SubmitQuad(
-		const Rectangle& rect, const Color& color, const std::optional<Rectangle>& uv_coords, uint32_t texture_id) {
+	const Rectangle& rect,
+	const Color& color,
+	const std::optional<Rectangle>& uv_coords,
+	uint32_t texture_id
+) {
 	if (!state_) {
 		return;
 	}
@@ -309,13 +320,14 @@ void BatchRenderer::SubmitQuad(
 }
 
 void BatchRenderer::SubmitLine(
-		const float x0,
-		const float y0,
-		const float x1,
-		const float y1,
-		const float thickness,
-		const Color& color,
-		uint32_t texture_id) {
+	const float x0,
+	const float y0,
+	const float x1,
+	const float y1,
+	const float thickness,
+	const Color& color,
+	uint32_t texture_id
+) {
 	if (!state_) {
 		return;
 	}
@@ -356,17 +368,23 @@ void BatchRenderer::SubmitLine(
 	const float tex_slot_f = static_cast<float>(tex_slot);
 
 	PushQuadVertices(
-			Vertex(xa, ya, 0.0f, 0.0f, color, tex_slot_f),
-			Vertex(xd, yd, 1.0f, 0.0f, color, tex_slot_f),
-			Vertex(xc, yc, 1.0f, 1.0f, color, tex_slot_f),
-			Vertex(xb, yb, 0.0f, 1.0f, color, tex_slot_f));
+		Vertex(xa, ya, 0.0f, 0.0f, color, tex_slot_f),
+		Vertex(xd, yd, 1.0f, 0.0f, color, tex_slot_f),
+		Vertex(xc, yc, 1.0f, 1.0f, color, tex_slot_f),
+		Vertex(xb, yb, 0.0f, 1.0f, color, tex_slot_f)
+	);
 
 	const uint32_t base = static_cast<uint32_t>(state_->vertices.size()) - 4;
 	PushQuadIndices(base);
 }
 
 void BatchRenderer::SubmitCircle(
-		float center_x, float center_y, const float radius, const Color& color, const int segments) {
+	float center_x,
+	float center_y,
+	const float radius,
+	const Color& color,
+	const int segments
+) {
 	if (!state_ || segments < 3) {
 		return;
 	}
@@ -402,7 +420,11 @@ void BatchRenderer::SubmitCircle(
 }
 
 void BatchRenderer::SubmitRoundedRect(
-		const Rectangle& rect, float corner_radius, const Color& color, const int corner_segments) {
+	const Rectangle& rect,
+	float corner_radius,
+	const Color& color,
+	const int corner_segments
+) {
 	if (!state_ || corner_segments < 1) {
 		return;
 	}
@@ -438,17 +460,17 @@ void BatchRenderer::SubmitRoundedRect(
 	}
 
 	// Four edge rectangles
-	SubmitQuad(Rectangle{inner_x, rect.y, inner_w, corner_radius}, color); // Top
+	SubmitQuad(Rectangle{inner_x, rect.y, inner_w, corner_radius}, color);                               // Top
 	SubmitQuad(Rectangle{inner_x, rect.y + rect.height - corner_radius, inner_w, corner_radius}, color); // Bottom
-	SubmitQuad(Rectangle{rect.x, inner_y, corner_radius, inner_h}, color); // Left
-	SubmitQuad(Rectangle{rect.x + rect.width - corner_radius, inner_y, corner_radius, inner_h}, color); // Right
+	SubmitQuad(Rectangle{rect.x, inner_y, corner_radius, inner_h}, color);                               // Left
+	SubmitQuad(Rectangle{rect.x + rect.width - corner_radius, inner_y, corner_radius, inner_h}, color);  // Right
 
 	// Four rounded corners (quarter circles)
 	const Vector2 corners[4] = {
-			{inner_x, inner_y}, // Top-left
-			{inner_x + inner_w, inner_y}, // Top-right
-			{inner_x + inner_w, inner_y + inner_h}, // Bottom-right
-			{inner_x, inner_y + inner_h} // Bottom-left
+		{inner_x, inner_y},                     // Top-left
+		{inner_x + inner_w, inner_y},           // Top-right
+		{inner_x + inner_w, inner_y + inner_h}, // Bottom-right
+		{inner_x, inner_y + inner_h}            // Bottom-left
 	};
 
 	constexpr float angle_offsets[4] = {PI, PI * 0.5f, 0.0f, PI * 1.5f};
@@ -476,7 +498,12 @@ void BatchRenderer::SubmitRoundedRect(
 }
 
 void BatchRenderer::SubmitText(
-		const std::string& text, const float x, const float y, const int font_size, const Color& color) {
+	const std::string& text,
+	const float x,
+	const float y,
+	const int font_size,
+	const Color& color
+) {
 	if (!state_ || text.empty()) {
 		return;
 	}
@@ -526,7 +553,11 @@ void BatchRenderer::SubmitText(
 }
 
 void BatchRenderer::SubmitTextRect(
-		const Rectangle& rect, const std::string& text, const int font_size, const Color& color) {
+	const Rectangle& rect,
+	const std::string& text,
+	const int font_size,
+	const Color& color
+) {
 	if (!state_ || text.empty()) {
 		return;
 	}

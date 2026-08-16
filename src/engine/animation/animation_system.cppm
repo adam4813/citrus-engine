@@ -41,27 +41,30 @@ private:
 namespace animation_helpers {
 // Create a simple position animation
 std::shared_ptr<AnimationClip> CreatePositionAnimation(
-		const std::string& name,
-		const glm::vec3& start_pos,
-		const glm::vec3& end_pos,
-		float duration,
-		bool looping = false);
+	const std::string& name,
+	const glm::vec3& start_pos,
+	const glm::vec3& end_pos,
+	float duration,
+	bool looping = false
+);
 
 // Create a simple rotation animation
 std::shared_ptr<AnimationClip> CreateRotationAnimation(
-		const std::string& name,
-		const glm::vec3& start_rot,
-		const glm::vec3& end_rot,
-		float duration,
-		bool looping = false);
+	const std::string& name,
+	const glm::vec3& start_rot,
+	const glm::vec3& end_rot,
+	float duration,
+	bool looping = false
+);
 
 // Create a simple scale animation
 std::shared_ptr<AnimationClip> CreateScaleAnimation(
-		const std::string& name,
-		const glm::vec3& start_scale,
-		const glm::vec3& end_scale,
-		float duration,
-		bool looping = false);
+	const std::string& name,
+	const glm::vec3& start_scale,
+	const glm::vec3& end_scale,
+	float duration,
+	bool looping = false
+);
 } // namespace animation_helpers
 
 } // namespace engine::animation

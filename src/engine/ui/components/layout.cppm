@@ -17,9 +17,9 @@ export namespace engine::ui::components {
  * @brief Alignment options for layout positioning
  */
 enum class Alignment : uint8_t {
-	Start, ///< Align to start (left/top)
+	Start,  ///< Align to start (left/top)
 	Center, ///< Align to center
-	End, ///< Align to end (right/bottom)
+	End,    ///< Align to end (right/bottom)
 	Stretch ///< Stretch to fill available space
 };
 
@@ -28,7 +28,7 @@ enum class Alignment : uint8_t {
  *
  * Layout strategies determine how children are positioned within a container.
  * Layouts receive the container element and extract properties as needed.
- * 
+ *
  * Padding behavior:
  * - Primary axis: padding insets start position and reduces available space
  * - Cross axis: Start/End respect padding, Center uses full dimension
@@ -232,8 +232,10 @@ public:
 	 * @param vertical_gap Vertical space between rows
 	 */
 	explicit GridLayout(
-			const uint32_t columns = 3, const float horizontal_gap = 0.0f, const float vertical_gap = 0.0f) :
-			columns_(columns > 0 ? columns : 1), horizontal_gap_(horizontal_gap), vertical_gap_(vertical_gap) {}
+		const uint32_t columns = 3,
+		const float horizontal_gap = 0.0f,
+		const float vertical_gap = 0.0f
+	) : columns_(columns > 0 ? columns : 1), horizontal_gap_(horizontal_gap), vertical_gap_(vertical_gap) {}
 
 	void Apply(std::vector<std::unique_ptr<UIElement>>& children, UIElement* container) override {
 		if (children.empty()) {
@@ -248,7 +250,7 @@ public:
 
 		// Calculate cell size based on available space
 		const float cell_width =
-				(content_width - (static_cast<float>(columns_ - 1) * horizontal_gap_)) / static_cast<float>(columns_);
+			(content_width - (static_cast<float>(columns_ - 1) * horizontal_gap_)) / static_cast<float>(columns_);
 
 		uint32_t col = 0;
 		float row_y = padding;
@@ -299,7 +301,7 @@ private:
  */
 enum class JustifyDirection : uint8_t {
 	Horizontal, ///< Distribute horizontally (left to right)
-	Vertical ///< Distribute vertically (top to bottom)
+	Vertical    ///< Distribute vertically (top to bottom)
 };
 
 class JustifyLayout : public ILayout {
@@ -310,8 +312,9 @@ public:
 	 * @param cross_align Alignment on the cross axis
 	 */
 	explicit JustifyLayout(
-			const JustifyDirection direction = JustifyDirection::Horizontal,
-			const Alignment cross_align = Alignment::Center) : direction_(direction), cross_align_(cross_align) {}
+		const JustifyDirection direction = JustifyDirection::Horizontal,
+		const Alignment cross_align = Alignment::Center
+	) : direction_(direction), cross_align_(cross_align) {}
 
 	void Apply(std::vector<std::unique_ptr<UIElement>>& children, UIElement* container) override {
 		const auto bounds = container->GetRelativeBounds();
@@ -437,8 +440,9 @@ public:
 	 * @param vertical_align Vertical alignment of stacked children
 	 */
 	explicit StackLayout(
-			const Alignment horizontal_align = Alignment::Center, const Alignment vertical_align = Alignment::Center) :
-			horizontal_align_(horizontal_align), vertical_align_(vertical_align) {}
+		const Alignment horizontal_align = Alignment::Center,
+		const Alignment vertical_align = Alignment::Center
+	) : horizontal_align_(horizontal_align), vertical_align_(vertical_align) {}
 
 	void Apply(std::vector<std::unique_ptr<UIElement>>& children, UIElement* container) override {
 		const auto bounds = container->GetRelativeBounds();

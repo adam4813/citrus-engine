@@ -22,24 +22,24 @@ AnimationSystem::AnimationSystem(flecs::world& world) : world_(world) {
 void AnimationSystem::Register(const flecs::world& world) {
 	// Register the animation update system
 	world.system<Animator>("AnimationUpdateSystem")
-			.kind(flecs::OnUpdate)
-			.each([](flecs::iter itr, std::size_t index, Animator& animator) {
-				const float dt = itr.delta_time();
+		.kind(flecs::OnUpdate)
+		.each([](flecs::iter itr, std::size_t index, Animator& animator) {
+			const float dt = itr.delta_time();
 
-				// Process any pending transitions
-				ProcessTransitions(animator, dt);
+			// Process any pending transitions
+			ProcessTransitions(animator, dt);
 
-				// Update current animation state
-				animator.current_state.Update(dt);
+			// Update current animation state
+			animator.current_state.Update(dt);
 
-				// Evaluate and apply animated values
-				std::vector<std::pair<std::string, AnimatedValue>> values;
-				animator.current_state.Evaluate(values);
+			// Evaluate and apply animated values
+			std::vector<std::pair<std::string, AnimatedValue>> values;
+			animator.current_state.Evaluate(values);
 
-				for (const auto& [property, value] : values) {
-					ApplyAnimatedValue(itr.entity(index), property, value);
-				}
-			});
+			for (const auto& [property, value] : values) {
+				ApplyAnimatedValue(itr.entity(index), property, value);
+			}
+		});
 }
 
 void AnimationSystem::Update(float dt) {
@@ -70,7 +70,8 @@ void AnimationSystem::ProcessTransitions(Animator& animator, float dt) {
 
 	// Check if current animation has finished (or can be interrupted)
 	const bool can_transition = animator.transition_queue.front().interrupt_current
-								|| animator.current_state.HasFinished() || !animator.current_state.IsPlaying();
+								|| animator.current_state.HasFinished()
+								|| !animator.current_state.IsPlaying();
 
 	if (can_transition) {
 		auto transition = animator.transition_queue.front();
@@ -94,81 +95,85 @@ void AnimationSystem::ProcessTransitions(Animator& animator, float dt) {
 }
 
 void AnimationSystem::ApplyAnimatedValue(
-		flecs::entity entity, const std::string& property_name, const AnimatedValue& value) {
+	flecs::entity entity,
+	const std::string& property_name,
+	const AnimatedValue& value
+) {
 
 	// Get Transform component if it exists
 	auto& transform = entity.get_mut<components::Transform>();
 
 	// Apply value based on property name
 	std::visit(
-			[&](auto&& val) {
-				using T = std::decay_t<decltype(val)>;
+		[&](auto&& val) {
+			using T = std::decay_t<decltype(val)>;
 
-				if (property_name == "position") {
-					if constexpr (std::is_same_v<T, glm::vec3>) {
-						transform.position = val;
-					}
+			if (property_name == "position") {
+				if constexpr (std::is_same_v<T, glm::vec3>) {
+					transform.position = val;
 				}
-				else if (property_name == "position.x") {
-					if constexpr (std::is_same_v<T, float>) {
-						transform.position.x = val;
-					}
+			}
+			else if (property_name == "position.x") {
+				if constexpr (std::is_same_v<T, float>) {
+					transform.position.x = val;
 				}
-				else if (property_name == "position.y") {
-					if constexpr (std::is_same_v<T, float>) {
-						transform.position.y = val;
-					}
+			}
+			else if (property_name == "position.y") {
+				if constexpr (std::is_same_v<T, float>) {
+					transform.position.y = val;
 				}
-				else if (property_name == "position.z") {
-					if constexpr (std::is_same_v<T, float>) {
-						transform.position.z = val;
-					}
+			}
+			else if (property_name == "position.z") {
+				if constexpr (std::is_same_v<T, float>) {
+					transform.position.z = val;
 				}
-				else if (property_name == "rotation") {
-					if constexpr (std::is_same_v<T, glm::vec3>) {
-						transform.rotation = val;
-					}
+			}
+			else if (property_name == "rotation") {
+				if constexpr (std::is_same_v<T, glm::vec3>) {
+					transform.rotation = val;
 				}
-				else if (property_name == "rotation.x") {
-					if constexpr (std::is_same_v<T, float>) {
-						transform.rotation.x = val;
-					}
+			}
+			else if (property_name == "rotation.x") {
+				if constexpr (std::is_same_v<T, float>) {
+					transform.rotation.x = val;
 				}
-				else if (property_name == "rotation.y") {
-					if constexpr (std::is_same_v<T, float>) {
-						transform.rotation.y = val;
-					}
+			}
+			else if (property_name == "rotation.y") {
+				if constexpr (std::is_same_v<T, float>) {
+					transform.rotation.y = val;
 				}
-				else if (property_name == "rotation.z") {
-					if constexpr (std::is_same_v<T, float>) {
-						transform.rotation.z = val;
-					}
+			}
+			else if (property_name == "rotation.z") {
+				if constexpr (std::is_same_v<T, float>) {
+					transform.rotation.z = val;
 				}
-				else if (property_name == "scale") {
-					if constexpr (std::is_same_v<T, glm::vec3>) {
-						transform.scale = val;
-					}
-					else if constexpr (std::is_same_v<T, float>) {
-						transform.scale = glm::vec3(val);
-					}
+			}
+			else if (property_name == "scale") {
+				if constexpr (std::is_same_v<T, glm::vec3>) {
+					transform.scale = val;
 				}
-				else if (property_name == "scale.x") {
-					if constexpr (std::is_same_v<T, float>) {
-						transform.scale.x = val;
-					}
+				else if constexpr (std::is_same_v<T, float>) {
+					transform.scale = glm::vec3(val);
 				}
-				else if (property_name == "scale.y") {
-					if constexpr (std::is_same_v<T, float>) {
-						transform.scale.y = val;
-					}
+			}
+			else if (property_name == "scale.x") {
+				if constexpr (std::is_same_v<T, float>) {
+					transform.scale.x = val;
 				}
-				else if (property_name == "scale.z") {
-					if constexpr (std::is_same_v<T, float>) {
-						transform.scale.z = val;
-					}
+			}
+			else if (property_name == "scale.y") {
+				if constexpr (std::is_same_v<T, float>) {
+					transform.scale.y = val;
 				}
-			},
-			value);
+			}
+			else if (property_name == "scale.z") {
+				if constexpr (std::is_same_v<T, float>) {
+					transform.scale.z = val;
+				}
+			}
+		},
+		value
+	);
 
 	entity.modified<components::Transform>();
 }
@@ -178,7 +183,12 @@ void AnimationSystem::ApplyAnimatedValue(
 namespace animation_helpers {
 
 std::shared_ptr<AnimationClip> CreatePositionAnimation(
-		const std::string& name, const glm::vec3& start_pos, const glm::vec3& end_pos, float duration, bool looping) {
+	const std::string& name,
+	const glm::vec3& start_pos,
+	const glm::vec3& end_pos,
+	float duration,
+	bool looping
+) {
 
 	auto clip = std::make_shared<AnimationClip>();
 	clip->name = name;
@@ -197,7 +207,12 @@ std::shared_ptr<AnimationClip> CreatePositionAnimation(
 }
 
 std::shared_ptr<AnimationClip> CreateRotationAnimation(
-		const std::string& name, const glm::vec3& start_rot, const glm::vec3& end_rot, float duration, bool looping) {
+	const std::string& name,
+	const glm::vec3& start_rot,
+	const glm::vec3& end_rot,
+	float duration,
+	bool looping
+) {
 
 	auto clip = std::make_shared<AnimationClip>();
 	clip->name = name;
@@ -216,11 +231,12 @@ std::shared_ptr<AnimationClip> CreateRotationAnimation(
 }
 
 std::shared_ptr<AnimationClip> CreateScaleAnimation(
-		const std::string& name,
-		const glm::vec3& start_scale,
-		const glm::vec3& end_scale,
-		float duration,
-		bool looping) {
+	const std::string& name,
+	const glm::vec3& start_scale,
+	const glm::vec3& end_scale,
+	float duration,
+	bool looping
+) {
 
 	auto clip = std::make_shared<AnimationClip>();
 	clip->name = name;

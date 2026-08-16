@@ -17,7 +17,7 @@ import glm;
 
 /**
  * Scene Management Example
- * 
+ *
  * Demonstrates the engine's scene management system including:
  * - Creating and managing multiple scenes via SceneManager
  * - Scene transitions and activation
@@ -200,9 +200,10 @@ public:
 						if (entity.is_valid()) {
 							const char* name = entity.name();
 							ImGui::BulletText(
-									"%s (ID: %llu)",
-									name ? name : "<unnamed>",
-									static_cast<unsigned long long>(entity.id()));
+								"%s (ID: %llu)",
+								name ? name : "<unnamed>",
+								static_cast<unsigned long long>(entity.id())
+							);
 						}
 					}
 				}
@@ -214,15 +215,16 @@ public:
 
 		// Instructions
 		ImGui::TextWrapped(
-				"This example demonstrates:\n"
-				"- Creating multiple scenes using SceneManager\n"
-				"- Switching between scenes\n"
-				"- Scene activation and deactivation\n"
-				"- Entity management within scenes\n"
-				"- Scene lifecycle (load/unload)\n"
-				"\n"
-				"Use the buttons above to switch between scenes and observe "
-				"how the scene manager handles transitions.");
+			"This example demonstrates:\n"
+			"- Creating multiple scenes using SceneManager\n"
+			"- Switching between scenes\n"
+			"- Scene activation and deactivation\n"
+			"- Entity management within scenes\n"
+			"- Scene lifecycle (load/unload)\n"
+			"\n"
+			"Use the buttons above to switch between scenes and observe "
+			"how the scene manager handles transitions."
+		);
 
 		ImGui::End();
 	}
@@ -288,4 +290,7 @@ private:
 
 // Register the scene
 REGISTER_EXAMPLE_SCENE(
-		SceneManagementScene, "Scene Management", "Demonstrates scene creation, transitions, and lifecycle management");
+	SceneManagementScene,
+	"Scene Management",
+	"Demonstrates scene creation, transitions, and lifecycle management"
+);

@@ -108,11 +108,12 @@ void TilesetEditorPanel::RenderToolbar(engine::Engine& engine) {
 
 	if (loaded_image_) {
 		ImGui::TextColored(
-				ImVec4(0.3f, 1.0f, 0.3f, 1.0f),
-				"Loaded: %s (%dx%d)",
-				tileset_->source_image_path.c_str(),
-				loaded_image_->width,
-				loaded_image_->height);
+			ImVec4(0.3f, 1.0f, 0.3f, 1.0f),
+			"Loaded: %s (%dx%d)",
+			tileset_->source_image_path.c_str(),
+			loaded_image_->width,
+			loaded_image_->height
+		);
 	}
 	else {
 		ImGui::TextDisabled("No image loaded (using placeholder grid)");
@@ -280,7 +281,10 @@ void TilesetEditorPanel::RenderTilesetGrid() {
 		int hover_x = 0;
 		int hover_y = 0;
 		if (grid.PixelToCell(mouse_pos.x - grid_origin.x, mouse_pos.y - grid_origin.y, scale, hover_x, hover_y)
-			&& hover_x >= 0 && hover_x < grid_cols && hover_y >= 0 && hover_y < grid_rows) {
+			&& hover_x >= 0
+			&& hover_x < grid_cols
+			&& hover_y >= 0
+			&& hover_y < grid_rows) {
 			const auto cell_off = grid.CellOriginScaled(hover_x, hover_y, scale);
 			const auto hover_min = ImVec2(grid_origin.x + cell_off.x, grid_origin.y + cell_off.y);
 			const auto hover_max = ImVec2(hover_min.x + tile_display_w, hover_min.y + tile_display_h);
@@ -453,9 +457,10 @@ void TilesetEditorPanel::RenderTilePreview() {
 
 		const std::string id_text = std::to_string(selected_id);
 		const ImVec2 text_size = ImGui::CalcTextSize(id_text.c_str());
-		const auto text_pos =
-				ImVec2(preview_origin.x + (PREVIEW_SIZE - text_size.x) * 0.5f,
-					   preview_origin.y + (PREVIEW_SIZE - text_size.y) * 0.5f);
+		const auto text_pos = ImVec2(
+			preview_origin.x + (PREVIEW_SIZE - text_size.x) * 0.5f,
+			preview_origin.y + (PREVIEW_SIZE - text_size.y) * 0.5f
+		);
 		draw_list->AddText(text_pos, IM_COL32(255, 255, 255, 255), id_text.c_str());
 
 		ImGui::Dummy(ImVec2(PREVIEW_SIZE, PREVIEW_SIZE));
@@ -518,9 +523,10 @@ void TilesetEditorPanel::RenderTilePalette() {
 				draw_list->AddRectFilled(tile_min, tile_max, IM_COL32(100, 150, 200, 255));
 				const std::string id_text = std::to_string(selected_tiles_[i]);
 				const ImVec2 text_size = ImGui::CalcTextSize(id_text.c_str());
-				const auto text_pos =
-						ImVec2(tile_min.x + (PALETTE_TILE_SIZE - text_size.x) * 0.5f,
-							   tile_min.y + (PALETTE_TILE_SIZE - text_size.y) * 0.5f);
+				const auto text_pos = ImVec2(
+					tile_min.x + (PALETTE_TILE_SIZE - text_size.x) * 0.5f,
+					tile_min.y + (PALETTE_TILE_SIZE - text_size.y) * 0.5f
+				);
 				draw_list->AddText(text_pos, IM_COL32(255, 255, 255, 255), id_text.c_str());
 			}
 

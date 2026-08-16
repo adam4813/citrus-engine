@@ -91,7 +91,8 @@ void AnimationEditorPanel::Render() {
 	}
 
 	if (ImGui::BeginPopupModal("Keyframe Properties", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
-		if (selected_track_ >= 0 && selected_keyframe_ >= 0
+		if (selected_track_ >= 0
+			&& selected_keyframe_ >= 0
 			&& selected_track_ < static_cast<int>(clip_.tracks.size())) {
 			auto& track = clip_.tracks[selected_track_];
 			if (selected_keyframe_ < static_cast<int>(track.keyframes.size())) {
@@ -256,7 +257,10 @@ void AnimationEditorPanel::RenderTimeline() {
 		const float tick_height = is_major ? 15.0f : 8.0f;
 		const ImU32 tick_color = is_major ? IM_COL32(150, 150, 150, 255) : IM_COL32(100, 100, 100, 255);
 		draw_list->AddLine(
-				ImVec2(x, timeline_canvas_p1_.y - tick_height), ImVec2(x, timeline_canvas_p1_.y), tick_color);
+			ImVec2(x, timeline_canvas_p1_.y - tick_height),
+			ImVec2(x, timeline_canvas_p1_.y),
+			tick_color
+		);
 
 		// Draw frame number for major ticks
 		if (is_major) {
@@ -264,17 +268,21 @@ void AnimationEditorPanel::RenderTimeline() {
 			snprintf(label, sizeof(label), "%d", frame);
 			const ImVec2 text_size = ImGui::CalcTextSize(label);
 			draw_list->AddText(
-					ImVec2(x - text_size.x * 0.5f, timeline_canvas_p0_.y + 5.0f), IM_COL32(200, 200, 200, 255), label);
+				ImVec2(x - text_size.x * 0.5f, timeline_canvas_p0_.y + 5.0f),
+				IM_COL32(200, 200, 200, 255),
+				label
+			);
 		}
 	}
 
 	// Draw playhead
 	const float playhead_x = TimeToX(current_time_);
 	draw_list->AddLine(
-			ImVec2(playhead_x, timeline_canvas_p0_.y),
-			ImVec2(playhead_x, timeline_canvas_p1_.y),
-			IM_COL32(255, 100, 100, 255),
-			2.0f);
+		ImVec2(playhead_x, timeline_canvas_p0_.y),
+		ImVec2(playhead_x, timeline_canvas_p1_.y),
+		IM_COL32(255, 100, 100, 255),
+		2.0f
+	);
 
 	// Playhead handle (triangle at top)
 	const float handle_size = 8.0f;
@@ -354,7 +362,11 @@ void AnimationEditorPanel::RenderTracks() {
 		// Draw playhead vertical line for this track
 		const float playhead_x = TimeToX(current_time_);
 		draw_list->AddLine(
-				ImVec2(playhead_x, track_start.y), ImVec2(playhead_x, track_end.y), IM_COL32(255, 100, 100, 128), 1.0f);
+			ImVec2(playhead_x, track_start.y),
+			ImVec2(playhead_x, track_end.y),
+			IM_COL32(255, 100, 100, 128),
+			1.0f
+		);
 
 		// Draw keyframes
 		for (int kf_idx = 0; kf_idx < static_cast<int>(track.keyframes.size()); ++kf_idx) {
@@ -374,7 +386,9 @@ void AnimationEditorPanel::RenderTracks() {
 		}
 
 		// Track interaction (for selection)
-		if (mouse_pos.y >= track_start.y && mouse_pos.y <= track_end.y && mouse_pos.x >= tracks_canvas_p0_.x
+		if (mouse_pos.y >= track_start.y
+			&& mouse_pos.y <= track_end.y
+			&& mouse_pos.x >= tracks_canvas_p0_.x
 			&& mouse_pos.x <= tracks_canvas_p1_.x) {
 			if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) && hovered_keyframe_ < 0) {
 				selected_track_ = track_idx;

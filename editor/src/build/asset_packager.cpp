@@ -8,10 +8,11 @@
 namespace editor::build {
 
 bool CopyAssetPackager::Package(
-		const ProjectModel& /*project*/,
-		const std::filesystem::path& source_assets,
-		const std::filesystem::path& dest_assets,
-		BuildReporter& reporter) {
+	const ProjectModel& /*project*/,
+	const std::filesystem::path& source_assets,
+	const std::filesystem::path& dest_assets,
+	BuildReporter& reporter
+) {
 	namespace fs = std::filesystem;
 	std::error_code ec;
 
@@ -63,8 +64,6 @@ bool CopyAssetPackager::Package(
 	return true;
 }
 
-std::unique_ptr<IAssetPackager> MakeDefaultAssetPackager() {
-	return std::make_unique<CopyAssetPackager>();
-}
+std::unique_ptr<IAssetPackager> MakeDefaultAssetPackager() { return std::make_unique<CopyAssetPackager>(); }
 
 } // namespace editor::build

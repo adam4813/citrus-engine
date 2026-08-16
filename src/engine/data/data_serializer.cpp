@@ -45,7 +45,8 @@ static void data_value_to_json(json& j, const DataValue& value) {
 				j = arg;
 			}
 		},
-		value);
+		value
+	);
 }
 
 // Helper to get type name from DataValue
@@ -53,24 +54,17 @@ static std::string get_value_type_name(const DataValue& value) {
 	return std::visit(
 		[](auto&& arg) -> std::string {
 			using T = std::decay_t<decltype(arg)>;
-			if constexpr (std::is_same_v<T, bool>)
-				return "bool";
-			else if constexpr (std::is_same_v<T, int>)
-				return "int";
-			else if constexpr (std::is_same_v<T, float>)
-				return "float";
-			else if constexpr (std::is_same_v<T, glm::vec2>)
-				return "vec2";
-			else if constexpr (std::is_same_v<T, glm::vec3>)
-				return "vec3";
-			else if constexpr (std::is_same_v<T, glm::vec4>)
-				return "vec4";
-			else if constexpr (std::is_same_v<T, std::string>)
-				return "string";
-			else
-				return "unknown";
+			if constexpr (std::is_same_v<T, bool>) return "bool";
+			else if constexpr (std::is_same_v<T, int>) return "int";
+			else if constexpr (std::is_same_v<T, float>) return "float";
+			else if constexpr (std::is_same_v<T, glm::vec2>) return "vec2";
+			else if constexpr (std::is_same_v<T, glm::vec3>) return "vec3";
+			else if constexpr (std::is_same_v<T, glm::vec4>) return "vec4";
+			else if constexpr (std::is_same_v<T, std::string>) return "string";
+			else return "unknown";
 		},
-		value);
+		value
+	);
 }
 
 // Helper to convert JSON to DataValue based on type name
@@ -98,8 +92,7 @@ static DataValue json_to_data_value(const json& j, const std::string& type_name)
 	}
 	else if (type_name == "vec4") {
 		if (j.is_array() && j.size() >= 4) {
-			return glm::vec4(j[0].get<float>(), j[1].get<float>(), j[2].get<float>(),
-							 j[3].get<float>());
+			return glm::vec4(j[0].get<float>(), j[1].get<float>(), j[2].get<float>(), j[3].get<float>());
 		}
 		return glm::vec4(0.0f);
 	}
@@ -255,8 +248,7 @@ Schema DataSerializer::DeserializeSchema(const std::string& json_str) {
 			SchemaField field;
 			field.name = field_json["name"].get<std::string>();
 			field.type_name = field_json["type_name"].get<std::string>();
-			field.default_value =
-				json_to_data_value(field_json["default_value"], field.type_name);
+			field.default_value = json_to_data_value(field_json["default_value"], field.type_name);
 			schema.fields.push_back(field);
 		}
 	}
@@ -315,7 +307,8 @@ std::string DataSerializer::ExportTableToCSV(const DataTable& table) {
 							oss << "\"" << escaped << "\"";
 						}
 					},
-					value);
+					value
+				);
 			}
 		}
 		oss << "\n";
@@ -324,8 +317,7 @@ std::string DataSerializer::ExportTableToCSV(const DataTable& table) {
 	return oss.str();
 }
 
-DataTable DataSerializer::ImportTableFromCSV(const std::string& csv_str,
-											  const std::string& table_name) {
+DataTable DataSerializer::ImportTableFromCSV(const std::string& csv_str, const std::string& table_name) {
 	DataTable table(table_name);
 
 	std::istringstream iss(csv_str);
@@ -357,15 +349,13 @@ DataTable DataSerializer::ImportTableFromCSV(const std::string& csv_str,
 
 	// Read data rows
 	while (std::getline(iss, line)) {
-		if (line.empty())
-			continue;
+		if (line.empty()) continue;
 
 		std::istringstream row_stream(line);
 		std::string cell;
 
 		// Read key
-		if (!std::getline(row_stream, cell, ','))
-			continue;
+		if (!std::getline(row_stream, cell, ',')) continue;
 
 		DataRow row;
 		row.key = cell;

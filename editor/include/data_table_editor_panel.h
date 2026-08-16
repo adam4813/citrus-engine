@@ -15,7 +15,7 @@ namespace editor {
 
 /**
  * @brief Data table editor panel for editing data tables in a spreadsheet-like interface
- * 
+ *
  * Provides a visual editor for creating and editing data tables with schema management,
  * inline cell editing, sorting, filtering, and CSV import/export capabilities.
  */

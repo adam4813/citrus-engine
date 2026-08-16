@@ -14,7 +14,7 @@ namespace editor {
 
 /**
  * @brief Basic graph editor panel
- * 
+ *
  * Provides a foundation for node graph editing using ImGui.
  * This is a minimal implementation - consumer editors (shader, texture, etc.)
  * will build on top of this for their specific needs.

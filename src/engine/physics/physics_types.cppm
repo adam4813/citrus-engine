@@ -19,9 +19,9 @@ enum class PhysicsEngineType { JoltPhysics, Bullet3, PhysX };
 
 // Motion types for rigid bodies
 enum class MotionType {
-	Static, // Immovable object
+	Static,    // Immovable object
 	Kinematic, // Animated object (script-controlled)
-	Dynamic // Physics-simulated object
+	Dynamic    // Physics-simulated object
 };
 
 // Shape types for colliders
@@ -31,7 +31,7 @@ enum class ShapeType {
 	Capsule,
 	Cylinder,
 	ConvexHull,
-	Mesh, // Static only
+	Mesh,    // Static only
 	Compound // Multiple shapes combined
 };
 
@@ -245,9 +245,10 @@ struct PhysicsTransform {
 		transform.position = glm::vec3(matrix[3]);
 		transform.rotation = glm::normalize(glm::quat_cast(matrix));
 		transform.scale = glm::vec3(
-				glm::length(glm::vec3(matrix[0])),
-				glm::length(glm::vec3(matrix[1])),
-				glm::length(glm::vec3(matrix[2])));
+			glm::length(glm::vec3(matrix[0])),
+			glm::length(glm::vec3(matrix[1])),
+			glm::length(glm::vec3(matrix[2]))
+		);
 		return transform;
 	}
 };

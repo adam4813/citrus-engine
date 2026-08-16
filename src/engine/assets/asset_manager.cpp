@@ -43,7 +43,7 @@ std::shared_ptr<Image> AssetManager::LoadImage(const std::filesystem::path& abso
 	int channels = 0;
 	stbi_set_flip_vertically_on_load(true);
 	stbi_uc* pixels =
-			stbi_load_from_memory(file_data.data(), static_cast<int>(file_data.size()), &width, &height, &channels, 4);
+		stbi_load_from_memory(file_data.data(), static_cast<int>(file_data.size()), &width, &height, &channels, 4);
 	if (!pixels) {
 		// stb_image failed to decode
 		return nullptr;

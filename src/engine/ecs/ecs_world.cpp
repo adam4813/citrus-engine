@@ -39,10 +39,10 @@ void RegisterGlmTypes(const flecs::world& world) {
 	// Register glm::mat4 with all 16 members for proper serialization
 	// mat4 is column-major: [0] = col0, [1] = col1, [2] = col2, [3] = col3
 	world.component<glm::mat4>()
-			.member<glm::vec4>("c0")
-			.member<glm::vec4>("c1")
-			.member<glm::vec4>("c2")
-			.member<glm::vec4>("c3");
+		.member<glm::vec4>("c0")
+		.member<glm::vec4>("c1")
+		.member<glm::vec4>("c2")
+		.member<glm::vec4>("c3");
 }
 
 ECSWorld::ECSWorld() {
@@ -53,12 +53,12 @@ ECSWorld::ECSWorld() {
 	RegisterGlmTypes(world_);
 
 	world_.component<std::string>()
-			.opaque(flecs::String)
-			.serialize([](const flecs::serializer* s, const std::string* data) -> int {
-				const char* str = data->c_str();
-				return s->value(flecs::String, &str);
-			})
-			.assign_string([](std::string* data, const char* value) { *data = value ? value : ""; });
+		.opaque(flecs::String)
+		.serialize([](const flecs::serializer* s, const std::string* data) -> int {
+			const char* str = data->c_str();
+			return s->value(flecs::String, &str);
+		})
+		.assign_string([](std::string* data, const char* value) { *data = value ? value : ""; });
 
 	auto& registry = ComponentRegistry::Instance();
 
@@ -66,83 +66,83 @@ ECSWorld::ECSWorld() {
 	// IMPORTANT: Fields must be registered in the EXACT same order as they appear in the struct!
 	// All fields must be registered for correct memory layout, even if not shown in editor.
 	registry.Register<Transform>("Transform", world_)
-			.Category("Core")
-			.Field("position", &Transform::position)
-			.Field("rotation", &Transform::rotation)
-			.Field("scale", &Transform::scale)
-			.Build();
+		.Category("Core")
+		.Field("position", &Transform::position)
+		.Field("rotation", &Transform::rotation)
+		.Field("scale", &Transform::scale)
+		.Build();
 
 	registry.Register<WorldTransform>("WorldTransform", world_)
-			.Category("Core")
-			.Field("position", &WorldTransform::position)
-			.Field("rotation", &WorldTransform::rotation)
-			.Field("scale", &WorldTransform::scale)
-			.Build();
+		.Category("Core")
+		.Field("position", &WorldTransform::position)
+		.Field("rotation", &WorldTransform::rotation)
+		.Field("scale", &WorldTransform::scale)
+		.Build();
 
 	registry.Register<Velocity>("Velocity", world_)
-			.Category("Core")
-			.Field("linear", &Velocity::linear)
-			.Field("angular", &Velocity::angular)
-			.Build();
+		.Category("Core")
+		.Field("linear", &Velocity::linear)
+		.Field("angular", &Velocity::angular)
+		.Build();
 
 	// Renderable component
 	registry.Register<Renderable>("Renderable", world_)
-			.Category("Rendering")
-			.Field("visible", &Renderable::visible)
-			.Field("render_layer", &Renderable::render_layer)
-			.Field("alpha", &Renderable::alpha)
-			.Build();
+		.Category("Rendering")
+		.Field("visible", &Renderable::visible)
+		.Field("render_layer", &Renderable::render_layer)
+		.Field("alpha", &Renderable::alpha)
+		.Build();
 
 	registry.Register<Camera>("Camera", world_)
-			.Category("Rendering")
-			.Field("target", &Camera::target)
-			.Field("up", &Camera::up)
-			.Field("fov", &Camera::fov)
-			.Field("aspect_ratio", &Camera::aspect_ratio)
-			.Field("near_plane", &Camera::near_plane)
-			.Field("far_plane", &Camera::far_plane)
-			.Field("view_matrix", &Camera::view_matrix, FieldType::ReadOnly)
-			.Field("projection_matrix", &Camera::projection_matrix, FieldType::ReadOnly)
-			.Build();
+		.Category("Rendering")
+		.Field("target", &Camera::target)
+		.Field("up", &Camera::up)
+		.Field("fov", &Camera::fov)
+		.Field("aspect_ratio", &Camera::aspect_ratio)
+		.Field("near_plane", &Camera::near_plane)
+		.Field("far_plane", &Camera::far_plane)
+		.Field("view_matrix", &Camera::view_matrix, FieldType::ReadOnly)
+		.Field("projection_matrix", &Camera::projection_matrix, FieldType::ReadOnly)
+		.Build();
 
 	registry.Register<Sprite>("Sprite", world_)
-			.Category("Rendering")
-			.Field("texture", &Sprite::texture)
-			.Field("position", &Sprite::position)
-			.Field("size", &Sprite::size)
-			.Field("rotation", &Sprite::rotation)
-			.Field("color", &Sprite::color, FieldType::Color)
-			.Field("texture_offset", &Sprite::texture_offset)
-			.Field("texture_scale", &Sprite::texture_scale)
-			.Field("layer", &Sprite::layer)
-			.Field("pivot", &Sprite::pivot)
-			.Field("flip_x", &Sprite::flip_x)
-			.Field("flip_y", &Sprite::flip_y)
-			.Build();
+		.Category("Rendering")
+		.Field("texture", &Sprite::texture)
+		.Field("position", &Sprite::position)
+		.Field("size", &Sprite::size)
+		.Field("rotation", &Sprite::rotation)
+		.Field("color", &Sprite::color, FieldType::Color)
+		.Field("texture_offset", &Sprite::texture_offset)
+		.Field("texture_scale", &Sprite::texture_scale)
+		.Field("layer", &Sprite::layer)
+		.Field("pivot", &Sprite::pivot)
+		.Field("flip_x", &Sprite::flip_x)
+		.Field("flip_y", &Sprite::flip_y)
+		.Build();
 
 	// Register Light::Type enum as a flecs component for proper serialization
 	// Note: Flecs treats enum classes as integers for serialization
 	world_.component<Light::Type>();
 
 	registry.Register<Light>("Light", world_)
-			.Category("Rendering")
-			.Field("type", &Light::type)
-			.Field("color", &Light::color, FieldType::Color)
-			.Field("intensity", &Light::intensity)
-			.Field("range", &Light::range)
-			.Field("attenuation", &Light::attenuation)
-			.Field("spot_angle", &Light::spot_angle)
-			.Field("spot_falloff", &Light::spot_falloff)
-			.Field("direction", &Light::direction)
-			.Build();
+		.Category("Rendering")
+		.Field("type", &Light::type)
+		.Field("color", &Light::color, FieldType::Color)
+		.Field("intensity", &Light::intensity)
+		.Field("range", &Light::range)
+		.Field("attenuation", &Light::attenuation)
+		.Field("spot_angle", &Light::spot_angle)
+		.Field("spot_falloff", &Light::spot_falloff)
+		.Field("direction", &Light::direction)
+		.Build();
 
 	registry.Register<Animation>("Animation", world_)
-			.Category("Rendering")
-			.Field("animation_time", &Animation::animation_time)
-			.Field("animation_speed", &Animation::animation_speed)
-			.Field("looping", &Animation::looping)
-			.Field("playing", &Animation::playing)
-			.Build();
+		.Category("Rendering")
+		.Field("animation_time", &Animation::animation_time)
+		.Field("animation_speed", &Animation::animation_speed)
+		.Field("looping", &Animation::looping)
+		.Field("playing", &Animation::playing)
+		.Build();
 
 	// Register the new animation system Animator component
 	registry.Register<Animator>("Animator", world_).Category("Animation").Build();
@@ -151,19 +151,19 @@ ECSWorld::ECSWorld() {
 
 	// Register scene components
 	registry.Register<SceneEntity>("SceneEntity", world_)
-			.Category("Scene")
-			.Field("name", &SceneEntity::name)
-			.Field("visible", &SceneEntity::visible)
-			.Field("static_entity", &SceneEntity::static_entity)
-			.Field("scene_layer", &SceneEntity::scene_layer)
-			.Build();
+		.Category("Scene")
+		.Field("name", &SceneEntity::name)
+		.Field("visible", &SceneEntity::visible)
+		.Field("static_entity", &SceneEntity::static_entity)
+		.Field("scene_layer", &SceneEntity::scene_layer)
+		.Build();
 
 	registry.Register<Spatial>("Spatial", world_)
-			.Category("Scene")
-			.Field("bounding_min", &Spatial::bounding_min)
-			.Field("bounding_max", &Spatial::bounding_max)
-			.Field("spatial_layer", &Spatial::spatial_layer)
-			.Build();
+		.Category("Scene")
+		.Field("bounding_min", &Spatial::bounding_min)
+		.Field("bounding_max", &Spatial::bounding_max)
+		.Field("spatial_layer", &Spatial::spatial_layer)
+		.Build();
 
 	// Register tag components (no fields)
 	registry.Register<Rotating>("Rotating", world_).Category("Tags").Build();
@@ -177,9 +177,9 @@ ECSWorld::ECSWorld() {
 	registry.Register<Group>("Group", world_).Category("Scene").Build();
 	registry.Register<Tags>("Tags", world_).Category("Scene").Field("tags", &Tags::tags).Build();
 	registry.Register<PrefabInstance>("PrefabInstance", world_)
-			.Category("Scene")
-			.Field("prefab_path", &PrefabInstance::prefab_path)
-			.Build();
+		.Category("Scene")
+		.Field("prefab_path", &PrefabInstance::prefab_path)
+		.Build();
 
 	// Register audio components
 	// Register PlayState enum for proper serialization
@@ -188,15 +188,15 @@ ECSWorld::ECSWorld() {
 	// Register AudioSource with ComponentRegistry for editor properties panel.
 	// Only persistent fields are registered — clip_id and play_handle are runtime-only.
 	registry.Register<audio::AudioSource>("AudioSource", world_)
-			.Category("Audio")
-			.Field("volume", &audio::AudioSource::volume)
-			.Field("pitch", &audio::AudioSource::pitch)
-			.Field("looping", &audio::AudioSource::looping)
-			.Field("spatial", &audio::AudioSource::spatial)
-			.Field("position", &audio::AudioSource::position)
-			.Field("state", &audio::AudioSource::state)
-			.EnumLabels({"Stopped", "Playing", "Paused"})
-			.Build();
+		.Category("Audio")
+		.Field("volume", &audio::AudioSource::volume)
+		.Field("pitch", &audio::AudioSource::pitch)
+		.Field("looping", &audio::AudioSource::looping)
+		.Field("spatial", &audio::AudioSource::spatial)
+		.Field("position", &audio::AudioSource::position)
+		.Field("state", &audio::AudioSource::state)
+		.EnumLabels({"Stopped", "Playing", "Paused"})
+		.Build();
 
 	// Override Flecs serialization with opaque type to exclude runtime fields (clip_id, play_handle).
 	// The default .member() registration above creates wrong offsets because clip_id is skipped,
@@ -204,116 +204,118 @@ ECSWorld::ECSWorld() {
 	{
 		// Shadow component describes the serialization schema (persistent fields only)
 		auto as_type = world_.component("AudioSourceSchema")
-								 .member<float>("volume")
-								 .member<float>("pitch")
-								 .member<bool>("looping")
-								 .member<bool>("spatial")
-								 .member<glm::vec3>("position")
-								 .member<int>("state");
+						   .member<float>("volume")
+						   .member<float>("pitch")
+						   .member<bool>("looping")
+						   .member<bool>("spatial")
+						   .member<glm::vec3>("position")
+						   .member<int>("state");
 
 		world_.component<audio::AudioSource>()
-				.opaque(as_type)
-				.serialize([](const flecs::serializer* s, const audio::AudioSource* data) -> int {
-					s->member("volume");
-					s->value(data->volume);
-					s->member("pitch");
-					s->value(data->pitch);
-					s->member("looping");
-					s->value(data->looping);
-					s->member("spatial");
-					s->value(data->spatial);
-					s->member("position");
-					s->value(data->position);
-					s->member("state");
-					int state_val = static_cast<int>(data->state);
-					s->value(state_val);
-					return 0;
-				})
-				.ensure_member([](audio::AudioSource* dst, const char* member) -> void* {
-					if (!strcmp(member, "volume")) return &dst->volume;
-					if (!strcmp(member, "pitch")) return &dst->pitch;
-					if (!strcmp(member, "looping")) return &dst->looping;
-					if (!strcmp(member, "spatial")) return &dst->spatial;
-					if (!strcmp(member, "position")) return &dst->position;
-					if (!strcmp(member, "state")) return &dst->state;
-					return nullptr; // clip_id, play_handle — not deserialized
-				});
+			.opaque(as_type)
+			.serialize([](const flecs::serializer* s, const audio::AudioSource* data) -> int {
+				s->member("volume");
+				s->value(data->volume);
+				s->member("pitch");
+				s->value(data->pitch);
+				s->member("looping");
+				s->value(data->looping);
+				s->member("spatial");
+				s->value(data->spatial);
+				s->member("position");
+				s->value(data->position);
+				s->member("state");
+				int state_val = static_cast<int>(data->state);
+				s->value(state_val);
+				return 0;
+			})
+			.ensure_member([](audio::AudioSource* dst, const char* member) -> void* {
+				if (!strcmp(member, "volume")) return &dst->volume;
+				if (!strcmp(member, "pitch")) return &dst->pitch;
+				if (!strcmp(member, "looping")) return &dst->looping;
+				if (!strcmp(member, "spatial")) return &dst->spatial;
+				if (!strcmp(member, "position")) return &dst->position;
+				if (!strcmp(member, "state")) return &dst->state;
+				return nullptr; // clip_id, play_handle — not deserialized
+			});
 	}
 
 	registry.Register<audio::AudioListener>("AudioListener", world_)
-			.Category("Audio")
-			.Field("position", &audio::AudioListener::position)
-			.Field("forward", &audio::AudioListener::forward)
-			.Field("up", &audio::AudioListener::up)
-			.Build();
+		.Category("Audio")
+		.Field("position", &audio::AudioListener::position)
+		.Field("forward", &audio::AudioListener::forward)
+		.Field("up", &audio::AudioListener::up)
+		.Build();
 
 	// Register AI components
 	registry.Register<BehaviorTreeComponent>("BehaviorTreeComponent", world_)
-			.Category("AI")
-			.Field("behavior_tree_asset", &BehaviorTreeComponent::behavior_tree_asset)
-			.Build();
+		.Category("AI")
+		.Field("behavior_tree_asset", &BehaviorTreeComponent::behavior_tree_asset)
+		.Build();
 
 	// Register physics components
 	registry.Register<physics::RigidBody>("RigidBody", world_)
-			.Category("Physics")
-			.Field("motion_type", &physics::RigidBody::motion_type)
-			.EnumLabels({"Static", "Kinematic", "Dynamic"})
-			.EnumTooltips(
-					{"Immovable object (floors, walls) — zero mass, infinite inertia",
-					 "Script-controlled motion (moving platforms, elevators) — not affected by forces",
-					 "Physics-simulated (falling objects, projectiles) — affected by gravity and forces"})
-			.Field("mass", &physics::RigidBody::mass)
-			.Field("linear_damping", &physics::RigidBody::linear_damping)
-			.Field("angular_damping", &physics::RigidBody::angular_damping)
-			.Field("friction", &physics::RigidBody::friction)
-			.Field("restitution", &physics::RigidBody::restitution)
-			.Field("enable_ccd", &physics::RigidBody::enable_ccd)
-			.Field("use_gravity", &physics::RigidBody::use_gravity)
-			.Field("gravity_scale", &physics::RigidBody::gravity_scale)
-			.Build();
+		.Category("Physics")
+		.Field("motion_type", &physics::RigidBody::motion_type)
+		.EnumLabels({"Static", "Kinematic", "Dynamic"})
+		.EnumTooltips(
+			{"Immovable object (floors, walls) — zero mass, infinite inertia",
+			 "Script-controlled motion (moving platforms, elevators) — not affected by forces",
+			 "Physics-simulated (falling objects, projectiles) — affected by gravity and forces"}
+		)
+		.Field("mass", &physics::RigidBody::mass)
+		.Field("linear_damping", &physics::RigidBody::linear_damping)
+		.Field("angular_damping", &physics::RigidBody::angular_damping)
+		.Field("friction", &physics::RigidBody::friction)
+		.Field("restitution", &physics::RigidBody::restitution)
+		.Field("enable_ccd", &physics::RigidBody::enable_ccd)
+		.Field("use_gravity", &physics::RigidBody::use_gravity)
+		.Field("gravity_scale", &physics::RigidBody::gravity_scale)
+		.Build();
 
 	registry.Register<physics::CollisionShape>("CollisionShape", world_)
-			.Category("Physics")
-			.Field("type", &physics::CollisionShape::type)
-			.EnumLabels({"Box", "Sphere", "Capsule", "Cylinder", "ConvexHull", "Mesh", "Compound"})
-			.EnumTooltips(
-					{"Rectangular box collider",
-					 "Spherical collider",
-					 "Capsule collider (cylinder with rounded ends)",
-					 "Cylindrical collider",
-					 "Convex hull from mesh vertices",
-					 "Triangle mesh collider (static only)",
-					 "Multiple shapes combined"})
-			.Field("box_half_extents", &physics::CollisionShape::box_half_extents)
-			.VisibleWhen("type", {0})
-			.Field("sphere_radius", &physics::CollisionShape::sphere_radius)
-			.VisibleWhen("type", {1})
-			.Field("capsule_radius", &physics::CollisionShape::capsule_radius)
-			.VisibleWhen("type", {2})
-			.Field("capsule_height", &physics::CollisionShape::capsule_height)
-			.VisibleWhen("type", {2})
-			.Field("cylinder_radius", &physics::CollisionShape::cylinder_radius)
-			.VisibleWhen("type", {3})
-			.Field("cylinder_height", &physics::CollisionShape::cylinder_height)
-			.VisibleWhen("type", {3})
-			.Field("offset", &physics::CollisionShape::offset)
-			.Build();
+		.Category("Physics")
+		.Field("type", &physics::CollisionShape::type)
+		.EnumLabels({"Box", "Sphere", "Capsule", "Cylinder", "ConvexHull", "Mesh", "Compound"})
+		.EnumTooltips(
+			{"Rectangular box collider",
+			 "Spherical collider",
+			 "Capsule collider (cylinder with rounded ends)",
+			 "Cylindrical collider",
+			 "Convex hull from mesh vertices",
+			 "Triangle mesh collider (static only)",
+			 "Multiple shapes combined"}
+		)
+		.Field("box_half_extents", &physics::CollisionShape::box_half_extents)
+		.VisibleWhen("type", {0})
+		.Field("sphere_radius", &physics::CollisionShape::sphere_radius)
+		.VisibleWhen("type", {1})
+		.Field("capsule_radius", &physics::CollisionShape::capsule_radius)
+		.VisibleWhen("type", {2})
+		.Field("capsule_height", &physics::CollisionShape::capsule_height)
+		.VisibleWhen("type", {2})
+		.Field("cylinder_radius", &physics::CollisionShape::cylinder_radius)
+		.VisibleWhen("type", {3})
+		.Field("cylinder_height", &physics::CollisionShape::cylinder_height)
+		.VisibleWhen("type", {3})
+		.Field("offset", &physics::CollisionShape::offset)
+		.Build();
 
 	registry.Register<physics::PhysicsVelocity>("PhysicsVelocity", world_)
-			.Category("Physics")
-			.Field("linear", &physics::PhysicsVelocity::linear)
-			.Field("angular", &physics::PhysicsVelocity::angular)
-			.Build();
+		.Category("Physics")
+		.Field("linear", &physics::PhysicsVelocity::linear)
+		.Field("angular", &physics::PhysicsVelocity::angular)
+		.Build();
 
 	registry.Register<physics::PhysicsWorldConfig>("PhysicsWorldConfig", world_)
-			.Category("Physics")
-			.Hidden()
-			.Field("gravity", &physics::PhysicsWorldConfig::gravity)
-			.Field("fixed_timestep", &physics::PhysicsWorldConfig::fixed_timestep)
-			.Field("max_substeps", &physics::PhysicsWorldConfig::max_substeps)
-			.Field("enable_sleeping", &physics::PhysicsWorldConfig::enable_sleeping)
-			.Field("show_debug_physics", &physics::PhysicsWorldConfig::show_debug_physics)
-			.Build();
+		.Category("Physics")
+		.Hidden()
+		.Field("gravity", &physics::PhysicsWorldConfig::gravity)
+		.Field("fixed_timestep", &physics::PhysicsWorldConfig::fixed_timestep)
+		.Field("max_substeps", &physics::PhysicsWorldConfig::max_substeps)
+		.Field("enable_sleeping", &physics::PhysicsWorldConfig::enable_sleeping)
+		.Field("show_debug_physics", &physics::PhysicsWorldConfig::show_debug_physics)
+		.Build();
 
 	// Tag components
 	registry.Register<physics::IsTrigger>("IsTrigger", world_).Category("Physics").Build();
@@ -436,8 +438,9 @@ void ECSWorld::SetActiveCamera(const flecs::entity camera) {
 	world_.defer_begin();
 
 	// Remove ActiveCamera tag from all entities
-	world_.query_builder<>().with<ActiveCamera>().build().each(
-			[](const flecs::entity entity) { entity.remove<ActiveCamera>(); });
+	world_.query_builder<>().with<ActiveCamera>().build().each([](const flecs::entity entity) {
+		entity.remove<ActiveCamera>();
+	});
 
 	// Add ActiveCamera tag to new camera
 	if (camera.is_valid()) {
@@ -466,8 +469,12 @@ void ECSWorld::SetActiveCamera(const flecs::entity camera) {
 		const glm::vec3 world_min = transform.position + spatial.bounding_min;
 		const glm::vec3 world_max = transform.position + spatial.bounding_max;
 
-		if (point.x >= world_min.x && point.x <= world_max.x && point.y >= world_min.y && point.y <= world_max.y
-			&& point.z >= world_min.z && point.z <= world_max.z) {
+		if (point.x >= world_min.x
+			&& point.x <= world_max.x
+			&& point.y >= world_min.y
+			&& point.y <= world_max.y
+			&& point.z >= world_min.z
+			&& point.z <= world_max.z) {
 			result.push_back(entity);
 		}
 	});

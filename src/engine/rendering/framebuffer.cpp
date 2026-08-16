@@ -64,15 +64,16 @@ bool Framebuffer::Create(const uint32_t width, const uint32_t height) {
 	glGenTextures(1, &color_texture_id_);
 	glBindTexture(GL_TEXTURE_2D, color_texture_id_);
 	glTexImage2D(
-			GL_TEXTURE_2D,
-			0,
-			GL_RGBA8,
-			static_cast<GLsizei>(width),
-			static_cast<GLsizei>(height),
-			0,
-			GL_RGBA,
-			GL_UNSIGNED_BYTE,
-			nullptr);
+		GL_TEXTURE_2D,
+		0,
+		GL_RGBA8,
+		static_cast<GLsizei>(width),
+		static_cast<GLsizei>(height),
+		0,
+		GL_RGBA,
+		GL_UNSIGNED_BYTE,
+		nullptr
+	);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -83,7 +84,11 @@ bool Framebuffer::Create(const uint32_t width, const uint32_t height) {
 	glGenRenderbuffers(1, &depth_rbo_id_);
 	glBindRenderbuffer(GL_RENDERBUFFER, depth_rbo_id_);
 	glRenderbufferStorage(
-			GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, static_cast<GLsizei>(width), static_cast<GLsizei>(height));
+		GL_RENDERBUFFER,
+		GL_DEPTH24_STENCIL8,
+		static_cast<GLsizei>(width),
+		static_cast<GLsizei>(height)
+	);
 	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, depth_rbo_id_);
 
 	// Check framebuffer completeness

@@ -4,14 +4,14 @@ namespace editor::build {
 
 const char* PhaseLabel(BuildPhase phase) {
 	switch (phase) {
-		case BuildPhase::Idle: return "Idle";
-		case BuildPhase::Staging: return "Staging files";
-		case BuildPhase::Configuring: return "Configuring CMake";
-		case BuildPhase::Compiling: return "Compiling";
-		case BuildPhase::Installing: return "Installing";
-		case BuildPhase::Succeeded: return "Succeeded";
-		case BuildPhase::Failed: return "Failed";
-		case BuildPhase::Cancelled: return "Cancelled";
+	case BuildPhase::Idle: return "Idle";
+	case BuildPhase::Staging: return "Staging files";
+	case BuildPhase::Configuring: return "Configuring CMake";
+	case BuildPhase::Compiling: return "Compiling";
+	case BuildPhase::Installing: return "Installing";
+	case BuildPhase::Succeeded: return "Succeeded";
+	case BuildPhase::Failed: return "Failed";
+	case BuildPhase::Cancelled: return "Cancelled";
 	}
 	return "?";
 }

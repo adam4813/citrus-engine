@@ -88,14 +88,14 @@ void MeshAssetInfo::ToJson(nlohmann::json& j) {
 
 void MeshAssetInfo::RegisterType() {
 	AssetTypeRegistry::Instance()
-			.RegisterType<MeshAssetInfo>(MeshAssetInfo::TYPE_NAME, AssetType::MESH)
-			.DisplayName("Mesh")
-			.Category("Rendering")
-			.Field("name", &MeshAssetInfo::name, "Name")
-			.Field("mesh_type", &MeshAssetInfo::mesh_type, "Mesh Type", ecs::FieldType::Selection)
-			.Options({mesh_types::QUAD, mesh_types::CUBE, mesh_types::SPHERE, mesh_types::CAPSULE, mesh_types::FILE})
-			.Field("file_path", &MeshAssetInfo::file_path, "File Path", ecs::FieldType::FilePath)
-			.Build();
+		.RegisterType<MeshAssetInfo>(MeshAssetInfo::TYPE_NAME, AssetType::MESH)
+		.DisplayName("Mesh")
+		.Category("Rendering")
+		.Field("name", &MeshAssetInfo::name, "Name")
+		.Field("mesh_type", &MeshAssetInfo::mesh_type, "Mesh Type", ecs::FieldType::Selection)
+		.Options({mesh_types::QUAD, mesh_types::CUBE, mesh_types::SPHERE, mesh_types::CAPSULE, mesh_types::FILE})
+		.Field("file_path", &MeshAssetInfo::file_path, "File Path", ecs::FieldType::FilePath)
+		.Build();
 }
 
 void MeshAssetInfo::RegisterBuiltins() {
@@ -119,20 +119,21 @@ void MeshAssetInfo::RegisterBuiltins() {
 	const auto sphere = std::make_shared<MeshAssetInfo>("Sphere");
 	sphere->guid = builtin_guids::MESH_SPHERE;
 	sphere->mesh_type = mesh_types::SPHERE;
-	sphere->params[0] = 0.5f; // radius — produces 1-unit diameter
+	sphere->params[0] = 0.5f;  // radius — produces 1-unit diameter
 	sphere->params[1] = 32.0f; // segments
 	cache.Add(sphere);
 }
 
 void MeshAssetInfo::SetupRefBinding(flecs::world& world) {
 	SetupRefBindingImpl<MeshAssetInfo, MeshRef, rendering::Renderable>(
-			world,
-			"MeshRef",
-			"Rendering",
-			"MeshRefResolve",
-			MeshAssetInfo::TYPE_NAME,
-			[](const auto& asset, auto& target) { target.mesh = asset->id; },
-			[](auto& target) { target.mesh = rendering::INVALID_MESH; });
+		world,
+		"MeshRef",
+		"Rendering",
+		"MeshRefResolve",
+		MeshAssetInfo::TYPE_NAME,
+		[](const auto& asset, auto& target) { target.mesh = asset->id; },
+		[](auto& target) { target.mesh = rendering::INVALID_MESH; }
+	);
 }
 
 } // namespace engine::assets

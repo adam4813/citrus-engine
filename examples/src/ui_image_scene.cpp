@@ -83,10 +83,11 @@ public:
 
 		// Create a child icon in the corner of the logo
 		std::unique_ptr<engine::ui::elements::Image> icon_image_ = std::make_unique<engine::ui::elements::Image>(
-				image_width_ - 64.0f, // Position relative to parent
-				0.0f,
-				64.0f,
-				64.0f);
+			image_width_ - 64.0f, // Position relative to parent
+			0.0f,
+			64.0f,
+			64.0f
+		);
 		icon_image_->SetSprite(icon_sprite_);
 
 		// Add icon as child of logo (demonstrates composition)
@@ -94,11 +95,12 @@ public:
 
 		// Create text label as another child
 		std::unique_ptr<engine::ui::elements::Text> label_text_ = std::make_unique<engine::ui::elements::Text>(
-				10.0f, // Relative to logo image
-				image_height_ + 10.0f,
-				"Logo Image",
-				16.0f,
-				engine::ui::batch_renderer::Colors::WHITE);
+			10.0f, // Relative to logo image
+			image_height_ + 10.0f,
+			"Logo Image",
+			16.0f,
+			engine::ui::batch_renderer::Colors::WHITE
+		);
 
 		// Add text as child (will move with the image)
 		logo_image_->AddChild(std::move(label_text_));
@@ -151,10 +153,20 @@ public:
 		BatchRenderer::SubmitText("Image Element Demo", 10.0f, 10.0f, 24, Colors::GOLD);
 
 		BatchRenderer::SubmitText(
-				"The image has two children: an icon and a text label", 10.0f, 40.0f, 16, Colors::WHITE);
+			"The image has two children: an icon and a text label",
+			10.0f,
+			40.0f,
+			16,
+			Colors::WHITE
+		);
 
 		BatchRenderer::SubmitText(
-				"Children move with the parent image (relative positioning)", 10.0f, 60.0f, 16, Colors::LIGHT_GRAY);
+			"Children move with the parent image (relative positioning)",
+			10.0f,
+			60.0f,
+			16,
+			Colors::LIGHT_GRAY
+		);
 
 		// Render debug overlay (after normal UI, so it appears on top)
 		if (logo_image_) {
@@ -199,10 +211,11 @@ public:
 		ImGui::Separator();
 		ImGui::Text("Code Example:");
 		ImGui::TextWrapped(
-				"auto image = std::make_unique<Image>(x, y, w, h);\n"
-				"image->SetSprite(sprite);\n"
-				"image->AddChild(std::move(child));\n"
-				"image->Render();  // Renders sprite + children");
+			"auto image = std::make_unique<Image>(x, y, w, h);\n"
+			"image->SetSprite(sprite);\n"
+			"image->AddChild(std::move(child));\n"
+			"image->Render();  // Renders sprite + children"
+		);
 
 		ImGui::Separator();
 		ImGui::Text("Debug Visualizer:");

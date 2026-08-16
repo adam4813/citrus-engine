@@ -73,9 +73,9 @@ TEST_F(UIMouseEventTest, UIElementContainsPoint) {
 	EXPECT_TRUE(element.Contains(299.0f, 199.0f)); // Bottom-right corner
 
 	// Outside bounds
-	EXPECT_FALSE(element.Contains(50.0f, 150.0f)); // Left
+	EXPECT_FALSE(element.Contains(50.0f, 150.0f));  // Left
 	EXPECT_FALSE(element.Contains(350.0f, 150.0f)); // Right
-	EXPECT_FALSE(element.Contains(150.0f, 50.0f)); // Above
+	EXPECT_FALSE(element.Contains(150.0f, 50.0f));  // Above
 	EXPECT_FALSE(element.Contains(150.0f, 250.0f)); // Below
 }
 
@@ -253,32 +253,32 @@ TEST_F(UIMouseEventTest, MouseEventManagerPriorityOrdering) {
 
 	// Register low priority first
 	manager.RegisterRegion(
-			Rectangle{0.0f, 0.0f, 100.0f, 100.0f},
-			[&call_order](const MouseEvent&) {
-				call_order.push_back(1);
-				return false;
-			},
-			10 // Low priority
+		Rectangle{0.0f, 0.0f, 100.0f, 100.0f},
+		[&call_order](const MouseEvent&) {
+			call_order.push_back(1);
+			return false;
+		},
+		10 // Low priority
 	);
 
 	// Register high priority second
 	manager.RegisterRegion(
-			Rectangle{0.0f, 0.0f, 100.0f, 100.0f},
-			[&call_order](const MouseEvent&) {
-				call_order.push_back(2);
-				return false;
-			},
-			100 // High priority
+		Rectangle{0.0f, 0.0f, 100.0f, 100.0f},
+		[&call_order](const MouseEvent&) {
+			call_order.push_back(2);
+			return false;
+		},
+		100 // High priority
 	);
 
 	// Register medium priority third
 	manager.RegisterRegion(
-			Rectangle{0.0f, 0.0f, 100.0f, 100.0f},
-			[&call_order](const MouseEvent&) {
-				call_order.push_back(3);
-				return false;
-			},
-			50 // Medium priority
+		Rectangle{0.0f, 0.0f, 100.0f, 100.0f},
+		[&call_order](const MouseEvent&) {
+			call_order.push_back(3);
+			return false;
+		},
+		50 // Medium priority
 	);
 
 	MouseEvent event{50.0f, 50.0f};
@@ -298,21 +298,23 @@ TEST_F(UIMouseEventTest, MouseEventManagerEventConsumption) {
 
 	// First handler consumes event
 	manager.RegisterRegion(
-			Rectangle{0.0f, 0.0f, 100.0f, 100.0f},
-			[&call_count](const MouseEvent&) {
-				call_count++;
-				return true; // Consume event
-			},
-			100);
+		Rectangle{0.0f, 0.0f, 100.0f, 100.0f},
+		[&call_count](const MouseEvent&) {
+			call_count++;
+			return true; // Consume event
+		},
+		100
+	);
 
 	// Second handler should not be called
 	manager.RegisterRegion(
-			Rectangle{0.0f, 0.0f, 100.0f, 100.0f},
-			[&call_count](const MouseEvent&) {
-				call_count++;
-				return false;
-			},
-			50);
+		Rectangle{0.0f, 0.0f, 100.0f, 100.0f},
+		[&call_count](const MouseEvent&) {
+			call_count++;
+			return false;
+		},
+		50
+	);
 
 	MouseEvent event{50.0f, 50.0f};
 	bool handled = manager.DispatchEvent(event);
@@ -361,7 +363,7 @@ TEST_F(UIMouseEventTest, MouseEventManagerUnregister) {
 	MouseEventManager manager;
 
 	auto handle =
-			manager.RegisterRegion(Rectangle{0.0f, 0.0f, 100.0f, 100.0f}, [](const MouseEvent&) { return false; });
+		manager.RegisterRegion(Rectangle{0.0f, 0.0f, 100.0f, 100.0f}, [](const MouseEvent&) { return false; });
 
 	EXPECT_EQ(manager.GetRegionCount(), 1);
 
@@ -376,14 +378,22 @@ TEST_F(UIMouseEventTest, MouseEventManagerUnregisterByUserData) {
 	int user_data1 = 1;
 	int user_data2 = 2;
 
-	manager.RegisterRegion(
-			Rectangle{0.0f, 0.0f, 100.0f, 100.0f}, [](const MouseEvent&) { return false; }, 0, &user_data1);
+	manager
+		.RegisterRegion(Rectangle{0.0f, 0.0f, 100.0f, 100.0f}, [](const MouseEvent&) { return false; }, 0, &user_data1);
 
 	manager.RegisterRegion(
-			Rectangle{100.0f, 100.0f, 100.0f, 100.0f}, [](const MouseEvent&) { return false; }, 0, &user_data1);
+		Rectangle{100.0f, 100.0f, 100.0f, 100.0f},
+		[](const MouseEvent&) { return false; },
+		0,
+		&user_data1
+	);
 
 	manager.RegisterRegion(
-			Rectangle{200.0f, 200.0f, 100.0f, 100.0f}, [](const MouseEvent&) { return false; }, 0, &user_data2);
+		Rectangle{200.0f, 200.0f, 100.0f, 100.0f},
+		[](const MouseEvent&) { return false; },
+		0,
+		&user_data2
+	);
 
 	EXPECT_EQ(manager.GetRegionCount(), 3);
 
@@ -461,9 +471,9 @@ TEST_F(UIMouseEventTest, IntegrationUIElementAndManager) {
 
 	// Register element's bounds with manager
 	manager.RegisterRegion(
-			element_ptr->GetAbsoluteBounds(),
-			[element_ptr](const MouseEvent& event) { return element_ptr->ProcessMouseEvent(event); },
-			50 // Normal priority
+		element_ptr->GetAbsoluteBounds(),
+		[element_ptr](const MouseEvent& event) { return element_ptr->ProcessMouseEvent(event); },
+		50 // Normal priority
 	);
 
 	// Dispatch click event

@@ -28,11 +28,12 @@ public:
 	 * @param offset_position Whether to offset the position slightly
 	 */
 	PasteEntityCommand(
-			engine::scene::Scene* scene,
-			engine::ecs::ECSWorld& world,
-			std::string clipboard_json,
-			engine::ecs::Entity parent,
-			bool offset_position = true) :
+		engine::scene::Scene* scene,
+		engine::ecs::ECSWorld& world,
+		std::string clipboard_json,
+		engine::ecs::Entity parent,
+		bool offset_position = true
+	) :
 			scene_(scene), world_(world), clipboard_json_(std::move(clipboard_json)), parent_(parent),
 			offset_position_(offset_position), pasted_entity_() {}
 

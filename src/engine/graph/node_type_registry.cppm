@@ -17,10 +17,10 @@ class INodeEvaluator;
 
 /// Node type definition - describes a node type that can be instantiated
 struct NodeTypeDefinition {
-	std::string name; // e.g., "Add"
-	std::string category; // e.g., "Math"
-	std::string description; // Human-readable description
-	std::vector<Pin> default_inputs; // Default input pins
+	std::string name;                 // e.g., "Add"
+	std::string category;             // e.g., "Math"
+	std::string description;          // Human-readable description
+	std::vector<Pin> default_inputs;  // Default input pins
 	std::vector<Pin> default_outputs; // Default output pins
 
 	/// Factory function to create an evaluator for this node type
@@ -28,9 +28,8 @@ struct NodeTypeDefinition {
 
 	NodeTypeDefinition() = default;
 
-	NodeTypeDefinition(std::string node_name, std::string node_category, std::string node_description = "")
-		: name(std::move(node_name)), category(std::move(node_category)),
-		  description(std::move(node_description)) {}
+	NodeTypeDefinition(std::string node_name, std::string node_category, std::string node_description = "") :
+			name(std::move(node_name)), category(std::move(node_category)), description(std::move(node_description)) {}
 };
 
 /// Registry for node types

@@ -117,9 +117,10 @@ void SpriteEditorPanel::RenderToolbar(engine::Engine& engine) {
 	// Status message
 	if (!status_message_.empty()) {
 		ImGui::TextColored(
-				status_is_error_ ? ImVec4(1.0f, 0.3f, 0.3f, 1.0f) : ImVec4(0.3f, 1.0f, 0.3f, 1.0f),
-				"%s",
-				status_message_.c_str());
+			status_is_error_ ? ImVec4(1.0f, 0.3f, 0.3f, 1.0f) : ImVec4(0.3f, 1.0f, 0.3f, 1.0f),
+			"%s",
+			status_message_.c_str()
+		);
 	}
 
 	// Grid controls
@@ -185,7 +186,7 @@ void SpriteEditorPanel::LoadSourceImage(engine::Engine& engine, const std::strin
 	image_path_buffer_[sizeof(image_path_buffer_) - 1] = '\0';
 
 	status_message_ =
-			"Loaded: " + path + " (" + std::to_string(image->width) + "x" + std::to_string(image->height) + ")";
+		"Loaded: " + path + " (" + std::to_string(image->width) + "x" + std::to_string(image->height) + ")";
 }
 
 void SpriteEditorPanel::RenderCanvas() {
@@ -227,9 +228,9 @@ void SpriteEditorPanel::RenderCanvas() {
 	for (int i = 0; i < static_cast<int>(sprites_.size()); ++i) {
 		const auto& sprite = sprites_[i];
 		const auto rect_min =
-				ImVec2(canvas_origin.x + sprite.x * canvas_scale_, canvas_origin.y + sprite.y * canvas_scale_);
+			ImVec2(canvas_origin.x + sprite.x * canvas_scale_, canvas_origin.y + sprite.y * canvas_scale_);
 		const auto rect_max =
-				ImVec2(rect_min.x + sprite.width * canvas_scale_, rect_min.y + sprite.height * canvas_scale_);
+			ImVec2(rect_min.x + sprite.width * canvas_scale_, rect_min.y + sprite.height * canvas_scale_);
 
 		const bool is_selected = (i == selected_sprite_);
 		const ImU32 fill_color = is_selected ? IM_COL32(255, 255, 0, 40) : IM_COL32(0, 200, 255, 30);
@@ -242,7 +243,10 @@ void SpriteEditorPanel::RenderCanvas() {
 		// Draw sprite name label
 		if (!sprite.name.empty()) {
 			draw_list->AddText(
-					ImVec2(rect_min.x + 2, rect_min.y + 1), IM_COL32(255, 255, 255, 220), sprite.name.c_str());
+				ImVec2(rect_min.x + 2, rect_min.y + 1),
+				IM_COL32(255, 255, 255, 220),
+				sprite.name.c_str()
+			);
 		}
 	}
 
@@ -436,8 +440,13 @@ void SpriteEditorPanel::AutoGrid() {
 	}
 
 	SetDirty(true);
-	status_message_ = "Created " + std::to_string(sprites_.size()) + " sprites (" + std::to_string(cols) + "x"
-					  + std::to_string(rows) + " grid)";
+	status_message_ = "Created "
+					  + std::to_string(sprites_.size())
+					  + " sprites ("
+					  + std::to_string(cols)
+					  + "x"
+					  + std::to_string(rows)
+					  + " grid)";
 	status_is_error_ = false;
 	SetDirty(false);
 }

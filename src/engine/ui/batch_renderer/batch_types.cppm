@@ -13,9 +13,9 @@ export namespace engine::ui::batch_renderer {
 struct Color {
 	float r, g, b, a;
 
-	constexpr Color() : r(1.0f), g(1.0f), b(1.0f), a(1.0f) {}
+	constexpr Color() : r(1.0F), g(1.0F), b(1.0F), a(1.0F) {}
 
-	constexpr Color(const float r, const float g, const float b, const float a = 1.0f) : r(r), g(g), b(b), a(a) {}
+	constexpr Color(const float r, const float g, const float b, const float a = 1.0F) : r(r), g(g), b(b), a(a) {}
 
 	/**
 	 * @brief Create a color with modified alpha channel
@@ -24,7 +24,7 @@ struct Color {
 	 * @return Color with new alpha, preserving RGB
 	 */
 	static constexpr Color Alpha(const Color& color, const float alpha) {
-		return Color(color.r, color.g, color.b, std::clamp(alpha, 0.0f, 1.0f));
+		return Color(color.r, color.g, color.b, std::clamp(alpha, 0.0F, 1.0F));
 	}
 
 	/**
@@ -35,9 +35,9 @@ struct Color {
 	 */
 	static constexpr Color Brightness(const Color& color, const float factor) {
 		return Color(
-			std::clamp(color.r + factor, 0.0f, 1.0f),
-			std::clamp(color.g + factor, 0.0f, 1.0f),
-			std::clamp(color.b + factor, 0.0f, 1.0f),
+			std::clamp(color.r + factor, 0.0F, 1.0F),
+			std::clamp(color.g + factor, 0.0F, 1.0F),
+			std::clamp(color.b + factor, 0.0F, 1.0F),
 			color.a
 		);
 	}
@@ -45,23 +45,23 @@ struct Color {
 
 // Common color constants
 namespace Colors {
-constexpr Color WHITE{1.0f, 1.0f, 1.0f, 1.0f};
-constexpr Color BLACK{0.0f, 0.0f, 0.0f, 1.0f};
-constexpr Color RED{1.0f, 0.0f, 0.0f, 1.0f};
-constexpr Color GREEN{0.0f, 1.0f, 0.0f, 1.0f};
-constexpr Color BLUE{0.0f, 0.0f, 1.0f, 1.0f};
-constexpr Color YELLOW{1.0f, 1.0f, 0.0f, 1.0f};
-constexpr Color CYAN{0.0f, 1.0f, 1.0f, 1.0f};
-constexpr Color MAGENTA{1.0f, 0.0f, 1.0f, 1.0f};
-constexpr Color GRAY{0.5f, 0.5f, 0.5f, 1.0f};
-constexpr Color LIGHT_GRAY{0.7f, 0.7f, 0.7f, 1.0f};
-constexpr Color DARK_GRAY{0.3f, 0.3f, 0.3f, 1.0f};
-constexpr Color TRANSPARENT{0.0f, 0.0f, 0.0f, 0.0f};
+constexpr Color WHITE{1.0F, 1.0F, 1.0F, 1.0F};
+constexpr Color BLACK{0.0F, 0.0F, 0.0F, 1.0F};
+constexpr Color RED{1.0F, 0.0F, 0.0F, 1.0F};
+constexpr Color GREEN{0.0F, 1.0F, 0.0F, 1.0F};
+constexpr Color BLUE{0.0F, 0.0F, 1.0F, 1.0F};
+constexpr Color YELLOW{1.0F, 1.0F, 0.0F, 1.0F};
+constexpr Color CYAN{0.0F, 1.0F, 1.0F, 1.0F};
+constexpr Color MAGENTA{1.0F, 0.0F, 1.0F, 1.0F};
+constexpr Color GRAY{0.5F, 0.5F, 0.5F, 1.0F};
+constexpr Color LIGHT_GRAY{0.7F, 0.7F, 0.7F, 1.0F};
+constexpr Color DARK_GRAY{0.3F, 0.3F, 0.3F, 1.0F};
+constexpr Color TRANSPARENT{0.0F, 0.0F, 0.0F, 0.0F};
 
 // UI theme colors
-constexpr Color GOLD{1.0f, 0.84f, 0.0f, 1.0f}; // Primary accent
-constexpr Color ORANGE{1.0f, 0.65f, 0.0f, 1.0f};
-constexpr Color PURPLE{0.5f, 0.0f, 0.5f, 1.0f};
+constexpr Color GOLD{1.0F, 0.84F, 0.0F, 1.0F}; // Primary accent
+constexpr Color ORANGE{1.0F, 0.65F, 0.0F, 1.0F};
+constexpr Color PURPLE{0.5F, 0.0F, 0.5F, 1.0F};
 } // namespace Colors
 
 /**
@@ -78,27 +78,27 @@ namespace UITheme {
 // Primary colors
 namespace Primary {
 constexpr Color NORMAL = Colors::GOLD;
-constexpr Color HOVER = Color::Brightness(Colors::GOLD, 0.15f);
-constexpr Color ACTIVE = Color::Brightness(Colors::GOLD, -0.15f);
-constexpr Color DISABLED = Color::Alpha(Colors::GOLD, 0.5f);
+constexpr Color HOVER = Color::Brightness(Colors::GOLD, 0.15F);
+constexpr Color ACTIVE = Color::Brightness(Colors::GOLD, -0.15F);
+constexpr Color DISABLED = Color::Alpha(Colors::GOLD, 0.5F);
 } // namespace Primary
 
 // Background colors
 namespace Background {
 constexpr Color PANEL = Colors::DARK_GRAY;
-constexpr Color PANEL_DARK = Color::Brightness(Colors::DARK_GRAY, -0.1f);
+constexpr Color PANEL_DARK = Color::Brightness(Colors::DARK_GRAY, -0.1F);
 constexpr Color BUTTON = Colors::GRAY;
-constexpr Color BUTTON_HOVER = Color::Brightness(Colors::GRAY, 0.1f);
-constexpr Color BUTTON_ACTIVE = Color::Brightness(Colors::GRAY, -0.1f);
-constexpr Color INPUT = Color::Brightness(Colors::DARK_GRAY, -0.05f);
-constexpr Color DISABLED = Color::Brightness(Colors::DARK_GRAY, -0.15f);
+constexpr Color BUTTON_HOVER = Color::Brightness(Colors::GRAY, 0.1F);
+constexpr Color BUTTON_ACTIVE = Color::Brightness(Colors::GRAY, -0.1F);
+constexpr Color INPUT = Color::Brightness(Colors::DARK_GRAY, -0.05F);
+constexpr Color DISABLED = Color::Brightness(Colors::DARK_GRAY, -0.15F);
 } // namespace Background
 
 // Text colors
 namespace Text {
 constexpr Color PRIMARY = Colors::WHITE;
 constexpr Color SECONDARY = Colors::LIGHT_GRAY;
-constexpr Color DISABLED = Color::Alpha(Colors::WHITE, 0.5f);
+constexpr Color DISABLED = Color::Alpha(Colors::WHITE, 0.5F);
 constexpr Color ACCENT = Colors::GOLD;
 constexpr Color ERROR = Colors::RED;
 constexpr Color SUCCESS = Colors::GREEN;
@@ -110,7 +110,7 @@ namespace Border {
 constexpr Color DEFAULT = Colors::GRAY;
 constexpr Color HOVER = Colors::LIGHT_GRAY;
 constexpr Color FOCUS = Colors::GOLD;
-constexpr Color DISABLED = Color::Alpha(Colors::GRAY, 0.5f);
+constexpr Color DISABLED = Color::Alpha(Colors::GRAY, 0.5F);
 constexpr Color ERROR = Colors::RED;
 } // namespace Border
 
@@ -119,8 +119,8 @@ namespace State {
 constexpr Color SELECTED = Colors::GOLD;
 constexpr Color CHECKED = Colors::GREEN;
 constexpr Color UNCHECKED = Colors::GRAY;
-constexpr Color HOVER_OVERLAY = Color::Alpha(Colors::WHITE, 0.1f);
-constexpr Color PRESS_OVERLAY = Color::Alpha(Colors::BLACK, 0.1f);
+constexpr Color HOVER_OVERLAY = Color::Alpha(Colors::WHITE, 0.1F);
+constexpr Color PRESS_OVERLAY = Color::Alpha(Colors::BLACK, 0.1F);
 } // namespace State
 
 // ============================================================================
@@ -128,13 +128,13 @@ constexpr Color PRESS_OVERLAY = Color::Alpha(Colors::BLACK, 0.1f);
 // ============================================================================
 
 namespace Spacing {
-constexpr float NONE = 0.0f;
-constexpr float TINY = 2.0f;
-constexpr float SMALL = 4.0f;
-constexpr float MEDIUM = 8.0f;
-constexpr float LARGE = 12.0f;
-constexpr float XL = 16.0f;
-constexpr float XXL = 24.0f;
+constexpr float NONE = 0.0F;
+constexpr float TINY = 2.0F;
+constexpr float SMALL = 4.0F;
+constexpr float MEDIUM = 8.0F;
+constexpr float LARGE = 12.0F;
+constexpr float XL = 16.0F;
+constexpr float XXL = 24.0F;
 } // namespace Spacing
 
 // ============================================================================
@@ -143,25 +143,25 @@ constexpr float XXL = 24.0f;
 
 namespace Padding {
 // Button padding
-constexpr float BUTTON_HORIZONTAL = 16.0f;
-constexpr float BUTTON_VERTICAL = 8.0f;
+constexpr float BUTTON_HORIZONTAL = 16.0F;
+constexpr float BUTTON_VERTICAL = 8.0F;
 
 // Panel padding
-constexpr float PANEL_HORIZONTAL = 12.0f;
-constexpr float PANEL_VERTICAL = 12.0f;
+constexpr float PANEL_HORIZONTAL = 12.0F;
+constexpr float PANEL_VERTICAL = 12.0F;
 
 // Input padding
-constexpr float INPUT_HORIZONTAL = 8.0f;
-constexpr float INPUT_VERTICAL = 6.0f;
+constexpr float INPUT_HORIZONTAL = 8.0F;
+constexpr float INPUT_VERTICAL = 6.0F;
 
 // Label padding
-constexpr float LABEL_HORIZONTAL = 4.0f;
-constexpr float LABEL_VERTICAL = 4.0f;
+constexpr float LABEL_HORIZONTAL = 4.0F;
+constexpr float LABEL_VERTICAL = 4.0F;
 
 // Generic padding levels
-constexpr float SMALL = 4.0f;
-constexpr float MEDIUM = 8.0f;
-constexpr float LARGE = 12.0f;
+constexpr float SMALL = 4.0F;
+constexpr float MEDIUM = 8.0F;
+constexpr float LARGE = 12.0F;
 } // namespace Padding
 
 // ============================================================================
@@ -169,16 +169,16 @@ constexpr float LARGE = 12.0f;
 // ============================================================================
 
 namespace FontSize {
-constexpr float TINY = 10.0f;
-constexpr float SMALL = 12.0f;
-constexpr float NORMAL = 14.0f;
-constexpr float MEDIUM = 16.0f;
-constexpr float LARGE = 18.0f;
-constexpr float XL = 20.0f;
-constexpr float XXL = 24.0f;
-constexpr float HEADING_1 = 32.0f;
-constexpr float HEADING_2 = 28.0f;
-constexpr float HEADING_3 = 24.0f;
+constexpr float TINY = 10.0F;
+constexpr float SMALL = 12.0F;
+constexpr float NORMAL = 14.0F;
+constexpr float MEDIUM = 16.0F;
+constexpr float LARGE = 18.0F;
+constexpr float XL = 20.0F;
+constexpr float XXL = 24.0F;
+constexpr float HEADING_1 = 32.0F;
+constexpr float HEADING_2 = 28.0F;
+constexpr float HEADING_3 = 24.0F;
 } // namespace FontSize
 
 // ============================================================================
@@ -186,18 +186,18 @@ constexpr float HEADING_3 = 24.0f;
 // ============================================================================
 
 namespace BorderSize {
-constexpr float NONE = 0.0f;
-constexpr float THIN = 1.0f;
-constexpr float MEDIUM = 2.0f;
-constexpr float THICK = 3.0f;
+constexpr float NONE = 0.0F;
+constexpr float THIN = 1.0F;
+constexpr float MEDIUM = 2.0F;
+constexpr float THICK = 3.0F;
 } // namespace BorderSize
 
 namespace BorderRadius {
-constexpr float NONE = 0.0f;
-constexpr float SMALL = 2.0f;
-constexpr float MEDIUM = 4.0f;
-constexpr float LARGE = 8.0f;
-constexpr float ROUND = 999.0f; // Fully rounded (for pills/circles)
+constexpr float NONE = 0.0F;
+constexpr float SMALL = 2.0F;
+constexpr float MEDIUM = 4.0F;
+constexpr float LARGE = 8.0F;
+constexpr float ROUND = 999.0F; // Fully rounded (for pills/circles)
 } // namespace BorderRadius
 
 // ============================================================================
@@ -205,30 +205,30 @@ constexpr float ROUND = 999.0f; // Fully rounded (for pills/circles)
 // ============================================================================
 
 namespace Button {
-constexpr float MIN_WIDTH = 80.0f;
-constexpr float MIN_HEIGHT = 32.0f;
-constexpr float DEFAULT_HEIGHT = 36.0f;
+constexpr float MIN_WIDTH = 80.0F;
+constexpr float MIN_HEIGHT = 32.0F;
+constexpr float DEFAULT_HEIGHT = 36.0F;
 } // namespace Button
 
 namespace Panel {
-constexpr float MIN_WIDTH = 100.0f;
-constexpr float MIN_HEIGHT = 100.0f;
+constexpr float MIN_WIDTH = 100.0F;
+constexpr float MIN_HEIGHT = 100.0F;
 } // namespace Panel
 
 namespace Slider {
-constexpr float TRACK_HEIGHT = 4.0f;
-constexpr float THUMB_SIZE = 16.0f;
-constexpr float MIN_WIDTH = 100.0f;
+constexpr float TRACK_HEIGHT = 4.0F;
+constexpr float THUMB_SIZE = 16.0F;
+constexpr float MIN_WIDTH = 100.0F;
 } // namespace Slider
 
 namespace Checkbox {
-constexpr float SIZE = 20.0f;
-constexpr float CHECK_MARK_THICKNESS = 2.0f;
+constexpr float SIZE = 20.0F;
+constexpr float CHECK_MARK_THICKNESS = 2.0F;
 } // namespace Checkbox
 
 namespace Input {
-constexpr float MIN_WIDTH = 120.0f;
-constexpr float DEFAULT_HEIGHT = 32.0f;
+constexpr float MIN_WIDTH = 120.0F;
+constexpr float DEFAULT_HEIGHT = 32.0F;
 } // namespace Input
 
 // ============================================================================
@@ -236,9 +236,9 @@ constexpr float DEFAULT_HEIGHT = 32.0f;
 // ============================================================================
 
 namespace Animation {
-constexpr float FAST = 0.1f;   // 100ms
-constexpr float NORMAL = 0.2f; // 200ms
-constexpr float SLOW = 0.3f;   // 300ms
+constexpr float FAST = 0.1F;   // 100ms
+constexpr float NORMAL = 0.2F; // 200ms
+constexpr float SLOW = 0.3F;   // 300ms
 } // namespace Animation
 
 // ============================================================================
@@ -275,7 +275,7 @@ struct Vertex {
 		const float u,
 		const float v,
 		const Color& color,
-		const float tex_index = 0.0f
+		const float tex_index = 0.0F
 	) : x(x), y(y), u(u), v(v), r(color.r), g(color.g), b(color.b), a(color.a), tex_index(tex_index) {}
 };
 
@@ -307,13 +307,13 @@ struct ScissorRect {
 		const float right = std::min(x + width, other.x + other.width);
 		const float bottom = std::min(y + height, other.y + other.height);
 
-		return ScissorRect(left, top, std::max(0.0f, right - left), std::max(0.0f, bottom - top));
+		return ScissorRect(left, top, std::max(0.0F, right - left), std::max(0.0F, bottom - top));
 	}
 
 	/**
 	 * @brief Check if scissor has non-zero area
 	 */
-	bool IsValid() const { return width > 0.0f && height > 0.0f; }
+	bool IsValid() const { return width > 0.0F && height > 0.0F; }
 
 	/**
 	 * @brief Equality comparison for batch key matching
@@ -342,10 +342,10 @@ struct Rectangle {
  * Format: 0xRRGGBBAA (straight alpha, not premultiplied)
  */
 inline uint32_t ColorToRGBA(const Color& c) {
-	return (static_cast<uint32_t>(c.r * 255.0f) << 24)
-		   | (static_cast<uint32_t>(c.g * 255.0f) << 16)
-		   | (static_cast<uint32_t>(c.b * 255.0f) << 8)
-		   | static_cast<uint32_t>(c.a * 255.0f);
+	return (static_cast<uint32_t>(c.r * 255.0F) << 24)
+		   | (static_cast<uint32_t>(c.g * 255.0F) << 16)
+		   | (static_cast<uint32_t>(c.b * 255.0F) << 8)
+		   | static_cast<uint32_t>(c.a * 255.0F);
 }
 
 /**
@@ -353,10 +353,10 @@ inline uint32_t ColorToRGBA(const Color& c) {
  */
 inline Color RGBAToColor(const uint32_t rgba) {
 	return Color{
-		static_cast<float>((rgba >> 24) & 0xFF) / 255.0f,
-		static_cast<float>((rgba >> 16) & 0xFF) / 255.0f,
-		static_cast<float>((rgba >> 8) & 0xFF) / 255.0f,
-		static_cast<float>(rgba & 0xFF) / 255.0f
+		static_cast<float>((rgba >> 24) & 0xFF) / 255.0F,
+		static_cast<float>((rgba >> 16) & 0xFF) / 255.0F,
+		static_cast<float>((rgba >> 8) & 0xFF) / 255.0F,
+		static_cast<float>(rgba & 0xFF) / 255.0F
 	};
 }
 } // namespace engine::ui::batch_renderer

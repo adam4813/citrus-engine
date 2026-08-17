@@ -69,7 +69,7 @@ public:
 	 * container->AddChild(std::move(button));  // Layout sets position
 	 * @endcode
 	 */
-	Button(const float width, const float height, const std::string& label, const float font_size = 16.0f) :
+	Button(const float width, const float height, const std::string& label, const float font_size = 16.0F) :
 			Button(0, 0, width, height, label, font_size) {}
 
 	/**
@@ -93,7 +93,7 @@ public:
 		const float width,
 		const float height,
 		const std::string& label,
-		const float font_size = 16.0f
+		const float font_size = 16.0F
 	) : UIElement(x, y, width, height), label_(label), font_size_(font_size) {
 
 		// Create text element as child (composition pattern)
@@ -204,7 +204,7 @@ public:
 	 * @brief Set border width
 	 * @param width Border width in pixels (0 = no border)
 	 */
-	void SetBorderWidth(const float width) { border_width_ = width >= 0.0f ? width : 0.0f; }
+	void SetBorderWidth(const float width) { border_width_ = width >= 0.0F ? width : 0.0F; }
 
 	// === State Management ===
 
@@ -341,7 +341,7 @@ public:
 		BatchRenderer::SubmitQuad(bounds, bg_color);
 
 		// Render border if width > 0
-		if (border_width_ > 0.0f) {
+		if (border_width_ > 0.0F) {
 			const float x = bounds.x;
 			const float y = bounds.y;
 			const float w = bounds.width;
@@ -384,8 +384,8 @@ private:
 		const float text_width = text_element_->GetWidth();
 		const float text_height = text_element_->GetHeight();
 
-		const float text_x = (width_ - text_width) * 0.5f;
-		const float text_y = (height_ - text_height) * 0.5f;
+		const float text_x = (width_ - text_width) * 0.5F;
+		const float text_y = (height_ - text_height) * 0.5F;
 
 		text_element_->SetRelativePosition(text_x, text_y);
 	}
@@ -395,12 +395,12 @@ private:
 
 	// State colors
 	batch_renderer::Color normal_color_{batch_renderer::Colors::DARK_GRAY};
-	batch_renderer::Color hover_color_{batch_renderer::Color::Brightness(batch_renderer::Colors::DARK_GRAY, 0.2f)};
-	batch_renderer::Color pressed_color_{batch_renderer::Color::Brightness(batch_renderer::Colors::DARK_GRAY, -0.2f)};
-	batch_renderer::Color disabled_color_{batch_renderer::Color::Alpha(batch_renderer::Colors::DARK_GRAY, 0.5f)};
+	batch_renderer::Color hover_color_{batch_renderer::Color::Brightness(batch_renderer::Colors::DARK_GRAY, 0.2F)};
+	batch_renderer::Color pressed_color_{batch_renderer::Color::Brightness(batch_renderer::Colors::DARK_GRAY, -0.2F)};
+	batch_renderer::Color disabled_color_{batch_renderer::Color::Alpha(batch_renderer::Colors::DARK_GRAY, 0.5F)};
 	batch_renderer::Color text_color_{batch_renderer::Colors::WHITE};
 	batch_renderer::Color border_color_{batch_renderer::Colors::LIGHT_GRAY};
-	float border_width_{1.0f};
+	float border_width_{1.0F};
 
 	// State flags
 	bool is_pressed_{false};

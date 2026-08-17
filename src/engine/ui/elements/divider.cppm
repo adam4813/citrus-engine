@@ -42,19 +42,19 @@ public:
 	/**
 	 * @brief Construct a horizontal divider with default thickness
 	 */
-	Divider() : Divider(Orientation::Horizontal, 2.0f) {}
+	Divider() : Divider(Orientation::Horizontal, 2.0F) {}
 
 	/**
 	 * @brief Construct a divider with orientation and thickness
 	 * @param orientation Horizontal or Vertical
 	 * @param thickness Line thickness in pixels (default: 2)
 	 */
-	explicit Divider(const Orientation orientation, const float thickness = 2.0f) :
+	explicit Divider(const Orientation orientation, const float thickness = 2.0F) :
 			UIElement(
 				0,
 				0,
-				orientation == Orientation::Horizontal ? 0.0f : thickness,
-				orientation == Orientation::Horizontal ? thickness : 0.0f
+				orientation == Orientation::Horizontal ? 0.0F : thickness,
+				orientation == Orientation::Horizontal ? thickness : 0.0F
 			),
 			orientation_(orientation), thickness_(thickness) {}
 
@@ -80,7 +80,7 @@ public:
 	 * @param thickness Thickness in pixels
 	 */
 	void SetThickness(const float thickness) {
-		thickness_ = thickness > 0.0f ? thickness : 1.0f;
+		thickness_ = thickness > 0.0F ? thickness : 1.0F;
 		// Update size based on orientation
 		if (orientation_ == Orientation::Horizontal) {
 			height_ = thickness_;
@@ -100,11 +100,11 @@ public:
 		// Swap width/height based on orientation
 		if (orientation == Orientation::Horizontal) {
 			height_ = thickness_;
-			width_ = 0.0f; // Will be stretched by layout
+			width_ = 0.0F; // Will be stretched by layout
 		}
 		else {
 			width_ = thickness_;
-			height_ = 0.0f; // Will be stretched by layout
+			height_ = 0.0F; // Will be stretched by layout
 		}
 	}
 	Orientation GetOrientation() const { return orientation_; }
@@ -122,19 +122,19 @@ public:
 
 		if (orientation_ == Orientation::Horizontal) {
 			// Draw horizontal line centered in the element's height
-			const float y = bounds.y + bounds.height / 2.0f;
+			const float y = bounds.y + bounds.height / 2.0F;
 			BatchRenderer::SubmitLine(bounds.x, y, bounds.x + bounds.width, y, thickness_, color_);
 		}
 		else {
 			// Draw vertical line centered in the element's width
-			const float x = bounds.x + bounds.width / 2.0f;
+			const float x = bounds.x + bounds.width / 2.0F;
 			BatchRenderer::SubmitLine(x, bounds.y, x, bounds.y + bounds.height, thickness_, color_);
 		}
 	}
 
 private:
 	Orientation orientation_{Orientation::Horizontal};
-	float thickness_{2.0f};
+	float thickness_{2.0F};
 	batch_renderer::Color color_{batch_renderer::Colors::GRAY};
 };
 

@@ -62,20 +62,20 @@ static PinValue from_json_value(const json& j, PinType type) {
 		if (j.is_array() && j.size() >= 2) {
 			return glm::vec2(j[0].get<float>(), j[1].get<float>());
 		}
-		return glm::vec2(0.0f);
+		return glm::vec2(0.0F);
 	case PinType::Vec3:
 		if (j.is_array() && j.size() >= 3) {
 			return glm::vec3(j[0].get<float>(), j[1].get<float>(), j[2].get<float>());
 		}
-		return glm::vec3(0.0f);
+		return glm::vec3(0.0F);
 	case PinType::Vec4:
 	case PinType::Color:
 		if (j.is_array() && j.size() >= 4) {
 			return glm::vec4(j[0].get<float>(), j[1].get<float>(), j[2].get<float>(), j[3].get<float>());
 		}
-		return glm::vec4(0.0f);
+		return glm::vec4(0.0F);
 	case PinType::String: return j.get<std::string>();
-	default: return 0.0f;
+	default: return 0.0F;
 	}
 }
 

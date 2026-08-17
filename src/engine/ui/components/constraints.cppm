@@ -147,8 +147,8 @@ public:
 		}
 
 		// Ensure positive dimensions
-		width = std::max(0.0f, width);
-		height = std::max(0.0f, height);
+		width = std::max(0.0F, width);
+		height = std::max(0.0F, height);
 
 		element->SetRelativePosition(x, y);
 		element->SetSize(width, height);
@@ -176,7 +176,7 @@ public:
 	/**
 	 * @brief Create anchor for top-left corner
 	 */
-	static Anchor TopLeft(float margin = 0.0f) {
+	static Anchor TopLeft(float margin = 0.0F) {
 		Anchor a;
 		a.SetLeft(margin);
 		a.SetTop(margin);
@@ -186,7 +186,7 @@ public:
 	/**
 	 * @brief Create anchor for top-right corner
 	 */
-	static Anchor TopRight(float margin = 0.0f) {
+	static Anchor TopRight(float margin = 0.0F) {
 		Anchor a;
 		a.SetRight(margin);
 		a.SetTop(margin);
@@ -196,7 +196,7 @@ public:
 	/**
 	 * @brief Create anchor for bottom-left corner
 	 */
-	static Anchor BottomLeft(float margin = 0.0f) {
+	static Anchor BottomLeft(float margin = 0.0F) {
 		Anchor a;
 		a.SetLeft(margin);
 		a.SetBottom(margin);
@@ -206,7 +206,7 @@ public:
 	/**
 	 * @brief Create anchor for bottom-right corner
 	 */
-	static Anchor BottomRight(float margin = 0.0f) {
+	static Anchor BottomRight(float margin = 0.0F) {
 		Anchor a;
 		a.SetRight(margin);
 		a.SetBottom(margin);
@@ -216,7 +216,7 @@ public:
 	/**
 	 * @brief Create anchor that stretches horizontally
 	 */
-	static Anchor StretchHorizontal(float left_margin = 0.0f, float right_margin = 0.0f) {
+	static Anchor StretchHorizontal(float left_margin = 0.0F, float right_margin = 0.0F) {
 		Anchor a;
 		a.SetLeft(left_margin);
 		a.SetRight(right_margin);
@@ -226,7 +226,7 @@ public:
 	/**
 	 * @brief Create anchor that stretches vertically
 	 */
-	static Anchor StretchVertical(float top_margin = 0.0f, float bottom_margin = 0.0f) {
+	static Anchor StretchVertical(float top_margin = 0.0F, float bottom_margin = 0.0F) {
 		Anchor a;
 		a.SetTop(top_margin);
 		a.SetBottom(bottom_margin);
@@ -236,7 +236,7 @@ public:
 	/**
 	 * @brief Create anchor that fills parent with margins
 	 */
-	static Anchor Fill(float margin = 0.0f) {
+	static Anchor Fill(float margin = 0.0F) {
 		Anchor a;
 		a.SetLeft(margin);
 		a.SetRight(margin);
@@ -295,7 +295,7 @@ public:
 	static SizeConstraint Percent(float percent) {
 		SizeConstraint s;
 		s.mode_ = SizeMode::Percentage;
-		s.value_ = std::clamp(percent, 0.0f, 1.0f);
+		s.value_ = std::clamp(percent, 0.0F, 1.0F);
 		return s;
 	}
 
@@ -336,7 +336,7 @@ public:
 			result = std::min(result, *max_size_);
 		}
 
-		return std::max(0.0f, result);
+		return std::max(0.0F, result);
 	}
 
 	SizeMode GetMode() const { return mode_; }
@@ -346,7 +346,7 @@ public:
 
 private:
 	SizeMode mode_{SizeMode::FitContent}; // Default: preserve original size
-	float value_{0.0f};
+	float value_{0.0F};
 	std::optional<float> min_size_;
 	std::optional<float> max_size_;
 };
@@ -401,7 +401,7 @@ public:
 	/**
 	 * @brief Create full-size constraints (100% of parent)
 	 */
-	static SizeConstraints Full() { return Percent(1.0f, 1.0f); }
+	static SizeConstraints Full() { return Percent(1.0F, 1.0F); }
 };
 
 /**

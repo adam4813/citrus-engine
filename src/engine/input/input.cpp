@@ -126,8 +126,8 @@ void Input::PollEvents() {
 	// scroll events from the current frame.
 	{
 		std::lock_guard lock(event_mutex);
-		mouse_state.scroll_delta_x = 0.0f;
-		mouse_state.scroll_delta_y = 0.0f;
+		mouse_state.scroll_delta_x = 0.0F;
+		mouse_state.scroll_delta_y = 0.0F;
 	}
 
 	glfwPollEvents();

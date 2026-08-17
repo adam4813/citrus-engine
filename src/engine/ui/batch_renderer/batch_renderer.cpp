@@ -23,9 +23,9 @@ import engine.ui;
 import glm;
 
 namespace engine::ui::batch_renderer {
-constexpr float PI = 3.14159265358979323846f;
-constexpr float MIN_LINE_LENGTH = 0.001f; // Minimum line length to avoid degenerate geometry
-constexpr float MIN_CORNER_RADIUS = 0.1f; // Minimum corner radius for rounded rectangles
+constexpr float PI = 3.14159265358979323846F;
+constexpr float MIN_LINE_LENGTH = 0.001F; // Minimum line length to avoid degenerate geometry
+constexpr float MIN_CORNER_RADIUS = 0.1F; // Minimum corner radius for rounded rectangles
 
 struct BatchRenderer::BatchState {
 	// Current batch buffers
@@ -198,12 +198,12 @@ void BatchRenderer::BeginFrame() {
 
 	// Setup orthographic projection for screen-space rendering
 	state_->projection = glm::ortho(
-		0.0f,
+		0.0F,
 		static_cast<float>(state_->screen_width),
 		static_cast<float>(state_->screen_height),
-		0.0f,
-		-1.0f,
-		1.0f
+		0.0F,
+		-1.0F,
+		1.0F
 	);
 
 	// Initialize scissor to full screen
@@ -288,7 +288,7 @@ void BatchRenderer::SubmitQuad(
 	const int tex_slot = GetOrAddTextureSlot(texture_id);
 
 	// UV coordinates (default to full texture)
-	float u0 = 0.0f, v0 = 0.0f, u1 = 1.0f, v1 = 1.0f;
+	float u0 = 0.0F, v0 = 0.0F, u1 = 1.0F, v1 = 1.0F;
 	if (uv_coords.has_value()) {
 		const Rectangle& uv = uv_coords.value();
 		u0 = uv.x;
@@ -342,8 +342,8 @@ void BatchRenderer::SubmitLine(
 	}
 
 	// Perpendicular vector (normalized, scaled by half thickness)
-	const float nx = -dy / len * (thickness * 0.5f);
-	const float ny = dx / len * (thickness * 0.5f);
+	const float nx = -dy / len * (thickness * 0.5F);
+	const float ny = dx / len * (thickness * 0.5F);
 
 	// Quad corners
 	const float xa = x0 + nx;
@@ -368,10 +368,10 @@ void BatchRenderer::SubmitLine(
 	const float tex_slot_f = static_cast<float>(tex_slot);
 
 	PushQuadVertices(
-		Vertex(xa, ya, 0.0f, 0.0f, color, tex_slot_f),
-		Vertex(xd, yd, 1.0f, 0.0f, color, tex_slot_f),
-		Vertex(xc, yc, 1.0f, 1.0f, color, tex_slot_f),
-		Vertex(xb, yb, 0.0f, 1.0f, color, tex_slot_f)
+		Vertex(xa, ya, 0.0F, 0.0F, color, tex_slot_f),
+		Vertex(xd, yd, 1.0F, 0.0F, color, tex_slot_f),
+		Vertex(xc, yc, 1.0F, 1.0F, color, tex_slot_f),
+		Vertex(xb, yb, 0.0F, 1.0F, color, tex_slot_f)
 	);
 
 	const uint32_t base = static_cast<uint32_t>(state_->vertices.size()) - 4;
@@ -400,15 +400,15 @@ void BatchRenderer::SubmitCircle(
 
 	// Center vertex
 	const auto center_idx = static_cast<uint32_t>(state_->vertices.size());
-	state_->vertices.emplace_back(center_x, center_y, 0.5f, 0.5f, color, tex_index);
+	state_->vertices.emplace_back(center_x, center_y, 0.5F, 0.5F, color, tex_index);
 
 	// Perimeter vertices (triangle fan)
-	const float angle_step = 2.0f * PI / static_cast<float>(segments);
+	const float angle_step = 2.0F * PI / static_cast<float>(segments);
 	for (int i = 0; i <= segments; ++i) {
 		const float angle = static_cast<float>(i) * angle_step;
 		const float x = center_x + std::cos(angle) * radius;
 		const float y = center_y + std::sin(angle) * radius;
-		state_->vertices.emplace_back(x, y, 0.5f, 0.5f, color, tex_index);
+		state_->vertices.emplace_back(x, y, 0.5F, 0.5F, color, tex_index);
 	}
 
 	// Indices (triangle fan)
@@ -430,7 +430,7 @@ void BatchRenderer::SubmitRoundedRect(
 	}
 
 	// Clamp corner radius
-	const float max_radius = std::min(rect.width, rect.height) * 0.5f;
+	const float max_radius = std::min(rect.width, rect.height) * 0.5F;
 	corner_radius = std::min(corner_radius, max_radius);
 
 	if (corner_radius < MIN_CORNER_RADIUS) {
@@ -473,20 +473,20 @@ void BatchRenderer::SubmitRoundedRect(
 		{inner_x, inner_y + inner_h}            // Bottom-left
 	};
 
-	constexpr float angle_offsets[4] = {PI, PI * 0.5f, 0.0f, PI * 1.5f};
+	constexpr float angle_offsets[4] = {PI, PI * 0.5F, 0.0F, PI * 1.5F};
 
 	for (int c = 0; c < 4; ++c) {
 		const auto center_idx = static_cast<uint32_t>(state_->vertices.size());
-		state_->vertices.emplace_back(corners[c].x, corners[c].y, 0.5f, 0.5f, color, tex_index);
+		state_->vertices.emplace_back(corners[c].x, corners[c].y, 0.5F, 0.5F, color, tex_index);
 
 		const float angle_start = angle_offsets[c];
-		const float angle_step = (PI * 0.5f) / static_cast<float>(corner_segments);
+		const float angle_step = (PI * 0.5F) / static_cast<float>(corner_segments);
 
 		for (int i = 0; i <= corner_segments; ++i) {
 			const float angle = angle_start + static_cast<float>(i) * angle_step;
 			const float x = corners[c].x + std::cos(angle) * corner_radius;
 			const float y = corners[c].y + std::sin(angle) * corner_radius;
-			state_->vertices.emplace_back(x, y, 0.5f, 0.5f, color, tex_index);
+			state_->vertices.emplace_back(x, y, 0.5F, 0.5F, color, tex_index);
 		}
 
 		for (int i = 0; i < corner_segments; ++i) {
@@ -533,7 +533,7 @@ void BatchRenderer::SubmitText(
 	text_renderer::LayoutOptions options;
 	options.h_align = text_renderer::HorizontalAlign::Left;
 	options.v_align = text_renderer::VerticalAlign::Top;
-	options.max_width = 0.0f; // No wrapping
+	options.max_width = 0.0F; // No wrapping
 
 	auto glyphs = text_renderer::TextLayout::Layout(text, *font, options);
 

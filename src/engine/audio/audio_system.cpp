@@ -164,7 +164,7 @@ uint32_t AudioSystem::LoadClip(const std::string& file_path) {
 		clip.duration = static_cast<float>(total_frames) / static_cast<float>(clip.sample_rate);
 	}
 	else {
-		clip.duration = 0.0f;
+		clip.duration = 0.0F;
 	}
 
 	ma_decoder_uninit(&decoder);

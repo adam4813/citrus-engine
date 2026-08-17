@@ -42,7 +42,7 @@ bool SoundAssetInfo::DoLoad() {
 
 void SoundAssetInfo::FromJson(const nlohmann::json& j) {
 	file_path = j.value("file_path", "");
-	volume = j.value("volume", 1.0f);
+	volume = j.value("volume", 1.0F);
 	loop = j.value("loop", false);
 	AssetInfo::FromJson(j);
 }

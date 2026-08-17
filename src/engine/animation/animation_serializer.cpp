@@ -66,7 +66,7 @@ AnimatedValue AnimationSerializer::AnimatedValueFromJson(const json& j) {
 		return glm::quat(arr[0], arr[1], arr[2], arr[3]);
 	}
 
-	return 0.0f; // Default
+	return 0.0F; // Default
 }
 
 // === KEYFRAME SERIALIZATION ===

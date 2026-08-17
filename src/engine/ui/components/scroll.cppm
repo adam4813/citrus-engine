@@ -53,8 +53,8 @@ public:
 	 * @brief Set the total content size (what can be scrolled)
 	 */
 	void SetContentSize(float width, float height) {
-		content_width_ = std::max(0.0f, width);
-		content_height_ = std::max(0.0f, height);
+		content_width_ = std::max(0.0F, width);
+		content_height_ = std::max(0.0F, height);
 		ClampScroll();
 	}
 
@@ -62,8 +62,8 @@ public:
 	 * @brief Set the viewport size (what is visible)
 	 */
 	void SetViewportSize(float width, float height) {
-		viewport_width_ = std::max(0.0f, width);
-		viewport_height_ = std::max(0.0f, height);
+		viewport_width_ = std::max(0.0F, width);
+		viewport_height_ = std::max(0.0F, height);
 		ClampScroll();
 	}
 
@@ -115,8 +115,8 @@ public:
 	 * @brief Scroll to top-left
 	 */
 	void ScrollToStart() {
-		scroll_x_ = 0.0f;
-		scroll_y_ = 0.0f;
+		scroll_x_ = 0.0F;
+		scroll_y_ = 0.0F;
 	}
 
 	/**
@@ -137,8 +137,8 @@ public:
 	 * Values are clamped to be <= 0 (negative scroll min means content starts before origin).
 	 */
 	void SetScrollMin(float min_x, float min_y) {
-		scroll_min_x_ = std::min(0.0f, min_x);
-		scroll_min_y_ = std::min(0.0f, min_y);
+		scroll_min_x_ = std::min(0.0F, min_x);
+		scroll_min_y_ = std::min(0.0F, min_y);
 		ClampScroll();
 	}
 
@@ -155,12 +155,12 @@ public:
 	/**
 	 * @brief Get maximum horizontal scroll
 	 */
-	float GetMaxScrollX() const { return std::max(0.0f, content_width_ - viewport_width_); }
+	float GetMaxScrollX() const { return std::max(0.0F, content_width_ - viewport_width_); }
 
 	/**
 	 * @brief Get maximum vertical scroll
 	 */
-	float GetMaxScrollY() const { return std::max(0.0f, content_height_ - viewport_height_); }
+	float GetMaxScrollY() const { return std::max(0.0F, content_height_ - viewport_height_); }
 
 	/**
 	 * @brief Check if horizontal scrolling is possible
@@ -179,7 +179,7 @@ public:
 
 	// === Scroll Speed ===
 
-	void SetScrollSpeed(float speed) { scroll_speed_ = speed > 0.0f ? speed : 1.0f; }
+	void SetScrollSpeed(float speed) { scroll_speed_ = speed > 0.0F ? speed : 1.0F; }
 	float GetScrollSpeed() const { return scroll_speed_; }
 
 	// === Scroll Indicators ===
@@ -189,7 +189,7 @@ public:
 	 */
 	float GetScrollYNormalized() const {
 		const float max = GetMaxScrollY();
-		return max > 0.0f ? scroll_y_ / max : 0.0f;
+		return max > 0.0F ? scroll_y_ / max : 0.0F;
 	}
 
 	/**
@@ -197,21 +197,21 @@ public:
 	 */
 	float GetScrollXNormalized() const {
 		const float max = GetMaxScrollX();
-		return max > 0.0f ? scroll_x_ / max : 0.0f;
+		return max > 0.0F ? scroll_x_ / max : 0.0F;
 	}
 
 	/**
 	 * @brief Get the thumb size ratio for vertical scrollbar
 	 */
 	float GetScrollYThumbRatio() const {
-		return content_height_ > 0.0f ? std::min(1.0f, viewport_height_ / content_height_) : 1.0f;
+		return content_height_ > 0.0F ? std::min(1.0F, viewport_height_ / content_height_) : 1.0F;
 	}
 
 	/**
 	 * @brief Get the thumb size ratio for horizontal scrollbar
 	 */
 	float GetScrollXThumbRatio() const {
-		return content_width_ > 0.0f ? std::min(1.0f, viewport_width_ / content_width_) : 1.0f;
+		return content_width_ > 0.0F ? std::min(1.0F, viewport_width_ / content_width_) : 1.0F;
 	}
 
 	/**
@@ -219,7 +219,7 @@ public:
 	 * @return true if scroll was handled (content can scroll in that direction)
 	 */
 	bool HandleScroll(const MouseEvent& event) {
-		if (event.scroll_delta_x == 0.0f && event.scroll_delta_y == 0.0f) {
+		if (event.scroll_delta_x == 0.0F && event.scroll_delta_y == 0.0F) {
 			return false;
 		}
 
@@ -229,26 +229,26 @@ public:
 
 		switch (direction_) {
 		case ScrollDirection::Vertical:
-			if (CanScrollY() && event.scroll_delta_y != 0.0f) {
-				ScrollBy(0.0f, delta_y);
+			if (CanScrollY() && event.scroll_delta_y != 0.0F) {
+				ScrollBy(0.0F, delta_y);
 				handled = true;
 			}
 			break;
 
 		case ScrollDirection::Horizontal:
-			if (CanScrollX() && event.scroll_delta_x != 0.0f) {
-				ScrollBy(delta_x, 0.0f);
+			if (CanScrollX() && event.scroll_delta_x != 0.0F) {
+				ScrollBy(delta_x, 0.0F);
 				handled = true;
 			}
 			break;
 
 		case ScrollDirection::Both:
-			if (CanScrollX() && event.scroll_delta_x != 0.0f) {
-				ScrollBy(delta_x, 0.0f);
+			if (CanScrollX() && event.scroll_delta_x != 0.0F) {
+				ScrollBy(delta_x, 0.0F);
 				handled = true;
 			}
-			if (CanScrollY() && event.scroll_delta_y != 0.0f) {
-				ScrollBy(0.0f, delta_y);
+			if (CanScrollY() && event.scroll_delta_y != 0.0F) {
+				ScrollBy(0.0F, delta_y);
 				handled = true;
 			}
 			break;
@@ -263,15 +263,15 @@ private:
 		scroll_y_ = std::clamp(scroll_y_, GetMinScrollY(), GetMaxScrollY());
 	}
 
-	float content_width_{0.0f};
-	float content_height_{0.0f};
-	float viewport_width_{0.0f};
-	float viewport_height_{0.0f};
-	float scroll_x_{0.0f};
-	float scroll_y_{0.0f};
-	float scroll_min_x_{0.0f};
-	float scroll_min_y_{0.0f};
-	float scroll_speed_{30.0f}; // Pixels per scroll tick
+	float content_width_{0.0F};
+	float content_height_{0.0F};
+	float viewport_width_{0.0F};
+	float viewport_height_{0.0F};
+	float scroll_x_{0.0F};
+	float scroll_y_{0.0F};
+	float scroll_min_x_{0.0F};
+	float scroll_min_y_{0.0F};
+	float scroll_speed_{30.0F}; // Pixels per scroll tick
 	ScrollDirection direction_{ScrollDirection::Vertical};
 };
 
@@ -279,12 +279,12 @@ private:
  * @brief Scrollbar visual style configuration
  */
 struct ScrollbarStyle {
-	batch_renderer::Color track_color{0.2f, 0.2f, 0.2f, 0.5f};
-	batch_renderer::Color thumb_color{0.5f, 0.5f, 0.5f, 0.8f};
-	batch_renderer::Color thumb_hover_color{0.6f, 0.6f, 0.6f, 1.0f};
-	float width{8.0f};
-	float min_thumb_length{20.0f};
-	float corner_radius{4.0f};
+	batch_renderer::Color track_color{0.2F, 0.2F, 0.2F, 0.5F};
+	batch_renderer::Color thumb_color{0.5F, 0.5F, 0.5F, 0.8F};
+	batch_renderer::Color thumb_hover_color{0.6F, 0.6F, 0.6F, 1.0F};
+	float width{8.0F};
+	float min_thumb_length{20.0F};
+	float corner_radius{4.0F};
 	bool show_track{true};
 };
 
@@ -434,10 +434,10 @@ public:
 
 		const auto content_area = owner_->GetContentArea();
 
-		float min_x = 0.0f;
-		float min_y = 0.0f;
-		float max_x = 0.0f;
-		float max_y = 0.0f;
+		float min_x = 0.0F;
+		float min_y = 0.0F;
+		float max_x = 0.0F;
+		float max_y = 0.0F;
 		bool has_children = false;
 
 		for (const auto& child : owner_->GetChildren()) {
@@ -462,8 +462,8 @@ public:
 
 		// No visible children - reset to no scrollable content
 		if (!has_children) {
-			state_.SetContentSize(0.0f, 0.0f);
-			state_.SetScrollMin(0.0f, 0.0f);
+			state_.SetContentSize(0.0F, 0.0F);
+			state_.SetScrollMin(0.0F, 0.0F);
 			return;
 		}
 

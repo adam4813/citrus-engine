@@ -74,7 +74,7 @@ public:
 	 * container->AddChild(std::move(checkbox));  // Layout sets position
 	 * @endcode
 	 */
-	Checkbox(const std::string& label = "", const float font_size = 16.0f, const bool initial_checked = false) :
+	Checkbox(const std::string& label = "", const float font_size = 16.0F, const bool initial_checked = false) :
 			Checkbox(0, 0, label, font_size, initial_checked) {}
 
 	/**
@@ -99,11 +99,11 @@ public:
 		const float x,
 		const float y,
 		const std::string& label = "",
-		const float font_size = 16.0f,
+		const float font_size = 16.0F,
 		const bool initial_checked = false
 	) :
-			UIElement(x, y, font_size * 1.5f, font_size * 1.5f), // Square box
-			is_checked_(initial_checked), box_size_(font_size * 1.5f), label_text_(label), font_size_(font_size) {
+			UIElement(x, y, font_size * 1.5F, font_size * 1.5F), // Square box
+			is_checked_(initial_checked), box_size_(font_size * 1.5F), label_text_(label), font_size_(font_size) {
 
 		// Create label element as child (composition pattern)
 		if (!label.empty()) {
@@ -307,8 +307,8 @@ public:
 		const Rectangle box_rect{bounds.x, bounds.y, box_size_, box_size_};
 
 		// Render box outline
-		constexpr float border_width = 2.0f;
-		const Color box_outline = is_hovered_ ? Color::Brightness(box_color_, 0.2f) : box_color_;
+		constexpr float border_width = 2.0F;
+		const Color box_outline = is_hovered_ ? Color::Brightness(box_color_, 0.2F) : box_color_;
 
 		// Top edge
 		BatchRenderer::SubmitLine(
@@ -350,31 +350,31 @@ public:
 		// Render checkmark if checked
 		if (is_checked_) {
 			// Draw checkmark as two lines forming a check shape
-			const float check_padding = box_size_ * 0.25f;
+			const float check_padding = box_size_ * 0.25F;
 			const float x1 = box_rect.x + check_padding;
-			const float y1 = box_rect.y + box_size_ * 0.5f;
-			const float x2 = box_rect.x + box_size_ * 0.4f;
+			const float y1 = box_rect.y + box_size_ * 0.5F;
+			const float x2 = box_rect.x + box_size_ * 0.4F;
 			const float y2 = box_rect.y + box_size_ - check_padding;
 			const float x3 = box_rect.x + box_size_ - check_padding;
 			const float y3 = box_rect.y + check_padding;
 
 			// First line (short part of check)
-			BatchRenderer::SubmitLine(x1, y1, x2, y2, border_width * 1.5f, checkmark_color_);
+			BatchRenderer::SubmitLine(x1, y1, x2, y2, border_width * 1.5F, checkmark_color_);
 			// Second line (long part of check)
-			BatchRenderer::SubmitLine(x2, y2, x3, y3, border_width * 1.5f, checkmark_color_);
+			BatchRenderer::SubmitLine(x2, y2, x3, y3, border_width * 1.5F, checkmark_color_);
 		}
 
 		// Render focus indicator if focused
 		if (is_focused_) {
-			constexpr float focus_padding = -4.0f; // Outside box
+			constexpr float focus_padding = -4.0F; // Outside box
 			const Rectangle focus_rect{
 				box_rect.x + focus_padding,
 				box_rect.y + focus_padding,
-				box_rect.width - focus_padding * 2.0f,
-				box_rect.height - focus_padding * 2.0f
+				box_rect.width - focus_padding * 2.0F,
+				box_rect.height - focus_padding * 2.0F
 			};
 
-			constexpr float focus_width = 1.0f;
+			constexpr float focus_width = 1.0F;
 			// Top edge
 			BatchRenderer::SubmitLine(
 				focus_rect.x,
@@ -428,7 +428,7 @@ private:
 		if (label_element_) {
 			// Position label relative to checkbox (accounting for box size and spacing)
 			const float label_x = box_size_ + label_spacing_;
-			const float label_y = (box_size_ - label_element_->GetHeight()) * 0.5f;
+			const float label_y = (box_size_ - label_element_->GetHeight()) * 0.5F;
 			label_element_->SetRelativePosition(label_x, label_y);
 		}
 	}
@@ -443,7 +443,7 @@ private:
 	batch_renderer::Color checkmark_color_{batch_renderer::Colors::GOLD};
 	batch_renderer::Color label_color_{batch_renderer::Colors::WHITE};
 	batch_renderer::Color focus_color_{batch_renderer::Colors::GOLD};
-	float label_spacing_{8.0f};
+	float label_spacing_{8.0F};
 
 	// Label child (raw pointer for updates, owned by children_ vector)
 	Text* label_element_{nullptr};

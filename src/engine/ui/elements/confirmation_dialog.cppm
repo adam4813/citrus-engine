@@ -99,19 +99,19 @@ public:
 		const std::string& message,
 		const std::string& confirm_label = "OK",
 		const std::string& cancel_label = "Cancel",
-		const float width = 400.0f,
-		const float title_font_size = 18.0f,
-		const float message_font_size = 14.0f
+		const float width = 400.0F,
+		const float title_font_size = 18.0F,
+		const float message_font_size = 14.0F
 	) :
-			Panel(0, 0, width, 200.0f), // Height will be adjusted
+			Panel(0, 0, width, 200.0F), // Height will be adjusted
 			title_text_(title), message_text_(message), dialog_width_(width), title_font_size_(title_font_size),
 			message_font_size_(message_font_size) {
 
 		// Configure panel appearance
 		SetBackgroundColor(batch_renderer::Colors::DARK_GRAY);
 		SetBorderColor(batch_renderer::Colors::GOLD);
-		SetBorderWidth(2.0f);
-		SetPadding(20.0f);
+		SetBorderWidth(2.0F);
+		SetPadding(20.0F);
 		SetClipChildren(false); // Allow buttons to be fully visible
 
 		// Initially hidden
@@ -237,7 +237,7 @@ public:
 
 		// Render semi-transparent overlay (covers entire screen)
 		// This visually indicates modal state
-		const Color overlay_color = Color::Alpha(Colors::BLACK, 0.5f);
+		const Color overlay_color = Color::Alpha(Colors::BLACK, 0.5F);
 
 		BatchRenderer::SubmitQuad(overlay_rect, overlay_color);
 
@@ -263,7 +263,7 @@ private:
 		const std::string& cancel_label
 	) {
 		const float padding = GetPadding();
-		const float content_width = dialog_width_ - padding * 2.0f;
+		const float content_width = dialog_width_ - padding * 2.0F;
 		float y_offset = padding;
 
 		// Create title label
@@ -272,7 +272,7 @@ private:
 		title_label->SetMaxWidth(content_width);
 		title_label->SetAlignment(Label::Alignment::Center);
 		title_label_ = title_label.get();
-		y_offset += title_label->GetHeight() + 15.0f;
+		y_offset += title_label->GetHeight() + 15.0F;
 		AddChild(std::move(title_label));
 
 		// Create message label with word wrapping
@@ -281,21 +281,21 @@ private:
 		message_label->SetMaxWidth(content_width);
 		message_label->SetAlignment(Label::Alignment::Left);
 		message_label_ = message_label.get();
-		y_offset += message_label->GetHeight() + 20.0f;
+		y_offset += message_label->GetHeight() + 20.0F;
 		AddChild(std::move(message_label));
 
 		// Create buttons
-		constexpr float button_width = 100.0f;
-		constexpr float button_height = 35.0f;
-		constexpr float button_spacing = 10.0f;
-		constexpr float buttons_total_width = button_width * 2.0f + button_spacing;
-		const float buttons_x = (dialog_width_ - buttons_total_width) * 0.5f;
+		constexpr float button_width = 100.0F;
+		constexpr float button_height = 35.0F;
+		constexpr float button_spacing = 10.0F;
+		constexpr float buttons_total_width = button_width * 2.0F + button_spacing;
+		const float buttons_x = (dialog_width_ - buttons_total_width) * 0.5F;
 
 		// Confirm button
 		auto confirm_btn = std::make_unique<Button>(buttons_x, y_offset, button_width, button_height, confirm_label);
 		confirm_btn->SetNormalColor(batch_renderer::Colors::GOLD);
-		confirm_btn->SetHoverColor(batch_renderer::Color::Brightness(batch_renderer::Colors::GOLD, 0.2f));
-		confirm_btn->SetPressedColor(batch_renderer::Color::Brightness(batch_renderer::Colors::GOLD, -0.2f));
+		confirm_btn->SetHoverColor(batch_renderer::Color::Brightness(batch_renderer::Colors::GOLD, 0.2F));
+		confirm_btn->SetPressedColor(batch_renderer::Color::Brightness(batch_renderer::Colors::GOLD, -0.2F));
 		confirm_btn->SetClickCallback([this](const MouseEvent&) {
 			if (confirm_callback_) {
 				confirm_callback_();
@@ -337,8 +337,8 @@ private:
 		uint32_t screen_height = 10000;
 		batch_renderer::BatchRenderer::GetViewportSize(screen_width, screen_height);
 
-		const float x = (screen_width - width_) * 0.5f;
-		const float y = (screen_height - height_) * 0.5f;
+		const float x = (screen_width - width_) * 0.5F;
+		const float y = (screen_height - height_) * 0.5F;
 
 		SetRelativePosition(x, y);
 	}

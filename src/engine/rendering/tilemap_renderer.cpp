@@ -93,7 +93,7 @@ void TilemapRenderer::Render(
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	// Render each layer from bottom to top
-	constexpr float z_step = 0.01f; // Small step to avoid z-fighting
+	constexpr float z_step = 0.01F; // Small step to avoid z-fighting
 	int layer_index = 0;
 	for (const auto& layer_ptr : tilemap.layers) {
 		if (!layer_ptr || !layer_ptr->visible || !layer_ptr->tileset) continue;
@@ -172,8 +172,8 @@ void TilemapRenderer::AddTileToBatch(
 	const uint32_t vertex_offset = static_cast<uint32_t>(batch.vertices.size());
 
 	// Create quad vertices
-	const float half_width = tile_size.x * 0.5f;
-	const float half_height = tile_size.y * 0.5f;
+	const float half_width = tile_size.x * 0.5F;
+	const float half_height = tile_size.y * 0.5F;
 
 	// Bottom-left
 	batch.vertices.push_back(

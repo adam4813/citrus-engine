@@ -69,7 +69,7 @@ public:
 		if (const auto* scroll = GetComponent<components::ScrollComponent>()) {
 			return {scroll->GetState().GetScrollX(), scroll->GetState().GetScrollY()};
 		}
-		return {0.0f, 0.0f};
+		return {0.0F, 0.0F};
 	}
 
 	// === Convenience Methods (Container-specific) ===
@@ -104,7 +104,7 @@ public:
 	 * Call this each frame before rendering if components need updating.
 	 * Note: Layout and constraint components auto-update when dirty.
 	 */
-	void Update(const float delta_time = 0.0f) { UpdateComponents(delta_time); }
+	void Update(const float delta_time = 0.0F) { UpdateComponents(delta_time); }
 };
 
 } // namespace engine::ui::elements

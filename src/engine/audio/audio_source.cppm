@@ -15,11 +15,11 @@ enum class PlayState { Stopped, Playing, Paused };
 // AudioSource component for ECS - represents a sound emitter
 struct AudioSource {
 	uint32_t clip_id{0};                 // Runtime: resolved audio clip handle (managed by SoundRef observer)
-	float volume{1.0f};                  // Volume multiplier (0.0 to 1.0+)
-	float pitch{1.0f};                   // Pitch multiplier (0.5 = half speed, 2.0 = double speed)
+	float volume{1.0F};                  // Volume multiplier (0.0 to 1.0+)
+	float pitch{1.0F};                   // Pitch multiplier (0.5 = half speed, 2.0 = double speed)
 	bool looping{false};                 // Whether the sound should loop
 	bool spatial{false};                 // Whether this is a 3D positional sound
-	glm::vec3 position{0.0f};            // 3D position (only used if spatial=true)
+	glm::vec3 position{0.0F};            // 3D position (only used if spatial=true)
 	PlayState state{PlayState::Stopped}; // Current playback state
 	uint32_t play_handle{0};             // Runtime: handle for tracking this playing instance
 

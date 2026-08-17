@@ -20,7 +20,7 @@ struct SchemaField {
 
 	SchemaField() = default;
 
-	SchemaField(std::string field_name, std::string field_type, DataValue field_default = 0.0f) :
+	SchemaField(std::string field_name, std::string field_type, DataValue field_default = 0.0F) :
 			name(std::move(field_name)), type_name(std::move(field_type)), default_value(std::move(field_default)) {}
 };
 

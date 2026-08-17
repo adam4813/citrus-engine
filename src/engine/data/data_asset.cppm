@@ -33,7 +33,7 @@ struct DataAsset {
 		if (it != properties.end()) {
 			return it->second;
 		}
-		return 0.0f; // Default value
+		return 0.0F; // Default value
 	}
 
 	/// Set a property value

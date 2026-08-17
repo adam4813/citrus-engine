@@ -376,7 +376,7 @@ public:
 		temp_allocator_ = std::make_unique<JPH::TempAllocatorImpl>(10 * 1024 * 1024);
 
 		// Create job system (use hardware thread count - 1, min 1)
-		auto numThreads = std::max(1u, std::thread::hardware_concurrency() - 1);
+		auto numThreads = std::max(1U, std::thread::hardware_concurrency() - 1);
 		job_system_ = std::make_unique<JPH::JobSystemThreadPool>(
 			JPH::cMaxPhysicsJobs,
 			JPH::cMaxPhysicsBarriers,

@@ -263,8 +263,8 @@ inline void Text::ComputeMesh() {
 
 	// Validate font
 	if (!font_ || !font_->IsValid()) {
-		width_ = 0.0f;
-		height_ = 0.0f;
+		width_ = 0.0F;
+		height_ = 0.0F;
 		return;
 	}
 
@@ -272,7 +272,7 @@ inline void Text::ComputeMesh() {
 	text_renderer::LayoutOptions options;
 	options.h_align = text_renderer::HorizontalAlign::Left;
 	options.v_align = text_renderer::VerticalAlign::Top;
-	options.max_width = 0.0f; // No wrapping
+	options.max_width = 0.0F; // No wrapping
 
 	glyphs_ = text_renderer::TextLayout::Layout(text_, *font_, options);
 
@@ -280,7 +280,7 @@ inline void Text::ComputeMesh() {
 	batch_renderer::Rectangle bounds = text_renderer::TextLayout::MeasureText(
 		text_,
 		*font_,
-		0.0f // No wrapping
+		0.0F // No wrapping
 	);
 
 	width_ = bounds.width;

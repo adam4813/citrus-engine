@@ -20,15 +20,15 @@ using Color = glm::vec4;
 
 // Common colors
 namespace colors {
-constexpr Color white{1.0f, 1.0f, 1.0f, 1.0f};
-constexpr Color black{0.0f, 0.0f, 0.0f, 1.0f};
-constexpr Color red{1.0f, 0.0f, 0.0f, 1.0f};
-constexpr Color green{0.0f, 1.0f, 0.0f, 1.0f};
-constexpr Color blue{0.0f, 0.0f, 1.0f, 1.0f};
-constexpr Color yellow{1.0f, 1.0f, 0.0f, 1.0f};
-constexpr Color magenta{1.0f, 0.0f, 1.0f, 1.0f};
-constexpr Color cyan{0.0f, 1.0f, 1.0f, 1.0f};
-constexpr Color transparent{0.0f, 0.0f, 0.0f, 0.0f};
+constexpr Color white{1.0F, 1.0F, 1.0F, 1.0F};
+constexpr Color black{0.0F, 0.0F, 0.0F, 1.0F};
+constexpr Color red{1.0F, 0.0F, 0.0F, 1.0F};
+constexpr Color green{0.0F, 1.0F, 0.0F, 1.0F};
+constexpr Color blue{0.0F, 0.0F, 1.0F, 1.0F};
+constexpr Color yellow{1.0F, 1.0F, 0.0F, 1.0F};
+constexpr Color magenta{1.0F, 0.0F, 1.0F, 1.0F};
+constexpr Color cyan{0.0F, 1.0F, 1.0F, 1.0F};
+constexpr Color transparent{0.0F, 0.0F, 0.0F, 0.0F};
 } // namespace colors
 
 // Resource handles
@@ -74,10 +74,10 @@ struct SpriteRenderCommand {
 	TextureId texture;
 	Vec2 position;
 	Vec2 size;
-	float rotation = 0.0f;
+	float rotation = 0.0F;
 	Color color = colors::white;
-	Vec2 texture_offset{0.0f, 0.0f};
-	Vec2 texture_scale{1.0f, 1.0f};
+	Vec2 texture_offset{0.0F, 0.0F};
+	Vec2 texture_scale{1.0F, 1.0F};
 	int layer = 0;
 };
 

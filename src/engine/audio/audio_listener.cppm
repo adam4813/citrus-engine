@@ -9,9 +9,9 @@ export namespace engine::audio {
 // AudioListener component for ECS - represents the "ears" for spatial audio
 // Typically attached to the camera or player entity
 struct AudioListener {
-	glm::vec3 position{0.0f, 0.0f, 0.0f}; // Position in 3D space
-	glm::vec3 forward{0.0f, 0.0f, -1.0f}; // Forward direction vector
-	glm::vec3 up{0.0f, 1.0f, 0.0f};       // Up direction vector
+	glm::vec3 position{0.0F, 0.0F, 0.0F}; // Position in 3D space
+	glm::vec3 forward{0.0F, 0.0F, -1.0F}; // Forward direction vector
+	glm::vec3 up{0.0F, 1.0F, 0.0F};       // Up direction vector
 
 	AudioListener() = default;
 

@@ -137,7 +137,7 @@ public:
 	 * panel->SetBorderWidth(0.0f);  // No border
 	 * @endcode
 	 */
-	void SetBorderWidth(const float width) { border_width_ = width >= 0.0f ? width : 0.0f; }
+	void SetBorderWidth(const float width) { border_width_ = width >= 0.0F ? width : 0.0F; }
 
 	/**
 	 * @brief Get current border width
@@ -162,7 +162,7 @@ public:
 	 * }
 	 * @endcode
 	 */
-	void SetOpacity(const float opacity) { opacity_ = std::clamp(opacity, 0.0f, 1.0f); }
+	void SetOpacity(const float opacity) { opacity_ = std::clamp(opacity, 0.0F, 1.0F); }
 
 	/**
 	 * @brief Get current opacity
@@ -196,7 +196,7 @@ public:
 	 * panel->AddChild(std::move(child));
 	 * @endcode
 	 */
-	void SetPadding(const float padding) { padding_ = padding >= 0.0f ? padding : 0.0f; }
+	void SetPadding(const float padding) { padding_ = padding >= 0.0F ? padding : 0.0F; }
 
 	/**
 	 * @brief Get current padding
@@ -210,8 +210,8 @@ public:
 	 * Returns the area where children are placed, inset by padding.
 	 */
 	batch_renderer::Rectangle GetContentArea() const override {
-		const float content_width = width_ > padding_ * 2.0f ? width_ - padding_ * 2.0f : 0.0f;
-		const float content_height = height_ > padding_ * 2.0f ? height_ - padding_ * 2.0f : 0.0f;
+		const float content_width = width_ > padding_ * 2.0F ? width_ - padding_ * 2.0F : 0.0F;
+		const float content_height = height_ > padding_ * 2.0F ? height_ - padding_ * 2.0F : 0.0F;
 		return {padding_, padding_, content_width, content_height};
 	}
 
@@ -270,7 +270,7 @@ public:
 		BatchRenderer::SubmitQuad(absolute_bounds, bg_color);
 
 		// Render border if width > 0
-		if (border_width_ > 0.0f) {
+		if (border_width_ > 0.0F) {
 			const Color border_color = Color::Alpha(border_color_, opacity_);
 			const float x = absolute_bounds.x;
 			const float y = absolute_bounds.y;
@@ -308,9 +308,9 @@ public:
 private:
 	batch_renderer::Color background_color_{batch_renderer::Colors::DARK_GRAY};
 	batch_renderer::Color border_color_{batch_renderer::Colors::LIGHT_GRAY};
-	float border_width_{0.0f};
-	float padding_{0.0f};
-	float opacity_{1.0f};
+	float border_width_{0.0F};
+	float padding_{0.0F};
+	float opacity_{1.0F};
 	bool clip_children_{false};
 };
 

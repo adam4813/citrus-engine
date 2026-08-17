@@ -54,8 +54,8 @@ enum class MouseButton : uint8_t { LEFT = 0, RIGHT = 1, MIDDLE = 2 };
 
 // Mouse state struct
 struct MouseState {
-	float x = 0.0f;
-	float y = 0.0f;
+	float x = 0.0F;
+	float y = 0.0F;
 	bool left_down = false;
 	bool right_down = false;
 	bool middle_down = false;
@@ -65,8 +65,8 @@ struct MouseState {
 	bool left_released = false;
 	bool right_released = false;
 	bool middle_released = false;
-	float scroll_delta_x = 0.0f;
-	float scroll_delta_y = 0.0f;
+	float scroll_delta_x = 0.0F;
+	float scroll_delta_y = 0.0F;
 };
 
 // Handler signature

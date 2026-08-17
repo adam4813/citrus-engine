@@ -55,7 +55,7 @@ protected:
 		if (auto* panel = dynamic_cast<elements::Panel*>(container)) {
 			return panel->GetPadding();
 		}
-		return 0.0f;
+		return 0.0F;
 	}
 };
 
@@ -78,7 +78,7 @@ public:
 	 * @param gap Space between children in pixels
 	 * @param horizontal_align Horizontal alignment of children within container
 	 */
-	explicit VerticalLayout(const float gap = 0.0f, const Alignment horizontal_align = Alignment::Start) :
+	explicit VerticalLayout(const float gap = 0.0F, const Alignment horizontal_align = Alignment::Start) :
 			gap_(gap), horizontal_align_(horizontal_align) {}
 
 	void Apply(std::vector<std::unique_ptr<UIElement>>& children, UIElement* container) override {
@@ -89,14 +89,14 @@ public:
 		float y = padding;
 
 		// Cross axis dimensions depend on alignment
-		const float content_width = bounds.width - padding * 2.0f;
+		const float content_width = bounds.width - padding * 2.0F;
 
 		for (auto& child : children) {
 			if (!child || !child->IsVisible()) {
 				continue;
 			}
 
-			float x = 0.0f;
+			float x = 0.0F;
 			const float child_width = child->GetWidth();
 
 			switch (horizontal_align_) {
@@ -106,7 +106,7 @@ public:
 				break;
 			case Alignment::Center:
 				// Center uses full width (no padding)
-				x = (bounds.width - child_width) / 2.0f;
+				x = (bounds.width - child_width) / 2.0F;
 				break;
 			case Alignment::End:
 				// Respect padding on cross axis
@@ -124,14 +124,14 @@ public:
 		}
 	}
 
-	void SetGap(const float gap) { gap_ = gap >= 0.0f ? gap : 0.0f; }
+	void SetGap(const float gap) { gap_ = gap >= 0.0F ? gap : 0.0F; }
 	float GetGap() const { return gap_; }
 
 	void SetAlignment(const Alignment align) { horizontal_align_ = align; }
 	Alignment GetAlignment() const { return horizontal_align_; }
 
 private:
-	float gap_{0.0f};
+	float gap_{0.0F};
 	Alignment horizontal_align_{Alignment::Start};
 };
 
@@ -154,7 +154,7 @@ public:
 	 * @param gap Space between children in pixels
 	 * @param vertical_align Vertical alignment of children within container
 	 */
-	explicit HorizontalLayout(const float gap = 0.0f, const Alignment vertical_align = Alignment::Start) :
+	explicit HorizontalLayout(const float gap = 0.0F, const Alignment vertical_align = Alignment::Start) :
 			gap_(gap), vertical_align_(vertical_align) {}
 
 	void Apply(std::vector<std::unique_ptr<UIElement>>& children, UIElement* container) override {
@@ -165,14 +165,14 @@ public:
 		float x = padding;
 
 		// Cross axis dimensions depend on alignment
-		const float content_height = bounds.height - padding * 2.0f;
+		const float content_height = bounds.height - padding * 2.0F;
 
 		for (auto& child : children) {
 			if (!child || !child->IsVisible()) {
 				continue;
 			}
 
-			float y = 0.0f;
+			float y = 0.0F;
 			const float child_height = child->GetHeight();
 
 			switch (vertical_align_) {
@@ -182,7 +182,7 @@ public:
 				break;
 			case Alignment::Center:
 				// Center uses full height (no padding)
-				y = (bounds.height - child_height) / 2.0f;
+				y = (bounds.height - child_height) / 2.0F;
 				break;
 			case Alignment::End:
 				// Respect padding on cross axis
@@ -200,14 +200,14 @@ public:
 		}
 	}
 
-	void SetGap(const float gap) { gap_ = gap >= 0.0f ? gap : 0.0f; }
+	void SetGap(const float gap) { gap_ = gap >= 0.0F ? gap : 0.0F; }
 	float GetGap() const { return gap_; }
 
 	void SetAlignment(const Alignment align) { vertical_align_ = align; }
 	Alignment GetAlignment() const { return vertical_align_; }
 
 private:
-	float gap_{0.0f};
+	float gap_{0.0F};
 	Alignment vertical_align_{Alignment::Start};
 };
 
@@ -233,8 +233,8 @@ public:
 	 */
 	explicit GridLayout(
 		const uint32_t columns = 3,
-		const float horizontal_gap = 0.0f,
-		const float vertical_gap = 0.0f
+		const float horizontal_gap = 0.0F,
+		const float vertical_gap = 0.0F
 	) : columns_(columns > 0 ? columns : 1), horizontal_gap_(horizontal_gap), vertical_gap_(vertical_gap) {}
 
 	void Apply(std::vector<std::unique_ptr<UIElement>>& children, UIElement* container) override {
@@ -246,7 +246,7 @@ public:
 		const float padding = GetContainerPadding(container);
 
 		// Content area with padding applied
-		const float content_width = bounds.width - padding * 2.0f;
+		const float content_width = bounds.width - padding * 2.0F;
 
 		// Calculate cell size based on available space
 		const float cell_width =
@@ -254,7 +254,7 @@ public:
 
 		uint32_t col = 0;
 		float row_y = padding;
-		float row_height = 0.0f;
+		float row_height = 0.0F;
 
 		for (auto& child : children) {
 			if (!child || !child->IsVisible()) {
@@ -273,7 +273,7 @@ public:
 			if (col >= columns_) {
 				col = 0;
 				row_y += row_height + vertical_gap_;
-				row_height = 0.0f;
+				row_height = 0.0F;
 			}
 		}
 	}
@@ -282,14 +282,14 @@ public:
 	uint32_t GetColumns() const { return columns_; }
 
 	void SetGap(const float horizontal, const float vertical) {
-		horizontal_gap_ = horizontal >= 0.0f ? horizontal : 0.0f;
-		vertical_gap_ = vertical >= 0.0f ? vertical : 0.0f;
+		horizontal_gap_ = horizontal >= 0.0F ? horizontal : 0.0F;
+		vertical_gap_ = vertical >= 0.0F ? vertical : 0.0F;
 	}
 
 private:
 	uint32_t columns_{3};
-	float horizontal_gap_{0.0f};
-	float vertical_gap_{0.0f};
+	float horizontal_gap_{0.0F};
+	float vertical_gap_{0.0F};
 };
 
 /**
@@ -334,8 +334,8 @@ public:
 
 		if (visible.size() == 1) {
 			// Single child: center it (using full dimensions for centering)
-			const float x = (bounds.width - visible[0]->GetWidth()) / 2.0f;
-			const float y = (bounds.height - visible[0]->GetHeight()) / 2.0f;
+			const float x = (bounds.width - visible[0]->GetWidth()) / 2.0F;
+			const float y = (bounds.height - visible[0]->GetHeight()) / 2.0F;
 			visible[0]->SetRelativePosition(x, y);
 			return;
 		}
@@ -351,10 +351,10 @@ public:
 private:
 	void ApplyHorizontal(std::vector<UIElement*>& visible, const batch_renderer::Rectangle& bounds, float padding) {
 		// Primary axis: padding reduces available width
-		const float content_width = bounds.width - padding * 2.0f;
+		const float content_width = bounds.width - padding * 2.0F;
 
 		// Calculate total child width
-		float total_width = 0.0f;
+		float total_width = 0.0F;
 		for (auto* child : visible) {
 			total_width += child->GetWidth();
 		}
@@ -364,19 +364,19 @@ private:
 		float x = padding;
 
 		for (auto* child : visible) {
-			float y = 0.0f;
+			float y = 0.0F;
 			const float child_height = child->GetHeight();
 
 			switch (cross_align_) {
 			case Alignment::Start: y = padding; break;
 			case Alignment::Center:
 				// Center uses full height
-				y = (bounds.height - child_height) / 2.0f;
+				y = (bounds.height - child_height) / 2.0F;
 				break;
 			case Alignment::End: y = bounds.height - padding - child_height; break;
 			case Alignment::Stretch:
 				y = padding;
-				child->SetSize(child->GetWidth(), bounds.height - padding * 2.0f);
+				child->SetSize(child->GetWidth(), bounds.height - padding * 2.0F);
 				break;
 			}
 
@@ -387,10 +387,10 @@ private:
 
 	void ApplyVertical(std::vector<UIElement*>& visible, const batch_renderer::Rectangle& bounds, float padding) {
 		// Primary axis: padding reduces available height
-		const float content_height = bounds.height - padding * 2.0f;
+		const float content_height = bounds.height - padding * 2.0F;
 
 		// Calculate total child height
-		float total_height = 0.0f;
+		float total_height = 0.0F;
 		for (auto* child : visible) {
 			total_height += child->GetHeight();
 		}
@@ -400,19 +400,19 @@ private:
 		float y = padding;
 
 		for (auto* child : visible) {
-			float x = 0.0f;
+			float x = 0.0F;
 			const float child_width = child->GetWidth();
 
 			switch (cross_align_) {
 			case Alignment::Start: x = padding; break;
 			case Alignment::Center:
 				// Center uses full width
-				x = (bounds.width - child_width) / 2.0f;
+				x = (bounds.width - child_width) / 2.0F;
 				break;
 			case Alignment::End: x = bounds.width - padding - child_width; break;
 			case Alignment::Stretch:
 				x = padding;
-				child->SetSize(bounds.width - padding * 2.0f, child->GetHeight());
+				child->SetSize(bounds.width - padding * 2.0F, child->GetHeight());
 				break;
 			}
 
@@ -453,8 +453,8 @@ public:
 				continue;
 			}
 
-			float x = 0.0f;
-			float y = 0.0f;
+			float x = 0.0F;
+			float y = 0.0F;
 			const float child_width = child->GetWidth();
 			const float child_height = child->GetHeight();
 
@@ -462,12 +462,12 @@ public:
 			case Alignment::Start: x = padding; break;
 			case Alignment::Center:
 				// Center uses full width
-				x = (bounds.width - child_width) / 2.0f;
+				x = (bounds.width - child_width) / 2.0F;
 				break;
 			case Alignment::End: x = bounds.width - padding - child_width; break;
 			case Alignment::Stretch:
 				x = padding;
-				child->SetSize(bounds.width - padding * 2.0f, child_height);
+				child->SetSize(bounds.width - padding * 2.0F, child_height);
 				break;
 			}
 
@@ -475,12 +475,12 @@ public:
 			case Alignment::Start: y = padding; break;
 			case Alignment::Center:
 				// Center uses full height
-				y = (bounds.height - child_height) / 2.0f;
+				y = (bounds.height - child_height) / 2.0F;
 				break;
 			case Alignment::End: y = bounds.height - padding - child_height; break;
 			case Alignment::Stretch:
 				y = padding;
-				child->SetSize(child_width, bounds.height - padding * 2.0f);
+				child->SetSize(child_width, bounds.height - padding * 2.0F);
 				break;
 			}
 

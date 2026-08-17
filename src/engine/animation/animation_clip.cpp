@@ -28,7 +28,7 @@ void AnimationTrack::AddKeyframe(float time, AnimatedValue value) {
 
 float AnimationTrack::GetDuration() const {
 	if (keyframes.empty()) {
-		return 0.0f;
+		return 0.0F;
 	}
 	return keyframes.back().time;
 }
@@ -47,10 +47,10 @@ T CubicInterpolate(const T& p0, const T& p1, const T& p2, const T& p3, float t) 
 	const float t3 = t2 * t;
 
 	// Catmull-Rom spline coefficients
-	const float a = -0.5f * t3 + t2 - 0.5f * t;
-	const float b = 1.5f * t3 - 2.5f * t2 + 1.0f;
-	const float c = -1.5f * t3 + 2.0f * t2 + 0.5f * t;
-	const float d = 0.5f * t3 - 0.5f * t2;
+	const float a = -0.5F * t3 + t2 - 0.5F * t;
+	const float b = 1.5F * t3 - 2.5F * t2 + 1.0F;
+	const float c = -1.5F * t3 + 2.0F * t2 + 0.5F * t;
+	const float d = 0.5F * t3 - 0.5F * t2;
 
 	return p0 * a + p1 * b + p2 * c + p3 * d;
 }
@@ -90,7 +90,7 @@ AnimatedValue InterpolateValues(const AnimatedValue& v1, const AnimatedValue& v2
 
 AnimatedValue AnimationTrack::Evaluate(float time) const {
 	if (keyframes.empty()) {
-		return 0.0f; // Default value
+		return 0.0F; // Default value
 	}
 
 	if (keyframes.size() == 1 || time <= keyframes.front().time) {
@@ -109,7 +109,7 @@ AnimatedValue AnimationTrack::Evaluate(float time) const {
 		if (time >= kf1.time && time <= kf2.time) {
 			// Calculate interpolation factor
 			const float duration = kf2.time - kf1.time;
-			const float t = (duration > 0.0f) ? (time - kf1.time) / duration : 0.0f;
+			const float t = (duration > 0.0F) ? (time - kf1.time) / duration : 0.0F;
 
 			if (interpolation == InterpolationMode::Cubic && keyframes.size() >= 4) {
 				// Use cubic interpolation with neighboring keyframes
@@ -167,7 +167,7 @@ void AnimationClip::EvaluateAll(float time, std::vector<std::pair<std::string, A
 }
 
 void AnimationClip::UpdateDuration() {
-	duration = 0.0f;
+	duration = 0.0F;
 	for (const auto& track : tracks) {
 		const float track_duration = track.GetDuration();
 		if (track_duration > duration) {

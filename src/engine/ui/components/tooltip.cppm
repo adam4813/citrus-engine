@@ -274,12 +274,12 @@ private:
 	std::unique_ptr<UIElement> content_;
 
 	// Positioning
-	float offset_x_{10.0f};
-	float offset_y_{10.0f};
+	float offset_x_{10.0F};
+	float offset_y_{10.0F};
 
 	// Window bounds for repositioning
-	float window_width_{0.0f};
-	float window_height_{0.0f};
+	float window_width_{0.0F};
+	float window_height_{0.0F};
 	bool use_custom_bounds_{false};
 
 	// State

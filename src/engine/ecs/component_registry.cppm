@@ -53,8 +53,8 @@ struct FieldInfo {
 	std::vector<std::string> enum_tooltips;   // For Enum: tooltips for each option (index = integer value)
 	std::vector<std::string> options;         // For Selection: valid string choices
 	std::vector<std::string> file_extensions; // For FilePath/AssetRef: file extension filters (e.g., ".json", ".png")
-	float slider_min{0.0f};                   // For Slider: minimum value
-	float slider_max{1.0f};                   // For Slider: maximum value
+	float slider_min{0.0F};                   // For Slider: minimum value
+	float slider_max{1.0F};                   // For Slider: maximum value
 	std::string
 		visible_when_field; // If non-empty, this field is only visible when the named field has a matching value
 	std::vector<int> visible_when_values; // Enum values of the controlling field that make this field visible

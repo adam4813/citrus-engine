@@ -241,21 +241,21 @@ TextLayout::Layout(const std::string& text, const FontAtlas& font, const LayoutO
 	// Decode UTF-8
 	auto codepoints = utf8::Decode(text);
 
-	float cursor_x = 0.0f;
+	float cursor_x = 0.0F;
 	float cursor_y = font.GetAscent(); // Start at baseline
 	result.reserve(codepoints.size());
 
 	std::vector<PositionedGlyph> current_line;
-	float line_width = 0.0f;
+	float line_width = 0.0F;
 
 	for (uint32_t cp : codepoints) {
 		// Handle newline
 		if (cp == '\n') {
 			// Apply alignment and add to result
-			if (options.h_align != HorizontalAlign::Left && options.max_width > 0.0f) {
-				float offset = 0.0f;
+			if (options.h_align != HorizontalAlign::Left && options.max_width > 0.0F) {
+				float offset = 0.0F;
 				if (options.h_align == HorizontalAlign::Center) {
-					offset = (options.max_width - line_width) * 0.5f;
+					offset = (options.max_width - line_width) * 0.5F;
 				}
 				else if (options.h_align == HorizontalAlign::Right) {
 					offset = options.max_width - line_width;
@@ -267,9 +267,9 @@ TextLayout::Layout(const std::string& text, const FontAtlas& font, const LayoutO
 			result.insert(result.end(), current_line.begin(), current_line.end());
 			current_line.clear();
 
-			cursor_x = 0.0f;
+			cursor_x = 0.0F;
 			cursor_y += font.GetLineHeight() * options.line_height;
-			line_width = 0.0f;
+			line_width = 0.0F;
 			continue;
 		}
 
@@ -279,12 +279,12 @@ TextLayout::Layout(const std::string& text, const FontAtlas& font, const LayoutO
 		}
 
 		// Check if line wrapping needed
-		if (options.max_width > 0.0f && cursor_x + glyph->advance > options.max_width && !current_line.empty()) {
+		if (options.max_width > 0.0F && cursor_x + glyph->advance > options.max_width && !current_line.empty()) {
 			// Apply alignment and flush current line
 			if (options.h_align != HorizontalAlign::Left) {
-				float offset = 0.0f;
+				float offset = 0.0F;
 				if (options.h_align == HorizontalAlign::Center) {
-					offset = (options.max_width - line_width) * 0.5f;
+					offset = (options.max_width - line_width) * 0.5F;
 				}
 				else if (options.h_align == HorizontalAlign::Right) {
 					offset = options.max_width - line_width;
@@ -296,9 +296,9 @@ TextLayout::Layout(const std::string& text, const FontAtlas& font, const LayoutO
 			result.insert(result.end(), current_line.begin(), current_line.end());
 			current_line.clear();
 
-			cursor_x = 0.0f;
+			cursor_x = 0.0F;
 			cursor_y += font.GetLineHeight() * options.line_height;
-			line_width = 0.0f;
+			line_width = 0.0F;
 		}
 
 		// Position glyph
@@ -314,10 +314,10 @@ TextLayout::Layout(const std::string& text, const FontAtlas& font, const LayoutO
 
 	// Flush last line
 	if (!current_line.empty()) {
-		if (options.h_align != HorizontalAlign::Left && options.max_width > 0.0f) {
-			float offset = 0.0f;
+		if (options.h_align != HorizontalAlign::Left && options.max_width > 0.0F) {
+			float offset = 0.0F;
 			if (options.h_align == HorizontalAlign::Center) {
-				offset = (options.max_width - line_width) * 0.5f;
+				offset = (options.max_width - line_width) * 0.5F;
 			}
 			else if (options.h_align == HorizontalAlign::Right) {
 				offset = options.max_width - line_width;
@@ -332,12 +332,12 @@ TextLayout::Layout(const std::string& text, const FontAtlas& font, const LayoutO
 	// Apply vertical alignment (if needed)
 	if (options.v_align != VerticalAlign::Top) {
 		float total_height = cursor_y + font.GetDescent();
-		float offset_y = 0.0f;
+		float offset_y = 0.0F;
 
 		// Note: This only makes sense when rendering into a bounded rect
 		// For now, just implement the logic
 		if (options.v_align == VerticalAlign::Center) {
-			offset_y = -total_height * 0.5f;
+			offset_y = -total_height * 0.5F;
 		}
 		else if (options.v_align == VerticalAlign::Bottom) {
 			offset_y = -total_height;
@@ -359,8 +359,8 @@ batch_renderer::Rectangle TextLayout::MeasureText(const std::string& text, const
 	// Decode UTF-8
 	auto codepoints = utf8::Decode(text);
 
-	float cursor_x = 0.0f;
-	float max_line_width = 0.0f;
+	float cursor_x = 0.0F;
+	float max_line_width = 0.0F;
 	int line_count = 1;
 	bool has_content = false;
 
@@ -368,7 +368,7 @@ batch_renderer::Rectangle TextLayout::MeasureText(const std::string& text, const
 		// Handle newline
 		if (cp == '\n') {
 			max_line_width = std::max(max_line_width, cursor_x);
-			cursor_x = 0.0f;
+			cursor_x = 0.0F;
 			line_count++;
 			has_content = false;
 			continue;
@@ -380,9 +380,9 @@ batch_renderer::Rectangle TextLayout::MeasureText(const std::string& text, const
 		}
 
 		// Check wrapping (use same condition as Layout for consistency)
-		if (max_width > 0.0f && cursor_x + glyph->advance > max_width && has_content) {
+		if (max_width > 0.0F && cursor_x + glyph->advance > max_width && has_content) {
 			max_line_width = std::max(max_line_width, cursor_x);
-			cursor_x = 0.0f;
+			cursor_x = 0.0F;
 			line_count++;
 			has_content = false;
 		}

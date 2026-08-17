@@ -375,7 +375,7 @@ public:
 	 *         from the element's origin to the start of the content area; children are positioned
 	 *         relative to this area.
 	 */
-	virtual batch_renderer::Rectangle GetContentArea() const { return {0.0f, 0.0f, width_, height_}; }
+	virtual batch_renderer::Rectangle GetContentArea() const { return {0.0F, 0.0F, width_, height_}; }
 
 	/**
 	 * @brief Set relative position (within parent)
@@ -656,7 +656,7 @@ public:
 			}
 		}
 
-		if (event.scroll_delta_x != 0.0f || event.scroll_delta_y != 0.0f) {
+		if (event.scroll_delta_x != 0.0F || event.scroll_delta_y != 0.0F) {
 			// Try callback first
 			if (scroll_callback_ && scroll_callback_(event)) {
 				return true;
@@ -741,7 +741,7 @@ public:
 	 *
 	 * @return Offset (x, y) to subtract from children's positions
 	 */
-	virtual std::pair<float, float> GetContentOffset() const { return {0.0f, 0.0f}; }
+	virtual std::pair<float, float> GetContentOffset() const { return {0.0F, 0.0F}; }
 
 	// === Component Management ===
 
@@ -817,14 +817,14 @@ public:
 	 * Call this each frame before rendering if components need updating.
 	 * Note: Layout and constraint components auto-update when dirty.
 	 */
-	void UpdateComponents(const float delta_time = 0.0f) { components_.Update(delta_time); }
+	void UpdateComponents(const float delta_time = 0.0F) { components_.Update(delta_time); }
 
 	/**
 	 * @brief Recursively update components on this element and all children
 	 *
 	 * Call this on the root element to update the entire UI tree.
 	 */
-	void UpdateComponentsRecursive(const float delta_time = 0.0f) {
+	void UpdateComponentsRecursive(const float delta_time = 0.0F) {
 		components_.Update(delta_time);
 		for (auto& child : children_) {
 			if (child) {
@@ -871,12 +871,12 @@ protected:
 	batch_renderer::Rectangle GetAbsoluteParentBounds() const;
 
 	// Position relative to parent
-	float relative_x_ = 0.0f;
-	float relative_y_ = 0.0f;
+	float relative_x_ = 0.0F;
+	float relative_y_ = 0.0F;
 
 	// Element size
-	float width_ = 0.0f;
-	float height_ = 0.0f;
+	float width_ = 0.0F;
+	float height_ = 0.0F;
 
 	// State flags
 	bool is_focused_ = false;
@@ -920,7 +920,7 @@ inline batch_renderer::Rectangle UIElement::GetAbsoluteBounds() const {
 }
 
 inline batch_renderer::Rectangle UIElement::GetAbsoluteParentBounds() const {
-	batch_renderer::Rectangle bounds{0.0f, 0.0f, 0.0f, 0.0f};
+	batch_renderer::Rectangle bounds{0.0F, 0.0F, 0.0F, 0.0F};
 
 	const UIElement* current_parent = parent_;
 	while (current_parent != nullptr) {

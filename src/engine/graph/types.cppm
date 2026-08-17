@@ -39,11 +39,11 @@ struct Pin {
 	std::string name;
 	PinType type = PinType::Float;
 	PinDirection direction = PinDirection::Input;
-	PinValue default_value = 0.0f;
+	PinValue default_value = 0.0F;
 
 	Pin() = default;
 
-	Pin(int pin_id, std::string pin_name, PinType pin_type, PinDirection pin_direction, PinValue pin_default = 0.0f) :
+	Pin(int pin_id, std::string pin_name, PinType pin_type, PinDirection pin_direction, PinValue pin_default = 0.0F) :
 			id(pin_id), name(std::move(pin_name)), type(pin_type), direction(pin_direction),
 			default_value(std::move(pin_default)) {}
 };
@@ -52,14 +52,14 @@ struct Pin {
 struct Node {
 	int id = 0;
 	std::string type_name;          // Registered type (e.g., "Math/Add", "Texture/Noise")
-	glm::vec2 position{0.0f, 0.0f}; // Canvas position for editor
+	glm::vec2 position{0.0F, 0.0F}; // Canvas position for editor
 	std::vector<Pin> inputs;
 	std::vector<Pin> outputs;
 	std::map<std::string, PinValue> properties; // Node-specific settings
 
 	Node() = default;
 
-	Node(int node_id, std::string node_type, glm::vec2 node_pos = {0.0f, 0.0f}) :
+	Node(int node_id, std::string node_type, glm::vec2 node_pos = {0.0F, 0.0F}) :
 			id(node_id), type_name(std::move(node_type)), position(node_pos) {}
 };
 

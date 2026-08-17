@@ -51,8 +51,8 @@ public:
 
 private:
 	std::shared_ptr<AnimationClip> clip_;
-	float current_time_{0.0f};
-	float speed_{1.0f};
+	float current_time_{0.0F};
+	float speed_{1.0F};
 	bool is_playing_{false};
 	bool is_looping_{false};
 };

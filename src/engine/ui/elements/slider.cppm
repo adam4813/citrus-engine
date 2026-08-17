@@ -84,7 +84,7 @@ public:
 		const float height,
 		const float min_value,
 		const float max_value,
-		const float initial_value = 0.0f
+		const float initial_value = 0.0F
 	) : Slider(0, 0, width, height, min_value, max_value, initial_value) {}
 
 	/**
@@ -110,11 +110,11 @@ public:
 		const float height,
 		const float min_value,
 		const float max_value,
-		const float initial_value = 0.0f
+		const float initial_value = 0.0F
 	) :
 			UIElement(x, y, width, height), min_value_(min_value), max_value_(max_value),
-			current_value_(std::clamp(initial_value, min_value, max_value)), thumb_radius_(height * 0.5f),
-			track_width_(width), track_x_offset_(0.0f) {}
+			current_value_(std::clamp(initial_value, min_value, max_value)), thumb_radius_(height * 0.5F),
+			track_width_(width), track_x_offset_(0.0F) {}
 
 	~Slider() override = default;
 
@@ -362,8 +362,8 @@ public:
 		const Rectangle bounds = GetAbsoluteBounds();
 
 		// Calculate track dimensions (centered vertically)
-		const float track_height = height_ * 0.2f;
-		const float track_y = bounds.y + (height_ - track_height) * 0.5f;
+		const float track_height = height_ * 0.2F;
+		const float track_y = bounds.y + (height_ - track_height) * 0.5F;
 		const float track_x = bounds.x + track_x_offset_;
 		const Rectangle track_rect{track_x, track_y, track_width_, track_height};
 
@@ -373,7 +373,7 @@ public:
 		// Calculate thumb position
 		const float normalized_value = (current_value_ - min_value_) / (max_value_ - min_value_);
 		const float thumb_x = track_x + normalized_value * track_width_;
-		const float thumb_y = bounds.y + height_ * 0.5f;
+		const float thumb_y = bounds.y + height_ * 0.5F;
 
 		// Render fill (progress from left to thumb)
 		const Rectangle fill_rect{track_x, track_y, thumb_x - track_x, track_height};
@@ -413,7 +413,7 @@ private:
 		// Calculate normalized position (0.0 - 1.0)
 		const float track_x = bounds.x + track_x_offset_;
 		float normalized = (mouse_x - track_x) / track_width_;
-		normalized = std::clamp(normalized, 0.0f, 1.0f);
+		normalized = std::clamp(normalized, 0.0F, 1.0F);
 
 		// Convert to value in range
 		if (const float new_value = min_value_ + normalized * (max_value_ - min_value_); new_value != current_value_) {
@@ -462,9 +462,9 @@ private:
 
 		// Position inside slider bounds, vertically centered
 		const float label_height = label_element_->GetHeight();
-		const float label_y = (height_ - label_height) * 0.5f;
+		const float label_y = (height_ - label_height) * 0.5F;
 
-		label_element_->SetRelativePosition(0.0f, label_y);
+		label_element_->SetRelativePosition(0.0F, label_y);
 	}
 
 	/**
@@ -477,7 +477,7 @@ private:
 
 		// Position inside slider bounds on right side, vertically centered
 		const float value_height = value_element_->GetHeight();
-		const float value_y = (height_ - value_height) * 0.5f;
+		const float value_y = (height_ - value_height) * 0.5F;
 		const float value_x = width_ - value_element_->GetWidth();
 
 		value_element_->SetRelativePosition(value_x, value_y);
@@ -487,10 +487,10 @@ private:
 	 * @brief Update track width and offset based on label/value widths
 	 */
 	void UpdateTrackWidth() {
-		constexpr float padding = 10.0f;
+		constexpr float padding = 10.0F;
 
-		float left_width = 0.0f;
-		float right_width = 0.0f;
+		float left_width = 0.0F;
+		float right_width = 0.0F;
 
 		if (label_element_) {
 			left_width = label_element_->GetWidth() + padding;
@@ -521,8 +521,8 @@ private:
 	// Display options
 	bool show_value_{false};
 	std::string label_text_;
-	float label_font_size_{14.0f};
-	float value_font_size_{12.0f};
+	float label_font_size_{14.0F};
+	float value_font_size_{12.0F};
 
 	// Text elements (composition)
 	std::unique_ptr<Text> label_element_{nullptr};

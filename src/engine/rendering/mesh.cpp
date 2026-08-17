@@ -181,9 +181,9 @@ bool MeshManager::GenerateCube(const MeshId id, const float width, const float h
 		return false;
 	}
 
-	const float hw = width * 0.5f;
-	const float hh = height * 0.5f;
-	const float hd = depth * 0.5f;
+	const float hw = width * 0.5F;
+	const float hh = height * 0.5F;
+	const float hd = depth * 0.5F;
 	const Color face_colors[6] =
 		{colors::red, colors::green, colors::blue, colors::yellow, colors::magenta, colors::cyan};
 
@@ -256,13 +256,13 @@ bool MeshManager::GenerateSphere(MeshId id, float radius, uint32_t segments) {
 	const uint32_t rings = segments;
 	const uint32_t sectors = segments;
 
-	constexpr float PI = 3.14159265359f;
+	constexpr float PI = 3.14159265359F;
 
 	// Top pole - single vertex
 	Vertex top_pole;
 	top_pole.position = Vec3(0, radius, 0);
 	top_pole.normal = Vec3(0, 1, 0);
-	top_pole.tex_coords = Vec2(0.5f, 0.0f);
+	top_pole.tex_coords = Vec2(0.5F, 0.0F);
 	vertices.push_back(top_pole);
 
 	// Generate middle rings (exclude poles)
@@ -272,7 +272,7 @@ bool MeshManager::GenerateSphere(MeshId id, float radius, uint32_t segments) {
 		const float ring_radius = radius * std::sin(phi);
 
 		for (uint32_t sector = 0; sector <= sectors; ++sector) {
-			const float theta = 2.0f * PI * static_cast<float>(sector) / static_cast<float>(sectors);
+			const float theta = 2.0F * PI * static_cast<float>(sector) / static_cast<float>(sectors);
 			const float x = ring_radius * std::cos(theta);
 			const float z = ring_radius * std::sin(theta);
 
@@ -292,7 +292,7 @@ bool MeshManager::GenerateSphere(MeshId id, float radius, uint32_t segments) {
 	Vertex bottom_pole;
 	bottom_pole.position = Vec3(0, -radius, 0);
 	bottom_pole.normal = Vec3(0, -1, 0);
-	bottom_pole.tex_coords = Vec2(0.5f, 1.0f);
+	bottom_pole.tex_coords = Vec2(0.5F, 1.0F);
 	vertices.push_back(bottom_pole);
 
 	// Generate indices for top cap (triangle fan from top pole)

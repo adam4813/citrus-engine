@@ -71,7 +71,7 @@ public:
 	 */
 	Label(
 		const std::string& text_content,
-		const float font_size = 16.0f,
+		const float font_size = 16.0F,
 		const batch_renderer::Color& color = batch_renderer::Colors::WHITE
 	) : Label(0, 0, text_content, font_size, color) {}
 
@@ -95,7 +95,7 @@ public:
 		const float x,
 		const float y,
 		const std::string& text_content,
-		const float font_size = 16.0f,
+		const float font_size = 16.0F,
 		const batch_renderer::Color& color = batch_renderer::Colors::WHITE
 	) :
 			UIElement(x, y, 0, 0), // Width/height set after text creation
@@ -231,7 +231,7 @@ public:
 	 * @endcode
 	 */
 	void SetMaxWidth(const float max_width) {
-		max_width_ = max_width >= 0.0f ? max_width : 0.0f;
+		max_width_ = max_width >= 0.0F ? max_width : 0.0F;
 		UpdateSize();
 		UpdateTextPosition();
 	}
@@ -284,7 +284,7 @@ private:
 		const float text_height = text_element_->GetHeight();
 
 		// Apply max width constraint if set
-		if (max_width_ > 0.0f) {
+		if (max_width_ > 0.0F) {
 			width_ = std::min(text_width, max_width_);
 		}
 		else {
@@ -307,24 +307,24 @@ private:
 		}
 
 		const float text_width = text_element_->GetWidth();
-		float text_x = 0.0f;
+		float text_x = 0.0F;
 
 		// Calculate X offset based on alignment
 		switch (alignment_) {
-		case Alignment::Left: text_x = 0.0f; break;
-		case Alignment::Center: text_x = (width_ - text_width) * 0.5f; break;
+		case Alignment::Left: text_x = 0.0F; break;
+		case Alignment::Center: text_x = (width_ - text_width) * 0.5F; break;
 		case Alignment::Right: text_x = width_ - text_width; break;
 		}
 
 		// Set relative position (child is positioned relative to parent)
-		text_element_->SetRelativePosition(text_x, 0.0f);
+		text_element_->SetRelativePosition(text_x, 0.0F);
 	}
 
 	std::string text_content_;
 	float font_size_;
 	batch_renderer::Color text_color_;
 	Alignment alignment_{Alignment::Left};
-	float max_width_{0.0f};
+	float max_width_{0.0F};
 
 	// Text child (raw pointer for updates, owned by children_ vector)
 	Text* text_element_{nullptr};

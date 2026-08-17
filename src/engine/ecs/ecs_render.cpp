@@ -21,7 +21,7 @@ void ECSWorld::SubmitRenderCommands(const Renderer& renderer) {
 	// Static default camera to avoid recreation every frame
 	static const Camera default_camera = []() {
 		Camera cam;
-		constexpr glm::vec3 default_position(0.0f, 0.0f, 10.0f);
+		constexpr glm::vec3 default_position(0.0F, 0.0F, 10.0F);
 		cam.view_matrix = glm::lookAt(default_position, cam.target, cam.up);
 		cam.projection_matrix =
 			glm::perspective(glm::radians(cam.fov), cam.aspect_ratio, cam.near_plane, cam.far_plane);
@@ -45,7 +45,7 @@ void ECSWorld::SubmitRenderCommands(const Renderer& renderer) {
 
 	// Query all entities with Light component and Transform
 	world_.query<const Light, const Transform>().each(
-		[&scene_lights, &light_positions](flecs::entity e, const Light& light, const Transform& transform) {
+		[&scene_lights, &light_positions](flecs::entity, const Light& light, const Transform& transform) {
 			if (scene_lights.size() < MAX_LIGHTS) {
 				scene_lights.push_back(light);
 				light_positions.push_back(transform.position);
@@ -54,13 +54,13 @@ void ECSWorld::SubmitRenderCommands(const Renderer& renderer) {
 	);
 
 	// TEMP: Hold the first light for backward compatability
-	glm::vec3 light_dir{0.2f, -1.0f, -0.3f}; // Default fallback
-	if (scene_lights.size() > 0) {
+	glm::vec3 light_dir{0.2F, -1.0F, -0.3F}; // Default fallback
+	if (!scene_lights.empty()) {
 		light_dir = glm::normalize(scene_lights[0].direction);
 	}
 
 	// Get camera position for specular calculations
-	glm::vec3 camera_position{0.0f, 0.0f, 10.0f}; // Default
+	glm::vec3 camera_position{0.0F, 0.0F, 10.0F}; // Default
 	if (camera_entity.is_valid() && camera_entity.has<Transform>()) {
 		const auto& cam_transform = camera_entity.get<Transform>();
 		camera_position = cam_transform.position;
@@ -95,8 +95,8 @@ void ECSWorld::SubmitRenderCommands(const Renderer& renderer) {
 			shader.SetUniform("u_CameraPos", camera_position);
 
 			// Set ambient lighting
-			shader.SetUniform("u_AmbientColor", glm::vec3(1.0f, 1.0f, 1.0f));
-			shader.SetUniform("u_AmbientIntensity", 0.5f);
+			shader.SetUniform("u_AmbientColor", glm::vec3(1.0F, 1.0F, 1.0F));
+			shader.SetUniform("u_AmbientIntensity", 0.5F);
 
 			// Set material properties from the entity's material (if valid)
 			if (mat_mgr.IsValid(renderable.material)) {
@@ -104,8 +104,8 @@ void ECSWorld::SubmitRenderCommands(const Renderer& renderer) {
 				material.Apply(shader);
 			}
 			else {
-				shader.SetUniform("u_Color", glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
-				shader.SetUniform("u_Shininess", 32.0f);
+				shader.SetUniform("u_Color", glm::vec4(1.0F, 1.0F, 1.0F, 1.0F));
+				shader.SetUniform("u_Shininess", 32.0F);
 			}
 
 			// Calculate normal matrix (inverse transpose of model matrix)

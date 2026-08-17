@@ -408,10 +408,10 @@ private:
 			// Style the button
 			const bool is_active = (i == active_tab_index_);
 			button->SetNormalColor(is_active ? active_tab_color_ : inactive_tab_color_);
-			button->SetHoverColor(batch_renderer::Color::Brightness(inactive_tab_color_, 0.1f));
+			button->SetHoverColor(batch_renderer::Color::Brightness(inactive_tab_color_, 0.1F));
 			button->SetPressedColor(active_tab_color_);
 			button->SetTextColor(tab_text_color_);
-			button->SetBorderWidth(0.0f);
+			button->SetBorderWidth(0.0F);
 
 			// Capture index for callback
 			const size_t tab_index = i;
@@ -460,8 +460,8 @@ private:
 	Panel* content_panel_{nullptr}; // Contains active tab content
 
 	// Appearance
-	float tab_bar_height_{30.0f};
-	float tab_font_size_{14.0f};
+	float tab_bar_height_{30.0F};
+	float tab_font_size_{14.0F};
 	batch_renderer::Color tab_bar_color_{batch_renderer::UITheme::Background::PANEL_DARK};
 	batch_renderer::Color active_tab_color_{batch_renderer::UITheme::Background::PANEL};
 	batch_renderer::Color inactive_tab_color_{batch_renderer::UITheme::Background::PANEL_DARK};

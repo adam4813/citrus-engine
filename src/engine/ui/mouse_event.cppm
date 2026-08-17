@@ -26,8 +26,8 @@ export namespace engine::ui {
  * ```
  */
 struct MouseEvent {
-	float x{0.0f}; ///< Mouse X position (screen space)
-	float y{0.0f}; ///< Mouse Y position (screen space)
+	float x{0.0F}; ///< Mouse X position (screen space)
+	float y{0.0F}; ///< Mouse Y position (screen space)
 
 	bool left_down{false};   ///< Left button is currently held
 	bool right_down{false};  ///< Right button is currently held
@@ -41,8 +41,8 @@ struct MouseEvent {
 	bool right_released{false};  ///< Right button was just released this frame
 	bool middle_released{false}; ///< Middle button was just released this frame
 
-	float scroll_delta_x{0.0f}; ///< Horizontal scroll delta (positive = scroll right)
-	float scroll_delta_y{0.0f}; ///< Vertical scroll delta (positive = scroll up)
+	float scroll_delta_x{0.0F}; ///< Horizontal scroll delta (positive = scroll right)
+	float scroll_delta_y{0.0F}; ///< Vertical scroll delta (positive = scroll up)
 
 	/**
 	 * @brief Default constructor - creates event at origin with no buttons pressed
@@ -68,8 +68,8 @@ struct MouseEvent {
 		bool right_down = false,
 		bool left_pressed = false,
 		bool right_pressed = false,
-		float scroll_x = 0.0f,
-		float scroll_y = 0.0f
+		float scroll_x = 0.0F,
+		float scroll_y = 0.0F
 	) :
 			x(x), y(y), left_down(left_down), right_down(right_down), left_pressed(left_pressed),
 			right_pressed(right_pressed), scroll_delta_x(scroll_x), scroll_delta_y(scroll_y) {}

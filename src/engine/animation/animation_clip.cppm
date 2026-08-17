@@ -25,7 +25,7 @@ enum class InterpolationMode : uint8_t {
 
 // Single keyframe in an animation track
 struct Keyframe {
-	float time{0.0f};    // Time in seconds
+	float time{0.0F};    // Time in seconds
 	AnimatedValue value; // Value at this keyframe
 
 	Keyframe() = default;
@@ -61,7 +61,7 @@ struct AnimationTrack {
 // Complete animation clip containing multiple property tracks
 struct AnimationClip {
 	std::string name;                   // Name of the animation
-	float duration{0.0f};               // Total duration in seconds
+	float duration{0.0F};               // Total duration in seconds
 	std::vector<AnimationTrack> tracks; // All animated property tracks
 	bool looping{false};                // Whether to loop the animation
 

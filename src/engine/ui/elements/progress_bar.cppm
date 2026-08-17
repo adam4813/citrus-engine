@@ -68,7 +68,7 @@ public:
 	 * container->AddChild(std::move(progress));  // Layout sets position
 	 * @endcode
 	 */
-	ProgressBar(const float width, const float height, const float initial_progress = 0.0f) :
+	ProgressBar(const float width, const float height, const float initial_progress = 0.0F) :
 			ProgressBar(0, 0, width, height, initial_progress) {}
 
 	/**
@@ -89,10 +89,10 @@ public:
 		const float y,
 		const float width,
 		const float height,
-		const float initial_progress = 0.0f
+		const float initial_progress = 0.0F
 	) :
-			UIElement(x, y, width, height), progress_(std::clamp(initial_progress, 0.0f, 1.0f)), bar_width_(width),
-			bar_x_offset_(0.0f) {}
+			UIElement(x, y, width, height), progress_(std::clamp(initial_progress, 0.0F, 1.0F)), bar_width_(width),
+			bar_x_offset_(0.0F) {}
 
 	~ProgressBar() override = default;
 
@@ -110,7 +110,7 @@ public:
 	 * @endcode
 	 */
 	void SetProgress(const float progress) {
-		progress_ = std::clamp(progress, 0.0f, 1.0f);
+		progress_ = std::clamp(progress, 0.0F, 1.0F);
 		UpdatePercentageDisplay();
 	}
 
@@ -225,7 +225,7 @@ public:
 	 * @brief Set border width
 	 * @param width Border width in pixels (0 = no border)
 	 */
-	void SetBorderWidth(const float width) { border_width_ = width >= 0.0f ? width : 0.0f; }
+	void SetBorderWidth(const float width) { border_width_ = width >= 0.0F ? width : 0.0F; }
 
 	/**
 	 * @brief Set label and percentage text color
@@ -275,13 +275,13 @@ public:
 
 		// Render fill (progress)
 		const float fill_width = bar_width_ * progress_;
-		if (fill_width > 0.0f) {
+		if (fill_width > 0.0F) {
 			const Rectangle fill_rect{bar_x, bounds.y, fill_width, height_};
 			BatchRenderer::SubmitQuad(fill_rect, fill_color_);
 		}
 
 		// Render border if width > 0
-		if (border_width_ > 0.0f) {
+		if (border_width_ > 0.0F) {
 			const float x = bar_x;
 			const float y = bounds.y;
 			const float w = bar_width_;
@@ -323,7 +323,7 @@ private:
 		}
 
 		// Format percentage as string
-		const std::string percentage_str = std::format("{:.0f}%", progress_ * 100.0f);
+		const std::string percentage_str = std::format("{:.0f}%", progress_ * 100.0F);
 
 		if (!percentage_element_) {
 			percentage_element_ = std::make_unique<Text>(0, 0, percentage_str, percentage_font_size_, label_color_);
@@ -346,9 +346,9 @@ private:
 		}
 
 		const float label_height = label_element_->GetHeight();
-		const float label_y = (height_ - label_height) * 0.5f;
+		const float label_y = (height_ - label_height) * 0.5F;
 
-		label_element_->SetRelativePosition(0.0f, label_y);
+		label_element_->SetRelativePosition(0.0F, label_y);
 	}
 
 	/**
@@ -360,22 +360,22 @@ private:
 		}
 
 		const float percentage_height = percentage_element_->GetHeight();
-		const float percentage_y = (height_ - percentage_height) * 0.5f;
+		const float percentage_y = (height_ - percentage_height) * 0.5F;
 		const float percentage_x = width_ - percentage_element_->GetWidth();
 
 		percentage_element_->SetRelativePosition(percentage_x, percentage_y);
 	}
 
 	/// Padding between label/percentage and progress bar (consistent with theme spacing)
-	static constexpr float LABEL_BAR_PADDING = 10.0f;
+	static constexpr float LABEL_BAR_PADDING = 10.0F;
 
 	/**
 	 * @brief Update bar width and offset based on label/percentage widths
 	 */
 	void UpdateBarWidth() {
 
-		float left_width = 0.0f;
-		float right_width = 0.0f;
+		float left_width = 0.0F;
+		float right_width = 0.0F;
 
 		if (label_element_) {
 			left_width = label_element_->GetWidth() + LABEL_BAR_PADDING;
@@ -396,13 +396,13 @@ private:
 	batch_renderer::Color fill_color_{batch_renderer::Colors::GOLD};
 	batch_renderer::Color border_color_{batch_renderer::Colors::LIGHT_GRAY};
 	batch_renderer::Color label_color_{batch_renderer::Colors::WHITE};
-	float border_width_{0.0f};
+	float border_width_{0.0F};
 
 	// Display options
 	bool show_percentage_{false};
 	std::string label_text_;
-	float label_font_size_{14.0f};
-	float percentage_font_size_{12.0f};
+	float label_font_size_{14.0F};
+	float percentage_font_size_{12.0F};
 
 	// Text elements (composition)
 	std::unique_ptr<Text> label_element_{nullptr};

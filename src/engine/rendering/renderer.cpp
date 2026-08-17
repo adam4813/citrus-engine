@@ -54,8 +54,8 @@ struct Renderer::Impl {
 	GLuint debug_line_vao = 0;
 	GLuint debug_line_vbo = 0;
 	std::vector<float> debug_line_vertices; // x,y,z,r,g,b,a per vertex
-	glm::mat4 debug_view_matrix{1.0f};
-	glm::mat4 debug_projection_matrix{1.0f};
+	glm::mat4 debug_view_matrix{1.0F};
+	glm::mat4 debug_projection_matrix{1.0F};
 
 	// Statistics
 	uint32_t draw_call_count = 0;
@@ -242,7 +242,7 @@ void Renderer::SubmitRenderCommand(const RenderCommand& command) const {
 
 	// Create perspective projection matrix
 	const float aspect = static_cast<float>(pimpl_->window_width) / static_cast<float>(pimpl_->window_height);
-	const glm::mat4 projection = glm::perspective(glm::radians(60.0f), aspect, 0.1f, 1000.0f);
+	const glm::mat4 projection = glm::perspective(glm::radians(60.0F), aspect, 0.1F, 1000.0F);
 
 	const glm::mat4 mvp = projection * command.camera_view * command.transform;
 	shader->SetUniform("u_MVP", mvp);
@@ -355,7 +355,7 @@ void Renderer::SubmitSprite(const SpriteRenderCommand& command) const {
 	// Get or create a unit quad mesh for sprite rendering
 	static MeshId sprite_quad = 0;
 	if (sprite_quad == 0) {
-		sprite_quad = pimpl_->mesh_manager.CreateQuad(1.0f, 1.0f); // Unit quad
+		sprite_quad = pimpl_->mesh_manager.CreateQuad(1.0F, 1.0F); // Unit quad
 	}
 
 	// Get the quad mesh
@@ -376,26 +376,26 @@ void Renderer::SubmitSprite(const SpriteRenderCommand& command) const {
 	}
 
 	// Create transformation matrix for the sprite
-	Mat4 transform = glm::mat4(1.0f);
+	Mat4 transform = glm::mat4(1.0F);
 
 	// Apply translation
-	transform = glm::translate(transform, Vec3(command.position.x, command.position.y, 0.0f));
+	transform = glm::translate(transform, Vec3(command.position.x, command.position.y, 0.0F));
 
 	// Apply rotation around Z-axis
-	if (command.rotation != 0.0f) {
+	if (command.rotation != 0.0F) {
 		transform = glm::rotate(transform, command.rotation, Vec3(0, 0, 1));
 	}
 
 	// Apply scale
-	transform = glm::scale(transform, Vec3(command.size.x, command.size.y, 1.0f));
+	transform = glm::scale(transform, Vec3(command.size.x, command.size.y, 1.0F));
 
 	// Set up orthographic projection for 2D rendering (screen coordinates)
-	const float left = 0.0f;
+	const float left = 0.0F;
 	const float right = static_cast<float>(pimpl_->window_width);
-	const float bottom = 0.0f;
+	const float bottom = 0.0F;
 	const float top = static_cast<float>(pimpl_->window_height);
-	const float near = -1.0f;
-	const float far = 1.0f;
+	const float near = -1.0F;
+	const float far = 1.0F;
 
 	const Mat4 projection = glm::ortho(left, right, bottom, top, near, far);
 	const Mat4 mvp = projection * transform;
@@ -577,7 +577,7 @@ void Renderer::DrawLine(const Vec3& start, const Vec3& end, const Color& color) 
 
 void Renderer::DrawWireCube(const Vec3& center, const Vec3& size, const Color& color) const {
 	// Calculate half-extents
-	const Vec3 half = size * 0.5f;
+	const Vec3 half = size * 0.5F;
 
 	// 8 corners of the cube
 	const Vec3 corners[8] = {
@@ -618,15 +618,15 @@ void Renderer::DrawWireSphere(const Vec3& center, float radius, const Color& col
 void Renderer::DrawWireSphere(const Vec3& center, const Vec3& radius, const Color& color) const {
 	// Draw 3 circles in XY, XZ, and YZ planes
 	constexpr int segments = 16;
-	constexpr float angle_step = 2.0f * 3.14159265359f / segments;
+	constexpr float angle_step = 2.0F * 3.14159265359F / segments;
 
 	// XY plane circle (around Z axis)
 	for (int i = 0; i < segments; ++i) {
 		const float angle1 = i * angle_step;
 		const float angle2 = (i + 1) % segments * angle_step;
 
-		const Vec3 p1 = center + Vec3(radius.x * std::cos(angle1), radius.x * std::sin(angle1), 0.0f);
-		const Vec3 p2 = center + Vec3(radius.x * std::cos(angle2), radius.x * std::sin(angle2), 0.0f);
+		const Vec3 p1 = center + Vec3(radius.x * std::cos(angle1), radius.x * std::sin(angle1), 0.0F);
+		const Vec3 p2 = center + Vec3(radius.x * std::cos(angle2), radius.x * std::sin(angle2), 0.0F);
 
 		DrawLine(p1, p2, color);
 	}
@@ -636,8 +636,8 @@ void Renderer::DrawWireSphere(const Vec3& center, const Vec3& radius, const Colo
 		const float angle1 = i * angle_step;
 		const float angle2 = (i + 1) % segments * angle_step;
 
-		const Vec3 p1 = center + Vec3(radius.y * std::cos(angle1), 0.0f, radius.y * std::sin(angle1));
-		const Vec3 p2 = center + Vec3(radius.y * std::cos(angle2), 0.0f, radius.y * std::sin(angle2));
+		const Vec3 p1 = center + Vec3(radius.y * std::cos(angle1), 0.0F, radius.y * std::sin(angle1));
+		const Vec3 p2 = center + Vec3(radius.y * std::cos(angle2), 0.0F, radius.y * std::sin(angle2));
 
 		DrawLine(p1, p2, color);
 	}
@@ -647,8 +647,8 @@ void Renderer::DrawWireSphere(const Vec3& center, const Vec3& radius, const Colo
 		const float angle1 = i * angle_step;
 		const float angle2 = (i + 1) % segments * angle_step;
 
-		const Vec3 p1 = center + Vec3(0.0f, radius.z * std::cos(angle1), radius.z * std::sin(angle1));
-		const Vec3 p2 = center + Vec3(0.0f, radius.z * std::cos(angle2), radius.z * std::sin(angle2));
+		const Vec3 p1 = center + Vec3(0.0F, radius.z * std::cos(angle1), radius.z * std::sin(angle1));
+		const Vec3 p2 = center + Vec3(0.0F, radius.z * std::cos(angle2), radius.z * std::sin(angle2));
 
 		DrawLine(p1, p2, color);
 	}

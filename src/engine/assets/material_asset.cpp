@@ -174,12 +174,12 @@ void MaterialAssetInfo::FromJson(const nlohmann::json& j) {
 	emissive_map = AssetRefFromJson(j.value("emissive_map", nlohmann::json::object()));
 	height_map = AssetRefFromJson(j.value("height_map", nlohmann::json::object()));
 	// PBR scalars
-	metallic_factor = j.value("metallic_factor", 0.0f);
-	roughness_factor = j.value("roughness_factor", 0.5f);
-	ao_strength = j.value("ao_strength", 1.0f);
-	emissive_intensity = j.value("emissive_intensity", 0.0f);
-	normal_strength = j.value("normal_strength", 1.0f);
-	alpha_cutoff = j.value("alpha_cutoff", 0.5f);
+	metallic_factor = j.value("metallic_factor", 0.0F);
+	roughness_factor = j.value("roughness_factor", 0.5F);
+	ao_strength = j.value("ao_strength", 1.0F);
+	emissive_intensity = j.value("emissive_intensity", 0.0F);
+	normal_strength = j.value("normal_strength", 1.0F);
+	alpha_cutoff = j.value("alpha_cutoff", 0.5F);
 	// PBR colors
 	if (j.contains("base_color") && j["base_color"].is_array() && j["base_color"].size() >= 4) {
 		const auto& c = j["base_color"];
@@ -243,17 +243,17 @@ void MaterialAssetInfo::RegisterType() {
 		.AssetRef(TextureAssetInfo::TYPE_NAME)
 		// PBR scalars
 		.Field("metallic_factor", &MaterialAssetInfo::metallic_factor, "Metallic")
-		.SliderRange(0.0f, 1.0f)
+		.SliderRange(0.0F, 1.0F)
 		.Field("roughness_factor", &MaterialAssetInfo::roughness_factor, "Roughness")
-		.SliderRange(0.0f, 1.0f)
+		.SliderRange(0.0F, 1.0F)
 		.Field("ao_strength", &MaterialAssetInfo::ao_strength, "AO Strength")
-		.SliderRange(0.0f, 1.0f)
+		.SliderRange(0.0F, 1.0F)
 		.Field("emissive_intensity", &MaterialAssetInfo::emissive_intensity, "Emissive Intensity")
-		.SliderRange(0.0f, 10.0f)
+		.SliderRange(0.0F, 10.0F)
 		.Field("normal_strength", &MaterialAssetInfo::normal_strength, "Normal Strength")
-		.SliderRange(0.0f, 2.0f)
+		.SliderRange(0.0F, 2.0F)
 		.Field("alpha_cutoff", &MaterialAssetInfo::alpha_cutoff, "Alpha Cutoff")
-		.SliderRange(0.0f, 1.0f)
+		.SliderRange(0.0F, 1.0F)
 		.Build();
 }
 

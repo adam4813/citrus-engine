@@ -53,13 +53,13 @@ void AnimationSystem::ProcessTransitions(Animator& animator, float dt) {
 	}
 
 	// Handle blend timing
-	if (animator.blend_duration > 0.0f) {
+	if (animator.blend_duration > 0.0F) {
 		animator.blend_time += dt;
 		if (animator.blend_time >= animator.blend_duration) {
 			// Blend complete
-			animator.blend_weight = 1.0f;
-			animator.blend_time = 0.0f;
-			animator.blend_duration = 0.0f;
+			animator.blend_weight = 1.0F;
+			animator.blend_time = 0.0F;
+			animator.blend_duration = 0.0F;
 		}
 		else {
 			// Update blend weight
@@ -78,13 +78,13 @@ void AnimationSystem::ProcessTransitions(Animator& animator, float dt) {
 		animator.transition_queue.pop();
 
 		// Start blend if requested
-		if (transition.blend_duration > 0.0f) {
+		if (transition.blend_duration > 0.0F) {
 			animator.blend_duration = transition.blend_duration;
-			animator.blend_time = 0.0f;
-			animator.blend_weight = 0.0f;
+			animator.blend_time = 0.0F;
+			animator.blend_weight = 0.0F;
 		}
 		else {
-			animator.blend_weight = 1.0f;
+			animator.blend_weight = 1.0F;
 		}
 
 		// Set new animation
@@ -198,7 +198,7 @@ std::shared_ptr<AnimationClip> CreatePositionAnimation(
 	AnimationTrack track;
 	track.target_property = "position";
 	track.interpolation = InterpolationMode::Linear;
-	track.AddKeyframe(0.0f, start_pos);
+	track.AddKeyframe(0.0F, start_pos);
 	track.AddKeyframe(duration, end_pos);
 
 	clip->AddTrack(std::move(track));
@@ -222,7 +222,7 @@ std::shared_ptr<AnimationClip> CreateRotationAnimation(
 	AnimationTrack track;
 	track.target_property = "rotation";
 	track.interpolation = InterpolationMode::Linear;
-	track.AddKeyframe(0.0f, start_rot);
+	track.AddKeyframe(0.0F, start_rot);
 	track.AddKeyframe(duration, end_rot);
 
 	clip->AddTrack(std::move(track));
@@ -246,7 +246,7 @@ std::shared_ptr<AnimationClip> CreateScaleAnimation(
 	AnimationTrack track;
 	track.target_property = "scale";
 	track.interpolation = InterpolationMode::Linear;
-	track.AddKeyframe(0.0f, start_scale);
+	track.AddKeyframe(0.0F, start_scale);
 	track.AddKeyframe(duration, end_scale);
 
 	clip->AddTrack(std::move(track));

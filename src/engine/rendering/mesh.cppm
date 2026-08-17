@@ -31,9 +31,9 @@ struct Vertex {
 	Vec2 tex_coords;
 
 	// Additional vertex attributes can be added here
-	Vec3 tangent{0.0f};
-	Vec3 bitangent{0.0f};
-	Color color{1.0f};
+	Vec3 tangent{0.0F};
+	Vec3 bitangent{0.0F};
+	Color color{1.0F};
 };
 
 struct MeshCreateInfo {
@@ -58,18 +58,18 @@ public:
 	// Mesh creation (geometry generation - allocates new ID)
 	MeshId CreateMesh(const MeshCreateInfo& info) const;
 
-	MeshId CreateQuad(float width = 1.0f, float height = 1.0f);
+	MeshId CreateQuad(float width = 1.0F, float height = 1.0F);
 
-	MeshId CreateCube(float size = 1.0f) const;
+	MeshId CreateCube(float size = 1.0F) const;
 	MeshId CreateCube(float width, float height, float depth) const;
 
-	MeshId CreateSphere(float radius = 1.0f, uint32_t segments = 32);
+	MeshId CreateSphere(float radius = 1.0F, uint32_t segments = 32);
 
 	// Generate geometry into existing mesh slot (for named meshes)
 	bool GenerateMeshGeometry(MeshId id, const MeshCreateInfo& info) const;
-	bool GenerateQuad(MeshId id, float width = 1.0f, float height = 1.0f) const;
+	bool GenerateQuad(MeshId id, float width = 1.0F, float height = 1.0F) const;
 	bool GenerateCube(MeshId id, float width, float height, float depth) const;
-	bool GenerateSphere(MeshId id, float radius = 1.0f, uint32_t segments = 32);
+	bool GenerateSphere(MeshId id, float radius = 1.0F, uint32_t segments = 32);
 
 	// Mesh modification
 	void UpdateMesh(MeshId id, std::span<const Vertex> vertices, std::span<const uint32_t> indices);

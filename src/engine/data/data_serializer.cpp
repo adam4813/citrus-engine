@@ -82,25 +82,25 @@ static DataValue json_to_data_value(const json& j, const std::string& type_name)
 		if (j.is_array() && j.size() >= 2) {
 			return glm::vec2(j[0].get<float>(), j[1].get<float>());
 		}
-		return glm::vec2(0.0f);
+		return glm::vec2(0.0F);
 	}
 	else if (type_name == "vec3") {
 		if (j.is_array() && j.size() >= 3) {
 			return glm::vec3(j[0].get<float>(), j[1].get<float>(), j[2].get<float>());
 		}
-		return glm::vec3(0.0f);
+		return glm::vec3(0.0F);
 	}
 	else if (type_name == "vec4") {
 		if (j.is_array() && j.size() >= 4) {
 			return glm::vec4(j[0].get<float>(), j[1].get<float>(), j[2].get<float>(), j[3].get<float>());
 		}
-		return glm::vec4(0.0f);
+		return glm::vec4(0.0F);
 	}
 	else if (type_name == "string") {
 		return j.get<std::string>();
 	}
 	// Default: return float 0
-	return 0.0f;
+	return 0.0F;
 }
 
 std::string DataSerializer::SerializeAsset(const DataAsset& asset) {

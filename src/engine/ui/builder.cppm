@@ -118,19 +118,19 @@ public:
 		return *this;
 	}
 
-	ContainerBuilder& Fill(const float margin = 0.0f) {
+	ContainerBuilder& Fill(const float margin = 0.0F) {
 		anchor_ = components::Anchor::Fill(margin);
 		has_constraints_ = true;
 		return *this;
 	}
 
-	ContainerBuilder& StretchHorizontal(const float left = 0.0f, const float right = 0.0f) {
+	ContainerBuilder& StretchHorizontal(const float left = 0.0F, const float right = 0.0F) {
 		anchor_ = components::Anchor::StretchHorizontal(left, right);
 		has_constraints_ = true;
 		return *this;
 	}
 
-	ContainerBuilder& StretchVertical(const float top = 0.0f, const float bottom = 0.0f) {
+	ContainerBuilder& StretchVertical(const float top = 0.0F, const float bottom = 0.0F) {
 		anchor_ = components::Anchor::StretchVertical(top, bottom);
 		has_constraints_ = true;
 		return *this;
@@ -188,17 +188,17 @@ public:
 
 private:
 	// Position/Size
-	float x_{0.0f};
-	float y_{0.0f};
-	float width_{100.0f};
-	float height_{100.0f};
+	float x_{0.0F};
+	float y_{0.0F};
+	float width_{100.0F};
+	float height_{100.0F};
 
 	// Panel styling
-	float padding_{0.0f};
+	float padding_{0.0F};
 	batch_renderer::Color background_{batch_renderer::Colors::DARK_GRAY};
-	float border_width_{0.0f};
+	float border_width_{0.0F};
 	batch_renderer::Color border_color_{batch_renderer::Colors::GRAY};
-	float opacity_{1.0f};
+	float opacity_{1.0F};
 	bool clip_children_{false};
 
 	// Layout

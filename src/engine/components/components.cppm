@@ -117,7 +117,7 @@ struct TilemapLayer {
 	std::unordered_map<std::uint64_t, TilemapCell> cells; // Key: packed (x,y) coordinates
 	std::shared_ptr<assets::Tileset> tileset;
 	bool visible = true;
-	float opacity = 1.0f;
+	float opacity = 1.0F;
 
 	// Pack x,y coordinates into a single key for the hash map
 	static std::uint64_t PackCoords(const std::int32_t x, const std::int32_t y) {
@@ -165,7 +165,7 @@ struct TilemapLayer {
 struct Tilemap {
 	std::vector<std::shared_ptr<TilemapLayer>> layers;
 	glm::ivec2 tile_size{32, 32};      // Size of each tile in pixels
-	glm::vec2 grid_offset{0.0f, 0.0f}; // Offset for the entire tilemap
+	glm::vec2 grid_offset{0.0F, 0.0F}; // Offset for the entire tilemap
 
 	// Add a new layer and return its index
 	size_t AddLayer() {
@@ -216,7 +216,7 @@ struct Tilemap {
 
 	// Convert grid coordinates to world position (center of tile)
 	glm::vec2 GridToWorld(const glm::ivec2& grid_pos) const {
-		return grid_offset + glm::vec2((grid_pos.x + 0.5f) * tile_size.x, (grid_pos.y + 0.5f) * tile_size.y);
+		return grid_offset + glm::vec2((grid_pos.x + 0.5F) * tile_size.x, (grid_pos.y + 0.5F) * tile_size.y);
 	}
 };
 

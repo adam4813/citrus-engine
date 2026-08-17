@@ -54,7 +54,7 @@ public:
 
 	// Play a sound clip
 	// Returns a handle for controlling the sound instance, 0 on failure
-	uint32_t PlaySoundClip(uint32_t clip_id, float volume = 1.0f, bool looping = false);
+	uint32_t PlaySoundClip(uint32_t clip_id, float volume = 1.0F, bool looping = false);
 
 	// Stop a playing sound
 	void StopSound(uint32_t handle);

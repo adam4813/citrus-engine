@@ -190,7 +190,7 @@ public:
 	void DeactivateAdditionalScene(SceneId scene_id);
 
 	// Scene transitions
-	void TransitionToScene(SceneId new_scene, float transition_time = 0.0f) const;
+	void TransitionToScene(SceneId new_scene, float transition_time = 0.0F) const;
 
 	bool IsTransitioning() const;
 

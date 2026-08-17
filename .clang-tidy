@@ -18,7 +18,7 @@ Checks: >
 
 WarningsAsErrors: ""
 
-HeaderFilterRegex: "src/.*"
+HeaderFilterRegex: '^src/'
 
 FormatStyle: file
 
@@ -31,15 +31,17 @@ CheckOptions:
   }
   - { key: readability-identifier-naming.FunctionCase, value: CamelCase }
   - { key: readability-identifier-naming.ConstantCase, value: UPPER_CASE }
+  - { key: readability-identifier-naming.EnumCase, value: CamelCase }
+  - { key: readability-identifier-naming.EnumConstantCase, value: CamelCase }
   - {
     key: readability-identifier-length.IgnoredLoopCounterNames,
     value: "i|j|k|x|y|z",
   }
   - {
     key: readability-identifier-length.IgnoredParameterNames,
-    value: "a|b|g|h|q|r|s|t|u|v|w|x|y|z|id",
+    value: "a|b|e|g|h|j|q|r|s|t|u|v|w|x|y|z|id",
   }
   - {
     key: readability-identifier-length.IgnoredVariableNames,
-    value: "a|b|g|h|q|r|s|t|u|v|w|x|y|z|id",
+    value: "a|b|e|g|h|j|q|r|s|t|u|v|w|x|y|z|id",
   }

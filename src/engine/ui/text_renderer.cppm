@@ -152,9 +152,9 @@ public:
 private:
 	std::unordered_map<uint32_t, GlyphMetrics> glyphs_;
 	uint32_t atlas_texture_id_ = 0;
-	float ascent_ = 0.0f;
-	float descent_ = 0.0f;
-	float line_gap_ = 0.0f;
+	float ascent_ = 0.0F;
+	float descent_ = 0.0F;
+	float line_gap_ = 0.0F;
 	int font_size_ = 0;
 	int atlas_width_ = 0;
 	int atlas_height_ = 0;
@@ -186,8 +186,8 @@ enum class VerticalAlign {
 struct LayoutOptions {
 	HorizontalAlign h_align = HorizontalAlign::Left; ///< Horizontal alignment
 	VerticalAlign v_align = VerticalAlign::Top;      ///< Vertical alignment
-	float max_width = 0.0f;                          ///< Maximum width before wrapping (0 = no wrapping)
-	float line_height = 1.0f;                        ///< Line height multiplier (1.0 = default spacing)
+	float max_width = 0.0F;                          ///< Maximum width before wrapping (0 = no wrapping)
+	float line_height = 1.0F;                        ///< Line height multiplier (1.0 = default spacing)
 };
 
 /**
@@ -300,7 +300,7 @@ public:
 	 * @endcode
 	 */
 	static batch_renderer::Rectangle
-	MeasureText(const std::string& text, const FontAtlas& font, float max_width = 0.0f);
+	MeasureText(const std::string& text, const FontAtlas& font, float max_width = 0.0F);
 };
 
 /**

@@ -30,11 +30,11 @@ struct Scene::Impl {
 	bool active = false;
 	bool loaded = false;
 	platform::fs::Path file_path;
-	std::pair<Vec3, Vec3> world_bounds{{-1000.0f, -1000.0f, -1000.0f}, {1000.0f, 1000.0f, 1000.0f}};
+	std::pair<Vec3, Vec3> world_bounds{{-1000.0F, -1000.0F, -1000.0F}, {1000.0F, 1000.0F, 1000.0F}};
 
 	// Scene settings
-	glm::vec4 background_color{0.2f, 0.3f, 0.4f, 1.0f}; // Default background color
-	glm::vec4 ambient_light{0.1f, 0.1f, 0.1f, 1.0f};    // Ambient light color with intensity
+	glm::vec4 background_color{0.2F, 0.3F, 0.4F, 1.0F}; // Default background color
+	glm::vec4 ambient_light{0.1F, 0.1F, 0.1F, 1.0F};    // Ambient light color with intensity
 	std::string physics_backend{"jolt"};                // "jolt", "bullet3", or "none"
 	std::string author;
 	std::string description;
@@ -379,7 +379,7 @@ bool SceneManager::IsTransitioning() const {
 }
 
 float SceneManager::GetTransitionProgress() const {
-	return 1.0f; // TODO: Return actual transition progress
+	return 1.0F; // TODO: Return actual transition progress
 }
 
 bool SceneManager::SaveScene(const SceneId scene_id, const platform::fs::Path& file_path) {

@@ -15,3 +15,6 @@ docs-clean: ## Clean documentation build artifacts
 
 format: ## Format all code using clang-format (.c, .cpp, .h, .hpp, .cppm)
 	@./scripts/format-code.sh
+
+lint: ## Lint all code using clang-tidy (.c, .cpp, .h, .hpp, .cppm)
+	@./scripts/lint-code.sh

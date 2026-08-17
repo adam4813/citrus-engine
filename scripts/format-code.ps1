@@ -1,4 +1,7 @@
-# If git bash exists use git otherwise, use the make command.
+# TODO: Add support for formatting only staged files
+# This would allow running: .\scripts\format-code.ps1 -Staged
+
+# If git bash exists use it to run the make command.
 # The make command is the source of truth, the powershell script is a fallback.
 
 if (Test-Path "$env:ProgramFiles\Git\bin\bash.exe") {

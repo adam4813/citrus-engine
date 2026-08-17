@@ -259,6 +259,38 @@ ctest --preset native-test-debug -R <test-pattern>
 
 For example: `ctest --preset native-test-debug -R "Transform"` runs all tests matching "Transform".
 
+### 🔍 Linting & Formatting
+
+Format and lint code using the provided scripts:
+
+```bash
+# Unix/Linux/macOS
+./scripts/format-code.sh    # Format code
+./scripts/lint-code.sh      # Lint code
+
+# Windows (PowerShell)
+.\scripts\format-code.ps1   # Format code (defers to make if Git Bash available)
+.\scripts\lint-code.ps1     # Lint code (defers to make if Git Bash available)
+
+# All platforms (via make)
+make format                 # Format all code
+make lint                   # Lint all code
+```
+
+**File Extensions Checked:** `.c`, `.cpp`, `.h`, `.hpp`, `.cppm`
+
+**Linting Note:** `clang-tidy` requires all build types (`debug`, `reldebuginfo`, `release`) to be built first.
+The generated `compile_commands.json` includes references to all build configurations, even though only one preset
+is active at a time. To lint successfully:
+
+```bash
+cmake --preset native -DVCPKG_TARGET_TRIPLET=<triplet>
+cmake --build --preset native-debug
+cmake --build --preset native-reldebuginfo
+cmake --build --preset native-release
+./scripts/lint-code.sh
+```
+
 ### 🐛 Common Build Issues
 
 | Problem                                 | Solution                                                              |

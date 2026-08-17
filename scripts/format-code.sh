@@ -1,6 +1,8 @@
 #!/bin/bash
 
-# Check if clang-format is installed
+# TODO: Add support for formatting only staged files
+# This would allow running: ./scripts/format-code.sh --staged
+
 if ! command -v clang-format &> /dev/null; then
     echo "clang-format could not be found, please install it and add it to your PATH."
     exit 1

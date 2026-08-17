@@ -8,7 +8,11 @@ inputs:
   clang-version:
     description: 'Clang version (if using clang)'
     required: false
-    default: '18'
+    default: '22'
+  em-version:
+    description: 'Emscripten version'
+    required: false
+    default: '4.0.10'
   vcpkg-commit:
     description: 'vcpkg Git commit ID to use'
     required: false
@@ -34,26 +38,19 @@ runs:
           libglu1-mesa-dev \
           xvfb
 
-    - name: Setup Cpp with Clang version
-      if: inputs.compiler != 'msvc' && inputs.compiler != 'emscripten' && inputs.clang-version != ''
+    - name: Setup Cpp
+      if: inputs.compiler != 'emscripten'
       uses: aminya/setup-cpp@v1
       with:
         compiler: ${{ inputs.compiler }}
-        clang: ${{ inputs.clang-version }}
-        vcvarsall: ${{ runner.os == 'Windows' }}
-
-    - name: Setup Cpp (default)
-      if: inputs.compiler != 'msvc' && inputs.compiler != 'emscripten' && inputs.clang-version == ''
-      uses: aminya/setup-cpp@v1
-      with:
-        compiler: ${{ inputs.compiler }}
+        clang: ${{ (inputs.compiler == 'clang' && inputs.clang-version) || '' }}
         vcvarsall: ${{ runner.os == 'Windows' }}
 
     - name: Setup Emscripten
       if: inputs.compiler == 'emscripten'
       uses: mymindstorm/setup-emsdk@v14
       with:
-        version: 'latest'
+        version: ${{ inputs.em-version }}
 
     - name: Restore artifacts, or run vcpkg, build and cache artifacts
       uses: lukka/run-vcpkg@v11

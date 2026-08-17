@@ -46,7 +46,7 @@ import glm;
 
 // Jolt callback for trace messages
 static void JoltTraceImpl(const char* inFMT, ...) {
-	va_list list = nullptr;
+	va_list list;
 	va_start(list, inFMT);
 	char buffer[1024];
 	vsnprintf(buffer, sizeof(buffer), inFMT, list);

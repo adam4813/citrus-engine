@@ -27,7 +27,7 @@ add_executable(
     src/data_asset_scene.cpp)
 
 target_include_directories(citrus-examples
-                           PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+    PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 # Link to the engine (provides all dependencies transitively)
 target_link_libraries(citrus-examples PRIVATE citrus-engine::engine-core imgui::imgui)
@@ -36,12 +36,12 @@ target_link_libraries(citrus-examples PRIVATE citrus-engine::engine-core imgui::
 setup_asset_preload(citrus-examples "${CMAKE_CURRENT_SOURCE_DIR}/assets")
 
 # Platform-specific configuration
-if(EMSCRIPTEN)
-  set(CMAKE_EXECUTABLE_SUFFIX ".html")
+if (EMSCRIPTEN)
+    set(CMAKE_EXECUTABLE_SUFFIX ".html")
 
-  # Set memory limits
-  set(INITIAL_MEMORY_BYTES 67108864) # 64MB initial memory
-  set(MAXIMUM_MEMORY_BYTES 134217728) # 128MB maximum memory
+    # Set memory limits
+    set(INITIAL_MEMORY_BYTES 67108864) # 64MB initial memory
+    set(MAXIMUM_MEMORY_BYTES 134217728) # 128MB maximum memory
 
     target_link_options(
         citrus-examples
@@ -51,6 +51,8 @@ if(EMSCRIPTEN)
         -sINITIAL_MEMORY=${INITIAL_MEMORY_BYTES}
         -sMAXIMUM_MEMORY=${MAXIMUM_MEMORY_BYTES}
         -sALLOW_MEMORY_GROWTH=1
+        -sAUDIO_WORKLET
+        -sWASM_WORKERS
         # Debug vs Release specific flags
         "$<$<CONFIG:Debug>:-sASSERTIONS=1;-sGL_DEBUG=1>"
         "$<$<NOT:$<CONFIG:Debug>>:-O3;--closure 1>")
@@ -60,14 +62,14 @@ if(EMSCRIPTEN)
         STATUS
         "Memory: Initial ${INITIAL_MEMORY_BYTES} bytes, Maximum ${MAXIMUM_MEMORY_BYTES} bytes"
     )
-endif()
+endif ()
 
 # Install target
 install(TARGETS citrus-examples RUNTIME DESTINATION bin)
 
-if(NOT EMSCRIPTEN)
+if (NOT EMSCRIPTEN)
     install(
         DIRECTORY assets/
         DESTINATION bin/assets
         PATTERN "*")
-endif()
+endif ()

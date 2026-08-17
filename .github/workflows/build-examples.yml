@@ -11,12 +11,14 @@ on:
       - 'examples/**'
       - 'ports/**'
       - '.github/workflows/build-examples.yml'
+      - '.github/actions/setup-environment/action.yml'
   pull_request:
     branches: [ main, develop ]
     paths:
       - 'examples/**'
       - 'ports/**'
       - '.github/workflows/build-examples.yml'
+      - '.github/actions/setup-environment/action.yml'
   workflow_dispatch:
 
 jobs:
@@ -40,7 +42,6 @@ jobs:
           # Linux builds - Clang-18 (required for C++20 modules)
           - os: ubuntu-latest
             compiler: clang
-            clang_version: 18
             build_type: Release
             vcpkg_triplet: x64-linux
             artifact_name: citrus-examples-linux
@@ -68,7 +69,6 @@ jobs:
         uses: ./.github/actions/setup-environment
         with:
           compiler: ${{ matrix.compiler }}
-          clang-version: ${{ matrix.clang_version || '' }}
 
       # Now build the examples
       - name: Run CMake with Presets (Build)

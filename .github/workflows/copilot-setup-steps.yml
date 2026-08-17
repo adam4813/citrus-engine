@@ -26,4 +26,3 @@ jobs:
         uses: ./.github/actions/setup-environment
         with:
           compiler: clang
-          clang-version: 18

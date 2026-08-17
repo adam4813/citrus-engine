@@ -29,7 +29,6 @@ jobs:
           # Linux builds - Clang-18 (required for C++20 modules)
           - os: ubuntu-latest
             compiler: clang
-            clang_version: 18
             build_type: Release
             vcpkg_triplet: x64-linux
 
@@ -57,7 +56,6 @@ jobs:
         uses: ./.github/actions/setup-environment
         with:
           compiler: ${{ matrix.compiler }}
-          clang-version: ${{ matrix.clang_version || '' }}
 
       - name: Run CMake with Presets (Build) - Native
         if: matrix.compiler != 'emscripten'

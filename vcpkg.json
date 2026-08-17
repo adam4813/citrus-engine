@@ -16,7 +16,8 @@
     {
       "name": "joltphysics",
       "features": [
-        "debugrenderer"
+        "debugrenderer",
+        "rtti"
       ],
       "platform": "!emscripten"
     },

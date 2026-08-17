@@ -103,7 +103,7 @@ public:
 	 * @brief Get current background color
 	 * @return Background color (without opacity applied)
 	 */
-	batch_renderer::Color GetBackgroundColor() const { return background_color_; }
+	[[nodiscard]] batch_renderer::Color GetBackgroundColor() const { return background_color_; }
 
 	/**
 	 * @brief Set border color
@@ -123,7 +123,7 @@ public:
 	 * @brief Get current border color
 	 * @return Border color
 	 */
-	batch_renderer::Color GetBorderColor() const { return border_color_; }
+	[[nodiscard]] batch_renderer::Color GetBorderColor() const { return border_color_; }
 
 	/**
 	 * @brief Set border width in pixels
@@ -143,7 +143,7 @@ public:
 	 * @brief Get current border width
 	 * @return Border width in pixels
 	 */
-	float GetBorderWidth() const { return border_width_; }
+	[[nodiscard]] float GetBorderWidth() const { return border_width_; }
 
 	/**
 	 * @brief Set opacity for fade animations
@@ -168,7 +168,7 @@ public:
 	 * @brief Get current opacity
 	 * @return Opacity value (0.0-1.0)
 	 */
-	float GetOpacity() const { return opacity_; }
+	[[nodiscard]] float GetOpacity() const { return opacity_; }
 
 	// === Layout Configuration ===
 
@@ -202,14 +202,14 @@ public:
 	 * @brief Get current padding
 	 * @return Padding in pixels
 	 */
-	float GetPadding() const { return padding_; }
+	[[nodiscard]] float GetPadding() const { return padding_; }
 
 	/**
 	 * @brief Get the content area (element bounds minus padding)
 	 *
 	 * Returns the area where children are placed, inset by padding.
 	 */
-	batch_renderer::Rectangle GetContentArea() const override {
+	[[nodiscard]] batch_renderer::Rectangle GetContentArea() const override {
 		const float content_width = width_ > padding_ * 2.0F ? width_ - padding_ * 2.0F : 0.0F;
 		const float content_height = height_ > padding_ * 2.0F ? height_ - padding_ * 2.0F : 0.0F;
 		return {padding_, padding_, content_width, content_height};
@@ -234,7 +234,7 @@ public:
 	 * @brief Check if scissor clipping is enabled
 	 * @return True if children are clipped
 	 */
-	bool GetClipChildren() const { return clip_children_; }
+	[[nodiscard]] bool GetClipChildren() const { return clip_children_; }
 
 	// === Rendering ===
 

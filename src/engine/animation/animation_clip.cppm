@@ -29,7 +29,7 @@ struct Keyframe {
 	AnimatedValue value; // Value at this keyframe
 
 	Keyframe() = default;
-	Keyframe(float t, AnimatedValue v) : time(t), value(std::move(v)) {}
+	Keyframe(float t, AnimatedValue v) : time(t), value(v) {}
 };
 
 // === ANIMATION TRACK ===
@@ -44,7 +44,7 @@ struct AnimationTrack {
 	void AddKeyframe(float time, AnimatedValue value);
 
 	// Evaluate the track at a specific time
-	AnimatedValue Evaluate(float time) const;
+	[[nodiscard]] AnimatedValue Evaluate(float time) const;
 
 	// Get the duration of this track
 	[[nodiscard]] float GetDuration() const;
@@ -70,7 +70,7 @@ struct AnimationClip {
 
 	// Find a track by property name
 	AnimationTrack* FindTrack(const std::string& property_name);
-	const AnimationTrack* FindTrack(const std::string& property_name) const;
+	[[nodiscard]] const AnimationTrack* FindTrack(const std::string& property_name) const;
 
 	// Evaluate all tracks at a specific time
 	void EvaluateAll(float time, std::vector<std::pair<std::string, AnimatedValue>>& out_values) const;

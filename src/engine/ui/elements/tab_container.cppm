@@ -208,7 +208,7 @@ public:
 	 * @brief Get number of tabs
 	 * @return Tab count
 	 */
-	size_t GetTabCount() const { return tabs_.size(); }
+	[[nodiscard]] size_t GetTabCount() const { return tabs_.size(); }
 
 	/**
 	 * @brief Get label of a tab
@@ -216,7 +216,7 @@ public:
 	 * @param index Tab index
 	 * @return Tab label, or empty string if index out of range
 	 */
-	std::string GetTabLabel(const size_t index) const {
+	[[nodiscard]] std::string GetTabLabel(const size_t index) const {
 		if (index >= tabs_.size()) {
 			return "";
 		}
@@ -258,7 +258,7 @@ public:
 	 * @brief Get active tab index
 	 * @return Index of currently active tab
 	 */
-	size_t GetActiveTab() const { return active_tab_index_; }
+	[[nodiscard]] size_t GetActiveTab() const { return active_tab_index_; }
 
 	// === Event Callbacks ===
 
@@ -283,7 +283,7 @@ public:
 	 * @brief Get content area height (computed dynamically from container height minus tab bar)
 	 * @return Content height in pixels
 	 */
-	float GetContentHeight() const { return height_ - tab_bar_height_; }
+	[[nodiscard]] float GetContentHeight() const { return height_ - tab_bar_height_; }
 
 	/**
 	 * @brief Set tab bar height

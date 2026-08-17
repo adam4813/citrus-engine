@@ -340,8 +340,8 @@ struct AssetRef {
 	uint32_t guid{0};
 	std::string path;
 
-	[[nodiscard]] static AssetRef FromGuid(const uint32_t g) { return AssetRef{g, std::string{}}; }
-	[[nodiscard]] static AssetRef FromPath(std::string p) { return AssetRef{0, std::move(p)}; }
+	[[nodiscard]] static AssetRef FromGuid(const uint32_t g) { return AssetRef{.guid = g, .path = std::string{}}; }
+	[[nodiscard]] static AssetRef FromPath(std::string p) { return AssetRef{.guid = 0, .path = std::move(p)}; }
 	[[nodiscard]] bool IsEmpty() const { return guid == 0 && path.empty(); }
 };
 
@@ -700,7 +700,7 @@ public:
 	/// the factory is called to create an asset entry with default settings.
 	/// @param file_extensions Extensions to match (e.g., {".wav", ".mp3", ".ogg"})
 	/// @param factory Function that creates an asset from (name, file_path)
-	void RegisterFileImporter(const std::vector<std::string>& file_extensions, FileImportFactory factory);
+	void RegisterFileImporter(const std::vector<std::string>& file_extensions, const FileImportFactory& factory);
 
 	/// Try to import a raw file using registered file importers.
 	/// Returns the created asset, or nullptr if no importer matched.
@@ -778,8 +778,8 @@ void StampAssetMetadata(
 
 template<typename T>
 std::shared_ptr<T> AssetCache::Create(const AssetType type, const std::string& name) {
-	if (const auto assetPtr = Create(type, name)) {
-		if (auto asset = std::dynamic_pointer_cast<T>(assetPtr)) {
+	if (const auto asset_ptr = Create(type, name)) {
+		if (auto asset = std::dynamic_pointer_cast<T>(asset_ptr)) {
 			return asset;
 		}
 		std::cerr << "AssetCache::Create: Asset was created but unable to cast to requested type\n";
@@ -807,7 +807,7 @@ void SetupRefBindingImpl(
 	// Each ref component holds a single nested AssetRef member. Register it by the
 	// AssetRef flecs component id (registered in AssetTypeRegistry::Initialize) so the
 	// component_registry module need not depend on the asset_registry module.
-	const size_t ref_offset = reinterpret_cast<size_t>(&(static_cast<RefT*>(nullptr)->ref));
+	const auto ref_offset = reinterpret_cast<size_t>(&(static_cast<RefT*>(nullptr)->ref));
 	auto reg = registry.Register<RefT>(ref_name, world)
 				   .Category(category)
 				   .Hidden()

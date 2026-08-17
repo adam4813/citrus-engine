@@ -65,7 +65,7 @@ public:
 	 * Children of this container will have their positions offset by
 	 * the current scroll amount.
 	 */
-	std::pair<float, float> GetContentOffset() const override {
+	[[nodiscard]] std::pair<float, float> GetContentOffset() const override {
 		if (const auto* scroll = GetComponent<components::ScrollComponent>()) {
 			return {scroll->GetState().GetScrollX(), scroll->GetState().GetScrollY()};
 		}

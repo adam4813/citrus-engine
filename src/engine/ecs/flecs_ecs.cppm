@@ -142,25 +142,25 @@ public:
 	// === HIERARCHY MANAGEMENT ===
 
 	// Set parent-child relationship using flecs built-in ChildOf
-	void SetParent(flecs::entity child, flecs::entity parent);
+	static void SetParent(flecs::entity child, flecs::entity parent);
 
 	// Remove parent relationship
-	void RemoveParent(flecs::entity child);
+	static void RemoveParent(flecs::entity child);
 
 	// Get parent entity (returns invalid entity if no parent)
-	flecs::entity GetParent(flecs::entity entity);
+	static flecs::entity GetParent(flecs::entity entity);
 
 	// Get all children of an entity
-	std::vector<flecs::entity> GetChildren(flecs::entity parent);
+	static std::vector<flecs::entity> GetChildren(flecs::entity parent);
 
 	// Get all descendants (recursive)
-	std::vector<flecs::entity> GetDescendants(flecs::entity root);
+	static std::vector<flecs::entity> GetDescendants(flecs::entity root);
 
 	// Find entity by name in hierarchy
 	flecs::entity FindEntityByName(const char* name, flecs::entity root = {});
 
 	// Check if entity is descendant of another
-	bool IsDescendantOf(flecs::entity entity, flecs::entity ancestor);
+	static bool IsDescendantOf(flecs::entity entity, flecs::entity ancestor);
 
 	// === CAMERA MANAGEMENT ===
 

@@ -118,7 +118,7 @@ public:
 	 * @brief Get current progress value
 	 * @return Progress value (0.0 - 1.0)
 	 */
-	float GetProgress() const { return progress_; }
+	[[nodiscard]] float GetProgress() const { return progress_; }
 
 	// === Display Configuration ===
 
@@ -157,7 +157,7 @@ public:
 	 * @brief Get label text
 	 * @return Label text
 	 */
-	const std::string& GetLabel() const { return label_text_; }
+	[[nodiscard]] const std::string& GetLabel() const { return label_text_; }
 
 	/**
 	 * @brief Enable/disable percentage display
@@ -187,7 +187,7 @@ public:
 	 * @brief Check if percentage display is enabled
 	 * @return True if showing percentage
 	 */
-	bool GetShowPercentage() const { return show_percentage_; }
+	[[nodiscard]] bool GetShowPercentage() const { return show_percentage_; }
 
 	// === Appearance Configuration ===
 
@@ -201,7 +201,7 @@ public:
 	 * @brief Get track color
 	 * @return Track color
 	 */
-	batch_renderer::Color GetTrackColor() const { return track_color_; }
+	[[nodiscard]] batch_renderer::Color GetTrackColor() const { return track_color_; }
 
 	/**
 	 * @brief Set fill (progress) color
@@ -213,7 +213,7 @@ public:
 	 * @brief Get fill color
 	 * @return Fill color
 	 */
-	batch_renderer::Color GetFillColor() const { return fill_color_; }
+	[[nodiscard]] batch_renderer::Color GetFillColor() const { return fill_color_; }
 
 	/**
 	 * @brief Set border color

@@ -52,7 +52,7 @@ std::string MakeSignatureString() {
 namespace detail {
 // Forward declaration
 template<typename... Args, std::size_t... Indices>
-std::tuple<Args...> ConvertArgsImpl(const std::vector<ScriptValue>& script_args, std::index_sequence<Indices...>);
+std::tuple<Args...> ConvertArgsImpl(const std::vector<ScriptValue>& script_args, std::index_sequence<Indices...> /*unused*/);
 
 template<typename... Args>
 std::tuple<Args...> ConvertArgs(const std::vector<ScriptValue>& script_args) {
@@ -60,7 +60,7 @@ std::tuple<Args...> ConvertArgs(const std::vector<ScriptValue>& script_args) {
 }
 
 template<typename... Args, std::size_t... Indices>
-std::tuple<Args...> ConvertArgsImpl(const std::vector<ScriptValue>& script_args, std::index_sequence<Indices...>) {
+std::tuple<Args...> ConvertArgsImpl(const std::vector<ScriptValue>& script_args, std::index_sequence<Indices...> /*unused*/) {
 	return std::make_tuple(script_args[Indices].As<Args>()...);
 }
 } // namespace detail
@@ -151,7 +151,7 @@ public:
 
 	// Register a class (returns helper for fluent interface)
 	ClassRegistration RegisterClass(const std::string& class_name) {
-		return ClassRegistration(class_name, backend_.get());
+		return {class_name, backend_.get()};
 	}
 
 	// Register a global function with automatic type conversion

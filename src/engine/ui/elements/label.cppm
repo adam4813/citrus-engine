@@ -139,7 +139,7 @@ public:
 	 * @brief Get current text content
 	 * @return Text string
 	 */
-	const std::string& GetText() const { return text_content_; }
+	[[nodiscard]] const std::string& GetText() const { return text_content_; }
 
 	/**
 	 * @brief Set font size
@@ -165,7 +165,7 @@ public:
 	 * @brief Get current font size
 	 * @return Font size in pixels
 	 */
-	float GetFontSize() const { return font_size_; }
+	[[nodiscard]] float GetFontSize() const { return font_size_; }
 
 	/**
 	 * @brief Set text color
@@ -188,7 +188,7 @@ public:
 	 * @brief Get current text color
 	 * @return Text color
 	 */
-	batch_renderer::Color GetColor() const { return text_color_; }
+	[[nodiscard]] batch_renderer::Color GetColor() const { return text_color_; }
 
 	// === Alignment Configuration ===
 
@@ -215,7 +215,7 @@ public:
 	 * @brief Get current text alignment
 	 * @return Alignment mode
 	 */
-	Alignment GetAlignment() const { return alignment_; }
+	[[nodiscard]] Alignment GetAlignment() const { return alignment_; }
 
 	/**
 	 * @brief Set maximum width for text wrapping
@@ -240,7 +240,7 @@ public:
 	 * @brief Get maximum width constraint
 	 * @return Max width in pixels (0 = no constraint)
 	 */
-	float GetMaxWidth() const { return max_width_; }
+	[[nodiscard]] float GetMaxWidth() const { return max_width_; }
 
 	// === Rendering ===
 

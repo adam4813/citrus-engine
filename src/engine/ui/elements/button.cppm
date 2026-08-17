@@ -3,6 +3,7 @@ module;
 #include <functional>
 #include <memory>
 #include <string>
+#include <utility>
 
 export module engine.ui:elements.button;
 
@@ -92,9 +93,9 @@ public:
 		const float y,
 		const float width,
 		const float height,
-		const std::string& label,
+		std::string  label,
 		const float font_size = 16.0F
-	) : UIElement(x, y, width, height), label_(label), font_size_(font_size) {
+	) : UIElement(x, y, width, height), label_(std::move(label)), font_size_(font_size) {
 
 		// Create text element as child (composition pattern)
 		auto text = std::make_unique<Text>(0, 0, label_, font_size_, text_color_);
@@ -132,7 +133,7 @@ public:
 	 * @brief Get current label text
 	 * @return Label string
 	 */
-	const std::string& GetLabel() const { return label_; }
+	[[nodiscard]] const std::string& GetLabel() const { return label_; }
 
 	/**
 	 * @brief Set label font size
@@ -155,7 +156,7 @@ public:
 	 * @brief Get current font size
 	 * @return Font size in pixels
 	 */
-	float GetFontSize() const { return font_size_; }
+	[[nodiscard]] float GetFontSize() const { return font_size_; }
 
 	// === Appearance Configuration ===
 
@@ -232,13 +233,13 @@ public:
 	 * @brief Check if button is enabled
 	 * @return True if enabled, false if disabled
 	 */
-	bool IsEnabled() const { return is_enabled_; }
+	[[nodiscard]] bool IsEnabled() const { return is_enabled_; }
 
 	/**
 	 * @brief Check if button is currently pressed
 	 * @return True if pressed, false otherwise
 	 */
-	bool IsPressed() const { return is_pressed_; }
+	[[nodiscard]] bool IsPressed() const { return is_pressed_; }
 
 	// === Event Handlers ===
 

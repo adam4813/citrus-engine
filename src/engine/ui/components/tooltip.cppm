@@ -79,7 +79,7 @@ public:
 	 * @brief Get the tooltip content panel
 	 * @return Raw pointer to content panel
 	 */
-	UIElement* GetContent() const { return content_.get(); }
+	[[nodiscard]] UIElement* GetContent() const { return content_.get(); }
 
 	// === Positioning Configuration ===
 
@@ -98,13 +98,13 @@ public:
 	 * @brief Get horizontal offset
 	 * @return X offset in pixels
 	 */
-	float GetOffsetX() const { return offset_x_; }
+	[[nodiscard]] float GetOffsetX() const { return offset_x_; }
 
 	/**
 	 * @brief Get vertical offset
 	 * @return Y offset in pixels
 	 */
-	float GetOffsetY() const { return offset_y_; }
+	[[nodiscard]] float GetOffsetY() const { return offset_y_; }
 
 	/**
 	 * @brief Set window bounds for repositioning
@@ -132,7 +132,7 @@ public:
 	 * @brief Check if tooltip is currently showing
 	 * @return True if tooltip content is visible
 	 */
-	bool IsShowing() const { return is_showing_; }
+	[[nodiscard]] bool IsShowing() const { return is_showing_; }
 
 	/**
 	 * @brief Manually show the tooltip at a position
@@ -255,14 +255,10 @@ private:
 		}
 
 		// Left edge clamp
-		if (content_x < 0) {
-			content_x = 0;
-		}
+		content_x = std::max<float>(content_x, 0);
 
 		// Top edge clamp
-		if (content_y < 0) {
-			content_y = 0;
-		}
+		content_y = std::max<float>(content_y, 0);
 
 		// Tooltip content uses absolute window-relative coordinates since it's not parented to any
 		// UI element. This is intentional: tooltips must appear at the correct screen location

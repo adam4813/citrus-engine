@@ -47,9 +47,9 @@ public:
 	template<typename T>
 	T GetProperty(const std::string& name) const;
 
-	TextureId GetTexture(const std::string& name) const;
+	[[nodiscard]] TextureId GetTexture(const std::string& name) const;
 
-	ShaderId GetShader() const;
+	[[nodiscard]] ShaderId GetShader() const;
 
 	// Apply material (set all uniforms)
 	void Apply(const Shader& shader) const;
@@ -69,32 +69,32 @@ public:
 	void Initialize(const ShaderManager& shader_manager);
 
 	// Material creation
-	MaterialId CreateMaterial(const std::string& name, const MaterialCreateInfo& info) const;
+	[[nodiscard]] MaterialId CreateMaterial(const std::string& name, const MaterialCreateInfo& info) const;
 
-	MaterialId CreateMaterial(const std::string& name, ShaderId shader);
+	MaterialId CreateMaterial(const std::string& name, ShaderId shader) const;
 
 	// Material access
 	Material& GetMaterial(MaterialId id);
 
-	const Material& GetMaterial(MaterialId id) const;
+	[[nodiscard]] const Material& GetMaterial(MaterialId id) const;
 
-	MaterialId FindMaterial(const std::string& name) const;
+	[[nodiscard]] MaterialId FindMaterial(const std::string& name) const;
 
-	std::string GetMaterialName(MaterialId id) const;
+	[[nodiscard]] std::string GetMaterialName(MaterialId id) const;
 
 	// Resource management
 	void DestroyMaterial(MaterialId id);
 
-	bool IsValid(MaterialId id) const;
+	[[nodiscard]] bool IsValid(MaterialId id) const;
 
 	void Clear();
 
 	// Get default materials
-	MaterialId GetDefaultMaterial() const;
+	[[nodiscard]] MaterialId GetDefaultMaterial() const;
 
-	MaterialId GetSpriteMaterial() const;
+	[[nodiscard]] MaterialId GetSpriteMaterial() const;
 
-	MaterialId GetUnlitMaterial() const;
+	[[nodiscard]] MaterialId GetUnlitMaterial() const;
 
 private:
 	struct Impl;

@@ -16,7 +16,7 @@ namespace engine::ai {
 NodeStatus SelectorNode::Tick(Blackboard& blackboard) {
 	// Try each child in order until one succeeds
 	for (; current_child_ < children_.size(); ++current_child_) {
-		NodeStatus status = children_[current_child_]->Tick(blackboard);
+		NodeStatus const status = children_[current_child_]->Tick(blackboard);
 
 		if (status == NodeStatus::Running) {
 			return NodeStatus::Running; // Still processing
@@ -36,7 +36,7 @@ NodeStatus SelectorNode::Tick(Blackboard& blackboard) {
 NodeStatus SequenceNode::Tick(Blackboard& blackboard) {
 	// Run each child in order until one fails
 	for (; current_child_ < children_.size(); ++current_child_) {
-		NodeStatus status = children_[current_child_]->Tick(blackboard);
+		NodeStatus const status = children_[current_child_]->Tick(blackboard);
 
 		if (status == NodeStatus::Running) {
 			return NodeStatus::Running; // Still processing
@@ -60,7 +60,7 @@ NodeStatus ParallelNode::Tick(Blackboard& blackboard) {
 
 	// Run all children
 	for (auto& child : children_) {
-		NodeStatus status = child->Tick(blackboard);
+		NodeStatus const status = child->Tick(blackboard);
 
 		switch (status) {
 		case NodeStatus::Success: ++success_count; break;
@@ -79,10 +79,9 @@ NodeStatus ParallelNode::Tick(Blackboard& blackboard) {
 		// All must succeed
 		return (failure_count == 0) ? NodeStatus::Success : NodeStatus::Failure;
 	}
-	else {
-		// At least one must succeed
+			// At least one must succeed
 		return (success_count > 0) ? NodeStatus::Success : NodeStatus::Failure;
-	}
+
 }
 
 // === DECORATOR NODES IMPLEMENTATION ===
@@ -92,7 +91,7 @@ NodeStatus InverterNode::Tick(Blackboard& blackboard) {
 		return NodeStatus::Failure;
 	}
 
-	NodeStatus status = children_[0]->Tick(blackboard);
+	NodeStatus const status = children_[0]->Tick(blackboard);
 
 	// Invert Success <-> Failure, keep Running
 	if (status == NodeStatus::Success) {
@@ -110,7 +109,7 @@ NodeStatus RepeaterNode::Tick(Blackboard& blackboard) {
 	}
 
 	while (current_iteration_ < repeat_count_) {
-		NodeStatus status = children_[0]->Tick(blackboard);
+		NodeStatus const status = children_[0]->Tick(blackboard);
 
 		if (status == NodeStatus::Running) {
 			return NodeStatus::Running;
@@ -158,7 +157,7 @@ NodeStatus WaitNode::Tick(Blackboard& blackboard) {
 }
 
 NodeStatus LogNode::Tick([[maybe_unused]] Blackboard& blackboard) {
-	std::cout << "[BehaviorTree] " << name_ << ": " << message_ << std::endl;
+	std::cout << "[BehaviorTree] " << name_ << ": " << message_ << '\n';
 	return NodeStatus::Success;
 }
 

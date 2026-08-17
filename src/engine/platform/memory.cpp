@@ -2,11 +2,12 @@
 module;
 
 #include <algorithm>
+#include <cstddef>
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
 
-#if defined(_MSC_VER)
+#ifdef _MSC_VER
 #include <malloc.h>
 #define ALIGNED_ALLOC(alignment, size) _aligned_malloc(size, alignment)
 #define ALIGNED_FREE(ptr) _aligned_free(ptr)
@@ -28,7 +29,7 @@ namespace engine::platform::memory {
 
 // LinearAllocator implementation
 LinearAllocator::LinearAllocator(size_t capacity) :
-		buffer_(static_cast<uint8_t*>(ALIGNED_ALLOC(default_alignment, capacity))), capacity_(capacity), offset_(0),
+		buffer_(static_cast<uint8_t*>(ALIGNED_ALLOC(DEFAULT_ALIGNMENT, capacity))), capacity_(capacity), offset_(0),
 		peak_offset_(0) {}
 
 LinearAllocator::~LinearAllocator() {
@@ -37,10 +38,10 @@ LinearAllocator::~LinearAllocator() {
 	}
 }
 
-inline size_t align_size(size_t value, size_t alignment) { return (value + alignment - 1) & ~(alignment - 1); }
+static inline size_t AlignSize(size_t value, size_t alignment) { return (value + alignment - 1) & ~(alignment - 1); }
 
 void* LinearAllocator::Allocate(size_t size, size_t alignment) {
-	size_t aligned_offset = align_size(offset_, alignment);
+	size_t const aligned_offset = AlignSize(offset_, alignment);
 
 	if (aligned_offset + size > capacity_) {
 		return nullptr; // Out of memory
@@ -53,7 +54,7 @@ void* LinearAllocator::Allocate(size_t size, size_t alignment) {
 	return ptr;
 }
 
-void LinearAllocator::Deallocate(void* ptr) {
+void LinearAllocator::Deallocate(void*) {
 	// Linear allocator doesn't support individual deallocation
 }
 
@@ -69,8 +70,8 @@ size_t LinearAllocator::Remaining() const { return capacity_ - offset_; }
 PoolAllocator::PoolAllocator(size_t block_size, size_t block_count) :
 		block_size_(AlignSize(block_size)), block_count_(block_count), allocated_blocks_(0), peak_allocated_(0) {
 
-	size_t total_size = block_size_ * block_count_;
-	buffer_ = static_cast<uint8_t*>(ALIGNED_ALLOC(default_alignment, total_size));
+	size_t const total_size = block_size_ * block_count_;
+	buffer_ = static_cast<uint8_t*>(ALIGNED_ALLOC(DEFAULT_ALIGNMENT, total_size));
 
 	// Initialize free list
 	free_list_ = reinterpret_cast<FreeBlock*>(buffer_);
@@ -89,7 +90,7 @@ PoolAllocator::~PoolAllocator() {
 	}
 }
 
-void* PoolAllocator::Allocate(size_t size, size_t alignment) {
+void* PoolAllocator::Allocate(size_t size, size_t /*alignment*/) {
 	if (size > block_size_ || !free_list_) {
 		return nullptr;
 	}
@@ -106,7 +107,7 @@ void* PoolAllocator::Allocate(size_t size, size_t alignment) {
 void PoolAllocator::Deallocate(void* ptr) {
 	if (!ptr) return;
 
-	FreeBlock* block = static_cast<FreeBlock*>(ptr);
+	auto* block = static_cast<FreeBlock*>(ptr);
 	block->next = free_list_;
 	free_list_ = block;
 
@@ -129,7 +130,7 @@ Allocator& GetDefaultAllocator() {
 
 LinearAllocator& GetFrameAllocator() {
 	if (!g_frame_allocator) {
-		g_frame_allocator = new LinearAllocator(1024 * 1024); // 1MB frame allocator
+		g_frame_allocator = new LinearAllocator(static_cast<size_t>(1024 * 1024)); // 1MB frame allocator
 	}
 	return *g_frame_allocator;
 }

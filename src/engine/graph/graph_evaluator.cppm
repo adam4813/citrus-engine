@@ -37,12 +37,12 @@ public:
 	/// Perform topological sort on the graph
 	/// @param graph The graph to sort
 	/// @return List of node IDs in evaluation order, empty if graph has cycles
-	std::vector<int> TopologicalSort(const NodeGraph& graph) const;
+	[[nodiscard]] std::vector<int> TopologicalSort(const NodeGraph& graph) const;
 
 	/// Check if the graph contains cycles
 	/// @param graph The graph to check
 	/// @return true if the graph has cycles (invalid for evaluation)
-	bool HasCycles(const NodeGraph& graph) const;
+	[[nodiscard]] bool HasCycles(const NodeGraph& graph) const;
 
 	/// Evaluate the entire graph
 	/// @param graph The graph to evaluate
@@ -62,11 +62,11 @@ private:
 	) const;
 
 	/// Get input values for a node from evaluated results
-	std::map<int, std::any> GetNodeInputs(
+	[[nodiscard]] static std::map<int, std::any> GetNodeInputs(
 		const Node& node,
 		const NodeGraph& graph,
 		const std::map<int, std::map<int, std::any>>& evaluated_outputs
-	) const;
+	) ;
 };
 
 } // namespace engine::graph

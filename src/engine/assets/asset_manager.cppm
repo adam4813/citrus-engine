@@ -16,7 +16,7 @@ struct Image {
 	int channels = 0;
 	std::string name;
 	std::vector<uint8_t> pixel_data;
-	bool IsValid() const { return width > 0 && height > 0 && !pixel_data.empty(); }
+	[[nodiscard]] bool IsValid() const { return width > 0 && height > 0 && !pixel_data.empty(); }
 };
 
 class AssetManager {

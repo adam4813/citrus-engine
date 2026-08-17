@@ -58,14 +58,14 @@ bool PrefabUtility::WritePrefabFile(const ecs::Entity& prefab_entity, const plat
 
 		const std::string json_str = prefab_doc.dump(2);
 		if (!assets::AssetManager::SaveTextFile(file_path, json_str)) {
-			std::cerr << "PrefabUtility: Failed to open file for writing: " << file_path << std::endl;
+			std::cerr << "PrefabUtility: Failed to open file for writing: " << file_path << '\n';
 			return false;
 		}
 
 		return true;
 	}
 	catch (const std::exception& e) {
-		std::cerr << "PrefabUtility: Error writing prefab file: " << e.what() << std::endl;
+		std::cerr << "PrefabUtility: Error writing prefab file: " << e.what() << '\n';
 		return false;
 	}
 }
@@ -73,8 +73,8 @@ bool PrefabUtility::WritePrefabFile(const ecs::Entity& prefab_entity, const plat
 ecs::Entity
 PrefabUtility::SaveAsPrefab(const ecs::Entity& entity, ecs::ECSWorld& world, const platform::fs::Path& file_path) {
 	if (!entity.is_valid()) {
-		std::cerr << "PrefabUtility: Invalid entity" << std::endl;
-		return ecs::Entity();
+		std::cerr << "PrefabUtility: Invalid entity" << '\n';
+		return {};
 	}
 
 	try {
@@ -107,7 +107,7 @@ PrefabUtility::SaveAsPrefab(const ecs::Entity& entity, ecs::ECSWorld& world, con
 
 		// 3. Serialize the prefab to disk
 		if (!WritePrefabFile(prefab_entity, file_path)) {
-			return ecs::Entity();
+			return {};
 		}
 
 		// 4. Cache it
@@ -119,12 +119,12 @@ PrefabUtility::SaveAsPrefab(const ecs::Entity& entity, ecs::ECSWorld& world, con
 			<< "' and converted '"
 			<< entity_name
 			<< "' to instance"
-			<< std::endl;
+			<< '\n';
 		return prefab_entity;
 	}
 	catch (const std::exception& e) {
-		std::cerr << "PrefabUtility: Error saving as prefab: " << e.what() << std::endl;
-		return ecs::Entity();
+		std::cerr << "PrefabUtility: Error saving as prefab: " << e.what() << '\n';
+		return {};
 	}
 }
 
@@ -142,20 +142,20 @@ ecs::Entity PrefabUtility::LoadPrefab(const platform::fs::Path& prefab_path, ecs
 	try {
 		auto text = assets::AssetManager::LoadTextFile(prefab_path);
 		if (!text) {
-			std::cerr << "PrefabUtility: Failed to open prefab file: " << prefab_path << std::endl;
-			return ecs::Entity();
+			std::cerr << "PrefabUtility: Failed to open prefab file: " << prefab_path << '\n';
+			return {};
 		}
 
 		json prefab_doc = json::parse(*text);
 
 		if (const int version = prefab_doc.value("version", 0); version != 1) {
-			std::cerr << "PrefabUtility: Unsupported prefab format version: " << version << std::endl;
-			return ecs::Entity();
+			std::cerr << "PrefabUtility: Unsupported prefab format version: " << version << '\n';
+			return {};
 		}
 
 		if (!prefab_doc.contains("entities") || !prefab_doc["entities"].is_array() || prefab_doc["entities"].empty()) {
-			std::cerr << "PrefabUtility: Invalid prefab format - missing entities" << std::endl;
-			return ecs::Entity();
+			std::cerr << "PrefabUtility: Invalid prefab format - missing entities" << '\n';
+			return {};
 		}
 
 		const flecs::world& flecs_world = world.GetWorld();
@@ -174,12 +174,12 @@ ecs::Entity PrefabUtility::LoadPrefab(const platform::fs::Path& prefab_path, ecs
 
 		loaded_prefabs[path_str] = prefab_entity;
 
-		std::cout << "PrefabUtility: Loaded prefab from " << prefab_path << std::endl;
+		std::cout << "PrefabUtility: Loaded prefab from " << prefab_path << '\n';
 		return prefab_entity;
 	}
 	catch (const std::exception& e) {
-		std::cerr << "PrefabUtility: Error loading prefab: " << e.what() << std::endl;
-		return ecs::Entity();
+		std::cerr << "PrefabUtility: Error loading prefab: " << e.what() << '\n';
+		return {};
 	}
 }
 
@@ -190,13 +190,13 @@ ecs::Entity PrefabUtility::InstantiatePrefab(
 	const ecs::Entity& parent
 ) {
 	if (!scene) {
-		std::cerr << "PrefabUtility: Invalid scene" << std::endl;
-		return ecs::Entity();
+		std::cerr << "PrefabUtility: Invalid scene" << '\n';
+		return {};
 	}
 
 	const auto prefab_entity = LoadPrefab(prefab_path, world);
 	if (!prefab_entity.is_valid()) {
-		return ecs::Entity();
+		return {};
 	}
 
 	// Create an instance using flecs is_a() — inherits all prefab components
@@ -217,25 +217,25 @@ ecs::Entity PrefabUtility::InstantiatePrefab(
 		instance.set<WorldTransform>({});
 	}
 
-	std::cout << "PrefabUtility: Instantiated prefab from " << prefab_path << std::endl;
+	std::cout << "PrefabUtility: Instantiated prefab from " << prefab_path << '\n';
 	return instance;
 }
 
-bool PrefabUtility::ApplyToSource(const ecs::Entity& instance, ecs::ECSWorld& world) {
+bool PrefabUtility::ApplyToSource(const ecs::Entity& instance, ecs::ECSWorld&  /*world*/) {
 	if (!instance.is_valid()) {
-		std::cerr << "PrefabUtility: Invalid instance" << std::endl;
+		std::cerr << "PrefabUtility: Invalid instance" << '\n';
 		return false;
 	}
 
 	auto prefab = instance.target(flecs::IsA);
 	if (!prefab.is_valid() || !prefab.has(flecs::Prefab)) {
-		std::cerr << "PrefabUtility: Entity is not a prefab instance" << std::endl;
+		std::cerr << "PrefabUtility: Entity is not a prefab instance" << '\n';
 		return false;
 	}
 
 	const auto prefab_path = GetPrefabPath(prefab);
 	if (prefab_path.empty()) {
-		std::cerr << "PrefabUtility: Prefab not found in cache" << std::endl;
+		std::cerr << "PrefabUtility: Prefab not found in cache" << '\n';
 		return false;
 	}
 
@@ -259,13 +259,13 @@ bool PrefabUtility::ApplyToSource(const ecs::Entity& instance, ecs::ECSWorld& wo
 
 bool PrefabUtility::SavePrefabTemplate(const ecs::Entity& prefab_entity) {
 	if (!prefab_entity.is_valid() || !prefab_entity.has(flecs::Prefab)) {
-		std::cerr << "PrefabUtility: Entity is not a prefab template" << std::endl;
+		std::cerr << "PrefabUtility: Entity is not a prefab template" << '\n';
 		return false;
 	}
 
 	const auto path = GetPrefabPath(prefab_entity);
 	if (path.empty()) {
-		std::cerr << "PrefabUtility: Prefab not found in cache" << std::endl;
+		std::cerr << "PrefabUtility: Prefab not found in cache" << '\n';
 		return false;
 	}
 

@@ -5,6 +5,7 @@ module;
 #include <map>
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 module engine.graph;
@@ -44,7 +45,7 @@ bool GraphEvaluator::HasCycles(const NodeGraph& graph) const {
 std::map<int, std::any>
 GraphEvaluator::Evaluate(const NodeGraph& graph, const std::map<std::string, INodeEvaluator*>& evaluators) {
 	// Get evaluation order
-	std::vector<int> sorted = TopologicalSort(graph);
+	std::vector<int> const sorted = TopologicalSort(graph);
 	if (sorted.empty() && !graph.GetNodes().empty()) {
 		// Graph has cycles - can't evaluate
 		return {};
@@ -54,7 +55,7 @@ GraphEvaluator::Evaluate(const NodeGraph& graph, const std::map<std::string, INo
 	std::map<int, std::map<int, std::any>> evaluated_outputs;
 
 	// Evaluate each node in order
-	for (int node_id : sorted) {
+	for (int const node_id : sorted) {
 		const Node* node = graph.GetNode(node_id);
 		if (!node) {
 			continue;
@@ -73,7 +74,7 @@ GraphEvaluator::Evaluate(const NodeGraph& graph, const std::map<std::string, INo
 		}
 
 		// Get input values for this node
-		std::map<int, std::any> inputs = GetNodeInputs(*node, graph, evaluated_outputs);
+		std::map<int, std::any> const inputs = GetNodeInputs(*node, graph, evaluated_outputs);
 
 		// Evaluate the node
 		std::map<int, std::any> outputs = evaluator->Evaluate(*node, inputs);
@@ -111,7 +112,7 @@ bool GraphEvaluator::TopologicalSortDFS(
 	// Find all links that connect to this node's inputs
 	for (const auto& link : graph.GetLinks()) {
 		if (link.to_node_id == node_id) {
-			int dependency_id = link.from_node_id;
+			int const dependency_id = link.from_node_id;
 
 			if (visit_state[dependency_id] == VisitState::Visiting) {
 				// Cycle detected
@@ -137,7 +138,7 @@ std::map<int, std::any> GraphEvaluator::GetNodeInputs(
 	const Node& node,
 	const NodeGraph& graph,
 	const std::map<int, std::map<int, std::any>>& evaluated_outputs
-) const {
+) {
 
 	std::map<int, std::any> inputs;
 
@@ -148,7 +149,7 @@ std::map<int, std::any> GraphEvaluator::GetNodeInputs(
 		// Find link connected to this input
 		bool found_connection = false;
 		for (const auto& link : graph.GetLinks()) {
-			if (link.to_node_id == node.id && link.to_pin_index == static_cast<int>(i)) {
+			if (link.to_node_id == node.id && std::cmp_equal(link.to_pin_index ,i)) {
 				// Found a connection
 				auto output_it = evaluated_outputs.find(link.from_node_id);
 				if (output_it != evaluated_outputs.end()) {

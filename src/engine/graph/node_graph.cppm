@@ -42,10 +42,10 @@ public:
 	/// Get a node by ID (const)
 	/// @param id The node ID
 	/// @return Pointer to the node, or nullptr if not found
-	const Node* GetNode(int id) const;
+	[[nodiscard]] const Node* GetNode(int id) const;
 
 	/// Get all nodes in the graph
-	const std::vector<Node>& GetNodes() const { return nodes_; }
+	[[nodiscard]] const std::vector<Node>& GetNodes() const { return nodes_; }
 
 	// Link operations
 
@@ -62,7 +62,7 @@ public:
 	void RemoveLink(int link_id);
 
 	/// Get all links in the graph
-	const std::vector<Link>& GetLinks() const { return links_; }
+	[[nodiscard]] const std::vector<Link>& GetLinks() const { return links_; }
 
 	/// Get a link by ID
 	/// @param id The link ID
@@ -70,7 +70,7 @@ public:
 	Link* GetLink(int id);
 
 	/// Get a link by ID (const)
-	const Link* GetLink(int id) const;
+	[[nodiscard]] const Link* GetLink(int id) const;
 
 	// Connection validation
 
@@ -80,7 +80,7 @@ public:
 	/// @param to_node Destination node ID
 	/// @param to_pin Destination pin index
 	/// @return true if connection is valid
-	bool CanConnect(int from_node, int from_pin, int to_node, int to_pin) const;
+	[[nodiscard]] bool CanConnect(int from_node, int from_pin, int to_node, int to_pin) const;
 
 	// Utility
 
@@ -88,7 +88,7 @@ public:
 	void Clear();
 
 	/// Get the next available ID (for external use if needed)
-	int GetNextId() const { return next_id_; }
+	[[nodiscard]] int GetNextId() const { return next_id_; }
 
 	/// Set the next ID (for deserialization)
 	void SetNextId(int id) { next_id_ = id; }
@@ -101,11 +101,11 @@ private:
 
 	/// Find node iterator by ID
 	auto FindNode(int id) -> decltype(nodes_.begin());
-	auto FindNode(int id) const -> decltype(nodes_.begin());
+	[[nodiscard]] auto FindNode(int id) const -> decltype(nodes_.begin());
 
 	/// Find link iterator by ID
 	auto FindLink(int id) -> decltype(links_.begin());
-	auto FindLink(int id) const -> decltype(links_.begin());
+	[[nodiscard]] auto FindLink(int id) const -> decltype(links_.begin());
 };
 
 } // namespace engine::graph

@@ -21,7 +21,7 @@ export namespace engine::ui::text_renderer {
 struct GlyphMetrics {
 	batch_renderer::Rectangle atlas_rect; ///< UV coordinates in atlas texture (normalized 0-1)
 	batch_renderer::Vector2 bearing;      ///< Offset from baseline to left/top of glyph
-	float advance;                        ///< Horizontal advance to next glyph position
+	float advance{};                      ///< Horizontal advance to next glyph position
 	batch_renderer::Vector2 size;         ///< Glyph bitmap dimensions in pixels
 };
 
@@ -94,7 +94,7 @@ public:
 	 * }
 	 * @endcode
 	 */
-	const GlyphMetrics* GetGlyph(uint32_t codepoint) const;
+	[[nodiscard]] const GlyphMetrics* GetGlyph(uint32_t codepoint) const;
 
 	/**
 	 * @brief Get atlas texture ID for rendering.
@@ -109,37 +109,37 @@ public:
 	 * BatchRenderer::SubmitQuad(rect, color, uv_coords, texId);
 	 * @endcode
 	 */
-	uint32_t GetTextureId() const { return atlas_texture_id_; }
+	[[nodiscard]] uint32_t GetTextureId() const { return atlas_texture_id_; }
 
 	/**
 	 * @brief Get font ascent (baseline to top).
 	 * @return Distance from baseline to top of tallest glyph (pixels)
 	 */
-	float GetAscent() const { return ascent_; }
+	[[nodiscard]] float GetAscent() const { return ascent_; }
 
 	/**
 	 * @brief Get font descent (baseline to bottom).
 	 * @return Distance from baseline to bottom of lowest glyph (pixels, typically negative)
 	 */
-	float GetDescent() const { return descent_; }
+	[[nodiscard]] float GetDescent() const { return descent_; }
 
 	/**
 	 * @brief Get vertical gap between lines.
 	 * @return Recommended spacing between consecutive lines (pixels)
 	 */
-	float GetLineGap() const { return line_gap_; }
+	[[nodiscard]] float GetLineGap() const { return line_gap_; }
 
 	/**
 	 * @brief Get total line height.
 	 * @return Total height for a line of text (ascent + descent + line gap)
 	 */
-	float GetLineHeight() const { return ascent_ - descent_ + line_gap_; }
+	[[nodiscard]] float GetLineHeight() const { return ascent_ - descent_ + line_gap_; }
 
 	/**
 	 * @brief Get the font size this atlas was generated for.
 	 * @return Font size in pixels
 	 */
-	int GetFontSize() const { return font_size_; }
+	[[nodiscard]] int GetFontSize() const { return font_size_; }
 
 	/**
 	 * @brief Check if the atlas was successfully loaded.
@@ -147,7 +147,7 @@ public:
 	 *
 	 * @note Always check this after constructing or accessing a font.
 	 */
-	bool IsValid() const { return atlas_texture_id_ != 0; }
+	[[nodiscard]] bool IsValid() const { return atlas_texture_id_ != 0; }
 
 private:
 	std::unordered_map<uint32_t, GlyphMetrics> glyphs_;
@@ -197,9 +197,9 @@ struct LayoutOptions {
  * metrics in the font atlas.
  */
 struct PositionedGlyph {
-	uint32_t codepoint;               ///< Unicode codepoint of this glyph
+	uint32_t codepoint{};             ///< Unicode codepoint of this glyph
 	batch_renderer::Vector2 position; ///< Screen-space position (top-left)
-	const GlyphMetrics* metrics;      ///< Pointer to glyph metrics (non-owning)
+	const GlyphMetrics* metrics{};    ///< Pointer to glyph metrics (non-owning)
 };
 
 /**

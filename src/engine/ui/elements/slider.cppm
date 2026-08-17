@@ -145,7 +145,7 @@ public:
 	 * @brief Get current slider value
 	 * @return Current value
 	 */
-	float GetValue() const { return current_value_; }
+	[[nodiscard]] float GetValue() const { return current_value_; }
 
 	/**
 	 * @brief Set minimum value
@@ -160,7 +160,7 @@ public:
 	 * @brief Get minimum value
 	 * @return Minimum value
 	 */
-	float GetMinValue() const { return min_value_; }
+	[[nodiscard]] float GetMinValue() const { return min_value_; }
 
 	/**
 	 * @brief Set maximum value
@@ -175,7 +175,7 @@ public:
 	 * @brief Get maximum value
 	 * @return Maximum value
 	 */
-	float GetMaxValue() const { return max_value_; }
+	[[nodiscard]] float GetMaxValue() const { return max_value_; }
 
 	// === Display Configuration ===
 
@@ -220,7 +220,7 @@ public:
 	 * @brief Get label text
 	 * @return Label text
 	 */
-	const std::string& GetLabel() const { return label_text_; }
+	[[nodiscard]] const std::string& GetLabel() const { return label_text_; }
 
 	/**
 	 * @brief Enable/disable value display
@@ -250,7 +250,7 @@ public:
 	 * @brief Check if value display is enabled
 	 * @return True if showing value
 	 */
-	bool GetShowValue() const { return show_value_; }
+	[[nodiscard]] bool GetShowValue() const { return show_value_; }
 
 	// === Appearance Configuration ===
 

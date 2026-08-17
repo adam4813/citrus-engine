@@ -46,7 +46,7 @@ import glm;
 
 // Jolt callback for trace messages
 static void JoltTraceImpl(const char* inFMT, ...) {
-	va_list list;
+	va_list list = nullptr;
 	va_start(list, inFMT);
 	char buffer[1024];
 	vsnprintf(buffer, sizeof(buffer), inFMT, list);
@@ -142,7 +142,7 @@ class ContactListenerImpl : public JPH::ContactListener {
 public:
 	void ClearEvents() { collision_events_.clear(); }
 
-	const std::vector<CollisionInfo>& GetEvents() const { return collision_events_; }
+	[[nodiscard]] const std::vector<CollisionInfo>& GetEvents() const { return collision_events_; }
 
 	JPH::ValidateResult OnContactValidate(
 		const JPH::Body& /*inBody1*/,
@@ -166,8 +166,8 @@ public:
 		// Extract contact points
 		for (uint32_t i = 0; i < inManifold.mRelativeContactPointsOn1.size(); ++i) {
 			ContactPoint point;
-			JPH::Vec3 worldPoint = inManifold.GetWorldSpaceContactPointOn1(i);
-			point.position = glm::vec3(worldPoint.GetX(), worldPoint.GetY(), worldPoint.GetZ());
+			JPH::Vec3 const world_point = inManifold.GetWorldSpaceContactPointOn1(i);
+			point.position = glm::vec3(world_point.GetX(), world_point.GetY(), world_point.GetZ());
 			point.normal = glm::vec3(
 				inManifold.mWorldSpaceNormal.GetX(),
 				inManifold.mWorldSpaceNormal.GetY(),
@@ -257,7 +257,7 @@ private:
 		switch (config.type) {
 		case ShapeType::Box:
 		{
-			JPH::BoxShapeSettings settings(
+			JPH::BoxShapeSettings const settings(
 				JPH::Vec3(config.box_half_extents.x, config.box_half_extents.y, config.box_half_extents.z)
 			);
 			result = settings.Create();
@@ -265,32 +265,32 @@ private:
 		}
 		case ShapeType::Sphere:
 		{
-			JPH::SphereShapeSettings settings(config.sphere_radius);
+			JPH::SphereShapeSettings const settings(config.sphere_radius);
 			result = settings.Create();
 			break;
 		}
 		case ShapeType::Capsule:
 		{
 			// Jolt capsule uses half-height (height of cylindrical portion / 2)
-			JPH::CapsuleShapeSettings settings(config.capsule_height * 0.5F, config.capsule_radius);
+			JPH::CapsuleShapeSettings const settings(config.capsule_height * 0.5F, config.capsule_radius);
 			result = settings.Create();
 			break;
 		}
 		case ShapeType::Cylinder:
 		{
-			JPH::CylinderShapeSettings settings(config.cylinder_height * 0.5F, config.cylinder_radius);
+			JPH::CylinderShapeSettings const settings(config.cylinder_height * 0.5F, config.cylinder_radius);
 			result = settings.Create();
 			break;
 		}
 		case ShapeType::ConvexHull:
 		{
 			if (!config.vertices.empty()) {
-				std::vector<JPH::Vec3> joltVerts;
-				joltVerts.reserve(config.vertices.size());
+				std::vector<JPH::Vec3> jolt_verts;
+				jolt_verts.reserve(config.vertices.size());
 				for (const auto& v : config.vertices) {
-					joltVerts.emplace_back(v.x, v.y, v.z);
+					jolt_verts.emplace_back(v.x, v.y, v.z);
 				}
-				JPH::ConvexHullShapeSettings settings(joltVerts.data(), static_cast<int>(joltVerts.size()));
+				JPH::ConvexHullShapeSettings const settings(jolt_verts.data(), static_cast<int>(jolt_verts.size()));
 				result = settings.Create();
 			}
 			break;
@@ -311,7 +311,7 @@ private:
 						)
 					);
 				}
-				JPH::MeshShapeSettings settings(triangles);
+				JPH::MeshShapeSettings const settings(triangles);
 				result = settings.Create();
 			}
 			break;
@@ -320,14 +320,14 @@ private:
 		{
 			JPH::StaticCompoundShapeSettings settings;
 			for (size_t i = 0; i < config.children.size(); ++i) {
-				if (auto childShape = CreateShape(config.children[i])) {
+				if (auto child_shape = CreateShape(config.children[i])) {
 					glm::vec3 pos = i < config.child_positions.size() ? config.child_positions[i] : glm::vec3(0.0F);
 					glm::quat rot = i < config.child_rotations.size() ? config.child_rotations[i]
 																	  : glm::quat(1.0F, 0.0F, 0.0F, 0.0F);
 					settings.AddShape(
 						JPH::Vec3(pos.x, pos.y, pos.z),
 						JPH::Quat(rot.x, rot.y, rot.z, rot.w),
-						childShape
+						child_shape
 					);
 				}
 			}
@@ -336,7 +336,7 @@ private:
 		}
 		default:
 			spdlog::warn("[JoltPhysics] Unknown shape type, defaulting to box");
-			JPH::BoxShapeSettings settings(JPH::Vec3(0.5F, 0.5F, 0.5F));
+			JPH::BoxShapeSettings const settings(JPH::Vec3(0.5F, 0.5F, 0.5F));
 			result = settings.Create();
 			break;
 		}
@@ -376,11 +376,11 @@ public:
 		temp_allocator_ = std::make_unique<JPH::TempAllocatorImpl>(10 * 1024 * 1024);
 
 		// Create job system (use hardware thread count - 1, min 1)
-		auto numThreads = std::max(1U, std::thread::hardware_concurrency() - 1);
+		auto num_threads = std::max(1U, std::thread::hardware_concurrency() - 1);
 		job_system_ = std::make_unique<JPH::JobSystemThreadPool>(
 			JPH::cMaxPhysicsJobs,
 			JPH::cMaxPhysicsBarriers,
-			static_cast<int>(numThreads)
+			static_cast<int>(num_threads)
 		);
 
 		// Create broad phase layer interface
@@ -389,17 +389,17 @@ public:
 		object_layer_pair_filter_ = std::make_unique<ObjectLayerPairFilterImpl>();
 
 		// Create physics system
-		constexpr uint32_t cMaxBodies = 65536;
-		constexpr uint32_t cNumBodyMutexes = 0; // Auto-detect
-		constexpr uint32_t cMaxBodyPairs = 65536;
-		constexpr uint32_t cMaxContactConstraints = 10240;
+		constexpr uint32_t c_max_bodies = 65536;
+		constexpr uint32_t c_num_body_mutexes = 0; // Auto-detect
+		constexpr uint32_t c_max_body_pairs = 65536;
+		constexpr uint32_t c_max_contact_constraints = 10240;
 
 		physics_system_ = std::make_unique<JPH::PhysicsSystem>();
 		physics_system_->Init(
-			cMaxBodies,
-			cNumBodyMutexes,
-			cMaxBodyPairs,
-			cMaxContactConstraints,
+			c_max_bodies,
+			c_num_body_mutexes,
+			c_max_body_pairs,
+			c_max_contact_constraints,
 			*broad_phase_layer_interface_,
 			*object_vs_broad_phase_layer_filter_,
 			*object_layer_pair_filter_
@@ -412,7 +412,7 @@ public:
 		contact_listener_ = std::make_unique<ContactListenerImpl>();
 		physics_system_->SetContactListener(contact_listener_.get());
 
-		spdlog::info("[JoltPhysics] Initialized with {} worker threads", numThreads);
+		spdlog::info("[JoltPhysics] Initialized with {} worker threads", num_threads);
 		initialized_ = true;
 		return true;
 	}
@@ -423,10 +423,10 @@ public:
 		}
 
 		// Remove all bodies
-		auto& bodyInterface = physics_system_->GetBodyInterface();
-		for (auto& bodyId : entity_to_body_ | std::views::values) {
-			bodyInterface.RemoveBody(bodyId);
-			bodyInterface.DestroyBody(bodyId);
+		auto& body_interface = physics_system_->GetBodyInterface();
+		for (auto& body_id : entity_to_body_ | std::views::values) {
+			body_interface.RemoveBody(body_id);
+			body_interface.DestroyBody(body_id);
 		}
 		entity_to_body_.clear();
 
@@ -457,7 +457,7 @@ public:
 	[[nodiscard]] glm::vec3 GetGravity() const override {
 		if (physics_system_) {
 			auto g = physics_system_->GetGravity();
-			return glm::vec3(g.GetX(), g.GetY(), g.GetZ());
+			return {g.GetX(), g.GetY(), g.GetZ()};
 		}
 		return config_.gravity;
 	}
@@ -486,47 +486,47 @@ public:
 			return;
 		}
 
-		auto& bodyInterface = physics_system_->GetBodyInterface();
+		auto& body_interface = physics_system_->GetBodyInterface();
 		auto it = entity_to_body_.find(entity);
 
 		// Create shape from CollisionShape component
-		ShapeConfig shapeConfig = ToShapeConfig(shape, transform);
-		JPH::ShapeRefC joltShape = CreateShape(shapeConfig);
-		if (!joltShape) {
+		ShapeConfig const shape_config = ToShapeConfig(shape, transform);
+		JPH::ShapeRefC const jolt_shape = CreateShape(shape_config);
+		if (!jolt_shape) {
 			spdlog::error("[JoltPhysics] Failed to create shape for entity {}", entity);
 			return;
 		}
 
 		if (it != entity_to_body_.end()) {
 			// Body exists - update it
-			JPH::BodyID bodyId = it->second;
+			JPH::BodyID const body_id = it->second;
 
 			// Update shape
-			bodyInterface.SetShape(bodyId, joltShape, true, JPH::EActivation::Activate);
+			body_interface.SetShape(body_id, jolt_shape, true, JPH::EActivation::Activate);
 
 			// Update transform
-			bodyInterface.SetPositionAndRotation(
-				bodyId,
+			body_interface.SetPositionAndRotation(
+				body_id,
 				JPH::RVec3(transform.position.x, transform.position.y, transform.position.z),
 				JPH::Quat(transform.rotation.x, transform.rotation.y, transform.rotation.z, transform.rotation.w),
 				JPH::EActivation::Activate
 			);
 
 			// Update physics properties
-			bodyInterface.SetFriction(bodyId, body.friction);
-			bodyInterface.SetRestitution(bodyId, body.restitution);
-			bodyInterface.SetGravityFactor(bodyId, body.use_gravity ? body.gravity_scale : 0.0F);
+			body_interface.SetFriction(body_id, body.friction);
+			body_interface.SetRestitution(body_id, body.restitution);
+			body_interface.SetGravityFactor(body_id, body.use_gravity ? body.gravity_scale : 0.0F);
 
 			// Update CCD
-			bodyInterface.SetMotionQuality(
-				bodyId,
+			body_interface.SetMotionQuality(
+				body_id,
 				body.enable_ccd ? JPH::EMotionQuality::LinearCast : JPH::EMotionQuality::Discrete
 			);
 		}
 		else {
 			// Create new body
-			JPH::BodyCreationSettings bodySettings(
-				joltShape,
+			JPH::BodyCreationSettings body_settings(
+				jolt_shape,
 				JPH::RVec3(transform.position.x, transform.position.y, transform.position.z),
 				JPH::Quat(transform.rotation.x, transform.rotation.y, transform.rotation.z, transform.rotation.w),
 				ToJoltMotionType(body.motion_type),
@@ -534,35 +534,35 @@ public:
 			);
 
 			// Set physics properties
-			bodySettings.mFriction = body.friction;
-			bodySettings.mRestitution = body.restitution;
-			bodySettings.mLinearDamping = body.linear_damping;
-			bodySettings.mAngularDamping = body.angular_damping;
-			bodySettings.mGravityFactor = body.use_gravity ? body.gravity_scale : 0.0F;
-			bodySettings.mAllowSleeping = true;
+			body_settings.mFriction = body.friction;
+			body_settings.mRestitution = body.restitution;
+			body_settings.mLinearDamping = body.linear_damping;
+			body_settings.mAngularDamping = body.angular_damping;
+			body_settings.mGravityFactor = body.use_gravity ? body.gravity_scale : 0.0F;
+			body_settings.mAllowSleeping = true;
 
 			if (body.motion_type == MotionType::Dynamic) {
-				bodySettings.mOverrideMassProperties = JPH::EOverrideMassProperties::CalculateInertia;
-				bodySettings.mMassPropertiesOverride.mMass = body.mass;
+				body_settings.mOverrideMassProperties = JPH::EOverrideMassProperties::CalculateInertia;
+				body_settings.mMassPropertiesOverride.mMass = body.mass;
 			}
 
 			// CCD settings
 			if (body.enable_ccd) {
-				bodySettings.mMotionQuality = JPH::EMotionQuality::LinearCast;
+				body_settings.mMotionQuality = JPH::EMotionQuality::LinearCast;
 			}
 
 			// Store entity ID in user data
-			bodySettings.mUserData = entity;
+			body_settings.mUserData = entity;
 
 			// Create body
-			JPH::BodyID bodyId = bodyInterface.CreateAndAddBody(bodySettings, JPH::EActivation::Activate);
+			JPH::BodyID const body_id = body_interface.CreateAndAddBody(body_settings, JPH::EActivation::Activate);
 
-			if (bodyId.IsInvalid()) {
+			if (body_id.IsInvalid()) {
 				spdlog::error("[JoltPhysics] Failed to create body for entity {}", entity);
 				return;
 			}
 
-			entity_to_body_[entity] = bodyId;
+			entity_to_body_[entity] = body_id;
 		}
 	}
 
@@ -571,19 +571,19 @@ public:
 
 		auto it = entity_to_body_.find(entity);
 		if (it != entity_to_body_.end()) {
-			auto& bodyInterface = physics_system_->GetBodyInterface();
+			auto& body_interface = physics_system_->GetBodyInterface();
 			JPH::RVec3 pos;
-			JPH::Quat rot;
-			bodyInterface.GetPositionAndRotation(it->second, pos, rot);
+			JPH::Quat rot{};
+			body_interface.GetPositionAndRotation(it->second, pos, rot);
 
 			result.position = glm::vec3(pos.GetX(), pos.GetY(), pos.GetZ());
 			result.rotation = glm::quat(rot.GetW(), rot.GetX(), rot.GetY(), rot.GetZ());
 
-			auto linearVel = bodyInterface.GetLinearVelocity(it->second);
-			result.linear_velocity = glm::vec3(linearVel.GetX(), linearVel.GetY(), linearVel.GetZ());
+			auto linear_vel = body_interface.GetLinearVelocity(it->second);
+			result.linear_velocity = glm::vec3(linear_vel.GetX(), linear_vel.GetY(), linear_vel.GetZ());
 
-			auto angularVel = bodyInterface.GetAngularVelocity(it->second);
-			result.angular_velocity = glm::vec3(angularVel.GetX(), angularVel.GetY(), angularVel.GetZ());
+			auto angular_vel = body_interface.GetAngularVelocity(it->second);
+			result.angular_velocity = glm::vec3(angular_vel.GetX(), angular_vel.GetY(), angular_vel.GetZ());
 		}
 
 		return result;
@@ -592,9 +592,9 @@ public:
 	void RemoveBody(EntityId entity) override {
 		auto it = entity_to_body_.find(entity);
 		if (it != entity_to_body_.end()) {
-			auto& bodyInterface = physics_system_->GetBodyInterface();
-			bodyInterface.RemoveBody(it->second);
-			bodyInterface.DestroyBody(it->second);
+			auto& body_interface = physics_system_->GetBodyInterface();
+			body_interface.RemoveBody(it->second);
+			body_interface.DestroyBody(it->second);
 			entity_to_body_.erase(it);
 		}
 	}
@@ -604,12 +604,12 @@ public:
 	void ApplyForce(EntityId entity, const glm::vec3& force, const glm::vec3& torque) override {
 		auto it = entity_to_body_.find(entity);
 		if (it != entity_to_body_.end()) {
-			auto& bodyInterface = physics_system_->GetBodyInterface();
+			auto& body_interface = physics_system_->GetBodyInterface();
 			if (glm::length(force) > 0.0F) {
-				bodyInterface.AddForce(it->second, JPH::Vec3(force.x, force.y, force.z));
+				body_interface.AddForce(it->second, JPH::Vec3(force.x, force.y, force.z));
 			}
 			if (glm::length(torque) > 0.0F) {
-				bodyInterface.AddTorque(it->second, JPH::Vec3(torque.x, torque.y, torque.z));
+				body_interface.AddTorque(it->second, JPH::Vec3(torque.x, torque.y, torque.z));
 			}
 		}
 	}
@@ -617,10 +617,10 @@ public:
 	void ApplyImpulse(EntityId entity, const glm::vec3& impulse, const glm::vec3& point) override {
 		auto it = entity_to_body_.find(entity);
 		if (it != entity_to_body_.end()) {
-			auto& bodyInterface = physics_system_->GetBodyInterface();
+			auto& body_interface = physics_system_->GetBodyInterface();
 			if (glm::length(point) > 0.0F) {
 				// Apply at specific point
-				bodyInterface.AddImpulse(
+				body_interface.AddImpulse(
 					it->second,
 					JPH::Vec3(impulse.x, impulse.y, impulse.z),
 					JPH::RVec3(point.x, point.y, point.z)
@@ -628,7 +628,7 @@ public:
 			}
 			else {
 				// Apply at center of mass
-				bodyInterface.AddImpulse(it->second, JPH::Vec3(impulse.x, impulse.y, impulse.z));
+				body_interface.AddImpulse(it->second, JPH::Vec3(impulse.x, impulse.y, impulse.z));
 			}
 		}
 	}
@@ -645,7 +645,7 @@ public:
 			return std::nullopt;
 		}
 
-		JPH::RRayCast joltRay(
+		JPH::RRayCast const jolt_ray(
 			JPH::RVec3(ray.origin.x, ray.origin.y, ray.origin.z),
 			JPH::Vec3(
 				ray.direction.x * ray.max_distance,
@@ -654,10 +654,10 @@ public:
 			)
 		);
 
-		if (JPH::RayCastResult hit; physics_system_->GetNarrowPhaseQuery().CastRay(joltRay, hit)) {
+		if (JPH::RayCastResult hit; physics_system_->GetNarrowPhaseQuery().CastRay(jolt_ray, hit)) {
 			RaycastResult result;
-			const auto hitPoint = joltRay.GetPointOnRay(hit.mFraction);
-			result.hit_point = glm::vec3(hitPoint.GetX(), hitPoint.GetY(), hitPoint.GetZ());
+			const auto hit_point = jolt_ray.GetPointOnRay(hit.mFraction);
+			result.hit_point = glm::vec3(hit_point.GetX(), hit_point.GetY(), hit_point.GetZ());
 			result.distance = hit.mFraction * ray.max_distance;
 
 			// Get entity from body
@@ -703,26 +703,36 @@ public:
 
 			void DrawLine(JPH::RVec3Arg from, JPH::RVec3Arg to, JPH::ColorArg c) override {
 				target_.DrawLine(
-					{float(from.GetX()), float(from.GetY()), float(from.GetZ())},
-					{float(to.GetX()), float(to.GetY()), float(to.GetZ())},
+					{from.GetX(), from.GetY(), from.GetZ()},
+					{to.GetX(), to.GetY(), to.GetZ()},
 					{c.r / 255.0F, c.g / 255.0F, c.b / 255.0F}
 				);
 			}
 
-			void
-			DrawTriangle(JPH::RVec3Arg v1, JPH::RVec3Arg v2, JPH::RVec3Arg v3, JPH::ColorArg c, ECastShadow) override {
+			void DrawTriangle(
+				JPH::RVec3Arg v1,
+				JPH::RVec3Arg v2,
+				JPH::RVec3Arg v3,
+				JPH::ColorArg c,
+				ECastShadow /*inCastShadow*/
+			) override {
 				const glm::vec3 color{c.r / 255.0F, c.g / 255.0F, c.b / 255.0F};
 				target_.DrawTriangle(
-					{float(v1.GetX()), float(v1.GetY()), float(v1.GetZ())},
-					{float(v2.GetX()), float(v2.GetY()), float(v2.GetZ())},
-					{float(v3.GetX()), float(v3.GetY()), float(v3.GetZ())},
+					{v1.GetX(), v1.GetY(), v1.GetZ()},
+					{v2.GetX(), v2.GetY(), v2.GetZ()},
+					{v3.GetX(), v3.GetY(), v3.GetZ()},
 					color,
 					c.a / 255.0F
 				);
 			}
 
-			void DrawText3D(JPH::RVec3Arg pos, const std::string_view& text, JPH::ColorArg, float) override {
-				target_.DrawText({float(pos.GetX()), float(pos.GetY()), float(pos.GetZ())}, std::string(text));
+			void DrawText3D(
+				JPH::RVec3Arg pos,
+				const std::string_view& text,
+				JPH::ColorArg /*inColor*/,
+				float /*inHeight*/
+			) override {
+				target_.DrawText({pos.GetX(), pos.GetY(), pos.GetZ()}, std::string(text));
 			}
 
 		private:

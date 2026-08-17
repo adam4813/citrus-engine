@@ -111,7 +111,7 @@ public:
 	RegionHandle
 	RegisterRegion(const Rectangle& bounds, EventHandler handler, int priority = 0, void* user_data = nullptr) {
 		// Generate unique ID
-		RegionHandle handle = next_id_++;
+		RegionHandle const handle = next_id_++;
 
 		// Create region with stable ID
 		EventRegion region{handle, bounds, std::move(handler), priority, user_data};
@@ -216,7 +216,7 @@ public:
 		}
 
 		// Dispatch to regions in priority order
-		for (size_t handle : sorted_handles_) {
+		for (size_t const handle : sorted_handles_) {
 			auto it = regions_.find(handle);
 			if (it == regions_.end()) {
 				continue; // Region was removed
@@ -251,13 +251,13 @@ public:
 	/**
 	 * @brief Get number of registered regions
 	 */
-	size_t GetRegionCount() const { return regions_.size(); }
+	[[nodiscard]] size_t GetRegionCount() const { return regions_.size(); }
 
 	/**
 	 * @brief Get region by handle (for inspection/debugging)
 	 * @return Pointer to region, or nullptr if handle is invalid
 	 */
-	const EventRegion* GetRegion(RegionHandle handle) const {
+	[[nodiscard]] const EventRegion* GetRegion(RegionHandle handle) const {
 		auto it = regions_.find(handle);
 		if (it != regions_.end()) {
 			return &it->second;
@@ -279,7 +279,7 @@ private:
 		}
 
 		// Sort by priority (descending)
-		std::sort(sorted_handles_.begin(), sorted_handles_.end(), [this](RegionHandle a, RegionHandle b) {
+		std::ranges::sort(sorted_handles_, [this](RegionHandle a, RegionHandle b) {
 			const auto& region_a = regions_.at(a);
 			const auto& region_b = regions_.at(b);
 			return region_a.priority > region_b.priority; // Descending

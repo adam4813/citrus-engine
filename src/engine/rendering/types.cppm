@@ -86,18 +86,18 @@ struct SpriteRenderCommand {
 constexpr size_t UI_BATCH_MAX_TEXTURE_SLOTS = 8;
 
 struct UIBatchRenderCommand {
-	ShaderId shader;
-	Mat4 projection;
-	uint32_t vao;
-	uint32_t vbo;
-	uint32_t ebo;
-	const void* vertex_data;
-	size_t vertex_data_size;
-	const void* index_data;
-	size_t index_data_size;
-	size_t index_count;
-	const uint32_t* texture_ids;
-	size_t texture_count;
+	ShaderId shader{};
+	Mat4 projection{};
+	uint32_t vao{};
+	uint32_t vbo{};
+	uint32_t ebo{};
+	const void* vertex_data{};
+	size_t vertex_data_size{};
+	const void* index_data{};
+	size_t index_data_size{};
+	size_t index_count{};
+	const uint32_t* texture_ids{};
+	size_t texture_count{};
 	bool enable_scissor = false;
 	int scissor_x = 0;
 	int scissor_y = 0;

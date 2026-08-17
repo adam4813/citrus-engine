@@ -50,9 +50,9 @@ void ECSWorld::SetupTransformSystem() const {
 			const glm::vec3 col2(world_matrix[2]);
 			world_transform.scale = glm::vec3(glm::length(col0), glm::length(col1), glm::length(col2));
 
-			if (constexpr float kEpsilon = 1e-6F; world_transform.scale.x > kEpsilon
-												  && world_transform.scale.y > kEpsilon
-												  && world_transform.scale.z > kEpsilon) {
+			if (constexpr float k_epsilon = 1e-6F; world_transform.scale.x > k_epsilon
+												  && world_transform.scale.y > k_epsilon
+												  && world_transform.scale.z > k_epsilon) {
 				const glm::mat3 rot_mat(
 					col0 / world_transform.scale.x,
 					col1 / world_transform.scale.y,

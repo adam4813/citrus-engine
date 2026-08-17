@@ -9,6 +9,7 @@ module;
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 module engine.scene;
@@ -45,7 +46,7 @@ struct Scene::Impl {
 	UpdateCallback update_callback;
 	RenderCallback render_callback;
 
-	Impl(const std::string& scene_name, ecs::ECSWorld& world) : name(scene_name), ecs_world(world) {
+	Impl(std::string  scene_name, ecs::ECSWorld& world) : name(std::move(scene_name)), ecs_world(world) {
 		static SceneId next_scene_id = 1;
 		id = next_scene_id++;
 
@@ -277,7 +278,7 @@ const Scene& SceneManager::GetScene(const SceneId scene_id) const {
 	if (it != pimpl_->scenes.end()) {
 		return *it->second;
 	}
-	static auto invalid_scene = std::make_unique<Scene>("Invalid", const_cast<ecs::ECSWorld&>(pimpl_->ecs_world));
+	static auto invalid_scene = std::make_unique<Scene>("Invalid", pimpl_->ecs_world);
 	return *invalid_scene;
 }
 
@@ -339,7 +340,7 @@ void SceneManager::ActivateScene(const SceneId scene_id) const { SetActiveScene(
 
 void SceneManager::DeactivateScene(const SceneId scene_id) {
 	if (pimpl_->active_scene == scene_id) {
-		if (const auto scene = TryGetScene(scene_id)) {
+		if (auto *const scene = TryGetScene(scene_id)) {
 			scene->Shutdown(); // Call shutdown callback
 			scene->SetActive(false);
 		}
@@ -351,7 +352,7 @@ void SceneManager::ActivateAdditionalScene(const SceneId scene_id) {
 	const auto it = std::ranges::find(pimpl_->additional_active_scenes, scene_id);
 	if (it == pimpl_->additional_active_scenes.end()) {
 		pimpl_->additional_active_scenes.push_back(scene_id);
-		if (const auto scene = TryGetScene(scene_id)) {
+		if (auto *const scene = TryGetScene(scene_id)) {
 			scene->SetActive(true);
 			scene->Initialize(); // Call initialize callback
 		}
@@ -362,23 +363,23 @@ void SceneManager::DeactivateAdditionalScene(const SceneId scene_id) {
 	const auto it = std::ranges::find(pimpl_->additional_active_scenes, scene_id);
 	if (it != pimpl_->additional_active_scenes.end()) {
 		pimpl_->additional_active_scenes.erase(it);
-		if (const auto scene = TryGetScene(scene_id)) {
+		if (auto *const scene = TryGetScene(scene_id)) {
 			scene->Shutdown(); // Call shutdown callback
 			scene->SetActive(false);
 		}
 	}
 }
 
-void SceneManager::TransitionToScene(const SceneId new_scene, float transition_time) const {
+void SceneManager::TransitionToScene(const SceneId new_scene, float  /*transition_time*/) const {
 	// TODO: Implement scene transition with timing
 	SetActiveScene(new_scene);
 }
 
-bool SceneManager::IsTransitioning() const {
+bool SceneManager::IsTransitioning() {
 	return false; // TODO: Implement transition state tracking
 }
 
-float SceneManager::GetTransitionProgress() const {
+float SceneManager::GetTransitionProgress() {
 	return 1.0F; // TODO: Return actual transition progress
 }
 
@@ -419,7 +420,7 @@ SceneManager::QuerySphere(const Vec3& center, const float radius, const uint32_t
 
 void SceneManager::Update(const float delta_time) {
 	for (const SceneId scene_id : GetActiveScenes()) {
-		if (const auto scene = TryGetScene(scene_id)) {
+		if (auto *const scene = TryGetScene(scene_id)) {
 			scene->Update(delta_time);
 		}
 	}
@@ -427,7 +428,7 @@ void SceneManager::Update(const float delta_time) {
 
 void SceneManager::Render() {
 	for (const SceneId scene_id : GetActiveScenes()) {
-		if (const auto scene = TryGetScene(scene_id)) {
+		if (auto *const scene = TryGetScene(scene_id)) {
 			scene->Render();
 		}
 	}

@@ -73,7 +73,7 @@ public:
 	 * @param color Divider line color
 	 */
 	void SetColor(const batch_renderer::Color& color) { color_ = color; }
-	batch_renderer::Color GetColor() const { return color_; }
+	[[nodiscard]] batch_renderer::Color GetColor() const { return color_; }
 
 	/**
 	 * @brief Set line thickness
@@ -89,7 +89,7 @@ public:
 			width_ = thickness_;
 		}
 	}
-	float GetThickness() const { return thickness_; }
+	[[nodiscard]] float GetThickness() const { return thickness_; }
 
 	/**
 	 * @brief Set orientation
@@ -107,7 +107,7 @@ public:
 			height_ = 0.0F; // Will be stretched by layout
 		}
 	}
-	Orientation GetOrientation() const { return orientation_; }
+	[[nodiscard]] Orientation GetOrientation() const { return orientation_; }
 
 	// === Rendering ===
 

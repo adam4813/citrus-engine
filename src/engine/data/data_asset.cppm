@@ -40,7 +40,7 @@ struct DataAsset {
 	void SetProperty(const std::string& name, DataValue value) { properties[name] = std::move(value); }
 
 	/// Check if a property exists
-	[[nodiscard]] bool HasProperty(const std::string& name) const { return properties.find(name) != properties.end(); }
+	[[nodiscard]] bool HasProperty(const std::string& name) const { return properties.contains(name); }
 
 	/// Remove a property
 	void RemoveProperty(const std::string& name) { properties.erase(name); }

@@ -104,27 +104,27 @@ public:
 	 * @param event Current mouse state
 	 * @return true if event was handled (stops propagation)
 	 */
-	virtual bool OnHover(const MouseEvent& event) { return false; }
+	virtual bool OnHover(const MouseEvent&  /*event*/) { return false; }
 
 	/**
 	 * @brief Called when mouse button is clicked within element bounds
 	 * @param event Current mouse state
 	 * @return true if event was handled (stops propagation)
 	 */
-	virtual bool OnClick(const MouseEvent& event) { return false; }
+	virtual bool OnClick(const MouseEvent&  /*event*/) { return false; }
 
 	/**
 	 * @brief Called when mouse is dragged (button held and moving)
 	 * @param event Current mouse state
 	 * @return true if event was handled (stops propagation)
 	 */
-	virtual bool OnDrag(const MouseEvent& event) { return false; }
+	virtual bool OnDrag(const MouseEvent&  /*event*/) { return false; }
 
 	/**
 	 * @brief Called when scroll wheel is used within element bounds
 	 * @param event Current mouse state (includes scroll_delta)
 	 * @return true if event was handled (stops propagation)
 	 */
-	virtual bool OnScroll(const MouseEvent& event) { return false; }
+	virtual bool OnScroll(const MouseEvent&  /*event*/) { return false; }
 };
 } // namespace engine::ui

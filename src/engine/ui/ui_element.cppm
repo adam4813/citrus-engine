@@ -80,7 +80,7 @@ public:
 	/**
 	 * @brief Get the owning element
 	 */
-	UIElement* GetOwner() const { return owner_; }
+	[[nodiscard]] UIElement* GetOwner() const { return owner_; }
 
 protected:
 	UIElement* owner_ = nullptr;
@@ -134,7 +134,7 @@ public:
 	 * @brief Check if element has a component of type T
 	 */
 	template<typename T>
-	bool Has() const {
+	[[nodiscard]] bool Has() const {
 		return Get<T>() != nullptr;
 	}
 
@@ -209,12 +209,12 @@ public:
 	/**
 	 * @brief Check if container is empty
 	 */
-	bool Empty() const { return components_.empty(); }
+	[[nodiscard]] bool Empty() const { return components_.empty(); }
 
 	/**
 	 * @brief Get number of components
 	 */
-	size_t Size() const { return components_.size(); }
+	[[nodiscard]] size_t Size() const { return components_.size(); }
 
 private:
 	std::unordered_map<ComponentTypeId, std::unique_ptr<IUIComponent>> components_;
@@ -331,13 +331,13 @@ public:
 	 * @brief Get parent element
 	 * @return Pointer to parent, or nullptr if root element
 	 */
-	UIElement* GetParent() const { return parent_; }
+	[[nodiscard]] UIElement* GetParent() const { return parent_; }
 
 	/**
 	 * @brief Get all children
 	 * @return Reference to children vector (read-only)
 	 */
-	const std::vector<std::unique_ptr<UIElement>>& GetChildren() const { return children_; }
+	[[nodiscard]] const std::vector<std::unique_ptr<UIElement>>& GetChildren() const { return children_; }
 
 	// === Bounds Calculation ===
 
@@ -357,13 +357,13 @@ public:
 	 *
 	 * @see UI_DEVELOPMENT_BIBLE.md §9 for coordinate system details
 	 */
-	batch_renderer::Rectangle GetAbsoluteBounds() const;
+	[[nodiscard]] batch_renderer::Rectangle GetAbsoluteBounds() const;
 
 	/**
 	 * @brief Get relative bounds (position relative to parent)
 	 * @return Rectangle with relative position and size
 	 */
-	batch_renderer::Rectangle GetRelativeBounds() const { return {relative_x_, relative_y_, width_, height_}; }
+	[[nodiscard]] batch_renderer::Rectangle GetRelativeBounds() const { return {relative_x_, relative_y_, width_, height_}; }
 
 	/**
 	 * @brief Get the content area where children are placed
@@ -375,7 +375,7 @@ public:
 	 *         from the element's origin to the start of the content area; children are positioned
 	 *         relative to this area.
 	 */
-	virtual batch_renderer::Rectangle GetContentArea() const { return {0.0F, 0.0F, width_, height_}; }
+	[[nodiscard]] virtual batch_renderer::Rectangle GetContentArea() const { return {0.0F, 0.0F, width_, height_}; }
 
 	/**
 	 * @brief Set relative position (within parent)
@@ -413,25 +413,25 @@ public:
 	 * @brief Get element width
 	 * @return Width in pixels
 	 */
-	float GetWidth() const { return width_; }
+	[[nodiscard]] float GetWidth() const { return width_; }
 
 	/**
 	 * @brief Get element height
 	 * @return Height in pixels
 	 */
-	float GetHeight() const { return height_; }
+	[[nodiscard]] float GetHeight() const { return height_; }
 
 	/**
 	 * @brief Get relative X position
 	 * @return X coordinate relative to parent
 	 */
-	float GetRelativeX() const { return relative_x_; }
+	[[nodiscard]] float GetRelativeX() const { return relative_x_; }
 
 	/**
 	 * @brief Get relative Y position
 	 * @return Y coordinate relative to parent
 	 */
-	float GetRelativeY() const { return relative_y_; }
+	[[nodiscard]] float GetRelativeY() const { return relative_y_; }
 
 	/**
 	 * @brief Set relative X position
@@ -462,7 +462,7 @@ public:
 	 * }
 	 * @endcode
 	 */
-	bool Contains(float x, float y) const;
+	[[nodiscard]] bool Contains(float x, float y) const;
 
 	// === State Management ===
 
@@ -476,7 +476,7 @@ public:
 	 * @brief Check if element is focused
 	 * @return true if focused, false otherwise
 	 */
-	bool IsFocused() const { return is_focused_; }
+	[[nodiscard]] bool IsFocused() const { return is_focused_; }
 
 	/**
 	 * @brief Set hovered state
@@ -488,7 +488,7 @@ public:
 	 * @brief Check if element is hovered
 	 * @return true if hovered, false otherwise
 	 */
-	bool IsHovered() const { return is_hovered_; }
+	[[nodiscard]] bool IsHovered() const { return is_hovered_; }
 
 	/**
 	 * @brief Set visibility
@@ -500,7 +500,7 @@ public:
 	 * @brief Check if element is visible
 	 * @return true if visible, false otherwise
 	 */
-	bool IsVisible() const { return is_visible_; }
+	[[nodiscard]] bool IsVisible() const { return is_visible_; }
 
 	// === Event Callbacks (Observer Pattern) ===
 
@@ -741,7 +741,7 @@ public:
 	 *
 	 * @return Offset (x, y) to subtract from children's positions
 	 */
-	virtual std::pair<float, float> GetContentOffset() const { return {0.0F, 0.0F}; }
+	[[nodiscard]] virtual std::pair<float, float> GetContentOffset() const { return {0.0F, 0.0F}; }
 
 	// === Component Management ===
 
@@ -775,7 +775,7 @@ public:
 	 * @brief Check if element has a component of type T
 	 */
 	template<typename T>
-	bool HasComponent() const {
+	[[nodiscard]] bool HasComponent() const {
 		return components_.Has<T>();
 	}
 
@@ -868,7 +868,7 @@ protected:
 	 *
 	 * @return Rectangle in absolute screen coordinates representing parent content area
 	 */
-	batch_renderer::Rectangle GetAbsoluteParentBounds() const;
+	[[nodiscard]] batch_renderer::Rectangle GetAbsoluteParentBounds() const;
 
 	// Position relative to parent
 	float relative_x_ = 0.0F;

@@ -23,7 +23,7 @@ struct ScriptValue {
 	}
 
 	template<typename T>
-	bool Is() const {
+	[[nodiscard]] bool Is() const {
 		return value.type() == typeid(T);
 	}
 };

@@ -142,7 +142,7 @@ void TilemapRenderer::BuildLayerBatch(
 
 		// Calculate world position for this cell
 		glm::vec2 world_pos = grid_offset + glm::vec2(grid_x * tile_size.x, grid_y * tile_size.y);
-		float z = layer_index * z_step;
+		float const z = layer_index * z_step;
 
 		// Render all tiles in this cell (for layering within the cell)
 		for (const uint32_t tile_id : cell.tile_ids) {
@@ -169,7 +169,7 @@ void TilemapRenderer::AddTileToBatch(
 	TileBatch& batch,
 	const float z
 ) {
-	const uint32_t vertex_offset = static_cast<uint32_t>(batch.vertices.size());
+	const auto vertex_offset = static_cast<uint32_t>(batch.vertices.size());
 
 	// Create quad vertices
 	const float half_width = tile_size.x * 0.5F;
@@ -177,24 +177,30 @@ void TilemapRenderer::AddTileToBatch(
 
 	// Bottom-left
 	batch.vertices.push_back(
-		{{world_pos.x - half_width, world_pos.y - half_height, z}, {tex_coords.x, tex_coords.y + tex_coords.w}, opacity}
+		{.position = {world_pos.x - half_width, world_pos.y - half_height, z},
+		 .tex_coords = {tex_coords.x, tex_coords.y + tex_coords.w},
+		 .opacity = opacity}
 	);
 
 	// Bottom-right
 	batch.vertices.push_back(
-		{{world_pos.x + half_width, world_pos.y - half_height, z},
-		 {tex_coords.x + tex_coords.z, tex_coords.y + tex_coords.w},
-		 opacity}
+		{.position = {world_pos.x + half_width, world_pos.y - half_height, z},
+		 .tex_coords = {tex_coords.x + tex_coords.z, tex_coords.y + tex_coords.w},
+		 .opacity = opacity}
 	);
 
 	// Top-right
 	batch.vertices.push_back(
-		{{world_pos.x + half_width, world_pos.y + half_height, z}, {tex_coords.x + tex_coords.z, tex_coords.y}, opacity}
+		{.position = {world_pos.x + half_width, world_pos.y + half_height, z},
+		 .tex_coords = {tex_coords.x + tex_coords.z, tex_coords.y},
+		 .opacity = opacity}
 	);
 
 	// Top-left
 	batch.vertices.push_back(
-		{{world_pos.x - half_width, world_pos.y + half_height, z}, {tex_coords.x, tex_coords.y}, opacity}
+		{.position = {world_pos.x - half_width, world_pos.y + half_height, z},
+		 .tex_coords = {tex_coords.x, tex_coords.y},
+		 .opacity = opacity}
 	);
 
 	// Create quad indices (two triangles)
@@ -232,7 +238,7 @@ void TilemapRenderer::RenderBatch(const TileBatch& batch, const glm::mat4& mvp_m
 	glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, batch.indices.size() * sizeof(uint32_t), batch.indices.data());
 
 	// Draw
-	glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(batch.indices.size()), GL_UNSIGNED_INT, 0);
+	glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(batch.indices.size()), GL_UNSIGNED_INT, nullptr);
 
 	// Update stats
 	stats_.draw_calls++;

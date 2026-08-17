@@ -16,12 +16,11 @@ namespace engine::animation {
 // === ANIMATION TRACK IMPLEMENTATION ===
 
 void AnimationTrack::AddKeyframe(float time, AnimatedValue value) {
-	Keyframe kf{time, std::move(value)};
+	Keyframe const kf{time, value};
 
 	// Insert in sorted order by time
-	auto it = std::lower_bound(keyframes.begin(), keyframes.end(), kf, [](const Keyframe& a, const Keyframe& b) {
-		return a.time < b.time;
-	});
+	auto it =
+		std::ranges::lower_bound(keyframes, kf, [](const Keyframe& a, const Keyframe& b) { return a.time < b.time; });
 
 	keyframes.insert(it, kf);
 }
@@ -122,9 +121,7 @@ AnimatedValue AnimationTrack::Evaluate(float time) const {
 				// TODO: Implement proper cubic interpolation per type
 				return InterpolateValues(p1, p2, t, InterpolationMode::Linear);
 			}
-			else {
-				return InterpolateValues(kf1.value, kf2.value, t, interpolation);
-			}
+			return InterpolateValues(kf1.value, kf2.value, t, interpolation);
 		}
 	}
 
@@ -170,9 +167,7 @@ void AnimationClip::UpdateDuration() {
 	duration = 0.0F;
 	for (const auto& track : tracks) {
 		const float track_duration = track.GetDuration();
-		if (track_duration > duration) {
-			duration = track_duration;
-		}
+		duration = std::max(track_duration, duration);
 	}
 }
 

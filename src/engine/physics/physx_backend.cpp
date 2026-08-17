@@ -38,10 +38,10 @@ private:
 		bool use_gravity{true};
 		float gravity_scale{1.0F};
 	};
-	std::unordered_map<EntityId, RigidBodyData> rigid_bodies_{};
+	std::unordered_map<EntityId, RigidBodyData> rigid_bodies_;
 
 	// Collision events storage
-	std::vector<CollisionInfo> collision_events_{};
+	std::vector<CollisionInfo> collision_events_;
 
 public:
 	// === Lifecycle ===

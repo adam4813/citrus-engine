@@ -99,7 +99,7 @@ public:
 	}
 
 	/// Check if a schema exists
-	[[nodiscard]] bool HasSchema(const std::string& name) const { return schemas_.find(name) != schemas_.end(); }
+	[[nodiscard]] bool HasSchema(const std::string& name) const { return schemas_.contains(name); }
 
 	/// Unregister a schema
 	bool UnregisterSchema(const std::string& name) {

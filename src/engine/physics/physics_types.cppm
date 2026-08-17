@@ -90,13 +90,13 @@ struct ShapeConfig {
 	float cylinder_height{1.0F};
 
 	// Convex hull / mesh vertices (for ConvexHull and Mesh types)
-	std::vector<glm::vec3> vertices{};
-	std::vector<std::uint32_t> indices{}; // For mesh type
+	std::vector<glm::vec3> vertices;
+	std::vector<std::uint32_t> indices; // For mesh type
 
 	// Compound shape children (for Compound type)
-	std::vector<ShapeConfig> children{};
-	std::vector<glm::vec3> child_positions{};
-	std::vector<glm::quat> child_rotations{};
+	std::vector<ShapeConfig> children;
+	std::vector<glm::vec3> child_positions;
+	std::vector<glm::quat> child_rotations;
 
 	// Local offset from entity center
 	glm::vec3 offset{0.0F, 0.0F, 0.0F};
@@ -197,7 +197,7 @@ struct ContactPoint {
 struct CollisionInfo {
 	EntityId entity_a{0};
 	EntityId entity_b{0};
-	std::vector<ContactPoint> contacts{};
+	std::vector<ContactPoint> contacts;
 	glm::vec3 impulse{0.0F, 0.0F, 0.0F}; // Total collision impulse
 	float separation_velocity{0.0F};
 

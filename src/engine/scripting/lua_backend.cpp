@@ -113,7 +113,7 @@ private:
 		}
 
 		// Call the C++ function
-		ScriptValue result = (*func)(args);
+		ScriptValue const result = (*func)(args);
 
 		// Push result onto Lua stack
 		if (result.Is<int>()) {

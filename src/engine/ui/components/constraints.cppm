@@ -74,28 +74,28 @@ public:
 	 * @param distance Distance in pixels (nullopt to clear)
 	 */
 	void SetLeft(std::optional<float> distance) { left_ = distance; }
-	std::optional<float> GetLeft() const { return left_; }
+	[[nodiscard]] std::optional<float> GetLeft() const { return left_; }
 
 	/**
 	 * @brief Set right edge distance (from parent right)
 	 * @param distance Distance in pixels (nullopt to clear)
 	 */
 	void SetRight(std::optional<float> distance) { right_ = distance; }
-	std::optional<float> GetRight() const { return right_; }
+	[[nodiscard]] std::optional<float> GetRight() const { return right_; }
 
 	/**
 	 * @brief Set top edge distance (from parent top)
 	 * @param distance Distance in pixels (nullopt to clear)
 	 */
 	void SetTop(std::optional<float> distance) { top_ = distance; }
-	std::optional<float> GetTop() const { return top_; }
+	[[nodiscard]] std::optional<float> GetTop() const { return top_; }
 
 	/**
 	 * @brief Set bottom edge distance (from parent bottom)
 	 * @param distance Distance in pixels (nullopt to clear)
 	 */
 	void SetBottom(std::optional<float> distance) { bottom_ = distance; }
-	std::optional<float> GetBottom() const { return bottom_; }
+	[[nodiscard]] std::optional<float> GetBottom() const { return bottom_; }
 
 	/**
 	 * @brief Apply anchor constraints to an element
@@ -157,7 +157,7 @@ public:
 	/**
 	 * @brief Check if any anchor is set
 	 */
-	bool HasAnchor() const {
+	[[nodiscard]] bool HasAnchor() const {
 		return left_.has_value() || right_.has_value() || top_.has_value() || bottom_.has_value();
 	}
 
@@ -249,7 +249,7 @@ public:
 	 * @brief Get all anchor values for inspection/serialization
 	 * @return Tuple of (left, right, top, bottom) optional values
 	 */
-	auto GetValues() const { return std::make_tuple(left_, right_, top_, bottom_); }
+	[[nodiscard]] auto GetValues() const { return std::make_tuple(left_, right_, top_, bottom_); }
 
 private:
 	std::optional<float> left_;
@@ -317,7 +317,7 @@ public:
 	 * @param content_size Element's current/content size
 	 * @return Calculated size in pixels
 	 */
-	float Calculate(float parent_size, float content_size) const {
+	[[nodiscard]] float Calculate(float parent_size, float content_size) const {
 		float result = content_size;
 
 		switch (mode_) {
@@ -339,7 +339,7 @@ public:
 		return std::max(0.0F, result);
 	}
 
-	SizeMode GetMode() const { return mode_; }
+	[[nodiscard]] SizeMode GetMode() const { return mode_; }
 
 	void SetMinSize(std::optional<float> min) { min_size_ = min; }
 	void SetMaxSize(std::optional<float> max) { max_size_ = max; }
@@ -436,7 +436,7 @@ public:
 	/**
 	 * @brief Get current anchor
 	 */
-	const Anchor& GetAnchor() const { return anchor_; }
+	[[nodiscard]] const Anchor& GetAnchor() const { return anchor_; }
 
 	/**
 	 * @brief Set size constraints
@@ -449,7 +449,7 @@ public:
 	/**
 	 * @brief Get current size constraints
 	 */
-	const SizeConstraints& GetSizeConstraints() const { return size_; }
+	[[nodiscard]] const SizeConstraints& GetSizeConstraints() const { return size_; }
 
 	/**
 	 * @brief Mark constraints as needing recalculation

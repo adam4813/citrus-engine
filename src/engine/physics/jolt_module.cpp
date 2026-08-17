@@ -1,5 +1,6 @@
 module;
 
+#include <algorithm>
 #include <cstdint>
 #include <flecs.h>
 #include <memory>
@@ -122,9 +123,7 @@ JoltPhysicsModule::JoltPhysicsModule(const flecs::world& world) {
 		}
 
 		// Clamp to prevent spiral of death
-		if (accumulated_time > cfg.fixed_timestep * cfg.max_substeps) {
-			accumulated_time = cfg.fixed_timestep * cfg.max_substeps;
-		}
+		accumulated_time = std::min(accumulated_time, cfg.fixed_timestep * cfg.max_substeps);
 	});
 
 	// System: Sync results from backend back to ECS components

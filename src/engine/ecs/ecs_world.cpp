@@ -23,7 +23,7 @@ namespace engine::ecs {
 // === ECSWORLD IMPLEMENTATION ===
 
 // Register GLM types with flecs reflection system for JSON serialization
-void RegisterGlmTypes(const flecs::world& world) {
+static void RegisterGlmTypes(const flecs::world& world) {
 	// Register glm::vec2 as a flecs struct type
 	world.component<glm::vec2>().member<float>("x").member<float>("y");
 
@@ -225,7 +225,7 @@ ECSWorld::ECSWorld() {
 				s->member("position");
 				s->value(data->position);
 				s->member("state");
-				int state_val = static_cast<int>(data->state);
+				int const state_val = static_cast<int>(data->state);
 				s->value(state_val);
 				return 0;
 			})
@@ -322,7 +322,7 @@ ECSWorld::ECSWorld() {
 	registry.Register<physics::IsSleeping>("IsSleeping", world_).Category("Physics").Build();
 
 	// Initialize asset registry: registers ref components and sets up observers
-	assets::AssetTypeRegistry::Instance().Initialize(world_);
+	assets::AssetTypeRegistry::Initialize(world_);
 
 	// Register built-in mesh primitives (quad, cube, sphere)
 	assets::MeshAssetInfo::RegisterBuiltins();

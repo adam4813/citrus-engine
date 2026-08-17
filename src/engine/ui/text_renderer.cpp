@@ -1,6 +1,7 @@
 module;
 
 #include <algorithm>
+#include <cstddef>
 #include <cstdint>
 #include <cstring>
 #include <fstream>
@@ -56,7 +57,9 @@ FontAtlas::FontAtlas(const std::string& font_path, int font_size_px) : font_size
 	const float scale = stbtt_ScaleForPixelHeight(&font_info, static_cast<float>(font_size_px));
 
 	// Get font vertical metrics
-	int ascent, descent, line_gap;
+	int ascent;
+	int descent;
+	int line_gap;
 	stbtt_GetFontVMetrics(&font_info, &ascent, &descent, &line_gap);
 	ascent_ = static_cast<float>(ascent) * scale;
 	descent_ = static_cast<float>(descent) * scale;
@@ -64,9 +67,9 @@ FontAtlas::FontAtlas(const std::string& font_path, int font_size_px) : font_size
 
 	atlas_width_ = 512;
 	atlas_height_ = 512;
-	std::vector<uint8_t> atlas_bitmap(atlas_width_ * atlas_height_, 0);
+	std::vector<uint8_t> atlas_bitmap(static_cast<size_t>(atlas_width_ * atlas_height_), 0);
 
-	PackedCharData packed_data;
+	PackedCharData packed_data{};
 	stbtt_pack_context pack_context;
 
 	if (!stbtt_PackBegin(&pack_context, atlas_bitmap.data(), atlas_width_, atlas_height_, 0, 1, nullptr)) {
@@ -94,10 +97,10 @@ FontAtlas::FontAtlas(const std::string& font_path, int font_size_px) : font_size
 		const stbtt_packedchar& pc = packed_data.packed_chars[i];
 
 		// Normalize pixel coordinates to [0,1] range
-		float uv_x = pc.x0 / static_cast<float>(atlas_width_);
-		float uv_y = pc.y0 / static_cast<float>(atlas_height_);
-		float uv_w = (pc.x1 - pc.x0) / static_cast<float>(atlas_width_);
-		float uv_h = (pc.y1 - pc.y0) / static_cast<float>(atlas_height_);
+		float const uv_x = pc.x0 / static_cast<float>(atlas_width_);
+		float const uv_y = pc.y0 / static_cast<float>(atlas_height_);
+		float const uv_w = (pc.x1 - pc.x0) / static_cast<float>(atlas_width_);
+		float const uv_h = (pc.y1 - pc.y0) / static_cast<float>(atlas_height_);
 
 		GlyphMetrics metrics;
 		metrics.atlas_rect = batch_renderer::Rectangle(uv_x, uv_y, uv_w, uv_h);
@@ -115,7 +118,7 @@ FontAtlas::FontAtlas(const std::string& font_path, int font_size_px) : font_size
 	// Convert grayscale to RGBA (white RGB, grayscale in alpha channel)
 	std::vector<uint8_t> rgba_bitmap;
 	rgba_bitmap.reserve(atlas_bitmap.size() * 4);
-	for (uint8_t gray : atlas_bitmap) {
+	for (uint8_t const gray : atlas_bitmap) {
 		rgba_bitmap.push_back(255);  // R
 		rgba_bitmap.push_back(255);  // G
 		rgba_bitmap.push_back(255);  // B
@@ -163,7 +166,7 @@ std::vector<uint32_t> Decode(const std::string& utf8_string) {
 	for (size_t i = 0; i < utf8_string.size();) {
 		uint32_t codepoint = 0;
 		bool valid = false;
-		const uint8_t byte = static_cast<uint8_t>(utf8_string[i]);
+		const auto byte = static_cast<uint8_t>(utf8_string[i]);
 
 		if ((byte & 0x80) == 0) {
 			// 1-byte character (ASCII)
@@ -248,7 +251,7 @@ TextLayout::Layout(const std::string& text, const FontAtlas& font, const LayoutO
 	std::vector<PositionedGlyph> current_line;
 	float line_width = 0.0F;
 
-	for (uint32_t cp : codepoints) {
+	for (uint32_t const cp : codepoints) {
 		// Handle newline
 		if (cp == '\n') {
 			// Apply alignment and add to result
@@ -331,7 +334,7 @@ TextLayout::Layout(const std::string& text, const FontAtlas& font, const LayoutO
 
 	// Apply vertical alignment (if needed)
 	if (options.v_align != VerticalAlign::Top) {
-		float total_height = cursor_y + font.GetDescent();
+		float const total_height = cursor_y + font.GetDescent();
 		float offset_y = 0.0F;
 
 		// Note: This only makes sense when rendering into a bounded rect
@@ -364,7 +367,7 @@ batch_renderer::Rectangle TextLayout::MeasureText(const std::string& text, const
 	int line_count = 1;
 	bool has_content = false;
 
-	for (uint32_t cp : codepoints) {
+	for (uint32_t const cp : codepoints) {
 		// Handle newline
 		if (cp == '\n') {
 			max_line_width = std::max(max_line_width, cursor_x);
@@ -431,7 +434,7 @@ FontAtlas* FontManager::GetDefaultFont() {
 }
 
 FontAtlas* FontManager::GetFont(const std::string& font_path, int font_size) {
-	FontKey key{font_path, font_size};
+	FontKey const key{.path = font_path, .size = font_size};
 
 	auto it = fonts_.find(key);
 	if (it != fonts_.end()) {

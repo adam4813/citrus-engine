@@ -35,9 +35,9 @@ public:
 
 	Shader& operator=(Shader&&) noexcept;
 
-	bool Compile(const ShaderCreateInfo& info) const;
+	[[nodiscard]] bool Compile(const ShaderCreateInfo& info) const;
 
-	bool IsValid() const;
+	[[nodiscard]] bool IsValid() const;
 
 	// Uniform setters
 	void SetUniform(const std::string& name, int value) const;
@@ -61,9 +61,9 @@ public:
 	void Use() const;
 
 	// Shader introspection
-	std::vector<std::string> GetUniformNames() const;
+	[[nodiscard]] static std::vector<std::string> GetUniformNames() ;
 
-	std::vector<std::string> GetAttributeNames() const;
+	[[nodiscard]] static std::vector<std::string> GetAttributeNames() ;
 
 private:
 	struct Impl;
@@ -78,28 +78,28 @@ public:
 
 	/// Create an uncompiled shader slot with the given name
 	/// @return ShaderId that can be used immediately (shader is invalid until compiled)
-	ShaderId CreateShader(const std::string& name) const;
+	[[nodiscard]] ShaderId CreateShader(const std::string& name) const;
 
 	void Initialize() const;
 
 	/// Compile an existing shader from file paths
 	/// @return true if compilation succeeded
-	bool
+	[[nodiscard]] bool
 	CompileShader(ShaderId id, const platform::fs::Path& vertex_path, const platform::fs::Path& fragment_path) const;
 
 	/// Compile an existing shader from source strings
 	/// @return true if compilation succeeded
-	bool CompileShader(ShaderId id, const std::string& vertex_source, const std::string& fragment_source) const;
+	[[nodiscard]] bool CompileShader(ShaderId id, const std::string& vertex_source, const std::string& fragment_source) const;
 
 	/// Create and compile a shader in one step
-	ShaderId LoadShaderFromString(
+	[[nodiscard]] ShaderId LoadShaderFromString(
 		const std::string& name,
 		const std::string& vertex_source,
 		const std::string& fragment_source
 	) const;
 
 	/// Create and compile a shader in one step
-	ShaderId LoadShader(
+	[[nodiscard]] ShaderId LoadShader(
 		const std::string& name,
 		const platform::fs::Path& vertex_path,
 		const platform::fs::Path& fragment_path
@@ -108,7 +108,7 @@ public:
 	// Shader access
 	Shader& GetShader(ShaderId id);
 
-	const Shader& GetShader(ShaderId id) const;
+	[[nodiscard]] const Shader& GetShader(ShaderId id) const;
 
 	[[nodiscard]] ShaderId FindShader(const std::string& name) const;
 
@@ -120,18 +120,18 @@ public:
 	void ReloadAllShaders();
 
 	// Shader operations
-	bool IsValid(ShaderId id) const;
+	[[nodiscard]] bool IsValid(ShaderId id) const;
 
 	void DestroyShader(ShaderId id) const;
 
 	void Clear() const;
 
 	// Get default shaders
-	ShaderId GetDefault2DShader() const;
+	[[nodiscard]] ShaderId GetDefault2DShader() const;
 
-	ShaderId GetDefault3DShader() const;
+	[[nodiscard]] ShaderId GetDefault3DShader() const;
 
-	ShaderId GetUnlitShader() const;
+	[[nodiscard]] ShaderId GetUnlitShader() const;
 
 private:
 	struct Impl;

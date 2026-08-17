@@ -81,14 +81,14 @@ struct Tags {
 	std::vector<std::string> tags;
 
 	void AddTag(const std::string& tag) {
-		if (std::find(tags.begin(), tags.end(), tag) == tags.end()) {
+		if (std::ranges::find(tags, tag) == tags.end()) {
 			tags.push_back(tag);
 		}
 	}
 
 	void RemoveTag(const std::string& tag) { std::erase(tags, tag); }
 
-	bool HasTag(const std::string& tag) const { return std::ranges::find(tags, tag) != tags.end(); }
+	[[nodiscard]] bool HasTag(const std::string& tag) const { return std::ranges::find(tags, tag) != tags.end(); }
 
 	void ClearTags() { tags.clear(); }
 };
@@ -109,7 +109,7 @@ struct TilemapCell {
 
 	void ClearTiles() { tile_ids.clear(); }
 
-	bool HasTiles() const { return !tile_ids.empty(); }
+	[[nodiscard]] bool HasTiles() const { return !tile_ids.empty(); }
 };
 
 // A single layer of the tilemap
@@ -127,8 +127,8 @@ struct TilemapLayer {
 
 	// Unpack coordinates from the key
 	static std::pair<std::int32_t, std::int32_t> UnpackCoords(const std::uint64_t key) {
-		std::int32_t x = static_cast<std::int32_t>(key >> 32);
-		std::int32_t y = static_cast<std::int32_t>(key & 0xFFFFFFFF);
+		auto x = static_cast<std::int32_t>(key >> 32);
+		auto y = static_cast<std::int32_t>(key & 0xFFFFFFFF);
 		return {x, y};
 	}
 
@@ -136,7 +136,7 @@ struct TilemapLayer {
 	TilemapCell& GetCell(const std::int32_t x, const std::int32_t y) { return cells[PackCoords(x, y)]; }
 
 	// Get a cell at the given grid position (const version)
-	const TilemapCell* GetCell(const std::int32_t x, const std::int32_t y) const {
+	[[nodiscard]] const TilemapCell* GetCell(const std::int32_t x, const std::int32_t y) const {
 		const auto it = cells.find(PackCoords(x, y));
 		return it != cells.end() ? &it->second : nullptr;
 	}
@@ -177,7 +177,7 @@ struct Tilemap {
 		return (index < layers.size()) ? layers[index] : nullptr;
 	}
 
-	std::shared_ptr<const TilemapLayer> GetLayer(const size_t index) const {
+	[[nodiscard]] std::shared_ptr<const TilemapLayer> GetLayer(const size_t index) const {
 		return (index < layers.size()) ? layers[index] : nullptr;
 	}
 
@@ -203,19 +203,19 @@ struct Tilemap {
 	void ReserveLayers(const size_t capacity) { layers.reserve(capacity); }
 
 	// Get the number of layers
-	size_t GetLayerCount() const { return layers.size(); }
+	[[nodiscard]] size_t GetLayerCount() const { return layers.size(); }
 
 	// Convert world position to grid coordinates
-	glm::ivec2 WorldToGrid(const glm::vec2& world_pos) const {
+	[[nodiscard]] glm::ivec2 WorldToGrid(const glm::vec2& world_pos) const {
 		const glm::vec2 adjusted_pos = world_pos - grid_offset;
-		return glm::ivec2(
+		return {
 			static_cast<std::int32_t>(std::floor(adjusted_pos.x / tile_size.x)),
 			static_cast<std::int32_t>(std::floor(adjusted_pos.y / tile_size.y))
-		);
+		};
 	}
 
 	// Convert grid coordinates to world position (center of tile)
-	glm::vec2 GridToWorld(const glm::ivec2& grid_pos) const {
+	[[nodiscard]] glm::vec2 GridToWorld(const glm::ivec2& grid_pos) const {
 		return grid_offset + glm::vec2((grid_pos.x + 0.5F) * tile_size.x, (grid_pos.y + 0.5F) * tile_size.y);
 	}
 };

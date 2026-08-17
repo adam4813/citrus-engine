@@ -140,7 +140,7 @@ public:
 	 * @brief Get checked state
 	 * @return True if checked, false if unchecked
 	 */
-	bool IsChecked() const { return is_checked_; }
+	[[nodiscard]] bool IsChecked() const { return is_checked_; }
 
 	/**
 	 * @brief Toggle checked state
@@ -205,7 +205,7 @@ public:
 	 * @brief Get label text
 	 * @return Label text
 	 */
-	const std::string& GetLabel() const { return label_text_; }
+	[[nodiscard]] const std::string& GetLabel() const { return label_text_; }
 
 	// === Appearance Configuration ===
 

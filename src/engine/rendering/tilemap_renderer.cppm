@@ -69,10 +69,10 @@ public:
 	void SetMaxBatchSize(const size_t max_tiles) { max_batch_size_ = max_tiles; }
 
 	// Get rendering statistics
-	const RenderStats& GetStats() const { return stats_; }
+	[[nodiscard]] const RenderStats& GetStats() const { return stats_; }
 
 	void SetShader(const ShaderId shader_id) { shader_id_ = shader_id; }
-	ShaderId GetShader() const { return shader_id_; }
+	[[nodiscard]] ShaderId GetShader() const { return shader_id_; }
 
 private:
 	// Build vertex data for a single layer
@@ -82,17 +82,17 @@ private:
 		const glm::vec2& grid_offset,
 		TileBatch& batch,
 		const TextureManager& texture_manager,
-		const int layer_index,
-		const float z_step
+		int layer_index,
+		float z_step
 	);
 
-	void AddTileToBatch(
+	static void AddTileToBatch(
 		const glm::vec2& world_pos,
 		const glm::ivec2& tile_size,
 		const glm::vec4& tex_coords,
 		float opacity,
 		TileBatch& batch,
-		const float z
+		float z
 	);
 
 	// Render a single batch

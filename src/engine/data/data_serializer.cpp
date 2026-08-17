@@ -19,7 +19,7 @@ using json = nlohmann::json;
 namespace engine::data {
 
 // Helper to convert DataValue to JSON
-static void data_value_to_json(json& j, const DataValue& value) {
+static void DataValueToJson(json& j, const DataValue& value) {
 	std::visit(
 		[&j](auto&& arg) {
 			using T = std::decay_t<decltype(arg)>;
@@ -50,7 +50,7 @@ static void data_value_to_json(json& j, const DataValue& value) {
 }
 
 // Helper to get type name from DataValue
-static std::string get_value_type_name(const DataValue& value) {
+static std::string GetValueTypeName(const DataValue& value) {
 	return std::visit(
 		[](auto&& arg) -> std::string {
 			using T = std::decay_t<decltype(arg)>;
@@ -68,35 +68,35 @@ static std::string get_value_type_name(const DataValue& value) {
 }
 
 // Helper to convert JSON to DataValue based on type name
-static DataValue json_to_data_value(const json& j, const std::string& type_name) {
+static DataValue JsonToDataValue(const json& j, const std::string& type_name) {
 	if (type_name == "bool") {
 		return j.get<bool>();
 	}
-	else if (type_name == "int") {
+	if (type_name == "int") {
 		return j.get<int>();
 	}
-	else if (type_name == "float") {
+	if (type_name == "float") {
 		return j.get<float>();
 	}
-	else if (type_name == "vec2") {
+	if (type_name == "vec2") {
 		if (j.is_array() && j.size() >= 2) {
 			return glm::vec2(j[0].get<float>(), j[1].get<float>());
 		}
 		return glm::vec2(0.0F);
 	}
-	else if (type_name == "vec3") {
+	if (type_name == "vec3") {
 		if (j.is_array() && j.size() >= 3) {
 			return glm::vec3(j[0].get<float>(), j[1].get<float>(), j[2].get<float>());
 		}
 		return glm::vec3(0.0F);
 	}
-	else if (type_name == "vec4") {
+	if (type_name == "vec4") {
 		if (j.is_array() && j.size() >= 4) {
 			return glm::vec4(j[0].get<float>(), j[1].get<float>(), j[2].get<float>(), j[3].get<float>());
 		}
 		return glm::vec4(0.0F);
 	}
-	else if (type_name == "string") {
+	if (type_name == "string") {
 		return j.get<std::string>();
 	}
 	// Default: return float 0
@@ -112,8 +112,8 @@ std::string DataSerializer::SerializeAsset(const DataAsset& asset) {
 	json properties = json::object();
 	for (const auto& [name, value] : asset.properties) {
 		json prop;
-		prop["type"] = get_value_type_name(value);
-		data_value_to_json(prop["value"], value);
+		prop["type"] = GetValueTypeName(value);
+		DataValueToJson(prop["value"], value);
 		properties[name] = prop;
 	}
 	j["properties"] = properties;
@@ -130,9 +130,9 @@ DataAsset DataSerializer::DeserializeAsset(const std::string& json_str) {
 
 	// Deserialize properties
 	if (j.contains("properties") && j["properties"].is_object()) {
-		for (auto& [name, prop] : j["properties"].items()) {
-			std::string type_name = prop["type"].get<std::string>();
-			DataValue value = json_to_data_value(prop["value"], type_name);
+		for (const auto& [name, prop] : j["properties"].items()) {
+			std::string const type_name = prop["type"].get<std::string>();
+			DataValue const value = JsonToDataValue(prop["value"], type_name);
 			asset.properties[name] = value;
 		}
 	}
@@ -162,8 +162,8 @@ std::string DataSerializer::SerializeTable(const DataTable& table) {
 		json values = json::object();
 		for (const auto& [col_name, value] : row.values) {
 			json val_json;
-			val_json["type"] = get_value_type_name(value);
-			data_value_to_json(val_json["value"], value);
+			val_json["type"] = GetValueTypeName(value);
+			DataValueToJson(val_json["value"], value);
 			values[col_name] = val_json;
 		}
 		row_json["values"] = values;
@@ -198,9 +198,9 @@ DataTable DataSerializer::DeserializeTable(const std::string& json_str) {
 			row.key = row_json["key"].get<std::string>();
 
 			if (row_json.contains("values") && row_json["values"].is_object()) {
-				for (auto& [col_name, val_json] : row_json["values"].items()) {
-					std::string type_name = val_json["type"].get<std::string>();
-					DataValue value = json_to_data_value(val_json["value"], type_name);
+				for (const auto& [col_name, val_json] : row_json["values"].items()) {
+					std::string const type_name = val_json["type"].get<std::string>();
+					DataValue const value = JsonToDataValue(val_json["value"], type_name);
 					row.values[col_name] = value;
 				}
 			}
@@ -223,7 +223,7 @@ std::string DataSerializer::SerializeSchema(const Schema& schema) {
 		json field_json;
 		field_json["name"] = field.name;
 		field_json["type_name"] = field.type_name;
-		data_value_to_json(field_json["default_value"], field.default_value);
+		DataValueToJson(field_json["default_value"], field.default_value);
 		fields.push_back(field_json);
 	}
 	j["fields"] = fields;
@@ -248,7 +248,7 @@ Schema DataSerializer::DeserializeSchema(const std::string& json_str) {
 			SchemaField field;
 			field.name = field_json["name"].get<std::string>();
 			field.type_name = field_json["type_name"].get<std::string>();
-			field.default_value = json_to_data_value(field_json["default_value"], field.type_name);
+			field.default_value = JsonToDataValue(field_json["default_value"], field.type_name);
 			schema.fields.push_back(field);
 		}
 	}

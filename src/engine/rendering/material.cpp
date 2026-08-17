@@ -182,7 +182,7 @@ MaterialId MaterialManager::CreateMaterial(const std::string& name, const Materi
 	return id;
 }
 
-MaterialId MaterialManager::CreateMaterial(const std::string& name, const ShaderId shader) {
+MaterialId MaterialManager::CreateMaterial(const std::string& name, const ShaderId shader) const {
 	MaterialCreateInfo info;
 	info.shader = shader;
 	return CreateMaterial(name, info);
@@ -221,7 +221,7 @@ std::string MaterialManager::GetMaterialName(const MaterialId id) const {
 void MaterialManager::DestroyMaterial(const MaterialId id) { pimpl_->materials.erase(id); }
 
 bool MaterialManager::IsValid(const MaterialId id) const {
-	return pimpl_->materials.find(id) != pimpl_->materials.end();
+	return pimpl_->materials.contains(id);
 }
 
 void MaterialManager::Clear() {

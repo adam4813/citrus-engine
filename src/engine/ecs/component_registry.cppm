@@ -75,72 +75,72 @@ struct ComponentInfo {
 
 template<typename T>
 struct FieldTypeTraits {
-	static constexpr auto type = FieldType::ReadOnly; // Default fallback
+	static constexpr auto TYPE = FieldType::ReadOnly; // Default fallback
 };
 
 template<>
 struct FieldTypeTraits<bool> {
-	static constexpr auto type = FieldType::Bool;
+	static constexpr auto TYPE = FieldType::Bool;
 };
 
 template<>
 struct FieldTypeTraits<int> {
-	static constexpr auto type = FieldType::Int;
+	static constexpr auto TYPE = FieldType::Int;
 };
 
 template<>
 struct FieldTypeTraits<uint32_t> {
-	static constexpr auto type = FieldType::Int;
+	static constexpr auto TYPE = FieldType::Int;
 };
 
 template<>
 struct FieldTypeTraits<size_t> {
-	static constexpr auto type = FieldType::Int;
+	static constexpr auto TYPE = FieldType::Int;
 };
 
 template<>
 struct FieldTypeTraits<float> {
-	static constexpr auto type = FieldType::Float;
+	static constexpr auto TYPE = FieldType::Float;
 };
 
 template<>
 struct FieldTypeTraits<double> {
-	static constexpr auto type = FieldType::Float;
+	static constexpr auto TYPE = FieldType::Float;
 };
 
 template<>
 struct FieldTypeTraits<std::string> {
-	static constexpr auto type = FieldType::String;
+	static constexpr auto TYPE = FieldType::String;
 };
 
 template<>
 struct FieldTypeTraits<glm::vec2> {
-	static constexpr auto type = FieldType::Vec2;
+	static constexpr auto TYPE = FieldType::Vec2;
 };
 
 template<>
 struct FieldTypeTraits<glm::vec3> {
-	static constexpr auto type = FieldType::Vec3;
+	static constexpr auto TYPE = FieldType::Vec3;
 };
 
 template<>
 struct FieldTypeTraits<glm::vec4> {
-	static constexpr auto type = FieldType::Vec4;
+	static constexpr auto TYPE = FieldType::Vec4;
 };
 
 template<>
 struct FieldTypeTraits<std::vector<int>> {
-	static constexpr auto type = FieldType::ListInt;
+	static constexpr auto TYPE = FieldType::ListInt;
 };
 
 template<>
 struct FieldTypeTraits<std::vector<float>> {
-	static constexpr auto type = FieldType::ListFloat;
+	static constexpr auto TYPE = FieldType::ListFloat;
 };
 
 template<>
 struct FieldTypeTraits<std::vector<std::string>> {
-	static constexpr auto type = FieldType::ListString;
+	static constexpr auto TYPE = FieldType::ListString;
 };
 
 // Forward declaration
@@ -179,7 +179,7 @@ public:
 	ComponentRegistration& Field(const std::string& field_name, FieldT T::* member_ptr) {
 		FieldInfo field;
 		field.name = field_name;
-		field.type = FieldTypeTraits<FieldT>::type;
+		field.type = FieldTypeTraits<FieldT>::TYPE;
 		field.offset = reinterpret_cast<size_t>(&(static_cast<T*>(nullptr)->*member_ptr));
 		field.size = sizeof(FieldT);
 		info_.fields.push_back(std::move(field));

@@ -39,14 +39,14 @@ void ECSWorld::SubmitRenderCommands(const Renderer& renderer) {
 	}
 
 	// Collect all lights in the scene (up to 4)
-	constexpr int MAX_LIGHTS = 4;
+	constexpr int max_lights = 4;
 	std::vector<Light> scene_lights;
 	std::vector<glm::vec3> light_positions;
 
 	// Query all entities with Light component and Transform
 	world_.query<const Light, const Transform>().each(
 		[&scene_lights, &light_positions](flecs::entity, const Light& light, const Transform& transform) {
-			if (scene_lights.size() < MAX_LIGHTS) {
+			if (scene_lights.size() < max_lights) {
 				scene_lights.push_back(light);
 				light_positions.push_back(transform.position);
 			}
@@ -116,7 +116,7 @@ void ECSWorld::SubmitRenderCommands(const Renderer& renderer) {
 			shader.SetUniform("u_NumLights", static_cast<int>(scene_lights.size()));
 
 			// Set light properties
-			for (size_t i = 0; i < scene_lights.size() && i < MAX_LIGHTS; ++i) {
+			for (size_t i = 0; i < scene_lights.size() && i < max_lights; ++i) {
 				const Light& light = scene_lights[i];
 				const std::string idx = "[" + std::to_string(i) + "]";
 

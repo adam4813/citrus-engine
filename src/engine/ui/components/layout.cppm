@@ -125,10 +125,10 @@ public:
 	}
 
 	void SetGap(const float gap) { gap_ = gap >= 0.0F ? gap : 0.0F; }
-	float GetGap() const { return gap_; }
+	[[nodiscard]] float GetGap() const { return gap_; }
 
 	void SetAlignment(const Alignment align) { horizontal_align_ = align; }
-	Alignment GetAlignment() const { return horizontal_align_; }
+	[[nodiscard]] Alignment GetAlignment() const { return horizontal_align_; }
 
 private:
 	float gap_{0.0F};
@@ -201,10 +201,10 @@ public:
 	}
 
 	void SetGap(const float gap) { gap_ = gap >= 0.0F ? gap : 0.0F; }
-	float GetGap() const { return gap_; }
+	[[nodiscard]] float GetGap() const { return gap_; }
 
 	void SetAlignment(const Alignment align) { vertical_align_ = align; }
-	Alignment GetAlignment() const { return vertical_align_; }
+	[[nodiscard]] Alignment GetAlignment() const { return vertical_align_; }
 
 private:
 	float gap_{0.0F};
@@ -279,7 +279,7 @@ public:
 	}
 
 	void SetColumns(const uint32_t columns) { columns_ = columns > 0 ? columns : 1; }
-	uint32_t GetColumns() const { return columns_; }
+	[[nodiscard]] uint32_t GetColumns() const { return columns_; }
 
 	void SetGap(const float horizontal, const float vertical) {
 		horizontal_gap_ = horizontal >= 0.0F ? horizontal : 0.0F;
@@ -520,7 +520,7 @@ public:
 	/**
 	 * @brief Get the current layout strategy
 	 */
-	ILayout* GetLayout() const { return layout_.get(); }
+	[[nodiscard]] ILayout* GetLayout() const { return layout_.get(); }
 
 	/**
 	 * @brief Mark layout as needing recalculation
@@ -530,7 +530,7 @@ public:
 	/**
 	 * @brief Check if layout needs recalculation
 	 */
-	bool IsDirty() const { return dirty_; }
+	[[nodiscard]] bool IsDirty() const { return dirty_; }
 
 	/**
 	 * @brief Apply layout to owner's children

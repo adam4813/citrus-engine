@@ -128,20 +128,20 @@ private:
 		case ShapeType::Mesh:
 			if (!config.vertices.empty() && !config.indices.empty()) {
 				// Create triangle mesh - we own the mesh data
-				auto meshData = std::make_unique<btTriangleMesh>();
+				auto mesh_data = std::make_unique<btTriangleMesh>();
 				for (size_t i = 0; i + 2 < config.indices.size(); i += 3) {
 					const auto& v0 = config.vertices[config.indices[i]];
 					const auto& v1 = config.vertices[config.indices[i + 1]];
 					const auto& v2 = config.vertices[config.indices[i + 2]];
-					meshData->addTriangle(
+					mesh_data->addTriangle(
 						btVector3(v0.x, v0.y, v0.z),
 						btVector3(v1.x, v1.y, v1.z),
 						btVector3(v2.x, v2.y, v2.z)
 					);
 				}
 				// btBvhTriangleMeshShape does NOT take ownership - we keep mesh_data alive
-				result.shape = std::make_unique<btBvhTriangleMeshShape>(meshData.get(), true);
-				result.mesh_data.push_back(std::move(meshData));
+				result.shape = std::make_unique<btBvhTriangleMeshShape>(mesh_data.get(), true);
+				result.mesh_data.push_back(std::move(mesh_data));
 				return result;
 			}
 			break;
@@ -150,23 +150,23 @@ private:
 		{
 			auto compound = std::make_unique<btCompoundShape>();
 			for (size_t i = 0; i < config.children.size(); ++i) {
-				auto childResult = CreateShape(config.children[i]);
-				if (childResult.shape) {
+				auto child_result = CreateShape(config.children[i]);
+				if (child_result.shape) {
 					glm::vec3 pos = i < config.child_positions.size() ? config.child_positions[i] : glm::vec3(0.0F);
 					glm::quat rot = i < config.child_rotations.size() ? config.child_rotations[i]
 																	  : glm::quat(1.0F, 0.0F, 0.0F, 0.0F);
 
-					btTransform localTrans;
-					localTrans.setOrigin(btVector3(pos.x, pos.y, pos.z));
-					localTrans.setRotation(btQuaternion(rot.x, rot.y, rot.z, rot.w));
+					btTransform local_trans;
+					local_trans.setOrigin(btVector3(pos.x, pos.y, pos.z));
+					local_trans.setRotation(btQuaternion(rot.x, rot.y, rot.z, rot.w));
 					// btCompoundShape does NOT take ownership - we store child shapes
-					compound->addChildShape(localTrans, childResult.shape.get());
-					result.child_shapes.push_back(std::move(childResult.shape));
+					compound->addChildShape(local_trans, child_result.shape.get());
+					result.child_shapes.push_back(std::move(child_result.shape));
 					// Also take ownership of any nested mesh data or child shapes
-					for (auto& mesh : childResult.mesh_data) {
+					for (auto& mesh : child_result.mesh_data) {
 						result.mesh_data.push_back(std::move(mesh));
 					}
-					for (auto& nested : childResult.child_shapes) {
+					for (auto& nested : child_result.child_shapes) {
 						result.child_shapes.push_back(std::move(nested));
 					}
 				}
@@ -253,7 +253,7 @@ public:
 	[[nodiscard]] glm::vec3 GetGravity() const override {
 		if (dynamics_world_) {
 			auto g = dynamics_world_->getGravity();
-			return glm::vec3(g.x(), g.y(), g.z());
+			return {g.x(), g.y(), g.z()};
 		}
 		return config_.gravity;
 	}
@@ -269,23 +269,23 @@ public:
 		dynamics_world_->stepSimulation(delta_time, config_.max_substeps, config_.fixed_timestep);
 
 		// Collect collision events
-		int numManifolds = dispatcher_->getNumManifolds();
-		for (int i = 0; i < numManifolds; ++i) {
+		int const num_manifolds = dispatcher_->getNumManifolds();
+		for (int i = 0; i < num_manifolds; ++i) {
 			btPersistentManifold* manifold = dispatcher_->getManifoldByIndexInternal(i);
-			const btCollisionObject* objA = manifold->getBody0();
-			const btCollisionObject* objB = manifold->getBody1();
+			const btCollisionObject* obj_a = manifold->getBody0();
+			const btCollisionObject* obj_b = manifold->getBody1();
 
-			int numContacts = manifold->getNumContacts();
-			if (numContacts > 0) {
+			int const num_contacts = manifold->getNumContacts();
+			if (num_contacts > 0) {
 				CollisionInfo info;
-				info.entity_a = static_cast<EntityId>(reinterpret_cast<uintptr_t>(objA->getUserPointer()));
-				info.entity_b = static_cast<EntityId>(reinterpret_cast<uintptr_t>(objB->getUserPointer()));
+				info.entity_a = static_cast<EntityId>(reinterpret_cast<uintptr_t>(obj_a->getUserPointer()));
+				info.entity_b = static_cast<EntityId>(reinterpret_cast<uintptr_t>(obj_b->getUserPointer()));
 
-				for (int j = 0; j < numContacts; ++j) {
-					btManifoldPoint& pt = manifold->getContactPoint(j);
+				for (int j = 0; j < num_contacts; ++j) {
+					btManifoldPoint const& pt = manifold->getContactPoint(j);
 					ContactPoint contact;
-					btVector3 pos = pt.getPositionWorldOnA();
-					btVector3 normal = pt.m_normalWorldOnB;
+					btVector3 const pos = pt.getPositionWorldOnA();
+					btVector3 const normal = pt.m_normalWorldOnB;
 					contact.position = glm::vec3(pos.x(), pos.y(), pos.z());
 					contact.normal = glm::vec3(normal.x(), normal.y(), normal.z());
 					contact.penetration_depth = -pt.getDistance();
@@ -309,10 +309,10 @@ public:
 		}
 
 		auto it = rigid_bodies_.find(entity);
-		ShapeConfig shapeConfig = ToShapeConfig(shape, transform);
-		auto shapeResult = CreateShape(shapeConfig);
+		ShapeConfig const shape_config = ToShapeConfig(shape, transform);
+		auto shape_result = CreateShape(shape_config);
 
-		if (!shapeResult.shape) {
+		if (!shape_result.shape) {
 			spdlog::error("[Bullet3] Failed to create shape for entity {}", entity);
 			return;
 		}
@@ -322,12 +322,12 @@ public:
 			RigidBodyData& data = it->second;
 
 			// Update shape if different
-			data.shape = std::move(shapeResult.shape);
-			data.mesh_data = std::move(shapeResult.mesh_data);
-			data.child_shapes = std::move(shapeResult.child_shapes);
+			data.shape = std::move(shape_result.shape);
+			data.mesh_data = std::move(shape_result.mesh_data);
+			data.child_shapes = std::move(shape_result.child_shapes);
 
 			// Update mass and inertia
-			btScalar mass = body.motion_type == MotionType::Dynamic ? body.mass : 0.0F;
+			btScalar const mass = body.motion_type == MotionType::Dynamic ? body.mass : 0.0F;
 			btVector3 inertia(0, 0, 0);
 			if (mass > 0) {
 				data.shape->calculateLocalInertia(mass, inertia);
@@ -336,13 +336,13 @@ public:
 			data.body->setMassProps(mass, inertia);
 
 			// Update transform
-			btTransform btTrans;
-			btTrans.setOrigin(btVector3(transform.position.x, transform.position.y, transform.position.z));
-			btTrans.setRotation(
+			btTransform bt_trans;
+			bt_trans.setOrigin(btVector3(transform.position.x, transform.position.y, transform.position.z));
+			bt_trans.setRotation(
 				btQuaternion(transform.rotation.x, transform.rotation.y, transform.rotation.z, transform.rotation.w)
 			);
-			data.body->setWorldTransform(btTrans);
-			data.body->getMotionState()->setWorldTransform(btTrans);
+			data.body->setWorldTransform(bt_trans);
+			data.body->getMotionState()->setWorldTransform(bt_trans);
 
 			// Update physics properties
 			data.body->setFriction(body.friction);
@@ -375,24 +375,24 @@ public:
 		else {
 			// Create new body
 			RigidBodyData data;
-			data.shape = std::move(shapeResult.shape);
-			data.mesh_data = std::move(shapeResult.mesh_data);
-			data.child_shapes = std::move(shapeResult.child_shapes);
+			data.shape = std::move(shape_result.shape);
+			data.mesh_data = std::move(shape_result.mesh_data);
+			data.child_shapes = std::move(shape_result.child_shapes);
 
 			// Calculate mass and inertia
-			btScalar mass = body.motion_type == MotionType::Dynamic ? body.mass : 0.0F;
+			btScalar const mass = body.motion_type == MotionType::Dynamic ? body.mass : 0.0F;
 			btVector3 inertia(0, 0, 0);
 			if (mass > 0) {
 				data.shape->calculateLocalInertia(mass, inertia);
 			}
 
 			// Create motion state with transform
-			btTransform btTrans;
-			btTrans.setOrigin(btVector3(transform.position.x, transform.position.y, transform.position.z));
-			btTrans.setRotation(
+			btTransform bt_trans;
+			bt_trans.setOrigin(btVector3(transform.position.x, transform.position.y, transform.position.z));
+			bt_trans.setRotation(
 				btQuaternion(transform.rotation.x, transform.rotation.y, transform.rotation.z, transform.rotation.w)
 			);
-			data.motion_state = std::make_unique<btDefaultMotionState>(btTrans);
+			data.motion_state = std::make_unique<btDefaultMotionState>(bt_trans);
 
 			// Create rigid body
 			btRigidBody::btRigidBodyConstructionInfo info(mass, data.motion_state.get(), data.shape.get(), inertia);
@@ -441,16 +441,16 @@ public:
 			btTransform trans;
 			it->second.body->getMotionState()->getWorldTransform(trans);
 
-			btVector3 pos = trans.getOrigin();
-			btQuaternion rot = trans.getRotation();
+			btVector3 const pos = trans.getOrigin();
+			btQuaternion const rot = trans.getRotation();
 			result.position = glm::vec3(pos.x(), pos.y(), pos.z());
 			result.rotation = glm::quat(rot.w(), rot.x(), rot.y(), rot.z());
 
-			btVector3 linVel = it->second.body->getLinearVelocity();
-			result.linear_velocity = glm::vec3(linVel.x(), linVel.y(), linVel.z());
+			btVector3 const lin_vel = it->second.body->getLinearVelocity();
+			result.linear_velocity = glm::vec3(lin_vel.x(), lin_vel.y(), lin_vel.z());
 
-			btVector3 angVel = it->second.body->getAngularVelocity();
-			result.angular_velocity = glm::vec3(angVel.x(), angVel.y(), angVel.z());
+			btVector3 const ang_vel = it->second.body->getAngularVelocity();
+			result.angular_velocity = glm::vec3(ang_vel.x(), ang_vel.y(), ang_vel.z());
 		}
 
 		return result;
@@ -486,8 +486,9 @@ public:
 		if (it != rigid_bodies_.end() && it->second.body) {
 			if (glm::length(point) > 0.0F) {
 				// Apply at specific point (relative to center of mass)
-				btVector3 relPos = btVector3(point.x, point.y, point.z) - it->second.body->getCenterOfMassPosition();
-				it->second.body->applyImpulse(btVector3(impulse.x, impulse.y, impulse.z), relPos);
+				btVector3 const rel_pos =
+					btVector3(point.x, point.y, point.z) - it->second.body->getCenterOfMassPosition();
+				it->second.body->applyImpulse(btVector3(impulse.x, impulse.y, impulse.z), rel_pos);
 			}
 			else {
 				// Apply at center of mass
@@ -504,8 +505,8 @@ public:
 			return std::nullopt;
 		}
 
-		btVector3 from(ray.origin.x, ray.origin.y, ray.origin.z);
-		btVector3 to(
+		btVector3 const from(ray.origin.x, ray.origin.y, ray.origin.z);
+		btVector3 const to(
 			ray.origin.x + ray.direction.x * ray.max_distance,
 			ray.origin.y + ray.direction.y * ray.max_distance,
 			ray.origin.z + ray.direction.z * ray.max_distance
@@ -534,8 +535,8 @@ public:
 			return {};
 		}
 
-		btVector3 from(ray.origin.x, ray.origin.y, ray.origin.z);
-		btVector3 to(
+		btVector3 const from(ray.origin.x, ray.origin.y, ray.origin.z);
+		btVector3 const to(
 			ray.origin.x + ray.direction.x * ray.max_distance,
 			ray.origin.y + ray.direction.y * ray.max_distance,
 			ray.origin.z + ray.direction.z * ray.max_distance
@@ -595,7 +596,7 @@ public:
 				const btVector3& point,
 				const btVector3& normal,
 				btScalar distance,
-				int,
+				int /*lifeTime*/,
 				const btVector3& color
 			) override {
 				const btVector3 to = point + normal * distance;

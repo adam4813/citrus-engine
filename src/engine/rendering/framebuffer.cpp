@@ -46,7 +46,7 @@ Framebuffer& Framebuffer::operator=(Framebuffer&& other) noexcept {
 
 bool Framebuffer::Create(const uint32_t width, const uint32_t height) {
 	if (width == 0 || height == 0) {
-		std::cerr << "Framebuffer::Create: Invalid dimensions " << width << "x" << height << std::endl;
+		std::cerr << "Framebuffer::Create: Invalid dimensions " << width << "x" << height << '\n';
 		return false;
 	}
 
@@ -94,7 +94,7 @@ bool Framebuffer::Create(const uint32_t width, const uint32_t height) {
 	// Check framebuffer completeness
 	const GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
 	if (status != GL_FRAMEBUFFER_COMPLETE) {
-		std::cerr << "Framebuffer::Create: Framebuffer incomplete, status: " << status << std::endl;
+		std::cerr << "Framebuffer::Create: Framebuffer incomplete, status: " << status << '\n';
 		Destroy();
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		return false;

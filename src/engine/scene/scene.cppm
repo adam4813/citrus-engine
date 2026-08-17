@@ -34,89 +34,89 @@ public:
 	~Scene();
 
 	// Scene properties
-	SceneId GetId() const;
+	[[nodiscard]] SceneId GetId() const;
 
-	const std::string& GetName() const;
+	[[nodiscard]] const std::string& GetName() const;
 
 	void SetName(const std::string& name) const;
 
 	// === ENTITY MANAGEMENT USING FLECS ===
 
 	// Create entity and add to scene
-	ecs::Entity CreateEntity(const std::string& name = "") const;
+	[[nodiscard]] ecs::Entity CreateEntity(const std::string& name = "") const;
 
 	// Create entity with parent (hierarchy)
-	ecs::Entity CreateEntity(const std::string& name, const ecs::Entity& parent) const;
+	[[nodiscard]] ecs::Entity CreateEntity(const std::string& name, const ecs::Entity& parent) const;
 
 	// Destroy entity from scene
-	void DestroyEntity(const ecs::Entity& entity);
+	static void DestroyEntity(const ecs::Entity& entity);
 
 	// Get all entities in this scene
-	std::vector<ecs::Entity> GetAllEntities() const;
+	[[nodiscard]] std::vector<ecs::Entity> GetAllEntities() const;
 
 	// Find entity by name within this scene
-	ecs::Entity FindEntityByName(const std::string& name) const;
+	[[nodiscard]] ecs::Entity FindEntityByName(const std::string& name) const;
 
 	// === HIERARCHY MANAGEMENT ===
 
 	// Get the scene root entity
-	ecs::Entity GetSceneRoot() const;
+	[[nodiscard]] ecs::Entity GetSceneRoot() const;
 
 	// Create hierarchical structures
 	void SetParent(const ecs::Entity& child, const ecs::Entity& parent) const;
 
 	void RemoveParent(const ecs::Entity& child) const;
 
-	ecs::Entity GetParent(const ecs::Entity& entity) const;
+	[[nodiscard]] ecs::Entity GetParent(const ecs::Entity& entity) const;
 
-	std::vector<ecs::Entity> GetChildren(const ecs::Entity& parent) const;
+	[[nodiscard]] std::vector<ecs::Entity> GetChildren(const ecs::Entity& parent) const;
 
-	std::vector<ecs::Entity> GetDescendants(const ecs::Entity& root) const;
+	[[nodiscard]] std::vector<ecs::Entity> GetDescendants(const ecs::Entity& root) const;
 
 	// === SPATIAL QUERIES ===
 
 	// Find entities at a point within this scene
-	std::vector<ecs::Entity> QueryPoint(const Vec3& point, uint32_t layer_mask = 0xFFFFFFFF) const;
+	[[nodiscard]] std::vector<ecs::Entity> QueryPoint(const Vec3& point, uint32_t layer_mask = 0xFFFFFFFF) const;
 
 	// Find entities in sphere within this scene
-	std::vector<ecs::Entity> QuerySphere(const Vec3& center, float radius, uint32_t layer_mask = 0xFFFFFFFF) const;
+	[[nodiscard]] std::vector<ecs::Entity> QuerySphere(const Vec3& center, float radius, uint32_t layer_mask = 0xFFFFFFFF) const;
 
 	// === SCENE STATE ===
 
 	// Scene bounds
 	void SetWorldBounds(const Vec3& min, const Vec3& max) const;
 
-	std::pair<Vec3, Vec3> GetWorldBounds() const;
+	[[nodiscard]] std::pair<Vec3, Vec3> GetWorldBounds() const;
 
 	// Scene state
 	void SetActive(bool active) const;
 
-	bool IsActive() const;
+	[[nodiscard]] bool IsActive() const;
 
 	void SetLoaded(bool loaded) const;
 
-	bool IsLoaded() const;
+	[[nodiscard]] bool IsLoaded() const;
 
 	// Scene settings
 	void SetBackgroundColor(const glm::vec4& color) const;
-	glm::vec4 GetBackgroundColor() const;
+	[[nodiscard]] glm::vec4 GetBackgroundColor() const;
 
 	void SetAmbientLight(const glm::vec4& color) const;
-	glm::vec4 GetAmbientLight() const;
+	[[nodiscard]] glm::vec4 GetAmbientLight() const;
 
 	void SetPhysicsBackend(const std::string& backend) const;
-	std::string GetPhysicsBackend() const;
+	[[nodiscard]] std::string GetPhysicsBackend() const;
 
 	void SetAuthor(const std::string& author) const;
-	std::string GetAuthor() const;
+	[[nodiscard]] std::string GetAuthor() const;
 
 	void SetDescription(const std::string& description) const;
-	std::string GetDescription() const;
+	[[nodiscard]] std::string GetDescription() const;
 
 	// Asset management
 	void SetFilePath(const platform::fs::Path& path) const;
 
-	platform::fs::Path GetFilePath() const;
+	[[nodiscard]] platform::fs::Path GetFilePath() const;
 
 	// Update scene (called each frame)
 	void Update(float delta_time);
@@ -156,29 +156,29 @@ public:
 	~SceneManager();
 
 	// Scene creation and management
-	SceneId CreateScene(const std::string& name) const;
+	[[nodiscard]] SceneId CreateScene(const std::string& name) const;
 
 	void DestroyScene(SceneId scene_id) const;
 
 	// Scene access
 	Scene& GetScene(SceneId scene_id);
 
-	const Scene& GetScene(SceneId scene_id) const;
+	[[nodiscard]] const Scene& GetScene(SceneId scene_id) const;
 
 	Scene* TryGetScene(SceneId scene_id);
 
-	const Scene* TryGetScene(SceneId scene_id) const;
+	[[nodiscard]] const Scene* TryGetScene(SceneId scene_id) const;
 
-	SceneId FindSceneByName(const std::string& name) const;
+	[[nodiscard]] SceneId FindSceneByName(const std::string& name) const;
 
-	std::vector<SceneId> GetAllScenes() const;
+	[[nodiscard]] std::vector<SceneId> GetAllScenes() const;
 
-	std::vector<SceneId> GetActiveScenes() const;
+	[[nodiscard]] std::vector<SceneId> GetActiveScenes() const;
 
 	// Scene activation
 	void SetActiveScene(SceneId scene_id) const;
 
-	SceneId GetActiveScene() const;
+	[[nodiscard]] SceneId GetActiveScene() const;
 
 	void ActivateScene(SceneId scene_id) const;
 
@@ -192,22 +192,22 @@ public:
 	// Scene transitions
 	void TransitionToScene(SceneId new_scene, float transition_time = 0.0F) const;
 
-	bool IsTransitioning() const;
+	[[nodiscard]] static bool IsTransitioning() ;
 
-	float GetTransitionProgress() const;
+	[[nodiscard]] static float GetTransitionProgress() ;
 
 	// Used for file-based scenes
 	bool SaveScene(SceneId scene_id, const platform::fs::Path& file_path);
 	SceneId LoadSceneFromFile(const platform::fs::Path& file_path);
 
 	// Used for in-memory scenes
-	bool LoadScene(SceneId scene_id) const;
+	[[nodiscard]] bool LoadScene(SceneId scene_id) const;
 	void UnloadScene(SceneId scene_id) const;
 
 	// Global spatial queries (across all active scenes)
-	std::vector<ecs::Entity> QueryPoint(const Vec3& point, uint32_t layer_mask = 0xFFFFFFFF) const;
+	[[nodiscard]] std::vector<ecs::Entity> QueryPoint(const Vec3& point, uint32_t layer_mask = 0xFFFFFFFF) const;
 
-	std::vector<ecs::Entity> QuerySphere(const Vec3& center, float radius, uint32_t layer_mask = 0xFFFFFFFF) const;
+	[[nodiscard]] std::vector<ecs::Entity> QuerySphere(const Vec3& center, float radius, uint32_t layer_mask = 0xFFFFFFFF) const;
 
 	// Update all active scenes
 	void Update(float delta_time);
@@ -216,11 +216,11 @@ public:
 	void Render();
 
 	// Statistics
-	size_t GetSceneCount() const;
+	[[nodiscard]] size_t GetSceneCount() const;
 
-	size_t GetActiveSceneCount() const;
+	[[nodiscard]] size_t GetActiveSceneCount() const;
 
-	size_t GetTotalEntityCount() const;
+	[[nodiscard]] size_t GetTotalEntityCount() const;
 
 	// Clear all scenes
 	void Clear() const;

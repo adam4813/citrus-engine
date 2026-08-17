@@ -2,6 +2,7 @@ module;
 
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 export module engine.ui:elements.text;
@@ -74,7 +75,7 @@ public:
 	Text(
 		float x,
 		float y,
-		const std::string& text,
+		std::string  text,
 		float font_size,
 		const batch_renderer::Color& color = batch_renderer::Colors::WHITE
 	);
@@ -96,7 +97,7 @@ public:
 	Text(
 		float x,
 		float y,
-		const std::string& text,
+		std::string  text,
 		text_renderer::FontAtlas* font,
 		const batch_renderer::Color& color = batch_renderer::Colors::WHITE
 	);
@@ -124,7 +125,7 @@ public:
 	 *
 	 * @param font_size New font size in pixels
 	 */
-	void SetFontSize(const float font_size);
+	void SetFontSize(float font_size);
 
 	/**
 	 * @brief Set font (triggers glyph recomputation)
@@ -149,13 +150,13 @@ public:
 	 * @brief Get current text string
 	 * @return Current text content
 	 */
-	const std::string& GetText() const { return text_; }
+	[[nodiscard]] const std::string& GetText() const { return text_; }
 
 	/**
 	 * @brief Get text color
 	 * @return Current text color
 	 */
-	const batch_renderer::Color& GetColor() const { return color_; }
+	[[nodiscard]] const batch_renderer::Color& GetColor() const { return color_; }
 
 	/**
 	 * @brief Render text using pre-computed glyphs
@@ -200,10 +201,10 @@ private:
 inline Text::Text(
 	const float x,
 	const float y,
-	const std::string& text,
+	std::string  text,
 	const float font_size,
 	const batch_renderer::Color& color
-) : UIElement(x, y, 0, 0), text_(text), color_(color) {
+) : UIElement(x, y, 0, 0), text_(std::move(text)), color_(color) {
 
 	// Get default font at requested size
 	font_ = text_renderer::FontManager::GetFont(
@@ -222,10 +223,10 @@ inline Text::Text(
 inline Text::Text(
 	const float x,
 	const float y,
-	const std::string& text,
+	std::string  text,
 	text_renderer::FontAtlas* font,
 	const batch_renderer::Color& color
-) : UIElement(x, y, 0, 0), text_(text), color_(color), font_(font) {
+) : UIElement(x, y, 0, 0), text_(std::move(text)), color_(color), font_(font) {
 
 	ComputeMesh();
 }
@@ -277,7 +278,7 @@ inline void Text::ComputeMesh() {
 	glyphs_ = text_renderer::TextLayout::Layout(text_, *font_, options);
 
 	// Use MeasureText to get proper bounds (respects newlines)
-	batch_renderer::Rectangle bounds = text_renderer::TextLayout::MeasureText(
+	batch_renderer::Rectangle const bounds = text_renderer::TextLayout::MeasureText(
 		text_,
 		*font_,
 		0.0F // No wrapping

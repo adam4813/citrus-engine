@@ -3,6 +3,7 @@ module;
 
 #include <cmath>
 #include <memory>
+#include <numbers>
 #include <span>
 #include <string>
 #include <unordered_map>
@@ -152,10 +153,10 @@ bool MeshManager::GenerateQuad(const MeshId id, const float width, const float h
 	}
 
 	const std::vector<Vertex> vertices = {
-		{{-width / 2, -height / 2, 0}, {0, 0, 1}, {0, 0}},
-		{{width / 2, -height / 2, 0}, {0, 0, 1}, {1, 0}},
-		{{width / 2, height / 2, 0}, {0, 0, 1}, {1, 1}},
-		{{-width / 2, height / 2, 0}, {0, 0, 1}, {0, 1}}
+		{.position = {-width / 2, -height / 2, 0}, .normal = {0, 0, 1}, .tex_coords = {0, 0}},
+		{.position = {width / 2, -height / 2, 0}, .normal = {0, 0, 1}, .tex_coords = {1, 0}},
+		{.position = {width / 2, height / 2, 0}, .normal = {0, 0, 1}, .tex_coords = {1, 1}},
+		{.position = {-width / 2, height / 2, 0}, .normal = {0, 0, 1}, .tex_coords = {0, 1}}
 	};
 
 	const std::vector<uint32_t> indices = {0, 1, 2, 0, 2, 3};
@@ -190,35 +191,35 @@ bool MeshManager::GenerateCube(const MeshId id, const float width, const float h
 	// clang-format off
 	const std::vector<Vertex> vertices = {
 		// Front face (red) - Z+
-		{{-hw, -hh, hd}, {0, 0, 1}, {0, 0}, {0, 0, 0}, {0, 0, 0}, face_colors[0]},
-		{{hw, -hh, hd}, {0, 0, 1}, {1, 0}, {0, 0, 0}, {0, 0, 0}, face_colors[0]},
-		{{hw, hh, hd}, {0, 0, 1}, {1, 1}, {0, 0, 0}, {0, 0, 0}, face_colors[0]},
-		{{-hw, hh, hd}, {0, 0, 1}, {0, 1}, {0, 0, 0}, {0, 0, 0}, face_colors[0]},
+		{.position={-hw, -hh, hd}, .normal={0, 0, 1}, .tex_coords={0, 0}, .tangent={0, 0, 0}, .bitangent={0, 0, 0}, .color=face_colors[0]},
+		{.position={hw, -hh, hd}, .normal={0, 0, 1}, .tex_coords={1, 0}, .tangent={0, 0, 0}, .bitangent={0, 0, 0}, .color=face_colors[0]},
+		{.position={hw, hh, hd}, .normal={0, 0, 1}, .tex_coords={1, 1}, .tangent={0, 0, 0}, .bitangent={0, 0, 0}, .color=face_colors[0]},
+		{.position={-hw, hh, hd}, .normal={0, 0, 1}, .tex_coords={0, 1}, .tangent={0, 0, 0}, .bitangent={0, 0, 0}, .color=face_colors[0]},
 		// Back face (green) - Z-
-		{{hw, -hh, -hd}, {0, 0, -1}, {0, 0}, {0, 0, 0}, {0, 0, 0}, face_colors[1]},
-		{{-hw, -hh, -hd}, {0, 0, -1}, {1, 0}, {0, 0, 0}, {0, 0, 0}, face_colors[1]},
-		{{-hw, hh, -hd}, {0, 0, -1}, {1, 1}, {0, 0, 0}, {0, 0, 0}, face_colors[1]},
-		{{hw, hh, -hd}, {0, 0, -1}, {0, 1}, {0, 0, 0}, {0, 0, 0}, face_colors[1]},
+		{.position={hw, -hh, -hd}, .normal={0, 0, -1}, .tex_coords={0, 0}, .tangent={0, 0, 0}, .bitangent={0, 0, 0}, .color=face_colors[1]},
+		{.position={-hw, -hh, -hd}, .normal={0, 0, -1}, .tex_coords={1, 0}, .tangent={0, 0, 0}, .bitangent={0, 0, 0}, .color=face_colors[1]},
+		{.position={-hw, hh, -hd}, .normal={0, 0, -1}, .tex_coords={1, 1}, .tangent={0, 0, 0}, .bitangent={0, 0, 0}, .color=face_colors[1]},
+		{.position={hw, hh, -hd}, .normal={0, 0, -1}, .tex_coords={0, 1}, .tangent={0, 0, 0}, .bitangent={0, 0, 0}, .color=face_colors[1]},
 		// Left face (blue) - X-
-		{{-hw, -hh, -hd}, {-1, 0, 0}, {0, 0}, {0, 0, 0}, {0, 0, 0}, face_colors[2]},
-		{{-hw, -hh, hd}, {-1, 0, 0}, {1, 0}, {0, 0, 0}, {0, 0, 0}, face_colors[2]},
-		{{-hw, hh, hd}, {-1, 0, 0}, {1, 1}, {0, 0, 0}, {0, 0, 0}, face_colors[2]},
-		{{-hw, hh, -hd}, {-1, 0, 0}, {0, 1}, {0, 0, 0}, {0, 0, 0}, face_colors[2]},
+		{.position={-hw, -hh, -hd}, .normal={-1, 0, 0}, .tex_coords={0, 0}, .tangent={0, 0, 0}, .bitangent={0, 0, 0}, .color=face_colors[2]},
+		{.position={-hw, -hh, hd}, .normal={-1, 0, 0}, .tex_coords={1, 0}, .tangent={0, 0, 0}, .bitangent={0, 0, 0}, .color=face_colors[2]},
+		{.position={-hw, hh, hd}, .normal={-1, 0, 0}, .tex_coords={1, 1}, .tangent={0, 0, 0}, .bitangent={0, 0, 0}, .color=face_colors[2]},
+		{.position={-hw, hh, -hd}, .normal={-1, 0, 0}, .tex_coords={0, 1}, .tangent={0, 0, 0}, .bitangent={0, 0, 0}, .color=face_colors[2]},
 		// Right face (yellow) - X+
-		{{hw, -hh, hd}, {1, 0, 0}, {0, 0}, {0, 0, 0}, {0, 0, 0}, face_colors[3]},
-		{{hw, -hh, -hd}, {1, 0, 0}, {1, 0}, {0, 0, 0}, {0, 0, 0}, face_colors[3]},
-		{{hw, hh, -hd}, {1, 0, 0}, {1, 1}, {0, 0, 0}, {0, 0, 0}, face_colors[3]},
-		{{hw, hh, hd}, {1, 0, 0}, {0, 1}, {0, 0, 0}, {0, 0, 0}, face_colors[3]},
+		{.position={hw, -hh, hd}, .normal={1, 0, 0}, .tex_coords={0, 0}, .tangent={0, 0, 0}, .bitangent={0, 0, 0}, .color=face_colors[3]},
+		{.position={hw, -hh, -hd}, .normal={1, 0, 0}, .tex_coords={1, 0}, .tangent={0, 0, 0}, .bitangent={0, 0, 0}, .color=face_colors[3]},
+		{.position={hw, hh, -hd}, .normal={1, 0, 0}, .tex_coords={1, 1}, .tangent={0, 0, 0}, .bitangent={0, 0, 0}, .color=face_colors[3]},
+		{.position={hw, hh, hd}, .normal={1, 0, 0}, .tex_coords={0, 1}, .tangent={0, 0, 0}, .bitangent={0, 0, 0}, .color=face_colors[3]},
 		// Top face (magenta) - Y+
-		{{-hw, hh, hd}, {0, 1, 0}, {0, 0}, {0, 0, 0}, {0, 0, 0}, face_colors[4]},
-		{{hw, hh, hd}, {0, 1, 0}, {1, 0}, {0, 0, 0}, {0, 0, 0}, face_colors[4]},
-		{{hw, hh, -hd}, {0, 1, 0}, {1, 1}, {0, 0, 0}, {0, 0, 0}, face_colors[4]},
-		{{-hw, hh, -hd}, {0, 1, 0}, {0, 1}, {0, 0, 0}, {0, 0, 0}, face_colors[4]},
+		{.position={-hw, hh, hd}, .normal={0, 1, 0}, .tex_coords={0, 0}, .tangent={0, 0, 0}, .bitangent={0, 0, 0}, .color=face_colors[4]},
+		{.position={hw, hh, hd}, .normal={0, 1, 0}, .tex_coords={1, 0}, .tangent={0, 0, 0}, .bitangent={0, 0, 0}, .color=face_colors[4]},
+		{.position={hw, hh, -hd}, .normal={0, 1, 0}, .tex_coords={1, 1}, .tangent={0, 0, 0}, .bitangent={0, 0, 0}, .color=face_colors[4]},
+		{.position={-hw, hh, -hd}, .normal={0, 1, 0}, .tex_coords={0, 1}, .tangent={0, 0, 0}, .bitangent={0, 0, 0}, .color=face_colors[4]},
 		// Bottom face (cyan) - Y-
-		{{-hw, -hh, -hd}, {0, -1, 0}, {0, 0}, {0, 0, 0}, {0, 0, 0}, face_colors[5]},
-		{{hw, -hh, -hd}, {0, -1, 0}, {1, 0}, {0, 0, 0}, {0, 0, 0}, face_colors[5]},
-		{{hw, -hh, hd}, {0, -1, 0}, {1, 1}, {0, 0, 0}, {0, 0, 0}, face_colors[5]},
-		{{-hw, -hh, hd}, {0, -1, 0}, {0, 1}, {0, 0, 0}, {0, 0, 0}, face_colors[5]},
+		{.position={-hw, -hh, -hd}, .normal={0, -1, 0}, .tex_coords={0, 0}, .tangent={0, 0, 0}, .bitangent={0, 0, 0}, .color=face_colors[5]},
+		{.position={hw, -hh, -hd}, .normal={0, -1, 0}, .tex_coords={1, 0}, .tangent={0, 0, 0}, .bitangent={0, 0, 0}, .color=face_colors[5]},
+		{.position={hw, -hh, hd}, .normal={0, -1, 0}, .tex_coords={1, 1}, .tangent={0, 0, 0}, .bitangent={0, 0, 0}, .color=face_colors[5]},
+		{.position={-hw, -hh, hd}, .normal={0, -1, 0}, .tex_coords={0, 1}, .tangent={0, 0, 0}, .bitangent={0, 0, 0}, .color=face_colors[5]},
 	};
 
 	const std::vector<uint32_t> indices = {
@@ -245,7 +246,7 @@ MeshId MeshManager::CreateSphere(const float radius, const uint32_t segments) {
 	return id;
 }
 
-bool MeshManager::GenerateSphere(MeshId id, float radius, uint32_t segments) {
+bool MeshManager::GenerateSphere(MeshId id, float radius, uint32_t segments) const {
 	if (id == INVALID_MESH) {
 		return false;
 	}
@@ -256,7 +257,7 @@ bool MeshManager::GenerateSphere(MeshId id, float radius, uint32_t segments) {
 	const uint32_t rings = segments;
 	const uint32_t sectors = segments;
 
-	constexpr float PI = 3.14159265359F;
+	constexpr float pi = std::numbers::pi_v<float>;
 
 	// Top pole - single vertex
 	Vertex top_pole;
@@ -267,12 +268,12 @@ bool MeshManager::GenerateSphere(MeshId id, float radius, uint32_t segments) {
 
 	// Generate middle rings (exclude poles)
 	for (uint32_t ring = 1; ring < rings; ++ring) {
-		const float phi = PI * static_cast<float>(ring) / static_cast<float>(rings);
+		const float phi = pi * static_cast<float>(ring) / static_cast<float>(rings);
 		const float y = radius * std::cos(phi);
 		const float ring_radius = radius * std::sin(phi);
 
 		for (uint32_t sector = 0; sector <= sectors; ++sector) {
-			const float theta = 2.0F * PI * static_cast<float>(sector) / static_cast<float>(sectors);
+			const float theta = 2.0F * pi * static_cast<float>(sector) / static_cast<float>(sectors);
 			const float x = ring_radius * std::cos(theta);
 			const float z = ring_radius * std::sin(theta);
 

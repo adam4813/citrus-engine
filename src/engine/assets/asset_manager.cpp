@@ -27,7 +27,7 @@ std::shared_ptr<Image> AssetManager::LoadImage(const std::string& path) {
 
 std::shared_ptr<Image> AssetManager::LoadImage(const std::filesystem::path& absolute_path) {
 	using namespace engine::platform;
-	std::cout << "Loading image from: " << absolute_path.string() << std::endl;
+	std::cout << "Loading image from: " << absolute_path.string() << '\n';
 	fs::File file;
 	if (!file.Open(absolute_path, fs::FileMode::Read)) {
 		// Could not open file

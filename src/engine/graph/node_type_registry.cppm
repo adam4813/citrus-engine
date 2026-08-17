@@ -43,20 +43,20 @@ public:
 	/// Get a node type definition by name
 	/// @param name The full type name (category/name or just name)
 	/// @return Pointer to the definition, or nullptr if not found
-	const NodeTypeDefinition* Get(const std::string& name) const;
+	[[nodiscard]] const NodeTypeDefinition* Get(const std::string& name) const;
 
 	/// Get all registered categories
 	/// @return List of unique category names
-	std::vector<std::string> GetCategories() const;
+	[[nodiscard]] std::vector<std::string> GetCategories() const;
 
 	/// Get all node types in a category
 	/// @param category The category name
 	/// @return List of node type definitions in that category
-	std::vector<const NodeTypeDefinition*> GetByCategory(const std::string& category) const;
+	[[nodiscard]] std::vector<const NodeTypeDefinition*> GetByCategory(const std::string& category) const;
 
 	/// Get all registered node types
 	/// @return List of all node type definitions
-	std::vector<const NodeTypeDefinition*> GetAll() const;
+	[[nodiscard]] std::vector<const NodeTypeDefinition*> GetAll() const;
 
 	/// Clear all registered types (useful for testing)
 	void Clear();

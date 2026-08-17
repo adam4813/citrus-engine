@@ -65,7 +65,7 @@ public:
 	 * @param key The key to check
 	 * @return true if the key exists, false otherwise
 	 */
-	[[nodiscard]] bool Has(const std::string& key) const { return data_.find(key) != data_.end(); }
+	[[nodiscard]] bool Has(const std::string& key) const { return data_.contains(key); }
 
 	/**
 	 * @brief Remove a key from the blackboard

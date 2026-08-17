@@ -37,7 +37,7 @@ struct CollisionShape {
 	float cylinder_height{1.0F};
 	glm::vec3 offset{0.0F};
 	glm::quat rotation{1.0F, 0.0F, 0.0F, 0.0F};
-	std::vector<ChildShape> compound_children{};
+	std::vector<ChildShape> compound_children;
 };
 
 // Velocity tracked by physics (separate from engine::components::Velocity to avoid collision)
@@ -79,7 +79,7 @@ struct PhysicsWorldConfig {
 
 // Singleton component to hold the physics backend pointer (for raycasting, etc.)
 struct PhysicsBackendPtr {
-	std::shared_ptr<class IPhysicsBackend> backend{};
+	std::shared_ptr<class IPhysicsBackend> backend;
 };
 
 // Constraint as relationship data (used with flecs relationships)

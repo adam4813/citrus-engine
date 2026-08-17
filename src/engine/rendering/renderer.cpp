@@ -2,6 +2,7 @@
 module;
 
 #include <memory>
+#include <numbers>
 #include <spdlog/spdlog.h>
 #include <string>
 #ifdef __EMSCRIPTEN__
@@ -19,7 +20,7 @@ import engine.components;
 namespace engine::rendering {
 // GL error checking helper
 static void CheckGLError(const char* context) {
-	GLenum err;
+	GLenum err = 0;
 	while ((err = glGetError()) != GL_NO_ERROR) {
 		const char* error_str = "Unknown";
 		switch (err) {
@@ -173,7 +174,7 @@ void main() {
 
 	// Position attribute (location 0)
 	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 7 * sizeof(float), (void*) 0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 7 * sizeof(float), (void*) nullptr);
 
 	// Color attribute (location 1)
 	glEnableVertexAttribArray(1);
@@ -271,7 +272,7 @@ void Renderer::SubmitRenderCommand(const RenderCommand& command) const {
 #endif
 
 	for (const auto& [enable_flags, disable_flags] : command.render_state_stack) {
-		for (auto& flag : enable_flags) {
+		for (const auto& flag : enable_flags) {
 			switch (flag) {
 			case RenderFlag::DepthTest: glEnable(GL_DEPTH_TEST); break;
 			case RenderFlag::Blend: glEnable(GL_BLEND); break;
@@ -287,7 +288,7 @@ void Renderer::SubmitRenderCommand(const RenderCommand& command) const {
 			default: break;
 			}
 		}
-		for (auto& flag : disable_flags) {
+		for (const auto& flag : disable_flags) {
 			switch (flag) {
 			case RenderFlag::DepthTest: glDisable(GL_DEPTH_TEST); break;
 			case RenderFlag::Blend: glDisable(GL_BLEND); break;
@@ -306,12 +307,12 @@ void Renderer::SubmitRenderCommand(const RenderCommand& command) const {
 	}
 
 	glBindVertexArray(gl_mesh->vao);
-	glDrawElements(GL_TRIANGLES, gl_mesh->index_count, GL_UNSIGNED_INT, 0);
+	glDrawElements(GL_TRIANGLES, gl_mesh->index_count, GL_UNSIGNED_INT, nullptr);
 	glBindVertexArray(0);
 
 	for (const auto& [enable_flags, disable_flags] : command.render_state_stack) {
 		// Restore render states (reverse the operations)
-		for (auto& flag : disable_flags) {
+		for (const auto& flag : disable_flags) {
 			switch (flag) {
 			case RenderFlag::DepthTest: glEnable(GL_DEPTH_TEST); break;
 			case RenderFlag::Blend: glEnable(GL_BLEND); break;
@@ -328,7 +329,7 @@ void Renderer::SubmitRenderCommand(const RenderCommand& command) const {
 			default: break;
 			}
 		}
-		for (auto& flag : enable_flags) {
+		for (const auto& flag : enable_flags) {
 			switch (flag) {
 			case RenderFlag::DepthTest: glDisable(GL_DEPTH_TEST); break;
 			case RenderFlag::Blend: glDisable(GL_BLEND); break;
@@ -391,9 +392,9 @@ void Renderer::SubmitSprite(const SpriteRenderCommand& command) const {
 
 	// Set up orthographic projection for 2D rendering (screen coordinates)
 	const float left = 0.0F;
-	const float right = static_cast<float>(pimpl_->window_width);
+	const auto right = static_cast<float>(pimpl_->window_width);
 	const float bottom = 0.0F;
-	const float top = static_cast<float>(pimpl_->window_height);
+	const auto top = static_cast<float>(pimpl_->window_height);
 	const float near = -1.0F;
 	const float far = 1.0F;
 
@@ -421,7 +422,7 @@ void Renderer::SubmitSprite(const SpriteRenderCommand& command) const {
 
 	// Render the quad
 	glBindVertexArray(gl_mesh->vao);
-	glDrawElements(GL_TRIANGLES, gl_mesh->index_count, GL_UNSIGNED_INT, 0);
+	glDrawElements(GL_TRIANGLES, gl_mesh->index_count, GL_UNSIGNED_INT, nullptr);
 	glBindVertexArray(0);
 
 	// Restore OpenGL state
@@ -442,8 +443,8 @@ void Renderer::SubmitUIBatch(const UIBatchRenderCommand& command) const {
 	}
 
 	// Save GL state
-	GLboolean depth_test_enabled = glIsEnabled(GL_DEPTH_TEST);
-	GLboolean cull_face_enabled = glIsEnabled(GL_CULL_FACE);
+	GLboolean const depth_test_enabled = glIsEnabled(GL_DEPTH_TEST);
+	GLboolean const cull_face_enabled = glIsEnabled(GL_CULL_FACE);
 
 	// Disable depth test and face culling for UI rendering
 	glDisable(GL_DEPTH_TEST);
@@ -618,7 +619,7 @@ void Renderer::DrawWireSphere(const Vec3& center, float radius, const Color& col
 void Renderer::DrawWireSphere(const Vec3& center, const Vec3& radius, const Color& color) const {
 	// Draw 3 circles in XY, XZ, and YZ planes
 	constexpr int segments = 16;
-	constexpr float angle_step = 2.0F * 3.14159265359F / segments;
+	constexpr float angle_step = 2.0F * std::numbers::pi_v<float> / segments;
 
 	// XY plane circle (around Z axis)
 	for (int i = 0; i < segments; ++i) {
@@ -754,11 +755,11 @@ Renderer& GetRenderer() {
 	return *g_renderer;
 }
 
-bool InitializeRenderer(const uint32_t window_width, const uint32_t window_height) {
+static bool InitializeRenderer(const uint32_t window_width, const uint32_t window_height) {
 	return GetRenderer().Initialize(window_width, window_height);
 }
 
-void ShutdownRenderer() {
+static void ShutdownRenderer() {
 	if (g_renderer) {
 		g_renderer->Shutdown();
 		g_renderer.reset();

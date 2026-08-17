@@ -37,7 +37,7 @@ public:
 	~Renderer();
 
 	// Initialization
-	bool Initialize(uint32_t window_width, uint32_t window_height) const;
+	[[nodiscard]] bool Initialize(uint32_t window_width, uint32_t window_height) const;
 
 	void Shutdown() const;
 
@@ -47,13 +47,13 @@ public:
 	void EndFrame();
 
 	// Resource manager access
-	TextureManager& GetTextureManager() const;
+	[[nodiscard]] TextureManager& GetTextureManager() const;
 
-	ShaderManager& GetShaderManager() const;
+	[[nodiscard]] ShaderManager& GetShaderManager() const;
 
-	MeshManager& GetMeshManager() const;
+	[[nodiscard]] MeshManager& GetMeshManager() const;
 
-	MaterialManager& GetMaterialManager() const;
+	[[nodiscard]] MaterialManager& GetMaterialManager() const;
 
 	// Rendering operations
 	void SubmitRenderCommand(const RenderCommand& command) const;
@@ -84,9 +84,9 @@ public:
 	void SetWindowSize(uint32_t width, uint32_t height) const;
 
 	// Statistics
-	uint32_t GetDrawCallCount() const;
+	[[nodiscard]] uint32_t GetDrawCallCount() const;
 
-	uint32_t GetTriangleCount() const;
+	[[nodiscard]] uint32_t GetTriangleCount() const;
 
 	void ResetStatistics() const;
 

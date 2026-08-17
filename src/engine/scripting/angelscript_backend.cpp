@@ -22,7 +22,7 @@ private:
 	std::map<std::string, std::function<ScriptValue(const std::vector<ScriptValue>&)>> registered_functions_;
 
 	// Helper to convert ScriptValue to AngelScript
-	void PushValue(asIScriptContext* ctx, int arg_index, const ScriptValue& value) {
+	static void PushValue(asIScriptContext* ctx, int arg_index, const ScriptValue& value) {
 		if (value.Is<int>()) {
 			ctx->SetArgDWord(arg_index, static_cast<asDWORD>(value.As<int>()));
 		}
@@ -45,7 +45,7 @@ private:
 	}
 
 	// Helper to get return value from AngelScript
-	ScriptValue GetReturnValue(asIScriptContext* ctx, int type_id) {
+	static ScriptValue GetReturnValue(asIScriptContext* ctx, int type_id) {
 		ScriptValue result;
 
 		if (type_id == asTYPEID_INT32) {
@@ -94,7 +94,7 @@ private:
 		}
 
 		// Call the C++ function
-		ScriptValue result = (*func_ptr)(args);
+		ScriptValue const result = (*func_ptr)(args);
 
 		// Set return value
 		const int return_type_id = gen->GetReturnTypeId();
@@ -113,20 +113,20 @@ private:
 	}
 
 	// Parse signature string to AngelScript declaration
-	std::string ConvertSignatureToAS(const std::string& name, const std::string& signature) {
+	static std::string ConvertSignatureToAS(const std::string& name, const std::string& signature) {
 		// Simple signature format: "returntype(arg1,arg2,...)"
 		// Convert to AngelScript: "returntype name(arg1, arg2, ...)"
 		if (signature.empty()) {
 			return "void " + name + "()";
 		}
 
-		size_t paren_pos = signature.find('(');
+		size_t const paren_pos = signature.find('(');
 		if (paren_pos == std::string::npos) {
 			return "void " + name + "()";
 		}
 
-		std::string return_type = signature.substr(0, paren_pos);
-		std::string params = signature.substr(paren_pos);
+		std::string const return_type = signature.substr(0, paren_pos);
+		std::string const params = signature.substr(paren_pos);
 
 		return return_type + " " + name + params;
 	}
@@ -143,11 +143,7 @@ public:
 
 		// Create context for executing scripts
 		context_ = engine_->CreateContext();
-		if (!context_) {
-			return false;
-		}
-
-		return true;
+		return context_ != nullptr;
 	}
 
 	void Shutdown() override {
@@ -180,11 +176,7 @@ public:
 
 		// Build the module
 		r = mod->Build();
-		if (r < 0) {
-			return false;
-		}
-
-		return true;
+		return r >= 0;
 	}
 
 	bool ExecuteFile(const std::string& filepath) override {
@@ -207,10 +199,10 @@ public:
 		auto* func_ptr = &registered_functions_[name];
 
 		// Convert signature to AngelScript format
-		std::string as_decl = ConvertSignatureToAS(name, signature);
+		std::string const as_decl = ConvertSignatureToAS(name, signature);
 
 		// Register as generic function
-		int r = engine_->RegisterGlobalFunction(
+		int const r = engine_->RegisterGlobalFunction(
 			as_decl.c_str(),
 			asFUNCTION(GenericFunctionWrapper),
 			asCALL_GENERIC,
@@ -228,7 +220,7 @@ public:
 			return ScriptValue{};
 		}
 
-		asIScriptModule* mod = engine_->GetModule("script");
+		asIScriptModule const* mod = engine_->GetModule("script");
 		if (!mod) {
 			return ScriptValue{};
 		}
@@ -247,7 +239,7 @@ public:
 		}
 
 		// Execute
-		int r = context_->Execute();
+		int const r = context_->Execute();
 		if (r != asEXECUTION_FINISHED) {
 			return ScriptValue{};
 		}

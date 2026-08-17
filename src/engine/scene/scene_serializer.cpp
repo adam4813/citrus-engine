@@ -84,15 +84,15 @@ bool SceneSerializer::Save(const Scene& scene, ecs::ECSWorld& world, const platf
 		// Write to file
 		const std::string json_str = doc.dump(2); // Pretty print with 2-space indent
 		if (!assets::AssetManager::SaveTextFile(path, json_str)) {
-			std::cerr << "SceneSerializer: Failed to open file for writing: " << path << std::endl;
+			std::cerr << "SceneSerializer: Failed to open file for writing: " << path << '\n';
 			return false;
 		}
 
-		std::cout << "SceneSerializer: Saved scene '" << scene.GetName() << "' to " << path << std::endl;
+		std::cout << "SceneSerializer: Saved scene '" << scene.GetName() << "' to " << path << '\n';
 		return true;
 	}
 	catch (const std::exception& e) {
-		std::cerr << "SceneSerializer: Error saving scene: " << e.what() << std::endl;
+		std::cerr << "SceneSerializer: Error saving scene: " << e.what() << '\n';
 		return false;
 	}
 }
@@ -102,7 +102,7 @@ SceneId SceneSerializer::Load(const platform::fs::Path& path, SceneManager& mana
 		// Read file
 		auto text = assets::AssetManager::LoadTextFile(path);
 		if (!text) {
-			std::cerr << "SceneSerializer: Failed to open file for reading: " << path << std::endl;
+			std::cerr << "SceneSerializer: Failed to open file for reading: " << path << '\n';
 			return INVALID_SCENE;
 		}
 
@@ -110,7 +110,7 @@ SceneId SceneSerializer::Load(const platform::fs::Path& path, SceneManager& mana
 
 		// Validate version
 		if (const int version = doc.value("version", 0); version != SCENE_FORMAT_VERSION) {
-			std::cerr << "SceneSerializer: Unsupported scene format version: " << version << std::endl;
+			std::cerr << "SceneSerializer: Unsupported scene format version: " << version << '\n';
 			return INVALID_SCENE;
 		}
 
@@ -120,7 +120,7 @@ SceneId SceneSerializer::Load(const platform::fs::Path& path, SceneManager& mana
 		// Create the scene
 		const SceneId scene_id = manager.CreateScene(name);
 		if (scene_id == INVALID_SCENE) {
-			std::cerr << "SceneSerializer: Failed to create scene" << std::endl;
+			std::cerr << "SceneSerializer: Failed to create scene" << '\n';
 			return INVALID_SCENE;
 		}
 
@@ -178,7 +178,7 @@ SceneId SceneSerializer::Load(const platform::fs::Path& path, SceneManager& mana
 		if (doc.contains("flecs_data")) {
 			if (const std::string flecs_json = doc["flecs_data"].get<std::string>();
 				!DeserializeEntities(flecs_json, world)) {
-				std::cerr << "SceneSerializer: Warning - some entities may not have loaded correctly" << std::endl;
+				std::cerr << "SceneSerializer: Warning - some entities may not have loaded correctly" << '\n';
 			}
 		}
 
@@ -188,17 +188,17 @@ SceneId SceneSerializer::Load(const platform::fs::Path& path, SceneManager& mana
 			SetActiveCameraFromPath(active_camera_path, world);
 		}
 
-		std::cout << "SceneSerializer: Loaded scene '" << name << "' from " << path << std::endl;
+		std::cout << "SceneSerializer: Loaded scene '" << name << "' from " << path << '\n';
 		scene.SetLoaded(true);
 		return scene_id;
 	}
 	catch (const std::exception& e) {
-		std::cerr << "SceneSerializer: Error loading scene: " << e.what() << std::endl;
+		std::cerr << "SceneSerializer: Error loading scene: " << e.what() << '\n';
 		return INVALID_SCENE;
 	}
 }
 
-std::string SceneSerializer::SerializeEntities(const Scene& scene, ecs::ECSWorld& world) {
+std::string SceneSerializer::SerializeEntities(const Scene& scene, ecs::ECSWorld&  /*world*/) {
 	// Get the scene root and serialize all entities under it
 	const ecs::Entity scene_root = scene.GetSceneRoot();
 	if (!scene_root.is_valid()) {
@@ -245,9 +245,9 @@ bool SceneSerializer::DeserializeEntities(const std::string& flecs_json, ecs::EC
 	}
 
 	try {
-		json entities_array = json::parse(flecs_json);
+		json const entities_array = json::parse(flecs_json);
 		if (!entities_array.is_array()) {
-			std::cerr << "SceneSerializer: Expected array of entities" << std::endl;
+			std::cerr << "SceneSerializer: Expected array of entities" << '\n';
 			return false;
 		}
 
@@ -275,7 +275,7 @@ bool SceneSerializer::DeserializeEntities(const std::string& flecs_json, ecs::EC
 		return true;
 	}
 	catch (const std::exception& e) {
-		std::cerr << "SceneSerializer: Error deserializing entities: " << e.what() << std::endl;
+		std::cerr << "SceneSerializer: Error deserializing entities: " << e.what() << '\n';
 		return false;
 	}
 }
@@ -295,10 +295,10 @@ void SceneSerializer::SetActiveCameraFromPath(const std::string& path, ecs::ECSW
 	const flecs::world& flecs_world = world.GetWorld();
 	if (const ecs::Entity entity = flecs_world.lookup(path.c_str()); entity.is_valid()) {
 		world.SetActiveCamera(entity);
-		std::cout << "SceneSerializer: Set active camera to '" << path << "'" << std::endl;
+		std::cout << "SceneSerializer: Set active camera to '" << path << "'" << '\n';
 	}
 	else {
-		std::cerr << "SceneSerializer: Could not find camera entity at path: " << path << std::endl;
+		std::cerr << "SceneSerializer: Could not find camera entity at path: " << path << '\n';
 	}
 }
 
@@ -306,7 +306,7 @@ std::string SceneSerializer::SnapshotEntities(const Scene& scene, ecs::ECSWorld&
 	return SerializeEntities(scene, world);
 }
 
-bool SceneSerializer::RestoreEntities(const std::string& snapshot, const Scene& scene, ecs::ECSWorld& world) {
+bool SceneSerializer::RestoreEntities(const std::string& snapshot, const Scene&  /*scene*/, ecs::ECSWorld& world) {
 	// The scene root itself should still exist (only children were destroyed).
 	// Deserialize the snapshot to recreate all child entities under the scene root.
 	return DeserializeEntities(snapshot, world);

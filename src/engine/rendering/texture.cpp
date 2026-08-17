@@ -93,19 +93,19 @@ struct TextureManager::Impl {
 TextureManager::TextureManager() : pimpl_(std::make_unique<Impl>()) {
 	// Create default 1x1 white texture
 	constexpr uint32_t white_pixel = 0xFFFFFFFF; // RGBA white
-	TextureCreateInfo
+	TextureCreateInfo const
 		white_info{.width = 1, .height = 1, .format = TextureFormat::RGBA8, .parameters = {}, .data = &white_pixel};
 	pimpl_->white_texture = CreateTexture("__white_texture", white_info);
 
 	// Create default 1x1 black texture
 	constexpr uint32_t black_pixel = 0x000000FF; // RGBA black with full alpha
-	TextureCreateInfo
+	TextureCreateInfo const
 		black_info{.width = 1, .height = 1, .format = TextureFormat::RGBA8, .parameters = {}, .data = &black_pixel};
 	pimpl_->black_texture = CreateTexture("__black_texture", black_info);
 
 	// Create default 1x1 normal map (pointing up: RGB = 128, 128, 255)
 	constexpr uint32_t normal_pixel = 0xFF8080FF; // RGBA: 128, 128, 255, 255
-	TextureCreateInfo
+	TextureCreateInfo const
 		normal_info{.width = 1, .height = 1, .format = TextureFormat::RGBA8, .parameters = {}, .data = &normal_pixel};
 	pimpl_->default_normal_texture = CreateTexture("__default_normal", normal_info);
 }
@@ -184,7 +184,7 @@ TextureId TextureManager::LoadTexture(const platform::fs::Path& path, const Text
 	}
 
 	// Load image and create texture
-	const auto image = assets::AssetManager::Instance().LoadImage(path);
+	const auto image = assets::AssetManager::LoadImage(path);
 	if (!image || !image->IsValid()) {
 		return INVALID_TEXTURE;
 	}

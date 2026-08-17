@@ -21,7 +21,7 @@ using json = nlohmann::json;
 namespace engine::graph {
 
 // Helper to convert PinValue to JSON
-static void to_json(json& j, const PinValue& value) {
+static void ToJson(json& j, const PinValue& value) {
 	std::visit(
 		[&j](auto&& arg) {
 			using T = std::decay_t<decltype(arg)>;
@@ -52,7 +52,7 @@ static void to_json(json& j, const PinValue& value) {
 }
 
 // Helper to convert JSON to PinValue based on type
-static PinValue from_json_value(const json& j, PinType type) {
+static PinValue FromJsonValue(const json& j, PinType type) {
 	switch (type) {
 	case PinType::Bool: return j.get<bool>();
 	case PinType::Int:
@@ -100,7 +100,7 @@ std::string GraphSerializer::Serialize(const NodeGraph& graph) {
 			pin_json["id"] = pin.id;
 			pin_json["name"] = pin.name;
 			pin_json["type"] = static_cast<int>(pin.type);
-			to_json(pin_json["default_value"], pin.default_value);
+			ToJson(pin_json["default_value"], pin.default_value);
 			inputs_json.push_back(pin_json);
 		}
 		node_json["inputs"] = inputs_json;
@@ -112,7 +112,7 @@ std::string GraphSerializer::Serialize(const NodeGraph& graph) {
 			pin_json["id"] = pin.id;
 			pin_json["name"] = pin.name;
 			pin_json["type"] = static_cast<int>(pin.type);
-			to_json(pin_json["default_value"], pin.default_value);
+			ToJson(pin_json["default_value"], pin.default_value);
 			outputs_json.push_back(pin_json);
 		}
 		node_json["outputs"] = outputs_json;
@@ -120,7 +120,7 @@ std::string GraphSerializer::Serialize(const NodeGraph& graph) {
 		// Properties
 		json props_json;
 		for (const auto& [key, value] : node.properties) {
-			to_json(props_json[key], value);
+			ToJson(props_json[key], value);
 		}
 		node_json["properties"] = props_json;
 
@@ -187,7 +187,7 @@ bool GraphSerializer::Deserialize(const std::string& json_str, NodeGraph& graph)
 						pin.direction = PinDirection::Input;
 
 						if (pin_json.contains("default_value")) {
-							pin.default_value = from_json_value(pin_json["default_value"], pin.type);
+							pin.default_value = FromJsonValue(pin_json["default_value"], pin.type);
 						}
 
 						node.inputs.push_back(pin);
@@ -206,7 +206,7 @@ bool GraphSerializer::Deserialize(const std::string& json_str, NodeGraph& graph)
 						pin.direction = PinDirection::Output;
 
 						if (pin_json.contains("default_value")) {
-							pin.default_value = from_json_value(pin_json["default_value"], pin.type);
+							pin.default_value = FromJsonValue(pin_json["default_value"], pin.type);
 						}
 
 						node.outputs.push_back(pin);

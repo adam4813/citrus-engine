@@ -4,6 +4,7 @@ module;
 #include <cmath>
 #include <cstdint>
 #include <memory>
+#include <numbers>
 #include <optional>
 #include <spdlog/spdlog.h>
 #include <string>
@@ -23,7 +24,7 @@ import engine.ui;
 import glm;
 
 namespace engine::ui::batch_renderer {
-constexpr float PI = 3.14159265358979323846F;
+constexpr float PI = std::numbers::pi_v<float>;
 constexpr float MIN_LINE_LENGTH = 0.001F; // Minimum line length to avoid degenerate geometry
 constexpr float MIN_CORNER_RADIUS = 0.1F; // Minimum corner radius for rounded rectangles
 
@@ -50,7 +51,7 @@ struct BatchRenderer::BatchState {
 	GLuint vao = 0;
 	GLuint vbo = 0;
 	GLuint ebo = 0;
-	glm::mat4 projection;
+	glm::mat4 projection{};
 
 	// Screen dimensions
 	uint32_t screen_width = 0;
@@ -73,7 +74,7 @@ void BatchRenderer::Initialize() {
 		auto& texture_mgr = renderer.GetTextureManager();
 
 		// Load UI batch shader
-		platform::fs::Path shader_dir = "assets/shaders";
+		platform::fs::Path const shader_dir = "assets/shaders";
 		state_->ui_shader =
 			shader_mgr.LoadShader("ui_batch", shader_dir / "ui_batch.vert", shader_dir / "ui_batch.frag");
 
@@ -143,7 +144,7 @@ void BatchRenderer::Initialize() {
 		glBindVertexArray(0);
 
 		// Check for GL errors during initialization
-		GLenum err = glGetError();
+		GLenum const err = glGetError();
 		if (err != GL_NO_ERROR) {
 			spdlog::error("[BatchRenderer] OpenGL error during initialization: 0x{:x}", err);
 		}
@@ -191,7 +192,8 @@ void BatchRenderer::BeginFrame() {
 	// Get current screen dimensions from renderer
 	auto& renderer = rendering::GetRenderer();
 	// Query the current framebuffer size from the renderer
-	uint32_t width = 1920, height = 1080;
+	uint32_t width = 1920;
+	uint32_t height = 1080;
 	renderer.GetFramebufferSize(width, height);
 	state_->screen_width = width;
 	state_->screen_height = height;
@@ -230,7 +232,7 @@ void BatchRenderer::PushScissor(const ScissorRect& scissor) {
 	}
 
 	// Intersect with current scissor
-	ScissorRect new_scissor = state_->current_scissor.Intersect(scissor);
+	ScissorRect const new_scissor = state_->current_scissor.Intersect(scissor);
 
 	// If scissor changed, flush current batch
 	if (new_scissor != state_->current_scissor && !state_->vertices.empty()) {
@@ -246,7 +248,7 @@ void BatchRenderer::PopScissor() {
 		return;
 	}
 
-	ScissorRect previous = state_->scissor_stack.back();
+	ScissorRect const previous = state_->scissor_stack.back();
 	state_->scissor_stack.pop_back();
 
 	// If scissor changed, flush current batch
@@ -288,7 +290,10 @@ void BatchRenderer::SubmitQuad(
 	const int tex_slot = GetOrAddTextureSlot(texture_id);
 
 	// UV coordinates (default to full texture)
-	float u0 = 0.0F, v0 = 0.0F, u1 = 1.0F, v1 = 1.0F;
+	float u0 = 0.0F;
+	float v0 = 0.0F;
+	float u1 = 1.0F;
+	float v1 = 1.0F;
 	if (uv_coords.has_value()) {
 		const Rectangle& uv = uv_coords.value();
 		u0 = uv.x;
@@ -304,7 +309,7 @@ void BatchRenderer::SubmitQuad(
 	const float x1 = rect.x + rect.width;
 	const float y1 = rect.y;
 
-	const float tex_slot_f = static_cast<float>(tex_slot);
+	const auto tex_slot_f = static_cast<float>(tex_slot);
 
 	// clang-format off
 	PushQuadVertices(
@@ -365,7 +370,7 @@ void BatchRenderer::SubmitLine(
 	}
 
 	const int tex_slot = GetOrAddTextureSlot(texture_id);
-	const float tex_slot_f = static_cast<float>(tex_slot);
+	const auto tex_slot_f = static_cast<float>(tex_slot);
 
 	PushQuadVertices(
 		Vertex(xa, ya, 0.0F, 0.0F, color, tex_slot_f),
@@ -538,14 +543,14 @@ void BatchRenderer::SubmitText(
 	auto glyphs = text_renderer::TextLayout::Layout(text, *font, options);
 
 	// Submit each glyph as a textured quad
-	uint32_t texture_id = font->GetTextureId();
+	uint32_t const texture_id = font->GetTextureId();
 
 	for (const auto& pg : glyphs) {
 		if (pg.metrics->size.x == 0 || pg.metrics->size.y == 0) {
 			continue; // Skip empty glyphs (like space)
 		}
 
-		Rectangle screen_rect(x + pg.position.x, y + pg.position.y, pg.metrics->size.x, pg.metrics->size.y);
+		Rectangle const screen_rect(x + pg.position.x, y + pg.position.y, pg.metrics->size.x, pg.metrics->size.y);
 
 		// Submit quad with glyph's UV coordinates
 		SubmitQuad(screen_rect, color, pg.metrics->atlas_rect, texture_id);
@@ -592,14 +597,14 @@ void BatchRenderer::SubmitTextRect(
 	PushScissor(ScissorRect(rect.x, rect.y, rect.width, rect.height));
 
 	// Submit each glyph as a textured quad
-	uint32_t texture_id = font->GetTextureId();
+	uint32_t const texture_id = font->GetTextureId();
 
 	for (const auto& pg : glyphs) {
 		if (pg.metrics->size.x == 0 || pg.metrics->size.y == 0) {
 			continue; // Skip empty glyphs
 		}
 
-		Rectangle screen_rect(rect.x + pg.position.x, rect.y + pg.position.y, pg.metrics->size.x, pg.metrics->size.y);
+		Rectangle const screen_rect(rect.x + pg.position.x, rect.y + pg.position.y, pg.metrics->size.x, pg.metrics->size.y);
 
 		// Submit quad with glyph's UV coordinates
 		SubmitQuad(screen_rect, color, pg.metrics->atlas_rect, texture_id);
@@ -654,7 +659,7 @@ bool BatchRenderer::ShouldFlush(const uint32_t texture_id) {
 	}
 
 	// Check if adding this texture would exceed limit
-	if (state_->texture_slots.find(texture_id) == state_->texture_slots.end()) {
+	if (!state_->texture_slots.contains(texture_id)) {
 		if (state_->texture_slots.size() >= MAX_TEXTURE_SLOTS) {
 			return true;
 		}

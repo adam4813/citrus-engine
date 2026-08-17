@@ -39,8 +39,8 @@ struct TextureParameters {
 };
 
 struct TextureCreateInfo {
-	uint32_t width;
-	uint32_t height;
+	uint32_t width{};
+	uint32_t height{};
 	TextureFormat format = TextureFormat::RGBA8;
 	TextureParameters parameters = {};
 	const void* data = nullptr; // Optional initial data
@@ -53,14 +53,14 @@ public:
 	~TextureManager();
 
 	// Create textures
-	TextureId CreateTexture(const std::string& name, const TextureCreateInfo& info) const;
+	[[nodiscard]] TextureId CreateTexture(const std::string& name, const TextureCreateInfo& info) const;
 
 	// Create a texture from an image
-	TextureId
+	[[nodiscard]] TextureId
 	CreateTexture(const std::shared_ptr<assets::Image>& image, const TextureParameters& parameters = {}) const;
 
 	// Load texture from file
-	TextureId LoadTexture(const platform::fs::Path& path, const TextureParameters& parameter = {}) const;
+	[[nodiscard]] TextureId LoadTexture(const platform::fs::Path& path, const TextureParameters& parameter = {}) const;
 
 	// Texture operations
 	static void UpdateTexture(TextureId id, const void* data, uint32_t x, uint32_t y, uint32_t width, uint32_t height);
@@ -68,30 +68,30 @@ public:
 	void SetTextureParameters(TextureId id, const TextureParameters& parameters = {}) const;
 
 	// Texture info
-	uint32_t GetWidth(TextureId id) const;
+	[[nodiscard]] uint32_t GetWidth(TextureId id) const;
 
-	uint32_t GetHeight(TextureId id) const;
+	[[nodiscard]] uint32_t GetHeight(TextureId id) const;
 
-	TextureFormat GetFormat(TextureId id) const;
+	[[nodiscard]] TextureFormat GetFormat(TextureId id) const;
 
 	// Resource management
 	void DestroyTexture(TextureId id) const;
 
-	bool IsValid(TextureId id) const;
+	[[nodiscard]] bool IsValid(TextureId id) const;
 
 	// Name-based lookup
-	TextureId FindTexture(const std::string& name) const;
+	[[nodiscard]] TextureId FindTexture(const std::string& name) const;
 
-	std::string GetTextureName(TextureId id) const;
+	[[nodiscard]] std::string GetTextureName(TextureId id) const;
 
 	void Clear() const;
 
 	// Get default textures
-	TextureId GetWhiteTexture() const;
+	[[nodiscard]] TextureId GetWhiteTexture() const;
 
-	TextureId GetBlackTexture() const;
+	[[nodiscard]] TextureId GetBlackTexture() const;
 
-	TextureId GetDefaultNormalTexture() const;
+	[[nodiscard]] TextureId GetDefaultNormalTexture() const;
 
 private:
 	struct Impl;

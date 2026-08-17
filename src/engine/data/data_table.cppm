@@ -37,7 +37,7 @@ struct DataRow {
 
 	/// Check if a column exists
 	[[nodiscard]] bool HasValue(const std::string& column_name) const {
-		return values.find(column_name) != values.end();
+		return values.contains(column_name);
 	}
 };
 
@@ -72,7 +72,7 @@ public:
 
 	/// Get a row by key
 	[[nodiscard]] std::optional<DataRow> GetRow(const std::string& key) const {
-		auto it = std::find_if(rows_.begin(), rows_.end(), [&key](const DataRow& row) { return row.key == key; });
+		auto it = std::ranges::find_if(rows_, [&key](const DataRow& row) { return row.key == key; });
 		if (it != rows_.end()) {
 			return *it;
 		}
@@ -102,7 +102,7 @@ public:
 				// Simple equality check - compares variant values
 				if (row_value.index() == value.index()) {
 					// Both variants hold the same type, compare values
-					bool is_equal = std::visit(
+					bool const is_equal = std::visit(
 						[&value](auto&& arg) {
 							using T = std::decay_t<decltype(arg)>;
 							if (const auto* val_ptr = std::get_if<T>(&value)) {
@@ -123,7 +123,7 @@ public:
 
 	/// Remove a row by key
 	bool RemoveRow(const std::string& key) {
-		auto it = std::find_if(rows_.begin(), rows_.end(), [&key](const DataRow& row) { return row.key == key; });
+		auto it = std::ranges::find_if(rows_, [&key](const DataRow& row) { return row.key == key; });
 		if (it != rows_.end()) {
 			rows_.erase(it);
 			return true;

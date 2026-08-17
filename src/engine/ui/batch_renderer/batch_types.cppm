@@ -301,7 +301,7 @@ struct ScissorRect {
 	 * @brief Intersect this scissor with another
 	 * @return Intersection rectangle; may have zero width/height if no overlap
 	 */
-	ScissorRect Intersect(const ScissorRect& other) const {
+	[[nodiscard]] ScissorRect Intersect(const ScissorRect& other) const {
 		const float left = std::max(x, other.x);
 		const float top = std::max(y, other.y);
 		const float right = std::min(x + width, other.x + other.width);
@@ -313,7 +313,7 @@ struct ScissorRect {
 	/**
 	 * @brief Check if scissor has non-zero area
 	 */
-	bool IsValid() const { return width > 0.0F && height > 0.0F; }
+	[[nodiscard]] bool IsValid() const { return width > 0.0F && height > 0.0F; }
 
 	/**
 	 * @brief Equality comparison for batch key matching

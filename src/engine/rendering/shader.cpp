@@ -26,7 +26,7 @@ struct Shader::Impl {
 	std::string vertex_source;
 	std::string fragment_source;
 	std::unordered_map<std::string, int> uniform_locations;
-	GLuint program;
+	GLuint program{};
 };
 
 Shader::Shader() : pimpl_(std::make_unique<Impl>()) {}
@@ -224,11 +224,11 @@ void Shader::Use() const {
 	}
 }
 
-std::vector<std::string> Shader::GetUniformNames() const {
+std::vector<std::string> Shader::GetUniformNames() {
 	return {}; // TODO: Return actual uniform names
 }
 
-std::vector<std::string> Shader::GetAttributeNames() const {
+std::vector<std::string> Shader::GetAttributeNames() {
 	return {}; // TODO: Return actual attribute names
 }
 
@@ -302,8 +302,8 @@ bool ShaderManager::CompileShader(
 ) const {
 	// Load shader source files
 	auto& asset_manager = assets::AssetManager::Instance();
-	const auto vertex_src_opt = asset_manager.LoadTextFile(vertex_path);
-	const auto fragment_src_opt = asset_manager.LoadTextFile(fragment_path);
+	const auto vertex_src_opt = assets::AssetManager::LoadTextFile(vertex_path);
+	const auto fragment_src_opt = assets::AssetManager::LoadTextFile(fragment_path);
 	if (!vertex_src_opt || !fragment_src_opt) {
 		spdlog::error("Failed to load shader sources: {}, {}", vertex_path.string(), fragment_path.string());
 		return false;
@@ -362,7 +362,7 @@ const Shader& ShaderManager::GetShader(const ShaderId id) const {
 	if (const auto it = pimpl_->shaders.find(id); it != pimpl_->shaders.end()) {
 		return *it->second;
 	}
-	static Shader invalid_shader;
+	static Shader const invalid_shader;
 	return invalid_shader;
 }
 

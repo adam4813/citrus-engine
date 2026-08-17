@@ -1,6 +1,7 @@
 module;
 
 #include <flecs.h>
+#include <algorithm>
 #include <memory>
 #include <spdlog/spdlog.h>
 #include <vector>
@@ -117,9 +118,7 @@ Bullet3PhysicsModule::Bullet3PhysicsModule(const flecs::world& world) {
 			++steps;
 		}
 
-		if (accumulated_time > cfg.fixed_timestep * cfg.max_substeps) {
-			accumulated_time = cfg.fixed_timestep * cfg.max_substeps;
-		}
+		accumulated_time = std::min(accumulated_time, cfg.fixed_timestep * cfg.max_substeps);
 	});
 
 	// System: Sync results back to ECS

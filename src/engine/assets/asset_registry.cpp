@@ -328,7 +328,7 @@ nlohmann::json AssetRefToJson(const AssetRef& ref) { return nlohmann::json{{"gui
 
 AssetRef AssetRefFromJson(const nlohmann::json& j) {
 	if (j.is_object()) {
-		return AssetRef{j.value("guid", 0U), j.value("path", std::string{})};
+		return AssetRef{.guid = j.value("guid", 0U), .path = j.value("path", std::string{})};
 	}
 	return AssetRef{};
 }
@@ -560,7 +560,10 @@ void AssetCache::Clear() {
 	next_guid_ = 1;
 }
 
-void AssetCache::RegisterFileImporter(const std::vector<std::string>& file_extensions, FileImportFactory factory) {
+void AssetCache::RegisterFileImporter(
+	const std::vector<std::string>& file_extensions,
+	const FileImportFactory& factory
+) {
 	for (auto ext : file_extensions) {
 		if (ext.empty()) {
 			continue;

@@ -67,22 +67,22 @@ public:
 		ClampScroll();
 	}
 
-	float GetContentWidth() const { return content_width_; }
-	float GetContentHeight() const { return content_height_; }
-	float GetViewportWidth() const { return viewport_width_; }
-	float GetViewportHeight() const { return viewport_height_; }
+	[[nodiscard]] float GetContentWidth() const { return content_width_; }
+	[[nodiscard]] float GetContentHeight() const { return content_height_; }
+	[[nodiscard]] float GetViewportWidth() const { return viewport_width_; }
+	[[nodiscard]] float GetViewportHeight() const { return viewport_height_; }
 
 	// === Scroll Position ===
 
 	/**
 	 * @brief Get current horizontal scroll offset
 	 */
-	float GetScrollX() const { return scroll_x_; }
+	[[nodiscard]] float GetScrollX() const { return scroll_x_; }
 
 	/**
 	 * @brief Get current vertical scroll offset
 	 */
-	float GetScrollY() const { return scroll_y_; }
+	[[nodiscard]] float GetScrollY() const { return scroll_y_; }
 
 	/**
 	 * @brief Set scroll position directly
@@ -145,49 +145,49 @@ public:
 	/**
 	 * @brief Get minimum horizontal scroll
 	 */
-	float GetMinScrollX() const { return scroll_min_x_; }
+	[[nodiscard]] float GetMinScrollX() const { return scroll_min_x_; }
 
 	/**
 	 * @brief Get minimum vertical scroll
 	 */
-	float GetMinScrollY() const { return scroll_min_y_; }
+	[[nodiscard]] float GetMinScrollY() const { return scroll_min_y_; }
 
 	/**
 	 * @brief Get maximum horizontal scroll
 	 */
-	float GetMaxScrollX() const { return std::max(0.0F, content_width_ - viewport_width_); }
+	[[nodiscard]] float GetMaxScrollX() const { return std::max(0.0F, content_width_ - viewport_width_); }
 
 	/**
 	 * @brief Get maximum vertical scroll
 	 */
-	float GetMaxScrollY() const { return std::max(0.0F, content_height_ - viewport_height_); }
+	[[nodiscard]] float GetMaxScrollY() const { return std::max(0.0F, content_height_ - viewport_height_); }
 
 	/**
 	 * @brief Check if horizontal scrolling is possible
 	 */
-	bool CanScrollX() const { return GetMinScrollX() < GetMaxScrollX(); }
+	[[nodiscard]] bool CanScrollX() const { return GetMinScrollX() < GetMaxScrollX(); }
 
 	/**
 	 * @brief Check if vertical scrolling is possible
 	 */
-	bool CanScrollY() const { return GetMinScrollY() < GetMaxScrollY(); }
+	[[nodiscard]] bool CanScrollY() const { return GetMinScrollY() < GetMaxScrollY(); }
 
 	// === Scroll Direction ===
 
 	void SetDirection(ScrollDirection dir) { direction_ = dir; }
-	ScrollDirection GetDirection() const { return direction_; }
+	[[nodiscard]] ScrollDirection GetDirection() const { return direction_; }
 
 	// === Scroll Speed ===
 
 	void SetScrollSpeed(float speed) { scroll_speed_ = speed > 0.0F ? speed : 1.0F; }
-	float GetScrollSpeed() const { return scroll_speed_; }
+	[[nodiscard]] float GetScrollSpeed() const { return scroll_speed_; }
 
 	// === Scroll Indicators ===
 
 	/**
 	 * @brief Get normalized scroll position (0.0-1.0) for vertical scrollbar
 	 */
-	float GetScrollYNormalized() const {
+	[[nodiscard]] float GetScrollYNormalized() const {
 		const float max = GetMaxScrollY();
 		return max > 0.0F ? scroll_y_ / max : 0.0F;
 	}
@@ -195,7 +195,7 @@ public:
 	/**
 	 * @brief Get normalized scroll position (0.0-1.0) for horizontal scrollbar
 	 */
-	float GetScrollXNormalized() const {
+	[[nodiscard]] float GetScrollXNormalized() const {
 		const float max = GetMaxScrollX();
 		return max > 0.0F ? scroll_x_ / max : 0.0F;
 	}
@@ -203,14 +203,14 @@ public:
 	/**
 	 * @brief Get the thumb size ratio for vertical scrollbar
 	 */
-	float GetScrollYThumbRatio() const {
+	[[nodiscard]] float GetScrollYThumbRatio() const {
 		return content_height_ > 0.0F ? std::min(1.0F, viewport_height_ / content_height_) : 1.0F;
 	}
 
 	/**
 	 * @brief Get the thumb size ratio for horizontal scrollbar
 	 */
-	float GetScrollXThumbRatio() const {
+	[[nodiscard]] float GetScrollXThumbRatio() const {
 		return content_width_ > 0.0F ? std::min(1.0F, viewport_width_ / content_width_) : 1.0F;
 	}
 
@@ -398,7 +398,7 @@ public:
 	 * @brief Get the scroll state for reading/modifying
 	 */
 	ScrollState& GetState() { return state_; }
-	const ScrollState& GetState() const { return state_; }
+	[[nodiscard]] const ScrollState& GetState() const { return state_; }
 
 	/**
 	 * @brief Set content size (total scrollable area)
@@ -409,7 +409,7 @@ public:
 	 * @brief Set scrollbar visual style
 	 */
 	void SetStyle(const ScrollbarStyle& style) { style_ = style; }
-	const ScrollbarStyle& GetStyle() const { return style_; }
+	[[nodiscard]] const ScrollbarStyle& GetStyle() const { return style_; }
 
 	/**
 	 * @brief Update viewport size from owner bounds

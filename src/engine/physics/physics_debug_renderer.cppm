@@ -1,6 +1,7 @@
 module;
 
 #include <cmath>
+#include <numbers>
 #include <string>
 
 export module engine.physics:debug_renderer;
@@ -113,13 +114,13 @@ IPhysicsDebugRenderer::DrawWireBox(const glm::mat4& transform, const glm::vec3& 
 }
 
 inline void IPhysicsDebugRenderer::DrawWireSphere(const glm::vec3& center, float radius, const glm::vec3& color) {
-	constexpr int kSegments = 16;
-	constexpr float kStep = 2.0F * 3.14159265358979F / static_cast<float>(kSegments);
+	constexpr int k_segments = 16;
+	constexpr float k_step = 2.0F * std::numbers::pi_v<float> / static_cast<float>(k_segments);
 
 	// Three orthogonal circles
-	for (int i = 0; i < kSegments; ++i) {
-		const float a0 = static_cast<float>(i) * kStep;
-		const float a1 = static_cast<float>(i + 1) * kStep;
+	for (int i = 0; i < k_segments; ++i) {
+		const float a0 = static_cast<float>(i) * k_step;
+		const float a1 = static_cast<float>(i + 1) * k_step;
 		const float c0 = std::cos(a0) * radius;
 		const float s0 = std::sin(a0) * radius;
 		const float c1 = std::cos(a1) * radius;

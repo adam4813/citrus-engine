@@ -51,17 +51,17 @@ public:
 	void Start();
 
 	// Get elapsed time since start
-	Duration Elapsed() const;
+	[[nodiscard]] Duration Elapsed() const;
 
 	// Reset timer to zero
 	void Reset();
 
 	// Get elapsed time in common units
-	double ElapsedSeconds() const;
+	[[nodiscard]] double ElapsedSeconds() const;
 
-	double ElapsedMilliseconds() const;
+	[[nodiscard]] double ElapsedMilliseconds() const;
 
-	double ElapsedMicroseconds() const;
+	[[nodiscard]] double ElapsedMicroseconds() const;
 
 private:
 	TimePoint start_time_;
@@ -79,11 +79,11 @@ public:
 	void FrameEnd();
 
 	// Get current FPS metrics
-	double GetCurrentFps() const;
+	[[nodiscard]] double GetCurrentFps() const;
 
-	double GetAverageFps() const;
+	[[nodiscard]] double GetAverageFps() const;
 
-	Duration GetFrameTime() const;
+	[[nodiscard]] Duration GetFrameTime() const;
 
 	void SetTargetFps(double fps);
 
@@ -127,7 +127,7 @@ public:
 
 	void Close();
 
-	bool IsOpen() const;
+	[[nodiscard]] bool IsOpen() const;
 
 	// Read operations
 	size_t Read(void* buffer, size_t size);
@@ -144,9 +144,9 @@ public:
 	// File positioning
 	bool Seek(size_t position);
 
-	size_t Tell() const;
+	[[nodiscard]] size_t Tell() const;
 
-	size_t Size() const;
+	[[nodiscard]] size_t Size() const;
 
 private:
 	// struct Impl;
@@ -217,14 +217,14 @@ private:
 
 namespace memory {
 // Memory alignment utilities
-constexpr size_t default_alignment = alignof(std::max_align_t);
+constexpr size_t DEFAULT_ALIGNMENT = alignof(std::max_align_t);
 
-template<size_t Alignment = default_alignment>
+template<size_t Alignment = DEFAULT_ALIGNMENT>
 constexpr bool IsAligned(const void* ptr) {
 	return reinterpret_cast<uintptr_t>(ptr) % Alignment == 0;
 }
 
-template<size_t Alignment = default_alignment>
+template<size_t Alignment = DEFAULT_ALIGNMENT>
 constexpr size_t AlignSize(size_t size) {
 	return (size + Alignment - 1) & ~(Alignment - 1);
 }
@@ -234,13 +234,13 @@ class Allocator {
 public:
 	virtual ~Allocator() = default;
 
-	virtual void* Allocate(size_t size, size_t alignment = default_alignment) = 0;
+	virtual void* Allocate(size_t size, size_t alignment = DEFAULT_ALIGNMENT) = 0;
 
 	virtual void Deallocate(void* ptr) = 0;
 
-	virtual size_t AllocatedSize() const = 0;
+	[[nodiscard]] virtual size_t AllocatedSize() const = 0;
 
-	virtual size_t PeakSize() const = 0;
+	[[nodiscard]] virtual size_t PeakSize() const = 0;
 };
 
 // Linear allocator (fast, no individual deallocation)
@@ -250,16 +250,16 @@ public:
 
 	~LinearAllocator() override;
 
-	void* Allocate(size_t size, size_t alignment = default_alignment) override;
+	void* Allocate(size_t size, size_t alignment = DEFAULT_ALIGNMENT) override;
 
 	void Deallocate(void* ptr) override; // No-op for linear allocator
 
 	void Reset(); // Reset to beginning
-	size_t AllocatedSize() const override;
+	[[nodiscard]] size_t AllocatedSize() const override;
 
-	size_t PeakSize() const override;
+	[[nodiscard]] size_t PeakSize() const override;
 
-	size_t Remaining() const;
+	[[nodiscard]] size_t Remaining() const;
 
 private:
 	uint8_t* buffer_;
@@ -275,17 +275,17 @@ public:
 
 	~PoolAllocator() override;
 
-	void* Allocate(size_t size, size_t alignment = default_alignment) override;
+	void* Allocate(size_t size, size_t alignment = DEFAULT_ALIGNMENT) override;
 
 	void Deallocate(void* ptr) override;
 
-	size_t AllocatedSize() const override;
+	[[nodiscard]] size_t AllocatedSize() const override;
 
-	size_t PeakSize() const override;
+	[[nodiscard]] size_t PeakSize() const override;
 
-	size_t BlockSize() const { return block_size_; }
+	[[nodiscard]] size_t BlockSize() const { return block_size_; }
 
-	size_t AvailableBlocks() const;
+	[[nodiscard]] size_t AvailableBlocks() const;
 
 private:
 	struct FreeBlock {

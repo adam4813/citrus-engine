@@ -49,19 +49,19 @@ AnimatedValue AnimationSerializer::AnimatedValueFromJson(const json& j) {
 	if (type == "float") {
 		return j.at("value").get<float>();
 	}
-	else if (type == "vec2") {
+	if (type == "vec2") {
 		auto arr = j.at("value").get<std::vector<float>>();
 		return glm::vec2(arr[0], arr[1]);
 	}
-	else if (type == "vec3") {
+	if (type == "vec3") {
 		auto arr = j.at("value").get<std::vector<float>>();
 		return glm::vec3(arr[0], arr[1], arr[2]);
 	}
-	else if (type == "vec4") {
+	if (type == "vec4") {
 		auto arr = j.at("value").get<std::vector<float>>();
 		return glm::vec4(arr[0], arr[1], arr[2], arr[3]);
 	}
-	else if (type == "quat") {
+	if (type == "quat") {
 		auto arr = j.at("value").get<std::vector<float>>();
 		return glm::quat(arr[0], arr[1], arr[2], arr[3]);
 	}
@@ -166,7 +166,7 @@ std::shared_ptr<AnimationClip> AnimationSerializer::LoadFromFile(const platform:
 			return nullptr;
 		}
 
-		json j = json::parse(*text);
+		json const j = json::parse(*text);
 		return FromJson(j);
 	}
 	catch (...) {

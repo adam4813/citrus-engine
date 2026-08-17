@@ -19,14 +19,14 @@ void NodeTypeRegistry::Register(const NodeTypeDefinition& def) { types_.push_bac
 const NodeTypeDefinition* NodeTypeRegistry::Get(const std::string& name) const {
 	// Try exact match first
 	auto it =
-		std::find_if(types_.begin(), types_.end(), [&name](const NodeTypeDefinition& def) { return def.name == name; });
+		std::ranges::find_if(types_, [&name](const NodeTypeDefinition& def) { return def.name == name; });
 
 	if (it != types_.end()) {
 		return &(*it);
 	}
 
 	// Try full name match (category/name)
-	it = std::find_if(types_.begin(), types_.end(), [&name](const NodeTypeDefinition& def) {
+	it = std::ranges::find_if(types_, [&name](const NodeTypeDefinition& def) {
 		return BuildFullName(def.category, def.name) == name;
 	});
 
@@ -42,13 +42,13 @@ std::vector<std::string> NodeTypeRegistry::GetCategories() const {
 
 	for (const auto& type : types_) {
 		// Add category if not already in the list
-		if (std::find(categories.begin(), categories.end(), type.category) == categories.end()) {
+		if (std::ranges::find(categories, type.category) == categories.end()) {
 			categories.push_back(type.category);
 		}
 	}
 
 	// Sort for consistent ordering
-	std::sort(categories.begin(), categories.end());
+	std::ranges::sort(categories);
 
 	return categories;
 }

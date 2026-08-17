@@ -24,7 +24,7 @@ namespace engine::audio {
 
 // Internal sound instance tracked per play handle
 struct SoundInstance {
-	ma_sound sound;
+	ma_sound sound{};
 	uint32_t clip_id{0};
 	bool valid{false};
 	bool paused{false};
@@ -149,7 +149,7 @@ uint32_t AudioSystem::LoadClip(const std::string& file_path) {
 		}
 	}
 
-	uint32_t clip_id = next_clip_id_++;
+	uint32_t const clip_id = next_clip_id_++;
 
 	AudioClip clip(clip_id, actual_path);
 	clip.sample_rate = decoder.outputSampleRate;
@@ -242,7 +242,7 @@ uint32_t AudioSystem::PlaySoundClip(uint32_t clip_id, float volume, bool looping
 		return 0;
 	}
 
-	uint32_t handle = next_play_handle_++;
+	uint32_t const handle = next_play_handle_++;
 	auto instance = std::make_unique<SoundInstance>();
 	instance->clip_id = clip_id;
 

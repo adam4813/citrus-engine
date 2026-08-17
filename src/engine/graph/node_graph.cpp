@@ -3,6 +3,7 @@ module;
 #include <algorithm>
 #include <cstdint>
 #include <string>
+#include <utility>
 #include <vector>
 
 module engine.graph;
@@ -14,7 +15,7 @@ import glm;
 namespace engine::graph {
 
 int NodeGraph::AddNode(const std::string& type_name, glm::vec2 position) {
-	int node_id = next_id_++;
+	int const node_id = next_id_++;
 
 	Node node(node_id, type_name, position);
 	nodes_.push_back(std::move(node));
@@ -58,7 +59,7 @@ int NodeGraph::AddLink(int from_node, int from_pin, int to_node, int to_pin) {
 
 	// Remove any existing link to the input pin (inputs can only have one connection)
 	const Node* to_node_ptr = GetNode(to_node);
-	if (to_node_ptr && to_pin < static_cast<int>(to_node_ptr->inputs.size())) {
+	if (to_node_ptr && std::cmp_less(to_pin, to_node_ptr->inputs.size())) {
 		links_.erase(
 			std::remove_if(
 				links_.begin(),
@@ -71,7 +72,7 @@ int NodeGraph::AddLink(int from_node, int from_pin, int to_node, int to_pin) {
 		);
 	}
 
-	int link_id = next_id_++;
+	int const link_id = next_id_++;
 	links_.emplace_back(link_id, from_node, from_pin, to_node, to_pin);
 
 	return link_id;
@@ -109,11 +110,11 @@ bool NodeGraph::CanConnect(int from_node, int from_pin, int to_node, int to_pin)
 	}
 
 	// Validate pin indices
-	if (from_pin < 0 || from_pin >= static_cast<int>(from_node_ptr->outputs.size())) {
+	if (from_pin < 0 || std::cmp_greater_equal(from_pin, from_node_ptr->outputs.size())) {
 		return false;
 	}
 
-	if (to_pin < 0 || to_pin >= static_cast<int>(to_node_ptr->inputs.size())) {
+	if (to_pin < 0 || std::cmp_greater_equal(to_pin, to_node_ptr->inputs.size())) {
 		return false;
 	}
 
@@ -137,19 +138,19 @@ void NodeGraph::Clear() {
 }
 
 auto NodeGraph::FindNode(int id) -> decltype(nodes_.begin()) {
-	return std::find_if(nodes_.begin(), nodes_.end(), [id](const Node& node) { return node.id == id; });
+	return std::ranges::find_if(nodes_, [id](const Node& node) { return node.id == id; });
 }
 
 auto NodeGraph::FindNode(int id) const -> decltype(nodes_.begin()) {
-	return std::find_if(nodes_.begin(), nodes_.end(), [id](const Node& node) { return node.id == id; });
+	return std::ranges::find_if(nodes_, [id](const Node& node) { return node.id == id; });
 }
 
 auto NodeGraph::FindLink(int id) -> decltype(links_.begin()) {
-	return std::find_if(links_.begin(), links_.end(), [id](const Link& link) { return link.id == id; });
+	return std::ranges::find_if(links_, [id](const Link& link) { return link.id == id; });
 }
 
 auto NodeGraph::FindLink(int id) const -> decltype(links_.begin()) {
-	return std::find_if(links_.begin(), links_.end(), [id](const Link& link) { return link.id == id; });
+	return std::ranges::find_if(links_, [id](const Link& link) { return link.id == id; });
 }
 
 } // namespace engine::graph

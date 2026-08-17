@@ -47,7 +47,7 @@ public:
 
 	// Find a clip by its logical name (set via LoadClipNamed)
 	// Returns the clip ID, or 0 if not found
-	uint32_t FindClipByName(const std::string& name) const;
+	[[nodiscard]] uint32_t FindClipByName(const std::string& name) const;
 
 	// Unload a previously loaded audio clip by ID
 	void UnloadClip(uint32_t clip_id);
@@ -75,7 +75,7 @@ public:
 	void ResumeSound(uint32_t handle);
 
 	// Check if a sound is still playing
-	bool IsSoundPlaying(uint32_t handle) const;
+	[[nodiscard]] bool IsSoundPlaying(uint32_t handle) const;
 
 	// Update 3D listener position and orientation
 	void SetListenerPosition(const AudioListener& listener);
@@ -84,10 +84,10 @@ public:
 	void SetSourcePosition(uint32_t handle, float x, float y, float z);
 
 	// Get a loaded clip by ID
-	const AudioClip* GetClip(uint32_t clip_id) const;
+	[[nodiscard]] const AudioClip* GetClip(uint32_t clip_id) const;
 
 	// Check if the audio system is initialized
-	bool IsInitialized() const;
+	[[nodiscard]] bool IsInitialized() const;
 
 	// Global accessor (singleton-like pattern used by other engine systems)
 	static AudioSystem& Get();

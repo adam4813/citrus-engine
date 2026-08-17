@@ -49,27 +49,27 @@ public:
 	~MeshManager();
 
 	// Named mesh slot creation (for asset system - reserves ID before geometry is generated)
-	MeshId CreateNamedMesh(const std::string& name) const;
+	[[nodiscard]] MeshId CreateNamedMesh(const std::string& name) const;
 
 	// Name-based lookup
 	[[nodiscard]] MeshId FindMesh(const std::string& name) const;
 	[[nodiscard]] std::string GetMeshName(MeshId id) const;
 
 	// Mesh creation (geometry generation - allocates new ID)
-	MeshId CreateMesh(const MeshCreateInfo& info) const;
+	[[nodiscard]] MeshId CreateMesh(const MeshCreateInfo& info) const;
 
 	MeshId CreateQuad(float width = 1.0F, float height = 1.0F);
 
-	MeshId CreateCube(float size = 1.0F) const;
-	MeshId CreateCube(float width, float height, float depth) const;
+	[[nodiscard]] MeshId CreateCube(float size = 1.0F) const;
+	[[nodiscard]] MeshId CreateCube(float width, float height, float depth) const;
 
 	MeshId CreateSphere(float radius = 1.0F, uint32_t segments = 32);
 
 	// Generate geometry into existing mesh slot (for named meshes)
-	bool GenerateMeshGeometry(MeshId id, const MeshCreateInfo& info) const;
-	bool GenerateQuad(MeshId id, float width = 1.0F, float height = 1.0F) const;
-	bool GenerateCube(MeshId id, float width, float height, float depth) const;
-	bool GenerateSphere(MeshId id, float radius = 1.0F, uint32_t segments = 32);
+	[[nodiscard]] bool GenerateMeshGeometry(MeshId id, const MeshCreateInfo& info) const;
+	[[nodiscard]] bool GenerateQuad(MeshId id, float width = 1.0F, float height = 1.0F) const;
+	[[nodiscard]] bool GenerateCube(MeshId id, float width, float height, float depth) const;
+	bool GenerateSphere(MeshId id, float radius = 1.0F, uint32_t segments = 32) const;
 
 	// Mesh modification
 	void UpdateMesh(MeshId id, std::span<const Vertex> vertices, std::span<const uint32_t> indices);
@@ -79,14 +79,14 @@ public:
 	void UpdateIndices(MeshId id, std::span<const uint32_t> indices);
 
 	// Mesh info
-	uint32_t GetVertexCount(MeshId id) const;
+	[[nodiscard]] uint32_t GetVertexCount(MeshId id) const;
 
-	uint32_t GetIndexCount(MeshId id) const;
+	[[nodiscard]] uint32_t GetIndexCount(MeshId id) const;
 
 	// Resource management
 	void DestroyMesh(MeshId id) const;
 
-	bool IsValid(MeshId id) const;
+	[[nodiscard]] bool IsValid(MeshId id) const;
 
 	void Clear() const;
 
